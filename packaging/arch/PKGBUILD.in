@@ -1,0 +1,33 @@
+# Rendered by scripts/package-arch.py with this release's pinned checksums.
+pkgname=rex-linux-bin
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Native Linux client for existing Rex terminal servers'
+arch=('x86_64' 'aarch64')
+url='https://github.com/shuv1337/rex-rune'
+license=('MIT')
+provides=('rex-linux')
+conflicts=('rex-linux')
+depends=('glibc>=2.39' 'gcc-libs' 'fontconfig' 'libxkbcommon' 'libxkbcommon-x11'
+         'wayland' 'libx11' 'libxcb' 'libglvnd' 'vulkan-icd-loader'
+         'xdg-utils' 'ca-certificates' 'hicolor-icon-theme')
+options=('!strip' '!debug')
+source_x86_64=("https://github.com/shuv1337/rex-rune/releases/download/v${pkgver}/rex-linux-${pkgver}-x86_64-linux-gnu.tar.gz")
+source_aarch64=("https://github.com/shuv1337/rex-rune/releases/download/v${pkgver}/rex-linux-${pkgver}-aarch64-linux-gnu.tar.gz")
+sha256sums_x86_64=('@SHA256_X86_64@')
+sha256sums_aarch64=('@SHA256_AARCH64@')
+
+package() {
+    cd "rex-linux-${pkgver}-${CARCH}-linux-gnu"
+    install -Dm755 bin/rex-linux "$pkgdir/usr/bin/rex-linux"
+    install -Dm644 resources/dev.shuv.rex-linux.desktop "$pkgdir/usr/share/applications/dev.shuv.rex-linux.desktop"
+    for size in 32 128 256; do
+        install -Dm644 "resources/icons/${size}x${size}/apps/dev.shuv.rex-linux.png" \
+            "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/dev.shuv.rex-linux.png"
+    done
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    cp -r licenses "$pkgdir/usr/share/licenses/$pkgname/dependencies"
+    install -Dm644 BUILD-INFO "$pkgdir/usr/share/doc/rex-linux/BUILD-INFO"
+    install -dm755 "$pkgdir/usr/share/rex-linux"
+    printf 'channel=pacman\nhint=sudo pacman -Syu\n' > "$pkgdir/usr/share/rex-linux/channel"
+}

@@ -84,6 +84,7 @@ rustPlatform.buildRustPackage {
     libxkbcommon
     wayland
   ];
+  REX_LINUX_CHANNEL = "nix";
   cargoBuildFlags = [ "--bins" ];
   cargoTestFlags = [ "--all-features" ];
   nativeCheckInputs = [

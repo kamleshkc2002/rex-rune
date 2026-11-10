@@ -11,6 +11,7 @@ bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
 applications="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 icons="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor"
 desktop="$applications/dev.shuv.rex-linux.desktop"
+receipt="${XDG_DATA_HOME:-$HOME/.local/share}/rex-linux/install.json"
 
 usage() {
     echo "Usage: $0 [--copy] [path/to/rex-linux] | --uninstall" >&2
@@ -44,7 +45,7 @@ copy=false
 case "${1:-}" in
     --uninstall)
         [[ $# -eq 1 ]] || usage
-        rm -f -- "$bin_dir/rex-linux" "$desktop"
+        rm -f -- "$bin_dir/rex-linux" "$desktop" "$receipt"
         for size in 32 128 256; do
             rm -f -- "$icons/${size}x${size}/apps/dev.shuv.rex-linux.png"
         done
@@ -58,6 +59,13 @@ case "${1:-}" in
         ;;
     -*) usage ;;
 esac
+receipt_version=""
+if [[ "${1:-}" == --receipt-version ]]; then
+    [[ $# -ge 2 && "$2" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || usage
+    $copy || usage
+    receipt_version="$2"
+    shift 2
+fi
 [[ $# -le 1 ]] || usage
 source_binary="$(realpath -m -- "${1:-$root/target/release/rex-linux}")"
 
@@ -66,6 +74,8 @@ if [[ ! -x "$source_binary" ]]; then
     exit 1
 fi
 
+# Source installs invalidate a previous official receipt, even at the same path.
+rm -f -- "$receipt"
 binary="$source_binary"
 if $copy; then
     binary="$bin_dir/rex-linux"
@@ -86,4 +96,27 @@ desktop-file-install --dir="$applications" \
     "$root/resources/dev.shuv.rex-linux.desktop"
 desktop-file-validate "$desktop"
 refresh_caches
+if [[ -n "$receipt_version" ]]; then
+    # JSON strings, including unusual XDG paths, without adding a Python dependency.
+    json_string() {
+        local value="$1" char escaped n
+        value="${value//\\/\\\\}"
+        value="${value//\"/\\\"}"
+        for ((n=1; n<32; n++)); do
+            printf -v char '%b' "\\$(printf '%03o' "$n")"
+            printf -v escaped '\\u%04x' "$n"
+            value="${value//"$char"/"$escaped"}"
+        done
+        printf '"%s"' "$value"
+    }
+    installed_path="$(realpath -- "$binary")"
+    digest="$(sha256sum < "$binary")"
+    digest="${digest%% *}"
+    mkdir -p -- "$(dirname -- "$receipt")"
+    temp_receipt="$(mktemp "${receipt}.XXXXXX")"
+    trap 'rm -f -- "$temp_receipt"' EXIT
+    printf '{"schema":1,"path":%s,"version":"%s","sha256":"%s"}\n' \
+        "$(json_string "$installed_path")" "$receipt_version" "$digest" > "$temp_receipt"
+    mv -f -- "$temp_receipt" "$receipt"
+fi
 echo "Installed $desktop"

@@ -20,10 +20,13 @@ fn format_info(
     version: &str,
     commit: &str,
     date: &str,
+    channel: &str,
     os: &str,
     server_api: Option<u32>,
 ) -> String {
-    let mut info = format!("Rex Linux {version}\nCommit: {commit}\nBuild date: {date}\nOS: {os}\n");
+    let mut info = format!(
+        "Rex Linux {version}\nCommit: {commit}\nBuild date: {date}\nBuild channel: {channel}\nOS: {os}\n"
+    );
     if let Some(revision) = server_api {
         info.push_str(&format!("Server API revision: {revision}\n"));
     }
@@ -40,6 +43,7 @@ pub fn version_info(s: &Workspace) -> String {
         VERSION,
         COMMIT,
         BUILD_DATE,
+        rex_linux::BUILD_CHANNEL,
         &format!("{} ({})", std::env::consts::OS, std::env::consts::ARCH),
         server_api(s),
     )
@@ -135,19 +139,22 @@ mod tests {
                 "0.5.0",
                 "abc1234",
                 "2026-11-10 PST",
+                "official",
                 "linux (x86_64)",
                 Some(12)
             ),
-            "Rex Linux 0.5.0\nCommit: abc1234\nBuild date: 2026-11-10 PST\nOS: linux (x86_64)\nServer API revision: 12\n"
+            "Rex Linux 0.5.0\nCommit: abc1234\nBuild date: 2026-11-10 PST\nBuild channel: official\nOS: linux (x86_64)\nServer API revision: 12\n"
         );
     }
 
     #[test]
     fn source_archive_and_offline_report_are_honest() {
         assert_eq!(
-            format_info("0.5.0", "unknown", "unknown", "linux", None),
-            "Rex Linux 0.5.0\nCommit: unknown\nBuild date: unknown\nOS: linux\n"
+            format_info("0.5.0", "unknown", "unknown", "source", "linux", None),
+            "Rex Linux 0.5.0\nCommit: unknown\nBuild date: unknown\nBuild channel: source\nOS: linux\n"
         );
+        // Plain cargo builds carry no channel marker and must not claim an official one.
+        assert_eq!(rex_linux::BUILD_CHANNEL, "source");
         assert_eq!(
             release_url(),
             format!("{REPOSITORY}/releases/tag/v{}", env!("CARGO_PKG_VERSION"))

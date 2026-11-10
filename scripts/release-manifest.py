@@ -42,8 +42,11 @@ def generate(dist, version, update_from, published, min_glibc="2.39"):
         for target, deb_arch in TARGETS.items()
         for name in (f"rex-linux-{version}-{target}.tar.gz", f"rex-linux_{version}_{deb_arch}.deb")
     }
+    pacman = version_tuple(version) >= (0, 5, 3) or any(name.endswith(".pkg.tar.zst") for name in checksums)
+    if pacman:
+        expected |= {f"rex-linux-bin-{version}-1-{target.split('-linux-')[0]}.pkg.tar.zst" for target in TARGETS}
     if set(checksums) != expected:
-        raise ValueError("SHA256SUMS must list exactly the four packages for this version")
+        raise ValueError("SHA256SUMS must list exactly the packages for this version (four legacy, six with pacman)")
 
     def package(name):
         path = dist / name
@@ -66,6 +69,9 @@ def generate(dist, version, update_from, published, min_glibc="2.39"):
             "tarball": {"url": f"{RELEASE_URL}/download/{tag}/{tarball}", **package(tarball)},
             "deb": {"name": deb, **package(deb)},
         }
+        if pacman:
+            name = f"rex-linux-bin-{version}-1-{target.split('-linux-')[0]}.pkg.tar.zst"
+            targets[target]["pacman"] = {"name": name, **package(name)}
     return {
         "schema": 1,
         "product": "rex-linux",
