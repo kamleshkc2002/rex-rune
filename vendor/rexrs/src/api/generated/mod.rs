@@ -2,7 +2,7 @@
 
 //! Request and response types for every method the server documents.
 //!
-//! Generated from Rex 0.1.0-preview.14, API revision 12.
+//! Generated from Rex 0.0.1794323808-g757adf, API revision 13.
 
 pub mod block;
 pub mod block_creator;
@@ -17,4 +17,4 @@ pub mod target;
 pub mod terminal;
 
 /// The control API revision these types were generated for.
-pub const API_REVISION: u32 = 12;
+pub const API_REVISION: u32 = 13;

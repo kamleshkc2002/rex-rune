@@ -122,7 +122,7 @@ async fn send(ws: &mut WebSocketStream<TcpStream>, value: Value) {
 
 async fn welcome(ws: &mut WebSocketStream<TcpStream>, revision: u32) -> Value {
     let hello = recv(ws).await;
-    assert_eq!(hello["api_revision"], 12);
+    assert_eq!(hello["api_revision"], 13);
     assert_eq!(hello["api_min_revision"], 10);
     send(ws, json!({"type":"welcome", "protocol":"rex.control.v1", "api_revision":revision,
         "limits":{"max_message_bytes":65536}, "client":{"id":"client:test", "reconnect_token":"test-token"}})).await;
@@ -200,21 +200,25 @@ async fn bootstrap_is_first_and_newer_pre_response_events_survive() {
 
 #[tokio::test]
 async fn unsupported_negotiated_revision_is_rejected() {
-    for revision in [9, 13] {
+    for revision in [9, 14] {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let server = tokio::spawn(async move {
             let mut ws = accept(&listener, "rex.control.v1").await;
             welcome(&mut ws, revision).await;
         });
-        assert!(transport::control(&endpoint, None).await.is_err());
+        let error = transport::control(&endpoint, None).await.err().unwrap();
+        assert_eq!(
+            error.to_string(),
+            format!("Rex negotiated API revision {revision}; this client supports 10–13")
+        );
         server.await.unwrap();
     }
 }
 
 #[tokio::test]
 async fn supported_revisions_negotiate() {
-    for revision in [10, 11, 12] {
+    for revision in [10, 11, 12, 13] {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let server = tokio::spawn(async move {

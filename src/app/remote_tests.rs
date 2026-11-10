@@ -98,6 +98,32 @@ fn remote_default_off_and_all_hazards_are_denied_without_side_effects() {
 }
 
 #[test]
+fn unknown_and_download_remote_actions_never_dispatch() {
+    let (mut ws, rx) = tabbed_workspace("single");
+    let sidebar = ws.sidebar.is_open();
+    for enabled in [false, true] {
+        ws.settings.hosts[0].remote_control = enabled;
+        // API 13 adds a server method, not permission to download through client.perform.
+        for action in ["com.superlogical.terminal.download_begin", "future.action"] {
+            ws.remote_perform(
+                0,
+                pending(action, json!({"path":"/private/file"})),
+                &mut rune::Tx::default(),
+            );
+            let commands: Vec<_> = rx.try_iter().collect();
+            assert_eq!(commands.len(), 1, "must send only a refusal");
+            let HostCommand::PerformReply { outcome, .. } = commands.into_iter().next().unwrap()
+            else {
+                panic!()
+            };
+            code(outcome, "not_supported");
+            assert!(ws.panel.is_none());
+            assert_eq!(ws.sidebar.is_open(), sidebar);
+        }
+    }
+}
+
+#[test]
 fn remote_guards_and_argument_checks_do_not_dispatch() {
     let (mut ws, rx) = tabbed_workspace("single");
     ws.settings.hosts[0].remote_control = true;

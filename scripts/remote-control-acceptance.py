@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Remote UI acceptance on two disposable preview.14 servers and a private Xvfb.
+"""Remote UI acceptance on two disposable Rex servers and a private Xvfb.
 
-Requires rex (preview.14), Xvfb, openbox, xdotool, ImageMagick and a built client
+Requires rex (API 12 or 13), Xvfb, openbox, xdotool, ImageMagick and a built client
 (REX_BIN). Uses ~/.cache/agent-ws, private HOME/XDG/config/socket paths and an
 explicit REX_SERVER with autostart disabled. Never uses installed Rex servers,
 packages or units. If sshd can run as this user, host B uses a real private SSH
@@ -23,6 +23,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
 REX = shutil.which("rex")
+EXPECTED_REVISION = os.environ.get("REX_EXPECT_REVISION")
 LABEL = "remote-accept"
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import"):
     assert shutil.which(tool), f"{tool} required"
@@ -158,8 +159,11 @@ AllowStreamLocalForwarding yes
 
 try:
     print("Private remote-control artifacts:", work, flush=True)
-    version = subprocess.check_output([REX, "version"], text=True)
-    assert "preview.14" in version, version
+    version = subprocess.check_output([REX, "version", "--json"], text=True)
+    revision = json.loads(version)["api_revision"]
+    assert revision in (12, 13), version
+    if EXPECTED_REVISION:
+        assert revision == int(EXPECTED_REVISION), version
     (work / "version.txt").write_text(version)
     (work / "init.lua").write_text('rex.bind("ctrl+b>c", "client.sidebar.toggle")\n')
     for i, endpoint in enumerate(endpoints):

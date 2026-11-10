@@ -509,7 +509,7 @@ mod tests {
 
     #[tokio::test]
     #[allow(clippy::result_large_err)] // tungstenite's handshake callback type
-    async fn discovery_reads_only_status_on_revisions_10_11_and_12() {
+    async fn discovery_reads_only_status_on_revisions_10_through_13() {
         use futures_util::{SinkExt, StreamExt};
         use serde_json::{Value, json};
         use tokio_tungstenite::tungstenite::Message;
@@ -519,6 +519,11 @@ mod tests {
             (11, json!({"listeners":null}), 0),
             (
                 12,
+                json!({"listeners":[{"endpoint":"127.0.0.1:0","addresses":["127.0.0.1:4567"],"transport":"tcp","admission":"anonymous"}]}),
+                1,
+            ),
+            (
+                13,
                 json!({"listeners":[{"endpoint":"127.0.0.1:0","addresses":["127.0.0.1:4567"],"transport":"tcp","admission":"anonymous"}]}),
                 1,
             ),
