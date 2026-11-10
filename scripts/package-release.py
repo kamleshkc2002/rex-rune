@@ -121,7 +121,7 @@ def main():
                 f"Installed-Size: {sum(p.stat().st_size for p in (deb / 'usr').rglob('*') if p.is_file()) // 1024}\n"
                 f"Depends: {depends}\nHomepage: https://github.com/shuv1337/rex-rune\n"
                 "Description: Native Linux client for existing Rex terminal servers\n"
-                " Unofficial Rune-based client. Requires a Rex server with API revisions 10–12.\n"
+                " Unofficial Rune-based client. Requires a Rex server with API revisions 10–13.\n"
             )
             package = dist / f"rex-linux_{version}_{deb_arch}.deb"
             run("dpkg-deb", "--root-owner-group", "--build", str(deb), str(package), env={**os.environ, "SOURCE_DATE_EPOCH": str(epoch)})
