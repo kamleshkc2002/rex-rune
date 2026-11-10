@@ -22,6 +22,28 @@ jobs:
       - name: Manifest and throwaway-key signing tests
         run: python3 scripts/test-release.py
 
+  install-script:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - 'archlinux:base@sha256:d4594bb2300cba11f41c2f27923eb56f63d9988909c402f9c95517d1e362c899'
+          - 'ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852'
+          - 'debian:trixie@sha256:9c6e381421d0f48d1b8133e573f33c185ee16cbf505eda9c4a8a4791b25ea8a6'
+          - 'fedora:latest@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c'
+          - 'ubuntu:22.04@sha256:076e7bf82319619f28dd0aa9c02ab34b055ad37100395b4f49a2ffba04fb5e11'
+          - 'debian:12@sha256:268fb24c39bca92d326dd83ea3abebe4a3f7751c804ffef23bb6d857dd343ff8'
+          - 'alpine:3.22@sha256:49340b346798875b5592e5d420241f2f9cfba5f47e62ebb1446a1b34734e898f'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer fixtures, real v0.5.1 assets, and tamper tests
+        env:
+          TEST_IMAGE: ${{ matrix.image }}
+        run: bash scripts/install-script-test.sh "$TEST_IMAGE"
+
   build:
     permissions:
       contents: read
@@ -93,21 +115,27 @@ jobs:
       id-token: write
       attestations: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: linux-*
           path: dist
           merge-multiple: true
-      - name: Attest release packages
+      - name: Stage reviewed installer
+        run: cp packaging/install/install.sh dist/install.sh
+      - name: Attest release packages and installer
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             dist/*.tar.gz
             dist/*.deb
+            dist/install.sh
 
   manual-signing-test:
     if: github.event_name == 'workflow_dispatch'
-    needs: [build, release-tools]
+    needs: [build, release-tools, install-script]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -123,6 +151,7 @@ jobs:
       - name: Generate metadata
         id: metadata
         run: |
+          cp packaging/install/install.sh dist/install.sh
           (cd dist && sha256sum -- *.tar.gz *.deb > SHA256SUMS)
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
@@ -158,13 +187,15 @@ jobs:
             dist/SHA256SUMS.minisig
             dist/latest.json
             dist/latest.json.minisig
+            dist/install.sh
+            dist/install.sh.minisig
             dist/release.pub
             dist/release-backup.pub
           if-no-files-found: error
 
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: [build, release-tools, attest]
+    needs: [build, release-tools, install-script, attest]
     runs-on: ubuntu-24.04
     # Default for plan question 6 (key custody): one reviewed job holds the signing secrets. See docs/releases.md.
     environment: release
@@ -184,6 +215,7 @@ jobs:
       - name: Checksums and manifest
         id: metadata
         run: |
+          cp packaging/install/install.sh dist/install.sh
           (cd dist && sha256sum -- *.tar.gz *.deb > SHA256SUMS)
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
@@ -212,6 +244,8 @@ jobs:
             dist/SHA256SUMS.minisig
             dist/latest.json
             dist/latest.json.minisig
+            dist/install.sh
+            dist/install.sh.minisig
           if-no-files-found: error
       - name: Draft, upload, and publish
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -233,14 +267,16 @@ jobs:
 
           **Downloads:** `x86_64` / `amd64` for Intel/AMD; `aarch64` / `arm64` for ARM64.
           - **Debian/Ubuntu:** `sudo apt install ./rex-linux_*.deb` (choose your architecture).
-          - **Other Linux:** extract the matching `.tar.gz` and run `bash install.sh` inside it. No root needed; requires `desktop-file-utils`.
+          - **User install/upgrade:** `curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh`. Verifies the release before installing; needs `desktop-file-utils` and minisign or OpenSSL 3+.
+          - **Manual tarball:** extract the matching `.tar.gz` and run `bash install.sh` inside it. No root needed; requires `desktop-file-utils`.
+          - `install.sh` has its own detached signature, `install.sh.minisig`, and embeds both release public keys. Pipe-to-shell is trust on first use; retain a reviewed copy for later upgrades.
           - Verify `SHA256SUMS.minisig` with a trusted release public key first, then run `sha256sum --ignore-missing -c SHA256SUMS`. See the README's **Verify a download** section.
           - `latest.json` and `latest.json.minisig` describe this release for future update clients; metadata has no expiry.
 
           Built natively on Ubuntu 24.04; requires glibc 2.39 or newer, graphics drivers, fontconfig, xkbcommon, and Wayland/X11 libraries. These are dynamically linked builds, not self-contained AppImages. See the bundled README for dependencies and installation.
 
-          Requires an existing Rex server with API revision 10, 11 or 12. Installing the client does not start, stop, or modify a Rex server.
+          Requires an existing Rex server with API revision 10, 11, 12 or 13. Installing the client does not start, stop, or modify a Rex server.
           EOF
           gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Rex Linux ${GITHUB_REF_NAME#v}" --notes-file RELEASE-NOTES.md
-          gh release upload "$GITHUB_REF_NAME" ./*.tar.gz ./*.deb SHA256SUMS SHA256SUMS.minisig latest.json latest.json.minisig
+          gh release upload "$GITHUB_REF_NAME" ./*.tar.gz ./*.deb SHA256SUMS SHA256SUMS.minisig latest.json latest.json.minisig install.sh install.sh.minisig
           gh release edit "$GITHUB_REF_NAME" --draft=false --latest

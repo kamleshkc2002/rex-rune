@@ -10,8 +10,8 @@ Complete the [owner setup](#owner-setup-before-the-first-signed-release) before 
 2. Commit and push to `master`. Run **Binary release** manually in GitHub Actions to test without publishing. The `release-tools` job tests the manifest and signs/verifies fixture metadata using encrypted throwaway keys, deleted at test exit. The separate `manual-signing-test` job gathers real build artifacts, generates metadata, and signs/verifies it with an encrypted throwaway minisign key pair in `$RUNNER_TEMP`, then deletes the key pair. It has only `contents: read`, no environment, and no production secrets. **`publish` never runs on `workflow_dispatch`, even when run on a tag**. Manual runs do not create attestations or request environment approval.
 3. After checking the results, create and push an annotated tag matching the package version, for example `git tag -a v0.5.0 -m 'Rex Linux 0.5.0'` and `git push origin v0.5.0`. Only stable `vX.Y.Z` versions are supported by the manifest generator.
 4. The tag workflow rebuilds all four packages, then the separate `attest` job downloads and attests them using `actions/attest-build-provenance`. `publish` requires successful attestation. Inspect the triggering commit and workflow, then approve the `release` environment as its required reviewer. Builds have no signing secrets; `publish` alone receives them.
-5. `publish` gathers both architectures, writes `SHA256SUMS`, generates `latest.json`, and uploads both as the separate `unsigned-release-metadata` artifact **before signing**, so they remain available if signing fails. It then signs both metadata files, verifies each signature and exact trusted comment against the repository's public keys and candidate tag, and rechecks packages ↔ `SHA256SUMS` ↔ `latest.json` consistency. **A tag run fails closed** if either secret, either public-key file, or a valid signature is missing. Nothing is published on failure.
-6. Only after verification does the job create a draft, upload **all eight assets** (two tarballs, two `.deb`s, `SHA256SUMS`, `SHA256SUMS.minisig`, `latest.json`, `latest.json.minisig`), then publish and mark latest. Check the assets and attestations. Never move published tags, replace assets, or retrofit signatures onto old releases.
+5. `publish` gathers both architectures, writes `SHA256SUMS`, generates `latest.json`, and uploads both as the separate `unsigned-release-metadata` artifact **before signing**, so they remain available if signing fails. It also copies `packaging/install/install.sh` byte for byte into `dist/`, signs all three files (the two metadata files and installer), verifies each signature and exact trusted comment against the repository's public keys and candidate tag, and rechecks packages ↔ `SHA256SUMS` ↔ `latest.json` consistency. **A tag run fails closed** if either secret, either public-key file, or a valid signature is missing. Nothing is published on failure.
+6. Only after verification does the job create a draft, upload **all ten assets** (two tarballs, two `.deb`s, `SHA256SUMS`, `SHA256SUMS.minisig`, `latest.json`, `latest.json.minisig`, `install.sh`, `install.sh.minisig`), then publish and mark latest. Check the assets and attestations. Never move published tags, replace assets, or retrofit signatures onto old releases.
 
 The manifest is a release asset at:
 
@@ -94,11 +94,21 @@ Setup reference for a fresh repository or deliberate rotation (do not overwrite 
 ```sh
 # Python 3.11+ and minisign required; no production credentials or GitHub access.
 python3 scripts/test-release.py
+# Disposable container matrix: real 0.5.1 assets, tampering, both verifiers,
+# OpenSSL 3.0, three shells, old-glibc/musl refusals. Requires Docker.
+bash scripts/install-script-test.sh
 # If installed (also runs ShellCheck when available):
 actionlint .github/workflows/release.yml
 ```
 
 To package locally after a native `cargo build --locked --release --bin rex-linux`, run `python3 scripts/package-release.py` (tarball) or add `--deb` (also requires `dpkg-dev`). Outputs go into ignored `dist/`. Packages include source commit/toolchain information, desktop integration, dependency license declarations, available license texts, font licenses, and icon provenance. Icon redistribution is authorized by the project owner; it is not covered by the project's MIT license.
+
+The standalone installer is separately signed with trusted comment
+`rex-linux vX.Y.Z install.sh`, attested alongside the packages, and excluded from
+`SHA256SUMS` (which still lists exactly four packages). The `install-script` job
+must pass before either manual signing or publication; it never sees secrets.
+`scripts/test-release.py` pins both embedded keys to `packaging/keys/` and tests
+installer tampering along with the two metadata signatures.
 
 The compatibility baseline is the build distribution, not just CPU architecture: current official binaries require glibc 2.39+. Build on an older supported distribution if changing this baseline; do not describe newer-host builds as compatible with older glibc. Runtime-loaded graphics/windowing dependencies are listed explicitly in the Debian package in addition to linked dependencies resolved by `dpkg-shlibdeps`.
 
@@ -129,7 +139,8 @@ For the offline alternative in plan question 6 (key custody), keep building, att
 
    ```sh
    tag=v0.5.0
-   for file in latest.json SHA256SUMS; do
+   cp packaging/install/install.sh dist/install.sh
+   for file in latest.json SHA256SUMS install.sh; do
      minisign -S -s /secure/path/rex-linux-release-backup.key -m "dist/$file" \
        -t "rex-linux $tag $file"
    done
@@ -137,22 +148,22 @@ For the offline alternative in plan question 6 (key custody), keep building, att
    python3 scripts/sign-release.py --tag "$tag" --verify-only
    ```
 
-3. Transfer **only the two `.minisig` files** back to the online checkout's `dist/`. Do not regenerate or reformat signed metadata. Rerun the gate there; it checks both signatures, exact tag/file trusted comments, and the complete packages ↔ `SHA256SUMS` ↔ `latest.json` relationship:
+3. Transfer **only the three `.minisig` files** back to the online checkout's `dist/`. Do not regenerate or reformat signed metadata. Rerun the gate there; it checks both signatures, exact tag/file trusted comments, and the complete packages ↔ `SHA256SUMS` ↔ `latest.json` relationship:
 
    ```sh
    python3 scripts/sign-release.py --tag "$tag" --verify-only
    ```
 
-4. Prepare and review `RELEASE-NOTES.md` from this version's changelog and the workflow's standing installation notes. Create a draft against the existing remote tag, upload **all eight assets**, inspect the draft, then publish:
+4. Prepare and review `RELEASE-NOTES.md` from this version's changelog and the workflow's standing installation notes. Create a draft against the existing remote tag, upload **all ten assets**, inspect the draft, then publish:
 
    ```sh
    gh release create "$tag" --repo "$repo" --draft --verify-tag \
      --title "Rex Linux ${tag#v}" --notes-file RELEASE-NOTES.md
    gh release upload "$tag" --repo "$repo" \
      dist/*.tar.gz dist/*.deb dist/SHA256SUMS dist/SHA256SUMS.minisig \
-     dist/latest.json dist/latest.json.minisig
+     dist/latest.json dist/latest.json.minisig dist/install.sh dist/install.sh.minisig
    gh release view "$tag" --repo "$repo" --json isDraft,assets
-   # Only after confirming exactly the eight verified assets:
+   # Only after confirming exactly the ten verified assets:
    gh release edit "$tag" --repo "$repo" --draft=false --latest
    ```
 
@@ -160,7 +171,7 @@ Do not use `--clobber`; if a draft already exists, follow recovery below rather 
 
 ## Recovery and rotation
 
-If a publish job fails after creating a draft, inspect the draft before retrying; the workflow intentionally refuses to overwrite an existing release and never uses `--clobber`. Recover by downloading packages and the `release-metadata` artifact from **that exact workflow run**, checking all four hashes (`sha256sum -c SHA256SUMS`) and both signatures (`scripts/sign-release.py --tag vX.Y.Z --verify-only`), and uploading only missing assets to the draft. Publish only after all eight match. Do not rebuild and mix artifacts from unrelated commits or re-sign a different manifest under the same published tag.
+If a publish job fails after creating a draft, inspect the draft before retrying; the workflow intentionally refuses to overwrite an existing release and never uses `--clobber`. Recover by downloading packages and the `release-metadata` artifact from **that exact workflow run**, checking all four hashes (`sha256sum -c SHA256SUMS`) and all three signatures (`scripts/sign-release.py --tag vX.Y.Z --verify-only`), and uploading only missing assets to the draft. Publish only after all ten match, including the installer and its signature. Do not rebuild and mix artifacts from unrelated commits or re-sign a different manifest under the same published tag.
 
 **Pulling a bad release:** publish a fixed patch version. Meanwhile mark the bad release as a prerelease so it is not offered as latest, and confirm the latest pointer serves the previous good manifest. Do not delete its assets or move the tag. No automatic downgrade is implied. Once the APT repository exists, rebuild it without the bad release as well.
 
