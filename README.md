@@ -81,11 +81,11 @@ Download a package and `SHA256SUMS` from [Releases](https://github.com/shuv1337/
 sha256sum --ignore-missing -c SHA256SUMS
 
 # Debian/Ubuntu: install the one .deb matching your architecture.
-sudo apt install ./rex-linux_0.5.2_amd64.deb
+sudo apt install ./rex-linux_0.5.3_amd64.deb
 
 # Or extract the matching tarball and install for your user (no root).
-tar -xzf rex-linux-0.5.2-x86_64-linux-gnu.tar.gz
-cd rex-linux-0.5.2-x86_64-linux-gnu
+tar -xzf rex-linux-0.5.3-x86_64-linux-gnu.tar.gz
+cd rex-linux-0.5.3-x86_64-linux-gnu
 bash install.sh
 ```
 
