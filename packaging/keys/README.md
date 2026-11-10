@@ -32,6 +32,8 @@ RWTzIScuoaGONtqf+4m48HAGuwNgUxvd/AFZareIgMwCGCKVjbTjcmJe
 Only this public half was supplied for the setup PR. Its private key and passphrase
 remain on the owner's separate backup machine, never in this checkout or GitHub.
 Keep recoverable offline copies; never send the backup secret or its passphrase.
+Since 2026-11-10 its password is in the owner's 1Password Personal vault, not the
+shuvbot login Keychain, with an encrypted copy of the key attached to the same item.
 
 **Both required public-key files are present.** A tag release no longer fails
 for a missing public key, but still fails closed on missing secrets or invalid
@@ -50,10 +52,14 @@ by this change.
 - Public download: <https://pkg.shuv.dev/rex-linux-archive-key.asc>.
 
 Generated on shuvbot on 2026-11-10. The encrypted primary and revocation certificate
-stay in `~/rex-signing-backup/openpgp/gnupg/`; its independent passphrase is in the
-login Keychain service `rex-linux-openpgp-primary`, account `shuv`. This is
-**offline-style custody on a separate online Mac**, not an air-gapped machine.
-Maintain a second encrypted offline backup; this setup did not establish one.
+stay in `~/rex-signing-backup/openpgp/gnupg/` as the working copy. Since 2026-11-10
+its independent passphrase is in the owner's **1Password Personal vault** (item
+"Rex Linux pacman-repo OpenPGP primary (4BC4…0BAB)"), not the auto-unlocked login
+Keychain; the former Keychain item `rex-linux-openpgp-primary` was deleted after a
+restore test. The same item holds an encrypted `--export-secret-keys` export
+(primary plus CI subkey) and the revocation certificate, so an encrypted copy now
+exists apart from shuvbot. This is **offline-style custody on a separate online Mac**,
+not an air-gapped machine. A non-cloud offline backup is still not established.
 Only an exported secret **subkey**, with a stub primary and a separately generated
 passphrase, was uploaded to `PACKAGE_SIGNING_KEY` / `PACKAGE_SIGNING_PASSPHRASE`
 in the protected `release` environment. The export was tested with a fresh agent
