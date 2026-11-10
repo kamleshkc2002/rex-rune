@@ -1,0 +1,28 @@
+name: Arch repository tests
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - 'nix/package.nix'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  pacman:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test prerequisites
+        run: sudo apt-get update && sudo apt-get install -y minisign gnupg zstd desktop-file-utils
+      - name: Receipt and source-install invalidation
+        run: python3 scripts/test-install-receipt.py
+      - name: Real makepkg, signed rebuild, pacman install/upgrade and tamper refusals
+        run: python3 scripts/test-arch-repo.py

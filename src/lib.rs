@@ -1,3 +1,10 @@
+/// Build provenance only. Runtime package markers/receipts distinguish official installs.
+/// Unset (including ordinary source builds) deliberately means source, not tarball.
+pub const BUILD_CHANNEL: &str = match option_env!("REX_LINUX_CHANNEL") {
+    Some(channel) => channel,
+    None => "source",
+};
+
 pub mod connection;
 pub mod keymap;
 pub mod layout;

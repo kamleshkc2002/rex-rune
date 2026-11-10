@@ -45,6 +45,8 @@ jobs:
         run: bash scripts/install-script-test.sh "$TEST_IMAGE"
 
   build:
+    env:
+      REX_LINUX_CHANNEL: official
     permissions:
       contents: read
     strategy:
@@ -93,11 +95,14 @@ jobs:
           cmp target/release/rex-linux "$XDG_BIN_HOME/rex-linux"
           "$XDG_BIN_HOME/rex-linux" --version
           desktop-file-validate "$XDG_DATA_HOME/applications/dev.shuv.rex-linux.desktop"
+          python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path(os.environ["XDG_BIN_HOME"])/"rex-linux"; r=json.load(open(pathlib.Path(os.environ["XDG_DATA_HOME"])/"rex-linux/install.json")); assert r["path"] == str(p.resolve()) and r["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()'
           bash "$package/scripts/install-desktop.sh" --uninstall
           test ! -e "$XDG_BIN_HOME/rex-linux"
+          test ! -e "$XDG_DATA_HOME/rex-linux/install.json"
           dpkg-deb --info dist/*.deb
           sudo apt-get install -y ./dist/*.deb
           /usr/bin/rex-linux --version
+          grep -qx channel=deb /usr/share/rex-linux/channel
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-${{ matrix.arch }}
@@ -106,9 +111,34 @@ jobs:
             dist/*.deb
           if-no-files-found: error
 
+  arch-package:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: linux-*
+          path: dist
+          merge-multiple: true
+      - name: Real makepkg for both architectures (no signing secrets)
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          python3 scripts/package-arch.py --version "$version"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: linux-pacman
+          path: dist/*.pkg.tar.zst
+          if-no-files-found: error
+
+  arch-tests:
+    uses: ./.github/workflows/arch-test.yml
+
   attest:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs: [build, arch-package]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -132,10 +162,11 @@ jobs:
             dist/*.tar.gz
             dist/*.deb
             dist/install.sh
+            dist/*.pkg.tar.zst
 
   manual-signing-test:
     if: github.event_name == 'workflow_dispatch'
-    needs: [build, release-tools, install-script]
+    needs: [build, arch-package, arch-tests, release-tools, install-script]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -152,7 +183,7 @@ jobs:
         id: metadata
         run: |
           cp packaging/install/install.sh dist/install.sh
-          (cd dist && sha256sum -- *.tar.gz *.deb > SHA256SUMS)
+          (cd dist && sha256sum -- *.tar.gz *.deb *.pkg.tar.zst > SHA256SUMS)
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
           python3 scripts/release-manifest.py --version "$version" --update-from 0.4.2
@@ -195,7 +226,7 @@ jobs:
 
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: [build, release-tools, install-script, attest]
+    needs: [build, arch-package, arch-tests, release-tools, install-script, attest]
     runs-on: ubuntu-24.04
     # Default for plan question 6 (key custody): one reviewed job holds the signing secrets. See docs/releases.md.
     environment: release
@@ -216,7 +247,7 @@ jobs:
         id: metadata
         run: |
           cp packaging/install/install.sh dist/install.sh
-          (cd dist && sha256sum -- *.tar.gz *.deb > SHA256SUMS)
+          (cd dist && sha256sum -- *.tar.gz *.deb *.pkg.tar.zst > SHA256SUMS)
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
           # Oldest compatible tarball layout; raise only for an incompatible install change.
@@ -235,11 +266,17 @@ jobs:
           RELEASE_MINISIGN_PASSWORD: ${{ secrets.RELEASE_MINISIGN_PASSWORD }}
           RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
         run: python3 scripts/sign-release.py --tag "$RELEASE_TAG"
+      - name: Sign and verify pacman packages (same release approval)
+        env:
+          PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
+          PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
+        run: python3 scripts/sign-packages.py
       - name: Save metadata for inspection or draft recovery
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-metadata
           path: |
+            dist/*.pkg.tar.zst.sig
             dist/SHA256SUMS
             dist/SHA256SUMS.minisig
             dist/latest.json
@@ -278,5 +315,30 @@ jobs:
           Requires an existing Rex server with API revision 10, 11, 12 or 13. Installing the client does not start, stop, or modify a Rex server.
           EOF
           gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Rex Linux ${GITHUB_REF_NAME#v}" --notes-file RELEASE-NOTES.md
-          gh release upload "$GITHUB_REF_NAME" ./*.tar.gz ./*.deb SHA256SUMS SHA256SUMS.minisig latest.json latest.json.minisig install.sh install.sh.minisig
+          gh release upload "$GITHUB_REF_NAME" ./*.tar.gz ./*.deb ./*.pkg.tar.zst ./*.pkg.tar.zst.sig SHA256SUMS SHA256SUMS.minisig latest.json latest.json.minisig install.sh install.sh.minisig
           gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+      - name: Rebuild signed repository from immutable releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
+          PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
+        run: python3 scripts/build-repo-site.py
+      - uses: actions/upload-pages-artifact@5f327015a708106f6f1b7c9a633901af30fe80cb
+        with:
+          path: site
+
+  pages:
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pkg-pages-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+        id: deployment

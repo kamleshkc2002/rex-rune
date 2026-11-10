@@ -19,6 +19,19 @@ The package installs `rex-linux` and the `rex-probe` / `rex-workspace-probe` dia
 
 The package's check phase runs rustfmt, Clippy with warnings denied, the Rust unit and headless UI tests, and `scripts/connection-only-smoke.py`, which checks that a missing or stale socket never makes the client execute `rex`. The icon has its own provenance and licensing notice in `resources/icons/README.md`; the application's MIT license does not cover that artwork.
 
+## Staying current
+
+| Install | Update |
+| --- | --- |
+| Flake input `github:shuv1337/rex-rune` | `nix flake update rex-rune`, then rebuild your configuration |
+| `nix profile install github:shuv1337/rex-rune#rex-linux` | `nix profile upgrade rex-linux` (use the name shown by `nix profile list`) |
+| Tag pin `github:shuv1337/rex-rune/vX.Y.Z#rex-linux` | Change the tag to the desired release, update the lock, then rebuild |
+
+The unqualified GitHub reference follows **master**, which can be ahead of a release.
+There is no `stable` branch. Nix builds set `REX_LINUX_CHANNEL=nix`; the app never
+replaces a Nix store binary. This release supplies provenance only: the in-app
+update notice is a later roadmap item, not an implemented feature.
+
 ## Reproducibility
 
 - `flake.lock` pins nixpkgs and the Zig overlay (Zig 0.17.1). `Cargo.lock` pins Rust dependencies, including Rune's git source; fixed-output hashes protect fetched git and Zig dependencies.

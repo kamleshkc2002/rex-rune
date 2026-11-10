@@ -40,4 +40,25 @@ signatures. Manual workflow tests use throwaway keys and do not enter the
 future updater will embed both public keys; no client verification is added
 by this change.
 
+## Package repository — `rex-linux-archive-key.asc`
+
+- Primary (Ed25519, certify-only, no expiry):
+  `4BC4B85F4AF37FA0D834B0B52B192F3817340BAB`
+- CI signing subkey (Ed25519):
+  `55B8D5A1BB0A48B766F0323FB588FF9861CADE75`
+- Subkey expires **2029-11-09 12:14 PST**; signing refuses under 180 days remaining.
+- Public download: <https://pkg.shuv.dev/rex-linux-archive-key.asc>.
+
+Generated on shuvbot on 2026-11-10. The encrypted primary and revocation certificate
+stay in `~/rex-signing-backup/openpgp/gnupg/`; its independent passphrase is in the
+login Keychain service `rex-linux-openpgp-primary`, account `shuv`. This is
+**offline-style custody on a separate online Mac**, not an air-gapped machine.
+Maintain a second encrypted offline backup; this setup did not establish one.
+Only an exported secret **subkey**, with a stub primary and a separately generated
+passphrase, was uploaded to `PACKAGE_SIGNING_KEY` / `PACKAGE_SIGNING_PASSPHRASE`
+in the protected `release` environment. The export was tested with a fresh agent
+and then shredded with `gshred -u` on shuvbot. SSD/APFS snapshots can defeat physical
+overwrite guarantees; neither exporting nor deleting promises forensic erasure.
+The primary's passphrase was never uploaded to GitHub.
+
 See [release setup](../../docs/releases.md) for verification and recovery.

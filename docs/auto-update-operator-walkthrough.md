@@ -158,95 +158,158 @@ The same command upgrades. `… | sh -s -- --uninstall` removes the install and 
    diff <(git show vX.Y.Z:packaging/install/install.sh) <(curl -fsSL "$url") && echo same
    ```
 
-## 4. The package site: first-time setup (after PR U2)
+## 4. The package site and key custody (U2)
 
-One GitHub Pages site at `https://pkg.shuv.dev` serves the pacman repository under `arch/` and, later, the APT repository at the root. Do this once, before the first release that needs it.
+The site is **https://pkg.shuv.dev**, with pacman under `arch/$arch` and room for
+APT later. It uses **rex-rune's Pages**, not a second repository: there was no
+existing Pages site to conflict with, and the release job can deploy without a
+cross-repository token. There is no AUR publication.
 
-1. **[Agent] Turn Pages on**, deployed by Actions (a push to a branch can then never change the site):
+Configured by the agent on 2026-11-10 (PST):
 
-   ```sh
-   gh api -X POST repos/shuv1337/rex-rune/pages -f build_type=workflow
-   ```
+- Pages source: GitHub Actions; custom domain: `pkg.shuv.dev`.
+- Cloudflare DNS-only CNAME `pkg.shuv.dev → shuv1337.github.io`.
+- Account-level Pages domain verification TXT:
+  `_github-pages-challenge-shuv1337.pkg.shuv.dev`. **Keep this record.**
+- `github-pages` permits `master` (bootstrap) and `v*` tags; administrator bypass
+  is off. The signing `release` environment still permits **only v* tags**,
+  requires shuv1337's review, and disallows administrator bypass.
+- Public certificate: `packaging/keys/rex-linux-archive-key.asc`, also on the site.
+  Primary: **4BC4B85F4AF37FA0D834B0B52B192F3817340BAB**.
+  Signing subkey: **55B8D5A1BB0A48B766F0323FB588FF9861CADE75**.
+  Subkey expiry: **2029-11-09 12:14 PST**.
+- Primary custody: shuvbot, `~/rex-signing-backup/openpgp/gnupg/`, encrypted,
+  certify-only, with a separate passphrase in its login Keychain
+  (`rex-linux-openpgp-primary`, account `shuv`). It is offline-style storage
+  on a separate online Mac, not air-gapped storage. A second offline backup is
+  still an operator responsibility.
+- CI has **only the signing subkey**, re-encrypted under a different random
+  passphrase, as `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE`
+  in `release`. The subkey export and passphrase files were uploaded through
+  `gh secret set --env release`, then `gshred -u` removed them on shuvbot.
+  Neither the primary nor its passphrase went to CI.
 
-2. **[User] Add two DNS records** in Cloudflare for `shuv.dev`:
-   - `CNAME` `pkg` → `shuv1337.github.io`, **DNS only** (grey cloud), so GitHub can issue the certificate.
-   - The `TXT` record GitHub shows under account Settings → Pages → **Add a domain** for `pkg.shuv.dev`. It stops anyone else claiming the name on Pages if this site is ever switched off.
-3. **[Agent] Set the domain and wait for the certificate.**
+### Before the first pacman release
 
-   ```sh
-   dig +short CNAME pkg.shuv.dev            # shuv1337.github.io.
-   gh api -X PUT repos/shuv1337/rex-rune/pages -f cname=pkg.shuv.dev
-   gh api repos/shuv1337/rex-rune/pages --jq '{cname, status, cert: .https_certificate.state}'
-   gh api -X PUT repos/shuv1337/rex-rune/pages -F https_enforced=true   # once the certificate is approved
-   ```
-
-4. **[Agent] Let the `github-pages` environment deploy from release tags.** The site is deployed by runs on `v*` tags, and that environment admits only the default branch at first. Add a `v*` tag rule under Settings → Environments → `github-pages`.
-5. **[User] Create the OpenPGP package key on the offline machine.** `scripts/make-package-key.sh` wraps the commands in the approved plan's section 13. It makes a certify-only Ed25519 primary key that never expires and a signing subkey that expires in three years, then writes three files:
-   - `rex-linux-archive-key.asc`: the public certificate;
-   - `package-signing-subkey.asc`: the secret **subkey only**, under its own passphrase;
-   - `package-signing-passphrase.txt`: that passphrase.
-
-   Keep the offline machine's GnuPG directory backed up in two places. Copy the three files to the machine the agent works on. The primary key and its passphrase never leave the offline machine.
-6. **[Agent] Commit the certificate and store the secrets,** then destroy the copies.
-
-   ```sh
-   install -m 644 rex-linux-archive-key.asc packaging/keys/rex-linux-archive-key.asc
-   gpg --show-keys packaging/keys/rex-linux-archive-key.asc     # record both fingerprints in packaging/keys/README.md
-   gh secret set PACKAGE_SIGNING_KEY --repo shuv1337/rex-rune --env release < package-signing-subkey.asc
-   gh secret set PACKAGE_SIGNING_PASSPHRASE --repo shuv1337/rex-rune --env release < package-signing-passphrase.txt
-   gh secret list --repo shuv1337/rex-rune --env release          # names only
-   shred -u package-signing-subkey.asc package-signing-passphrase.txt
-   ```
-
-7. **[Agent] Prove the path end to end before a release depends on it.** Start `repo.yml` on the newest release tag. It needs the signing secrets, so it enters `release`.
-
-   ```sh
-   gh workflow run repo.yml --repo shuv1337/rex-rune --ref vX.Y.Z
-   ```
-
-8. **[User] Approve that run.**
-9. **[Agent] Check the site answers over HTTPS:** `curl -fsSI https://pkg.shuv.dev/rex-linux-archive-key.asc`.
-
-## 5. The Arch repository (after PR U2)
-
-What users do once:
+`repo.yml` has a **bootstrap** mode on master. It publishes only the public key
+and a landing page saying the repository is not available yet. It has no secrets
+and cannot run after any non-draft pacman release exists:
 
 ```sh
-curl -fsSLO https://pkg.shuv.dev/rex-linux-archive-key.asc
-sudo pacman-key --add rex-linux-archive-key.asc
-sudo pacman-key --lsign-key <PRIMARY-FINGERPRINT>
-printf '\n[rex-linux]\nSigLevel = Required\nServer = https://pkg.shuv.dev/arch/$arch\n' | sudo tee -a /etc/pacman.conf
-sudo pacman -Syu rex-linux-bin
+gh workflow run repo.yml --repo shuv1337/rex-rune --ref master -f bootstrap=true
 ```
 
-After that, `sudo pacman -Syu` brings each new version.
+Do not retrofit packages onto 0.5.2 or earlier immutable releases. The first
+production package signatures and databases are produced by **0.5.3**; this
+implementation task does not cut it. A successful fixture test is not proof that
+GitHub's stored production secrets have been exercised.
 
-1. **Publishing is part of the release.** The `arch-package` job builds `rex-linux-bin-X.Y.Z-1-{x86_64,aarch64}.pkg.tar.zst` with no secrets. `publish` signs both, uploads them as release assets, rebuilds the site from the newest five signed releases and signs the database. The `pages` job deploys it. The one approval click covers all of it.
-2. **[Agent] After each release, check from a clean Arch container:**
+Check the DNS, GitHub's Pages domain health and certificate, then enforce HTTPS:
+
+```sh
+dig +short CNAME pkg.shuv.dev
+gh api repos/shuv1337/rex-rune/pages/health
+gh api repos/shuv1337/rex-rune/pages --jq '{cname, https_enforced, cert: .https_certificate.state}'
+gh api -X PUT repos/shuv1337/rex-rune/pages -F https_enforced=true
+curl -fsSI https://pkg.shuv.dev/rex-linux-archive-key.asc
+```
+
+**Never leave a dangling CNAME.** Before disabling Pages, removing its custom
+domain, deleting/renaming/transferring the repository, remove or repoint the
+Cloudflare CNAME first and wait out its 300-second TTL. Keep the account-level
+verification and its TXT record. A host migration must keep the public key and
+repository URL; clients still verify signatures. Do not proxy the CNAME through
+Cloudflare while GitHub provisions/renews its certificate.
+
+## 5. The Arch repository (U2)
+
+### One-time setup on each Arch machine, after 0.5.3 is published
+
+The certificate is published to `keyserver.ubuntu.com`. Import it and locally
+sign **the full primary fingerprint**, not a short ID:
+
+```sh
+sudo pacman-key --init
+sudo pacman-key --keyserver hkps://keyserver.ubuntu.com --recv-keys 4BC4B85F4AF37FA0D834B0B52B192F3817340BAB
+sudo pacman-key --finger 4BC4B85F4AF37FA0D834B0B52B192F3817340BAB
+# Compare the full fingerprint above with the public-key registry in this repo.
+sudo pacman-key --lsign-key 4BC4B85F4AF37FA0D834B0B52B192F3817340BAB
+```
+
+If the keyserver is unavailable, use the same certificate over HTTPS instead
+of `--recv-keys`, then run the fingerprint and local-sign commands above:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSLo rex-linux-archive-key.asc https://pkg.shuv.dev/rex-linux-archive-key.asc
+sudo pacman-key --add rex-linux-archive-key.asc
+```
+
+Add this **once** to `/etc/pacman.conf` (keep the literal `$arch`):
+
+```ini
+[rex-linux]
+SigLevel = Required DatabaseRequired
+Server = https://pkg.shuv.dev/arch/$arch
+```
+
+Then `sudo pacman -Syu rex-linux-bin`. Both package and database signatures are
+mandatory. Future upgrades use `sudo pacman -Syu`, without an AUR helper.
+
+If `~/.local/bin/rex-linux` shadows `/usr/bin/rex-linux`, first uninstall the
+user copy with the install script's `--uninstall` (preferences are retained).
+After installing, `command -v rex-linux` must print `/usr/bin/rex-linux`;
+`pacman -Qi rex-linux-bin` should say `Validated By : Signature`, and
+`/usr/share/rex-linux/channel` must contain `channel=pacman`.
+A later `mise run install` creates a source install and shadows the package again.
+
+### Publishing and rebuilding
+
+1. `arch-package` runs **real makepkg** in a digest-pinned `archlinux:latest`
+   container. It repackages both native tarballs, compares the executable bytes,
+   and uses `CARCH=aarch64` for ARM (nothing is compiled or executed for ARM).
+   Both packages enter the signed checksums, manifest and attestations.
+2. `publish`, behind the existing **single release approval**, signs both
+   packages, adds their detached signatures to the draft, then publishes.
+   It rebuilds the site from the newest **five immutable, signed, stable releases
+   with pacman assets**, numerically ordered. Both architectures are mandatory.
+3. Every rebuild verifies the minisign checksum signature and its tag-bound
+   comment, checks each package digest and OpenPGP signature, and runs real
+   `repo-add --include-sigs`. Only the newest version enters the database;
+   older packages remain available for deliberate `pacman -U <URL>` recovery.
+   The runner signs both databases. **No private key enters a container.**
+4. `pages` deploys the completed artifact. No old site/database state is reused.
+   If publication succeeds but the site build fails, do not edit the release;
+   rerun the repository workflow on a release tag containing this implementation:
 
    ```sh
-   fpr=$(gpg --show-keys --with-colons packaging/keys/rex-linux-archive-key.asc | awk -F: '/^fpr/{print $10; exit}')
-   docker run --rm -e fpr="$fpr" archlinux:base bash -euxc '
-     pacman-key --init
-     curl -fsSLO https://pkg.shuv.dev/rex-linux-archive-key.asc
-     pacman-key --add rex-linux-archive-key.asc
-     pacman-key --lsign-key "$fpr"
-     printf "\n[rex-linux]\nSigLevel = Required\nServer = https://pkg.shuv.dev/arch/\$arch\n" >> /etc/pacman.conf
-     pacman -Syu --noconfirm rex-linux-bin
-     rex-linux --version
-     pacman -Qi rex-linux-bin | grep -E "^(Version|Validated By)"
-     cat /usr/share/rex-linux/channel'
+   gh workflow run repo.yml --repo shuv1337/rex-rune --ref v0.5.3
+   # Withdraw a version, without modifying an immutable release:
+   gh workflow run repo.yml --repo shuv1337/rex-rune --ref v0.5.3 -f exclude=0.5.3
    ```
 
-   Expect the new version, `Validated By : Signature`, and `channel=pacman`.
-3. **[Agent] Check aarch64 on shuvmbp-1** with `pacman -Si rex-linux-bin` once that machine has the repository. There is no official Arch container for aarch64.
-4. **Moving one of the owner's machines from the user install to the package, once:**
-   - **[Agent]** remove the user install: `curl … | sh -s -- --uninstall` (after PR U1), or `bash scripts/install-desktop.sh --uninstall` from a checkout.
-   - **[User, or an agent given `sudo`]** run the five setup commands above.
-   - **[Agent]** confirm `command -v rex-linux` prints `/usr/bin/rex-linux`. A source build installed later with `mise run install` goes to `~/.local/bin` and shadows the package until `mise run uninstall`.
-5. **[Agent] Rebuild the site without a release** (after a withdrawal or a key change): step 7 of section 4, with `-f exclude=X.Y.Z` to leave a version out. **[User]** approves.
+   A withdrawal requires at least one other eligible version; otherwise the
+   rebuild fails and retains the last deployed site. The required reviewer
+   approves the signing environment. Never replay an old site artifact after
+   a withdrawal; rebuild from the releases with the exclusion instead.
+5. CI's `Arch repository tests` workflow (also required by Binary release)
+   uses throwaway keys and two fixture versions in an x86_64 Arch container:
+   real makepkg for both architectures, signed rebuild, `pacman-key`, install,
+   upgrade, altered upstream package rejection, altered package signature refusal,
+   and altered database signature refusal. ARM package bytes/metadata are checked;
+   this is **not** an aarch64 runtime/QEMU test.
 
-**AUR:** not published; see the roadmap's question 2. If it is approved later, the steps are: **[User]** create the AUR account and add an SSH key; **[Agent]** store the key as an environment secret and add the push step; from then on each release pushes the same `PKGBUILD` with the new version and checksums, and the post-release check is `git ls-remote` on the AUR repository showing the new commit.
+### U3 channel markers and receipt
+
+Official CI builds embed `REX_LINUX_CHANNEL=official`; Nix embeds `nix`;
+ordinary builds default to `source`. The same official executable goes into
+all three package formats. Pacman and Debian add a marker next to the prefix's
+`share/rex-linux/`. Debian does **not** configure APT yet.
+
+The tarball's `install.sh` writes `$XDG_DATA_HOME/rex-linux/install.json`
+(default `~/.local/share/rex-linux/install.json`), mode 0600, after successful
+installation. Schema 1 is `{"schema":1,"path":"<resolved binary>","version":"X.Y.Z","sha256":"<hex>"}`.
+Source installs and uninstall remove it. U4 will consume these markers; no
+background update check or self-updater is added here.
 
 ## 6. The APT repository (after PR U5)
 
