@@ -1145,6 +1145,82 @@ fn close_confirmation_opens_on_keep_running_and_return_keeps_it_running() {
 }
 
 #[test]
+fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
+    let mut ws = workspace();
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    // The existing Settings section list exposes About without another shortcut.
+    for _ in 0..6 {
+        press(&mut rt, Key::Down);
+    }
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        rt.state.settings_section,
+        super::panel::SettingsSection::About
+    );
+    assert!(has(&rt, "about-repository"));
+    assert!(
+        rt.elements()
+            .iter()
+            .any(|e| e.text.as_deref() == Some("Rex Linux"))
+    );
+    assert!(
+        rt.elements()
+            .iter()
+            .any(|e| e.text.as_deref() == Some(env!("CARGO_PKG_VERSION")))
+    );
+    assert!(!has(&rt, "about-server"));
+    press(&mut rt, Key::Tab); // Close
+    press(&mut rt, Key::Tab); // Repository
+    assert!(focused(&rt).unwrap().ends_with("about-repository"));
+    press(&mut rt, Key::Enter);
+    press(&mut rt, Key::Tab);
+    press(&mut rt, Key::Text(" ".into()));
+    press(&mut rt, Key::Tab);
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        rt.state.opened_links,
+        vec![
+            super::about::REPOSITORY.to_owned(),
+            super::about::release_url(),
+            format!(
+                "{}/blob/v{}/LICENSE",
+                super::about::REPOSITORY,
+                env!("CARGO_PKG_VERSION")
+            ),
+        ]
+    );
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy"));
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::version_info(&rt.state).as_str())
+    );
+}
+
+#[test]
+fn about_only_reports_the_connected_active_hosts_api() {
+    let mut ws = workspace_hosts(2);
+    ws.hosts[0].model.connected = true;
+    ws.hosts[0].model.protocol.api_revision = 12;
+    ws.hosts[1].model.connected = true;
+    ws.hosts[1].model.protocol.api_revision = 11;
+    assert!(super::about::version_info(&ws).contains("Server API revision: 12"));
+    ws.active = 1;
+    assert!(super::about::version_info(&ws).contains("Server API revision: 11"));
+    ws.hosts[1].model.connected = false;
+    assert!(!super::about::version_info(&ws).contains("Server API"));
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    ws.open_section(super::panel::SettingsSection::About);
+    ws.hosts[1].model.connected = true;
+    let rt = runtime(ws);
+    assert!(has(&rt, "about-server"));
+}
+
+#[test]
 fn the_toolbar_settings_button_opens_settings() {
     let mut rt = runtime(workspace());
     // The root eases from the default viewport to the window's before the right end is on screen.

@@ -181,15 +181,17 @@ pub enum SettingsSection {
     Integrations,
     Hosts,
     Shortcuts,
+    About,
 }
 impl SettingsSection {
-    pub const ALL: [SettingsSection; 6] = [
+    pub const ALL: [SettingsSection; 7] = [
         SettingsSection::Interface,
         SettingsSection::Terminal,
         SettingsSection::Notifications,
         SettingsSection::Integrations,
         SettingsSection::Hosts,
         SettingsSection::Shortcuts,
+        SettingsSection::About,
     ];
     pub fn title(self) -> &'static str {
         match self {
@@ -199,6 +201,7 @@ impl SettingsSection {
             SettingsSection::Integrations => "Integrations",
             SettingsSection::Hosts => "Remote Hosts",
             SettingsSection::Shortcuts => "Shortcuts",
+            SettingsSection::About => "About",
         }
     }
     pub fn key(self) -> &'static str {
@@ -209,6 +212,7 @@ impl SettingsSection {
             SettingsSection::Integrations => "integrations",
             SettingsSection::Hosts => "hosts",
             SettingsSection::Shortcuts => "shortcuts",
+            SettingsSection::About => "about",
         }
     }
 }
