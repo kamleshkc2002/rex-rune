@@ -26,8 +26,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const PADDING: f32 = 8.;
-
 pub struct Term {
     pub connection: Connection,
     pub frame: Option<Arc<Frame>>,

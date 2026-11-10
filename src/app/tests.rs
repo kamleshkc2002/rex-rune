@@ -542,6 +542,132 @@ fn a_single_pane_is_full_bleed_and_a_split_keeps_its_cards() {
 }
 
 #[test]
+fn compact_separators_are_straight_full_length_lines_in_both_directions() {
+    for vertical in [false, true] {
+        for dragging in [false, true] {
+            let mut rt = Runtime::new(
+                (vertical, dragging),
+                |&(vertical, dragging), _| {
+                    super::panes::divider_handle(
+                        rune::el().size(100., 100.),
+                        vertical,
+                        dragging,
+                        true,
+                    )
+                },
+                (100., 100.),
+                Env::new(true, 1.),
+            );
+            rt.frame(0.);
+            let line = rt
+                .elements()
+                .into_iter()
+                .find(|e| e.key.as_deref() == Some("divider-line"))
+                .unwrap();
+            assert_eq!(
+                line.rect,
+                if vertical {
+                    [5., 0., 1., 100.]
+                } else {
+                    [0., 5., 100., 1.]
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn pane_density_switch_saves_and_keeps_split_geometry_and_reconnect_controls() {
+    use rex_linux::settings::PaneDensity;
+    let (mut ws, _rx) = tabbed_workspace("split");
+    let (sender, _terminal_rx) = flume::unbounded();
+    live_terminal(&mut ws, "block:b", &sender);
+    live_terminal(&mut ws, "block:c", &sender);
+    ws.terminals[&ws.term_key("block:c")]
+        .connection
+        .model
+        .lock()
+        .unwrap()
+        .connected = false;
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    assert!(has(&rt, "pane-density"));
+    for (label, density) in [
+        ("Compact", PaneDensity::Compact),
+        ("Comfortable", PaneDensity::Comfortable),
+        ("Compact", PaneDensity::Compact),
+    ] {
+        let r = rt
+            .elements()
+            .into_iter()
+            .find(|e| e.text.as_deref() == Some(label))
+            .unwrap()
+            .rect;
+        let (x, y) = (r[0] + r[2] / 2., r[1] + r[3] / 2.);
+        rt.pointer_down(x, y);
+        rt.pointer_up(x, y);
+        for _ in 0..4 {
+            rt.frame(1. / 60.);
+        }
+        assert_eq!(rt.state.settings.pane_density, density);
+        assert_eq!(
+            Settings::load(&rt.state.settings_path)
+                .unwrap()
+                .pane_density,
+            density
+        );
+    }
+    press(&mut rt, Key::Escape);
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    assert!(!has(&rt, "pane-header:block:b") && !has(&rt, "pane-header:block:c"));
+    assert!(has(&rt, "strip-action:block:c"), "Retry remains available");
+    let rect = |key: &str| {
+        rt.elements()
+            .into_iter()
+            .find(|e| e.key.as_deref() == Some(key))
+            .unwrap()
+            .rect
+    };
+    let left = rect("pane:block:b");
+    let right = rect("pane:block:c");
+    assert_eq!(left[0], 0.);
+    assert_eq!(left[0] + left[2], right[0], "no gap or overlap");
+    assert_eq!(right[0] + right[2], rt.state.area[2]);
+    assert_eq!(left[3], rt.state.area[3]);
+    assert_eq!(rect("divider-line"), [right[0], right[1], 1., right[3]]);
+    let divider = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref().is_some_and(|k| k.starts_with("divider:")))
+        .unwrap()
+        .rect;
+    let (x, y) = (divider[0] + divider[2] / 2., divider[1] + divider[3] / 2.);
+    rt.pointer_down(x, y);
+    rt.pointer_move(x + 100., y);
+    rt.frame(1. / 60.);
+    let expected = 0.5 + 100. / rt.state.area[2] as f64;
+    assert!((rt.state.drag.as_ref().unwrap().ratio - expected).abs() < 0.001);
+    rt.pointer_up(x + 100., y);
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    rt.update(|s, _| s.pane_menu("block:c".into(), None));
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    let outline = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("target-outline"))
+        .unwrap()
+        .rect;
+    assert_eq!(outline, right);
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
 fn split_pane_headers_show_their_own_status_word() {
     use rex_linux::connection::activity::{BlockedKind, ProgramState::*};
     let (mut ws, _rx) = tabbed_workspace("split");
@@ -2863,6 +2989,88 @@ fn a_clipboard_paste_reaches_only_the_pane_that_asked_while_it_stays_focused() {
             "focus moved: {move_focus}"
         );
         std::fs::remove_file(&rt.state.settings_path).ok();
+    }
+}
+
+#[test]
+fn pane_padding_controls_reach_zero_and_save() {
+    let mut ws = workspace();
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    click(&mut rt, "settings-section:terminal");
+    for _ in 0..9 {
+        click(&mut rt, "pane-padding-smaller");
+    }
+    assert_eq!(rt.state.settings.pane_padding, 0.);
+    assert_eq!(
+        Settings::load(&rt.state.settings_path)
+            .unwrap()
+            .pane_padding,
+        0.
+    );
+    click(&mut rt, "pane-padding-larger");
+    assert_eq!(rt.state.settings.pane_padding, 1.);
+    assert_eq!(
+        Settings::load(&rt.state.settings_path)
+            .unwrap()
+            .pane_padding,
+        1.
+    );
+    std::fs::remove_file(&rt.state.settings_path).unwrap();
+}
+
+#[test]
+fn pane_padding_changes_every_grid_without_changing_pane_placements() {
+    use rex_linux::settings::PaneDensity;
+    for tab in ["single", "split"] {
+        for density in [PaneDensity::Compact, PaneDensity::Comfortable] {
+            let (mut ws, _rx) = tabbed_workspace(tab);
+            ws.settings.pane_density = density;
+            ws.settings.pane_padding = 0.;
+            let blocks = if tab == "single" {
+                vec!["block:a"]
+            } else {
+                vec!["block:b", "block:c"]
+            };
+            let (sender, _terminal_rx) = flume::unbounded();
+            for block in &blocks {
+                live_terminal(&mut ws, block, &sender);
+            }
+            let mut rt = runtime(ws);
+            for _ in 0..90 {
+                rt.frame(1. / 60.);
+            }
+            let rect = |rt: &Runtime<Workspace>, key: &str| {
+                rt.elements()
+                    .into_iter()
+                    .find(|e| e.key.as_deref() == Some(key))
+                    .unwrap()
+                    .rect
+            };
+            let before: Vec<_> = blocks
+                .iter()
+                .map(|block| {
+                    (
+                        rect(&rt, &format!("pane:{block}")),
+                        rect(&rt, &format!("grid:{block}")),
+                    )
+                })
+                .collect();
+            rt.update(|s, _| s.settings.pane_padding = 8.);
+            for _ in 0..4 {
+                rt.frame(1. / 60.);
+            }
+            for (block, (pane, grid)) in blocks.iter().zip(before) {
+                assert_eq!(rect(&rt, &format!("pane:{block}")), pane);
+                let padded = rect(&rt, &format!("grid:{block}"));
+                assert_eq!(
+                    padded,
+                    [grid[0] + 8., grid[1] + 8., grid[2] - 16., grid[3] - 16.]
+                );
+                assert_eq!(rt.state.terminals[&rt.state.term_key(block)].rect, padded);
+            }
+            std::fs::remove_file(&rt.state.settings_path).ok();
+        }
     }
 }
 
