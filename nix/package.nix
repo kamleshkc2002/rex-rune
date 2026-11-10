@@ -55,7 +55,7 @@ let
 in
 rustPlatform.buildRustPackage {
   pname = "rex-linux";
-  version = "0.5.2";
+  version = "0.5.3";
   src = lib.cleanSourceWith {
     src = lib.cleanSource ../.;
     # Keep local build trees out of `path:` builds.

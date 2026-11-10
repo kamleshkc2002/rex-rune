@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.5.3 - 2026-11-10
+
+### Added
+
+- Signed Arch pacman repository at `https://pkg.shuv.dev/arch/$arch`, with x86_64 and aarch64 packages, signed repository databases and package signatures. See the [setup and migration instructions](docs/auto-update-operator-walkthrough.md#5-the-arch-repository-u2).
+- Install channel markers and installer receipts; About identifies the installation channel. Nix installation guidance is available in `docs/nix.md`.
+
 ## 0.5.2 - 2026-11-10
 
 ### Added
