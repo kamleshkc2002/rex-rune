@@ -12,6 +12,8 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 ## Features
 
+- **Settings → About** shows the app version, build commit and date, and the active server’s negotiated API revision when connected. Open the repository, this version’s release notes or MIT license, or **Copy version info** for a bug report (OS and architecture included; no host addresses or credentials). Source archives without Git show `unknown` for build metadata. Install channel and server software version are not inferred.
+
 - Multiple saved hosts, each with its sessions; session windows are tabs and splits follow the server's layout.
 - Unix-socket, HTTPS/WSS and SSH endpoints. Add host lists the machines on your tailnet: a server that answers shows its reachable endpoint and, on API 12, a review of its listener addresses and access rules before connecting. Other machines take an SSH user name and are reached by forwarding their Rex socket over SSH (Tailscale SSH needs no keys).
 - A single toolbar with session identity, tabs, commands and the window's own controls. A tab with one pane draws it edge to edge; splits are rounded pane cards. Tabs close from their right-click menu, a middle-click or `Ctrl Shift W`, always behind a confirmation. Host-grouped session navigation opens on demand, with an optional sidebar (Ctrl Shift B) that opens at launch as it was left. Tabs can sit in the toolbar or, while the sidebar is open, under each session in the sidebar.

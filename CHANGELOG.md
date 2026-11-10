@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Settings → About with app version, build commit/date, connected server API revision, repository/release/license links and Copy version info for bug reports.
+
 ## 0.5.0 - 2026-11-10
 
 ### Added

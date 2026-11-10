@@ -1,4 +1,5 @@
 //! The Rune front end.
+mod about;
 mod actions;
 mod activity;
 mod bindings;

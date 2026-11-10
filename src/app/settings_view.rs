@@ -749,6 +749,7 @@ pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
         SettingsSection::Integrations => super::integrations::section(s),
         SettingsSection::Hosts => hosts(s),
         SettingsSection::Shortcuts => shortcuts(s),
+        SettingsSection::About => super::about::section(s),
     };
     let content = col()
         .grow(1.)
