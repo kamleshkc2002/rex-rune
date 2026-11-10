@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Support Rex API revisions **10–13**, including the official Arch snapshot `0.0.1794323808-g757adf`. Refresh the vendored SDK for the additive `terminal.download_begin` method; existing attachment, upload gating and per-host remote-control consent remain unchanged. File-download UI is not enabled. See [API-13 compatibility notes](docs/server-api13.md).
+
+## Unreleased
+
 ## 0.5.1 - 2026-11-10
 
 ### Added

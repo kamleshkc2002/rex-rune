@@ -56,7 +56,7 @@ bash install.sh
 
 The tarball installs into `~/.local/bin` with a desktop launcher and icons, independently of any source checkout. It needs `desktop-file-utils`; uninstall with `bash scripts/install-desktop.sh --uninstall`. Uninstall a `.deb` with `sudo apt remove rex-linux`. Neither removes preferences or changes Rex servers. Avoid mixing both installation methods: a user installation can shadow `/usr/bin/rex-linux`.
 
-Prebuilt packages are built on Ubuntu 24.04 and require **glibc 2.39+**. They are dynamically linked, not self-contained AppImages. Install your distribution's graphics drivers, fontconfig (including `fc-match`), xkbcommon, Wayland/X11, EGL/OpenGL/Vulkan libraries, CA certificates and `xdg-utils`. On Debian/Ubuntu the `.deb` declares these dependencies. Rust and Zig are **not** needed to run a binary. A running Rex server with API revision 10, 11 or 12 is required.
+Prebuilt packages are built on Ubuntu 24.04 and require **glibc 2.39+**. They are dynamically linked, not self-contained AppImages. Install your distribution's graphics drivers, fontconfig (including `fc-match`), xkbcommon, Wayland/X11, EGL/OpenGL/Vulkan libraries, CA certificates and `xdg-utils`. On Debian/Ubuntu the `.deb` declares these dependencies. Rust and Zig are **not** needed to run a binary. A running Rex server with API revision 10, 11, 12 or 13 is required.
 
 ### Verify a download
 
@@ -106,7 +106,7 @@ Older releases do not gain signatures or attestations retroactively.
 - Rust 1.96 or newer (edition 2024; see `rust-version` in `Cargo.toml`).
 - [Zig](https://ziglang.org/) 0.17.x. The `ghostty-vt` crate builds Ghostty's VT library from a checksum-pinned source archive with Zig.
 - Linux with Wayland or X11, plus the usual graphics/input libraries: Vulkan, xkbcommon, fontconfig and the Wayland/X11 client libraries.
-- A running Rex server that supports API revision 10, 11 or 12. Verified with Linux server **0.1.0-preview.14 (`7e460d0`, API 12)**; see [compatibility results](docs/server-preview14.md). Rex is in alpha, so older revisions aren't supported; update Rex on a host that refuses the connection. Uploading files needs revision 11.
+- A running Rex server that supports API revision 10, 11, 12 or 13. Verified with Linux servers **0.0.1794323808-g757adf (API 13)** and **0.1.0-preview.14 (`7e460d0`, API 12)**; see [API-13 compatibility results](docs/server-api13.md) and [preview.14 results](docs/server-preview14.md). Rex is in alpha, so older revisions aren't supported; update Rex on a host that refuses the connection. Uploading files needs revision 11.
 
 ## Build
 
@@ -444,7 +444,7 @@ See [AGENTS.md](AGENTS.md) for the code layout and contributor conventions, and 
 Three dependencies are vendored with small, documented patches and wired in through `[patch]` in `Cargo.toml`:
 
 - [`vendor/rune/`](vendor/rune/README.md): the `rune`, `rune-motion`, `rune-staging` and `procwatch` crates from `anomalyco/rune` at `100b7d9` (MIT), with dead-key forwarding and window-chrome additions for a borderless Linux window (maximize/restore, minimize, edge resize, window menu, native window icon).
-- [`vendor/rexrs/`](vendor/rexrs/REX-LINUX.md): `a10y/rexrs` at `780be3f` (MIT OR Apache-2.0), plus revision-12 generated types, explicit API-revision range negotiation and preservation of an empty `attach_session_ids`.
+- [`vendor/rexrs/`](vendor/rexrs/REX-LINUX.md): `a10y/rexrs` at `780be3f` (MIT OR Apache-2.0), plus revision-13 generated types, explicit API-revision range negotiation and preservation of an empty `attach_session_ids`.
 - [`vendor/ghostty-vt/`](vendor/ghostty-vt/REX-LINUX.md): the crates.io `ghostty-vt` 0.8.0 source (Apache-2.0; Ghostty itself is MIT), plus a safe wrapper for Ghostty's render-state image iterator, image-aware snapshot decoding, a fixed temporary-file medium setting and grayscale PNG normalization.
 
 Each patch is meant to be dropped once the corresponding upstream release has equivalent APIs.
@@ -470,7 +470,7 @@ Other crates are used under their own licenses; see `Cargo.lock`.
 
 ## Acknowledgements
 
-- [Superlogical Rex](https://www.superlogical.com/rex), the server and protocol this client speaks. The implementation follows the server's `/llms.txt` API revision 12 contract; revisions 10 and 11 are also supported.
+- [Superlogical Rex](https://www.superlogical.com/rex), the server and protocol this client speaks. The implementation follows the server's `/llms.txt` API revision 13 contract; revisions 10–12 are also supported.
 - [anomalyco/rune](https://github.com/anomalyco/rune) and [a10y/rexrs](https://github.com/a10y/rexrs).
 - [Ghostty](https://github.com/ghostty-org/ghostty) for the terminal core.
 - [m4nik1/rex-linux-client](https://github.com/m4nik1/rex-linux-client) and [noahdunnagan/rmx](https://github.com/noahdunnagan/rmx), whose protocol work served as references.

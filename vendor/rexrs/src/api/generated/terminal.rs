@@ -177,6 +177,81 @@ impl crate::api::BlockMethod for ClipboardRead {
     type Response = ClipboardReadResponse;
 }
 
+/// The result of [`DownloadBegin`].
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
+pub struct DownloadBeginResponse {
+    /// A single-use ticket to send in the HELLO message that opens the data connection. Only a data
+    /// connection from the same user can use it. Left out with not_modified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ticket: Option<String>,
+    /// How long the ticket stays valid after the server issues it, in milliseconds. Left out with
+    /// not_modified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_in_ms: Option<u64>,
+    /// The file still has the version named in if_none_match, so the client's copy is current.
+    /// There is no ticket and nothing to download.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub not_modified: Option<bool>,
+    /// The absolute path of the file, with symlinks left as they are.
+    pub path: String,
+    /// The file's name: the last element of path.
+    pub name: String,
+    /// The file's size in bytes when it was opened, for showing progress only. The stream may carry
+    /// more or fewer bytes if the file changes.
+    pub size: i64,
+    /// The file's modification time when it was opened, as an RFC 3339 timestamp. Programs can set
+    /// it to anything, so use version to tell whether the file changed.
+    pub modified_at: String,
+    /// An opaque string that changes whenever the file's contents may have, for caching. The same
+    /// path with the same version has the same contents. Left out when the file changed within the
+    /// last second, or when the server can't tell, and then the download must not be cached.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+/// Open a file on the terminal's machine for download, and get a ticket for the rex.data.bytes.v1
+/// data stream that carries its bytes from the terminal. A relative path is relative to the working
+/// directory of the terminal's foreground process. Only regular files can be downloaded.
+///
+/// Wire method: `com.superlogical.terminal.download_begin`.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
+#[non_exhaustive]
+pub struct DownloadBegin {
+    /// The data reference for the file's stream: download: followed by a new UUID in lower-case
+    /// canonical form, which the client chooses.
+    pub r#ref: String,
+    /// The file to download. A relative path is relative to the working directory of the terminal's
+    /// foreground process, and a leading ~ is the home directory.
+    pub path: String,
+    /// The version of the copy the client already has, from an earlier result for the same path. If
+    /// the file still has it, the result has not_modified and no ticket.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub if_none_match: Option<String>,
+}
+
+impl DownloadBegin {
+    /// Creates a `DownloadBegin` with its required fields.
+    pub fn new(r#ref: impl Into<String>, path: impl Into<String>) -> Self {
+        Self {
+            r#ref: r#ref.into(),
+            path: path.into(),
+            if_none_match: Default::default(),
+        }
+    }
+
+    /// The version of the copy the client already has, from an earlier result for the same path. If
+    /// the file still has it, the result has not_modified and no ticket.
+    pub fn if_none_match(mut self, value: impl Into<String>) -> Self {
+        self.if_none_match = Some(value.into());
+        self
+    }
+}
+
+impl crate::api::BlockMethod for DownloadBegin {
+    const NAME: &'static str = "com.superlogical.terminal.download_begin";
+    type Response = DownloadBeginResponse;
+}
+
 /// The result of [`Format`].
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
 pub struct FormatResponse {
