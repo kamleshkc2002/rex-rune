@@ -2,11 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Signed one-command user installer, published as immutable `install.sh` and `install.sh.minisig` release assets. Embedded CI and backup keys verify release checksums with minisign or OpenSSL 3+ before any downloaded code runs. Supports upgrades, checks, explicit version pins and uninstall; refuses automatic downgrades. Repository-key fallback is opt-in only (`--trust-repo-keys`).
+
 ### Changed
 
 - Support Rex API revisions **10–13**, including the official Arch snapshot `0.0.1794323808-g757adf`. Refresh the vendored SDK for the additive `terminal.download_begin` method; existing attachment, upload gating and per-host remote-control consent remain unchanged. File-download UI is not enabled. See [API-13 compatibility notes](docs/server-api13.md).
-
-## Unreleased
 
 ## 0.5.1 - 2026-11-10
 

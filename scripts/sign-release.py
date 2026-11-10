@@ -15,13 +15,16 @@ import subprocess
 import tempfile
 
 
-FILES = ("latest.json", "SHA256SUMS")
+FILES = ("latest.json", "SHA256SUMS", "install.sh")
 spec = importlib.util.spec_from_file_location("manifest", Path(__file__).with_name("release-manifest.py"))
 manifest = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(manifest)
 
 
 def verify(dist, keys, tag):
+    source = Path(__file__).resolve().parent.parent / "packaging/install/install.sh"
+    if (dist / "install.sh").read_bytes() != source.read_bytes():
+        raise ValueError("install.sh differs from the reviewed source")
     for name in FILES:
         for key in keys:
             result = subprocess.run(

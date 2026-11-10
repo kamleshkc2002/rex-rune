@@ -34,7 +34,16 @@ def fixtures(dist):
     (dist / "SHA256SUMS").write_text("".join(
         f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in sorted(packages.items())
     ))
+    (dist / "install.sh").write_bytes((SCRIPTS.parent / "packaging/install/install.sh").read_bytes())
     return packages
+
+
+class InstallerKeyTests(unittest.TestCase):
+    def test_embedded_keys_match_registry(self):
+        script = (SCRIPTS.parent / "packaging/install/install.sh").read_text()
+        for constant, name in (("CI_KEY", "release.pub"), ("BACKUP_KEY", "release-backup.pub")):
+            key = (SCRIPTS.parent / "packaging/keys" / name).read_text().splitlines()[1]
+            self.assertEqual(script.count(f"{constant}=\'{key}\'"), 1)
 
 
 class ManifestTests(unittest.TestCase):
@@ -170,7 +179,7 @@ class SigningTests(unittest.TestCase):
                 self.env["RELEASE_MINISIGN_KEY"] = (self.root / f"{key}.key").read_text()
                 result = self.run_sign()
                 self.assertEqual(result.returncode, 0, result.stderr)
-                for name in ("latest.json", "SHA256SUMS"):
+                for name in ("latest.json", "SHA256SUMS", "install.sh"):
                     self.assertIn(f"trusted comment: rex-linux v{VERSION} {name}", (self.dist / f"{name}.minisig").read_text())
                 self.assertEqual(self.run_sign("--verify-only").returncode, 0)
 
@@ -184,7 +193,7 @@ class SigningTests(unittest.TestCase):
 
     def test_tampering_either_file_fails(self):
         self.assertEqual(self.run_sign().returncode, 0)
-        for name in ("latest.json", "SHA256SUMS"):
+        for name in ("latest.json", "SHA256SUMS", "install.sh"):
             path = self.dist / name
             original = path.read_bytes()
             path.write_bytes(original + b"tampered")
@@ -192,7 +201,7 @@ class SigningTests(unittest.TestCase):
             path.write_bytes(original)
 
     def test_wrong_trusted_comment_fails(self):
-        for name in ("latest.json", "SHA256SUMS"):
+        for name in ("latest.json", "SHA256SUMS", "install.sh"):
             with self.subTest(name=name):
                 self.assertEqual(self.run_sign().returncode, 0)
                 # A cryptographically valid signature must still bind the exact tag/file.

@@ -40,6 +40,41 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 ## Install a binary release
 
+### One-command user install or upgrade (0.5.2+)
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh
+# Explicit upgrade, check, pin (including deliberate downgrade), or uninstall:
+# ... | sh -s -- --upgrade
+# ... | sh -s -- --check
+# ... | sh -s -- --version 0.5.1
+# ... | sh -s -- --uninstall
+```
+
+The signed, immutable release asset detects x86_64/aarch64 Linux and requires
+**glibc 2.39+**, `curl`, `tar`, coreutils, `bash`, `desktop-file-utils`, and either
+**minisign or OpenSSL 3+**. It verifies the signed checksums with embedded CI and
+backup keys, verifies the tarball, then installs to `~/.local/bin` with a launcher
+and icons. `XDG_BIN_HOME`, `XDG_DATA_HOME` and `XDG_CACHE_HOME` are respected.
+No root, server changes or automatic downgrade. Uninstall keeps preferences.
+NixOS users should use [Nix](docs/nix.md); musl is unsupported.
+
+**Pipe-to-shell is trust on first use:** HTTPS and GitHub deliver the script you
+execute. Its detached `install.sh.minisig` can be verified with a separately
+trusted key before running a saved copy; retain that reviewed copy for upgrades.
+The script's body runs only after the complete function has downloaded. Package
+verification is mandatory; there is no unsigned mode. A saved script with old
+keys fails closed after rotation. **Only** explicit `--trust-repo-keys` expands
+trust to keys at the requested release's protected tag (never `master`), printing
+the key ID and fingerprint. Prefer fetching and reviewing the current script.
+
+`/usr/bin/rex-linux` or a mismatching install receipt blocks replacement;
+`--force` deliberately overrides those guards, **not signature checks or downgrade
+protection**. A receipt requires Python 3 to validate; pre-receipt installs such
+as 0.5.1 upgrade without it. Avoid mixing user installs and package managers.
+
+### Manual download
+
 Download a package and `SHA256SUMS` from [Releases](https://github.com/shuv1337/rex-rune/releases). Choose **x86_64 / amd64** for Intel/AMD or **aarch64 / arm64** for ARM64. For signed releases, [verify the signature](#verify-a-download) before installing.
 
 ```sh
@@ -60,9 +95,9 @@ Prebuilt packages are built on Ubuntu 24.04 and require **glibc 2.39+**. They ar
 
 ### Verify a download
 
-The signed-release pipeline adds `SHA256SUMS.minisig`, `latest.json`, and
-`latest.json.minisig`. It requires [owner key setup](docs/releases.md#owner-setup-before-the-first-signed-release)
-before its first release; v0.4.2 and earlier remain unsigned. The CI public key is
+Releases from 0.5.0 include `SHA256SUMS.minisig`, `latest.json`, and
+`latest.json.minisig`; from 0.5.2, `install.sh` and `install.sh.minisig` too.
+Both release keys are configured; v0.4.2 and earlier remain unsigned. The CI public key is
 committed as [`packaging/keys/release.pub`](packaging/keys/release.pub):
 
 - Minisign key ID: `A1FD78C27652816E`.
