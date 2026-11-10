@@ -179,10 +179,14 @@ Configured by the agent on 2026-11-10 (PST):
   Signing subkey: **55B8D5A1BB0A48B766F0323FB588FF9861CADE75**.
   Subkey expiry: **2029-11-09 12:14 PST**.
 - Primary custody: shuvbot, `~/rex-signing-backup/openpgp/gnupg/`, encrypted,
-  certify-only, with a separate passphrase in its login Keychain
-  (`rex-linux-openpgp-primary`, account `shuv`). It is offline-style storage
-  on a separate online Mac, not air-gapped storage. A second offline backup is
-  still an operator responsibility.
+  certify-only, as the working copy. Its separate passphrase is in the owner's
+  1Password Personal vault (item "Rex Linux pacman-repo OpenPGP primary
+  (4BC4…0BAB)") since 2026-11-10; the login Keychain item
+  `rex-linux-openpgp-primary` was deleted after a restore test. That item also
+  holds an encrypted secret-key export (primary plus CI subkey) and the
+  revocation certificate. It is offline-style storage on a separate online Mac,
+  not air-gapped storage. A non-cloud offline backup is still an operator
+  responsibility.
 - CI has **only the signing subkey**, re-encrypted under a different random
   passphrase, as `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE`
   in `release`. The subkey export and passphrase files were uploaded through
@@ -212,10 +216,11 @@ out of the window instead of blocking rebuilds for ever; `publish` passes
 short retry while the releases API catches up; `publish` and `repo.yml` share one
 concurrency group, so two rebuilds never interleave.
 
-Still open, by design, for the operator before 0.5.3: a **second offline copy** of
-the encrypted primary and its revocation certificate, stored apart from shuvbot,
-and moving the primary's passphrase out of the auto-unlocked login Keychain into
-a password manager or a separately locked keychain. A withdrawal via `exclude`
+Done on 2026-11-10: the primary's passphrase moved out of the auto-unlocked login
+Keychain into 1Password, with an encrypted copy of the primary and its revocation
+certificate in the same item, apart from shuvbot. Still open, by design, for the
+operator before 0.5.3: a **non-cloud offline copy** of the encrypted primary and
+its revocation certificate. A withdrawal via `exclude`
 applies to one run only; make a withdrawal permanent by marking the release as a
 prerelease, which the selection honours (GitHub keeps that flag editable on
 immutable releases), and only if that fails by committing an `exclude` default.
