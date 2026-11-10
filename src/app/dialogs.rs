@@ -262,7 +262,8 @@ fn toast(key: String, message: String, close: impl Fn(&mut Workspace) + 'static)
 
 pub fn toasts(s: &Workspace) -> Option<El> {
     let host = s.model().notice.clone();
-    if s.notices.is_empty() && host.is_none() {
+    let update = super::updates::toast_card(s);
+    if s.notices.is_empty() && host.is_none() && update.is_none() {
         return None;
     }
     let region = col().key("toasts").role("status").w(340.).gap(8.);
@@ -270,6 +271,9 @@ pub fn toasts(s: &Workspace) -> Option<El> {
         NoticePosition::TopRight => region.pin(None, Some(TOOLBAR + 4.), Some(MARGIN + 6.), None),
         NoticePosition::BottomRight => region.pin(None, None, Some(MARGIN + 6.), Some(MARGIN + 6.)),
     };
+    if let Some(card) = update {
+        region = region.child(card);
+    }
     if let Some(text) = host {
         let active = s.active;
         region = region.child(toast(
@@ -278,7 +282,11 @@ pub fn toasts(s: &Workspace) -> Option<El> {
             move |s: &mut Workspace| s.dismiss_host_notice(active),
         ));
     }
-    let room = if s.model().notice.is_some() { 2 } else { 3 };
+    let room = 3usize
+        .saturating_sub(usize::from(s.model().notice.is_some()))
+        .saturating_sub(usize::from(
+            s.updates.visible_notice(s.settings.updates.check).is_some(),
+        ));
     for notice in s.notices.iter().rev().take(room) {
         let id = notice.id;
         region = region.child(toast(

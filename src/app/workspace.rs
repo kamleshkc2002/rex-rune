@@ -131,6 +131,7 @@ pub struct Workspace {
     pub theme_dirs: ThemeDirs,
     /// The Ghostty themes the theme picker lists, read when it opens.
     pub themes: Vec<ThemeInfo>,
+    pub updates: super::updates::Updates,
 }
 
 #[derive(Default)]
@@ -258,7 +259,9 @@ impl Workspace {
             term_theme,
             theme_dirs,
             themes: Vec::new(),
+            updates: Default::default(),
         };
+        this.init_updates();
         if let Some(error) = theme_error {
             this.notify(format!("{error:#}; following the server's colours"));
         }
@@ -1312,6 +1315,8 @@ impl Workspace {
                 self.panel = Some(Panel::new(PanelKind::Settings, "Settings", &[]));
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
             }
+            Intent::Updates => self.open_updates_settings(),
+            Intent::CheckUpdates => self.check_updates_now(),
             Intent::EditHost(host) => {
                 let h = self.settings.hosts[host].clone();
                 self.open_panel(

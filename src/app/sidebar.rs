@@ -524,6 +524,7 @@ pub fn sidebar_edge(s: &Workspace) -> El {
         el().key("sidebar-edge").w(10.).ml(-1.).mr(-9.).h_full(),
         true,
         s.sidebar_drag_start.is_some(),
+        false,
     )
     .on_drag(|s: &mut Workspace, d, tx| {
         let start = *s.sidebar_drag_start.get_or_insert(s.sidebar.width());

@@ -59,6 +59,7 @@
               zig.packages.${system}."0.17.1"
             ];
             inherit (package) GHOSTTY_SOURCE_DIR GHOSTTY_ZIG_SYSTEM_DIR ZIG;
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath package.runtimeLibraries;
           };
         }
       );

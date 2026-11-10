@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.6.0 - 2026-11-10
+
+### Added
+
+- **In-app update notice and Settings → Updates:** on startup (after 30 seconds) and at most once every 24 hours while running, checks the signed GitHub release manifest (`latest.json` and `latest.json.minisig`) against the embedded CI and backup Minisign public keys (`packaging/keys/release.pub` and `packaging/keys/release-backup.pub`). When a newer stable release is verified, shows a non-blocking update toast with **What's new** (opens the release page in your browser without rendering remote HTML or markdown), **Updates…** and **Dismiss for this version**. Guidance matches the detected install channel (`REX_LINUX_CHANNEL`, `/usr/share/rex-linux/channel` and `~/.local/share/rex-linux/install.json`): `sudo pacman -Syu rex-linux-bin` on Arch (`omarchy update` on Omarchy), the verified `install.sh` one-command upgrade for tarball/script installs, `.deb` upgrade instructions for Debian/Ubuntu, and `nix flake update rex-rune` / `nix profile upgrade rex-linux` for Nix. Includes `rex-linux --check-update`, a **Check now** action, and opt-out via Settings → Updates (`updates.check` in `workspace.json`) or `REX_LINUX_NO_UPDATE_CHECK=1`; source builds never check automatically, background check failures back off for 24 hours silently, and the client never self-updates or downloads binaries.
+- **Pane density and padding:** Settings → Interface → **Pane density** adds a **Compact** mode alongside **Comfortable** (default), removing split pane headers, rounded card borders, shadows, gaps and outer margins in favour of 1 pt split separators while keeping split geometry, divider dragging and floating reconnect controls. Settings → Terminal → **Pane padding** adjusts uniform terminal content padding from 0 to 32 pt (default 8 pt) live without restarting. Adapted from [Loric ANDRE (@LoricAndre)](https://github.com/LoricAndre) ([LoricAndre/rex-rune](https://github.com/LoricAndre/rex-rune), `fd4e753`, `e0be986`, `d3a9cbe`).
+
+### Changed
+
+- **Uniform default pane padding:** terminal content now uses uniform 8 pt padding on all four sides in every pane by default (replacing the previous 12 pt horizontal, 8 pt bottom, and 0 pt split-card top padding), so single panes and split cards share identical inset geometry at a given **Pane padding** setting.
+
 ## 0.5.3 - 2026-11-10
 
 ### Added

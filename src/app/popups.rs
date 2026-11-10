@@ -62,7 +62,12 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
     let ([x, y, w, h], radius) = if bleed {
         ([0., 0., aw, ah], 0.)
     } else {
-        (super::panes::card_rect(s, placement.rect), CARD_RADIUS)
+        let radius = if s.settings.pane_density == rex_linux::settings::PaneDensity::Compact {
+            0.
+        } else {
+            CARD_RADIUS
+        };
+        (super::panes::card_rect(s, placement.rect), radius)
     };
     Some(
         el().key("target-outline")

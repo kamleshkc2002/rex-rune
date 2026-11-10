@@ -30,6 +30,15 @@ pub enum NoticePosition {
     BottomRight,
 }
 
+/// The space and decorations around terminal panes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PaneDensity {
+    Compact,
+    #[default]
+    Comfortable,
+}
+
 /// What program activity shows in tabs and which changes become desktop notifications.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -55,6 +64,18 @@ impl Default for NotificationsConfig {
             done: true,
             program_messages: true,
         }
+    }
+}
+
+/// Whether the client checks for signed release metadata in the background.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UpdatesConfig {
+    pub check: bool,
+}
+impl Default for UpdatesConfig {
+    fn default() -> Self {
+        Self { check: true }
     }
 }
 
@@ -138,12 +159,15 @@ pub struct Settings {
     /// The sidebar was open when the app last saved, so it opens again at launch.
     pub sidebar_open: bool,
     pub vertical_tabs: bool,
+    pub pane_density: PaneDensity,
+    pub pane_padding: f32,
     pub font_size: f32,
     pub font_family: String,
     pub font_fallbacks: Vec<String>,
     pub ui_scale: f32,
     pub notice_position: NoticePosition,
     pub notifications: NotificationsConfig,
+    pub updates: UpdatesConfig,
     /// Passed to `rex skill setup` as `--session-naming`, always explicitly.
     pub agent_session_naming: bool,
     pub chrome_theme: ChromeTheme,
@@ -178,12 +202,15 @@ impl Default for Settings {
             sidebar_width: 236.,
             sidebar_open: false,
             vertical_tabs: false,
+            pane_density: PaneDensity::default(),
+            pane_padding: 8.,
             font_size: 15.,
             font_family: "JetBrainsMono Nerd Font".into(),
             font_fallbacks: Vec::new(),
             ui_scale: 1.,
             notice_position: NoticePosition::default(),
             notifications: NotificationsConfig::default(),
+            updates: UpdatesConfig::default(),
             agent_session_naming: false,
             chrome_theme: ChromeTheme::default(),
             terminal_theme: TerminalThemeChoice::default(),
@@ -239,6 +266,7 @@ impl Settings {
         (settings.font_family, settings.font_fallbacks) =
             normalize_font_preferences(&settings.font_family, &settings.font_fallbacks)?;
         settings.font_size = settings.font_size.clamp(8., 48.);
+        settings.pane_padding = settings.pane_padding.clamp(0., 32.);
         settings.sidebar_width = settings.sidebar_width.clamp(200., 360.);
         settings.ui_scale = normalize_ui_scale(settings.ui_scale);
         // Import before the first save loses nivox's unknown keybindings field.
@@ -343,6 +371,24 @@ pub fn endpoint_label(endpoint: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pane_padding_defaults_clamps_and_round_trips_zero() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.pane_padding, 8.);
+        let path =
+            std::env::temp_dir().join(format!("rex-padding-settings-{}.json", std::process::id()));
+        for (padding, expected) in [(-1., 0.), (0., 0.), (12., 12.), (100., 32.)] {
+            Settings {
+                pane_padding: padding,
+                ..Settings::default()
+            }
+            .save(&path)
+            .unwrap();
+            assert_eq!(Settings::load(&path).unwrap().pane_padding, expected);
+        }
+        std::fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn font_preferences_survive_a_save_and_reload() {
@@ -477,6 +523,41 @@ mod tests {
                 TerminalThemeChoice::FollowServer,
                 "{unknown}"
             );
+        }
+    }
+
+    #[test]
+    fn pane_density_defaults_to_comfortable_and_round_trips() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.pane_density, PaneDensity::Comfortable);
+        for (density, saved) in [
+            (PaneDensity::Compact, "compact"),
+            (PaneDensity::Comfortable, "comfortable"),
+        ] {
+            let settings = Settings {
+                pane_density: density,
+                ..Settings::default()
+            };
+            let json = serde_json::to_value(&settings).unwrap();
+            assert_eq!(json["pane_density"], saved);
+            let back: Settings = serde_json::from_value(json).unwrap();
+            assert_eq!(back.pane_density, density);
+        }
+    }
+
+    #[test]
+    fn updates_check_defaults_to_true_and_round_trips() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert!(old.updates.check);
+        for check in [false, true] {
+            let settings = Settings {
+                updates: UpdatesConfig { check },
+                ..Settings::default()
+            };
+            let json = serde_json::to_value(&settings).unwrap();
+            assert_eq!(json["updates"]["check"], check);
+            let back: Settings = serde_json::from_value(json).unwrap();
+            assert_eq!(back.updates.check, check);
         }
     }
 

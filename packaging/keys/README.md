@@ -39,8 +39,8 @@ shuvbot login Keychain, with an encrypted copy of the key attached to the same i
 for a missing public key, but still fails closed on missing secrets or invalid
 signatures. Manual workflow tests use throwaway keys and do not enter the
 `release` environment; they cannot prove production-secret availability. The
-future updater will embed both public keys; no client verification is added
-by this change.
+client embeds both public keys to verify signed `latest.json` release metadata
+for the in-app update notice (never self-updating or downloading binaries).
 
 ## Package repository — `rex-linux-archive-key.asc`
 

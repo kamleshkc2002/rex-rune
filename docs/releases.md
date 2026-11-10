@@ -114,8 +114,10 @@ The walkthrough has the exact pacman setup and hosting health checks.
 Official builds embed `REX_LINUX_CHANNEL=official`, Nix builds `nix`, and source
 builds default to `source`. Packages carry a `share/rex-linux/channel` marker.
 Tarball installation writes the schema-1 path/version/SHA-256 receipt described
-in the walkthrough; source installation and uninstall invalidate it. This is
-provenance for the later notice, not a self-updater.
+in the walkthrough; source installation and uninstall invalidate it. The client
+reads these markers and receipts to show channel-specific upgrade guidance in
+the in-app update notice and `Settings → Updates` without self-updating or
+downloading binaries.
 
 ## Local checks and packaging
 

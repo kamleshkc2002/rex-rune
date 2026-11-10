@@ -106,7 +106,9 @@ fn creates(rx: &flume::Receiver<HostCommand>) -> Vec<(Option<String>, Option<Str
 }
 
 fn has(rt: &Runtime<Workspace>, key: &str) -> bool {
-    rt.elements().iter().any(|e| e.key.as_deref() == Some(key))
+    rt.elements()
+        .iter()
+        .any(|e| !e.exiting && e.key.as_deref() == Some(key))
 }
 
 #[test]
@@ -538,6 +540,132 @@ fn a_single_pane_is_full_bleed_and_a_split_keeps_its_cards() {
     let (ws, _rx) = tabbed_workspace("split");
     let rt = runtime(ws);
     assert!(has(&rt, "pane-header:block:b") && has(&rt, "pane-header:block:c"));
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
+fn compact_separators_are_straight_full_length_lines_in_both_directions() {
+    for vertical in [false, true] {
+        for dragging in [false, true] {
+            let mut rt = Runtime::new(
+                (vertical, dragging),
+                |&(vertical, dragging), _| {
+                    super::panes::divider_handle(
+                        rune::el().size(100., 100.),
+                        vertical,
+                        dragging,
+                        true,
+                    )
+                },
+                (100., 100.),
+                Env::new(true, 1.),
+            );
+            rt.frame(0.);
+            let line = rt
+                .elements()
+                .into_iter()
+                .find(|e| e.key.as_deref() == Some("divider-line"))
+                .unwrap();
+            assert_eq!(
+                line.rect,
+                if vertical {
+                    [5., 0., 1., 100.]
+                } else {
+                    [0., 5., 100., 1.]
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn pane_density_switch_saves_and_keeps_split_geometry_and_reconnect_controls() {
+    use rex_linux::settings::PaneDensity;
+    let (mut ws, _rx) = tabbed_workspace("split");
+    let (sender, _terminal_rx) = flume::unbounded();
+    live_terminal(&mut ws, "block:b", &sender);
+    live_terminal(&mut ws, "block:c", &sender);
+    ws.terminals[&ws.term_key("block:c")]
+        .connection
+        .model
+        .lock()
+        .unwrap()
+        .connected = false;
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    assert!(has(&rt, "pane-density"));
+    for (label, density) in [
+        ("Compact", PaneDensity::Compact),
+        ("Comfortable", PaneDensity::Comfortable),
+        ("Compact", PaneDensity::Compact),
+    ] {
+        let r = rt
+            .elements()
+            .into_iter()
+            .find(|e| e.text.as_deref() == Some(label))
+            .unwrap()
+            .rect;
+        let (x, y) = (r[0] + r[2] / 2., r[1] + r[3] / 2.);
+        rt.pointer_down(x, y);
+        rt.pointer_up(x, y);
+        for _ in 0..4 {
+            rt.frame(1. / 60.);
+        }
+        assert_eq!(rt.state.settings.pane_density, density);
+        assert_eq!(
+            Settings::load(&rt.state.settings_path)
+                .unwrap()
+                .pane_density,
+            density
+        );
+    }
+    press(&mut rt, Key::Escape);
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    assert!(!has(&rt, "pane-header:block:b") && !has(&rt, "pane-header:block:c"));
+    assert!(has(&rt, "strip-action:block:c"), "Retry remains available");
+    let rect = |key: &str| {
+        rt.elements()
+            .into_iter()
+            .find(|e| e.key.as_deref() == Some(key))
+            .unwrap()
+            .rect
+    };
+    let left = rect("pane:block:b");
+    let right = rect("pane:block:c");
+    assert_eq!(left[0], 0.);
+    assert_eq!(left[0] + left[2], right[0], "no gap or overlap");
+    assert_eq!(right[0] + right[2], rt.state.area[2]);
+    assert_eq!(left[3], rt.state.area[3]);
+    assert_eq!(rect("divider-line"), [right[0], right[1], 1., right[3]]);
+    let divider = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref().is_some_and(|k| k.starts_with("divider:")))
+        .unwrap()
+        .rect;
+    let (x, y) = (divider[0] + divider[2] / 2., divider[1] + divider[3] / 2.);
+    rt.pointer_down(x, y);
+    rt.pointer_move(x + 100., y);
+    rt.frame(1. / 60.);
+    let expected = 0.5 + 100. / rt.state.area[2] as f64;
+    assert!((rt.state.drag.as_ref().unwrap().ratio - expected).abs() < 0.001);
+    rt.pointer_up(x + 100., y);
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    rt.update(|s, _| s.pane_menu("block:c".into(), None));
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
+    let outline = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("target-outline"))
+        .unwrap()
+        .rect;
+    assert_eq!(outline, right);
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
@@ -1150,7 +1278,7 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     ws.perform(Intent::Settings, &mut rune::Tx::default());
     let mut rt = runtime(ws);
     // The existing Settings section list exposes About without another shortcut.
-    for _ in 0..6 {
+    for _ in 0..7 {
         press(&mut rt, Key::Down);
     }
     press(&mut rt, Key::Enter);
@@ -2867,6 +2995,88 @@ fn a_clipboard_paste_reaches_only_the_pane_that_asked_while_it_stays_focused() {
 }
 
 #[test]
+fn pane_padding_controls_reach_zero_and_save() {
+    let mut ws = workspace();
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    click(&mut rt, "settings-section:terminal");
+    for _ in 0..9 {
+        click(&mut rt, "pane-padding-smaller");
+    }
+    assert_eq!(rt.state.settings.pane_padding, 0.);
+    assert_eq!(
+        Settings::load(&rt.state.settings_path)
+            .unwrap()
+            .pane_padding,
+        0.
+    );
+    click(&mut rt, "pane-padding-larger");
+    assert_eq!(rt.state.settings.pane_padding, 1.);
+    assert_eq!(
+        Settings::load(&rt.state.settings_path)
+            .unwrap()
+            .pane_padding,
+        1.
+    );
+    std::fs::remove_file(&rt.state.settings_path).unwrap();
+}
+
+#[test]
+fn pane_padding_changes_every_grid_without_changing_pane_placements() {
+    use rex_linux::settings::PaneDensity;
+    for tab in ["single", "split"] {
+        for density in [PaneDensity::Compact, PaneDensity::Comfortable] {
+            let (mut ws, _rx) = tabbed_workspace(tab);
+            ws.settings.pane_density = density;
+            ws.settings.pane_padding = 0.;
+            let blocks = if tab == "single" {
+                vec!["block:a"]
+            } else {
+                vec!["block:b", "block:c"]
+            };
+            let (sender, _terminal_rx) = flume::unbounded();
+            for block in &blocks {
+                live_terminal(&mut ws, block, &sender);
+            }
+            let mut rt = runtime(ws);
+            for _ in 0..90 {
+                rt.frame(1. / 60.);
+            }
+            let rect = |rt: &Runtime<Workspace>, key: &str| {
+                rt.elements()
+                    .into_iter()
+                    .find(|e| e.key.as_deref() == Some(key))
+                    .unwrap()
+                    .rect
+            };
+            let before: Vec<_> = blocks
+                .iter()
+                .map(|block| {
+                    (
+                        rect(&rt, &format!("pane:{block}")),
+                        rect(&rt, &format!("grid:{block}")),
+                    )
+                })
+                .collect();
+            rt.update(|s, _| s.settings.pane_padding = 8.);
+            for _ in 0..4 {
+                rt.frame(1. / 60.);
+            }
+            for (block, (pane, grid)) in blocks.iter().zip(before) {
+                assert_eq!(rect(&rt, &format!("pane:{block}")), pane);
+                let padded = rect(&rt, &format!("grid:{block}"));
+                assert_eq!(
+                    padded,
+                    [grid[0] + 8., grid[1] + 8., grid[2] - 16., grid[3] - 16.]
+                );
+                assert_eq!(rt.state.terminals[&rt.state.term_key(block)].rect, padded);
+            }
+            std::fs::remove_file(&rt.state.settings_path).ok();
+        }
+    }
+}
+
+#[test]
 fn font_preferences_save_from_settings_without_server_requests() {
     let mut ws = workspace();
     let requests = capture_host(&mut ws, 0);
@@ -4188,4 +4398,244 @@ fn ctrl_shift_f_searches_the_focused_terminal_without_typing_into_it() {
         focused(&rt)
     );
     std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
+fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_newer() {
+    use rex_linux::update::{CheckOutcome, InstallChannel, UpdateState};
+    let mut ws = workspace();
+    let state_path = ws.settings_path.with_extension("update.json");
+    ws.updates.config.state_path = state_path.clone();
+    ws.updates.config.current_version = "0.5.3".into();
+    ws.updates.channel = InstallChannel::Pacman {
+        omarchy: false,
+        custom_hint: None,
+    };
+
+    let state = UpdateState {
+        last_checked: Some(1_762_000_000),
+        highest_verified: Some("0.6.0".into()),
+        latest_version: Some("0.6.0".into()),
+        notes_url: Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into()),
+        published: Some("2026-11-10T00:00:00Z".into()),
+        unsupported_floor: None,
+        dismissed_version: None,
+        announced_version: None,
+    };
+    ws.finish_update_check(
+        false,
+        Ok((
+            CheckOutcome::UpdateAvailable {
+                version: "0.6.0".into(),
+                notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into(),
+                published: "2026-11-10T00:00:00Z".into(),
+            },
+            state,
+        )),
+    );
+
+    let mut rt = runtime(ws);
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
+    assert!(
+        has(&rt, "toast-update"),
+        "update toast appears when newer version exists"
+    );
+    let toast_texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+    assert!(
+        toast_texts
+            .iter()
+            .any(|t| t.contains("sudo pacman -Syu rex-linux-bin")),
+        "toast carries pacman channel command: {toast_texts:?}"
+    );
+
+    click(&mut rt, "toast-update-whats-new");
+    assert_eq!(
+        std::mem::take(&mut rt.state.opened_links),
+        ["https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0"]
+    );
+    assert!(
+        has(&rt, "toast-update"),
+        "What's new leaves the toast visible until dismissed"
+    );
+
+    click(&mut rt, "toast-update-dismiss");
+    assert!(
+        !has(&rt, "toast-update"),
+        "Dismiss hides the toast for 0.6.0"
+    );
+    let saved = UpdateState::load(&state_path);
+    assert_eq!(saved.dismissed_version.as_deref(), Some("0.6.0"));
+
+    // A later background check returning the same 0.6.0 stays dismissed.
+    rt.update(|s, _| {
+        let same = saved.clone();
+        s.finish_update_check(
+            false,
+            Ok((
+                CheckOutcome::UpdateAvailable {
+                    version: "0.6.0".into(),
+                    notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into(),
+                    published: "2026-11-10T00:00:00Z".into(),
+                },
+                same,
+            )),
+        );
+    });
+    rt.frame(1. / 60.);
+    assert!(
+        !has(&rt, "toast-update"),
+        "0.6.0 remains dismissed on background check"
+    );
+
+    // When 0.6.1 is released, the toast resurfaces automatically.
+    rt.update(|s, _| {
+        let mut newer = UpdateState::load(&state_path);
+        newer.highest_verified = Some("0.6.1".into());
+        newer.latest_version = Some("0.6.1".into());
+        newer.notes_url = Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.1".into());
+        s.finish_update_check(
+            false,
+            Ok((
+                CheckOutcome::UpdateAvailable {
+                    version: "0.6.1".into(),
+                    notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.1".into(),
+                    published: "2026-11-11T00:00:00Z".into(),
+                },
+                newer,
+            )),
+        );
+    });
+    rt.frame(1. / 60.);
+    assert!(
+        has(&rt, "toast-update"),
+        "0.6.1 resurfaces the update toast"
+    );
+    let _ = std::fs::remove_file(&state_path);
+    let _ = std::fs::remove_file(state_path.with_extension("lock"));
+    let _ = std::fs::remove_file(&rt.state.settings_path);
+}
+
+#[test]
+fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failures() {
+    use rex_linux::update::{CHECK_INTERVAL_SECS, InstallChannel, UpdateState};
+    use std::time::{Duration, Instant};
+    let mut ws = workspace();
+    let state_path = ws.settings_path.with_extension("update-settings.json");
+    ws.updates.config.state_path = state_path.clone();
+    ws.updates.config.current_version = "0.5.3".into();
+    ws.updates.env_opt_out = false;
+    ws.updates.channel = InstallChannel::Pacman {
+        omarchy: true,
+        custom_hint: None,
+    };
+
+    // Even when never checked (`last_checked: None`), a failed background check must back off for ~24h, not 30s.
+    ws.updates.state = UpdateState::default();
+    ws.init_updates();
+    ws.finish_update_check(false, Err(anyhow::anyhow!("network unreachable")));
+    assert!(
+        ws.notices.is_empty(),
+        "background failure must not push a toast notice"
+    );
+    assert!(ws.updates.last_error.is_none());
+    let next_wait = ws
+        .updates
+        .next_check
+        .expect("next check scheduled after failure")
+        .saturating_duration_since(Instant::now());
+    assert!(
+        next_wait >= Duration::from_secs(CHECK_INTERVAL_SECS - 60),
+        "failed background check must wait ~24h, got {next_wait:?}"
+    );
+
+    ws.updates.state = UpdateState {
+        last_checked: Some(1_762_000_000),
+        highest_verified: Some("0.6.0".into()),
+        latest_version: Some("0.6.0".into()),
+        notes_url: Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into()),
+        published: Some("2026-11-10T00:00:00Z".into()),
+        unsupported_floor: None,
+        dismissed_version: None,
+        announced_version: Some("0.6.0".into()),
+    };
+
+    // Manual failure records last_error and informs the user, while still backing off background checks by ~24h.
+    ws.finish_update_check(true, Err(anyhow::anyhow!("offline")));
+    assert_eq!(ws.updates.last_error.as_deref(), Some("offline"));
+    assert!(
+        ws.notices
+            .iter()
+            .any(|n| n.text.contains("Update check failed: offline"))
+    );
+    ws.notices.clear();
+    ws.updates.last_error = None;
+
+    // Clicking "Updates…" on the update toast opens Settings -> Updates directly.
+    let mut rt = runtime(ws);
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
+    click(&mut rt, "toast-update-open");
+    assert!(matches!(
+        rt.state.panel.as_ref().map(|p| &p.kind),
+        Some(PanelKind::Settings)
+    ));
+    assert_eq!(
+        rt.state.settings_section,
+        super::panel::SettingsSection::Updates
+    );
+
+    // Omarchy channel shows `omarchy update` and copies the command.
+    let texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+    assert!(
+        texts.iter().any(|t| t.contains("omarchy update")),
+        "Omarchy guidance shown: {texts:?}"
+    );
+    click(&mut rt, "updates-copy-command");
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some("omarchy update")
+    );
+
+    // Flipping the Automatic update checks switch opts out, saves to workspace.json, clears the timer, and hides the cached toast.
+    assert!(rt.state.settings.updates.check);
+    assert!(has(&rt, "toast-update"));
+    click(&mut rt, "updates-auto-switch");
+    assert!(!rt.state.settings.updates.check);
+    assert!(rt.state.updates.next_check.is_none());
+    assert!(
+        !has(&rt, "toast-update"),
+        "opting out hides cached update toast"
+    );
+    let reloaded = Settings::load(&rt.state.settings_path).unwrap();
+    assert!(!reloaded.updates.check);
+
+    // Check other channels render their specific guidance in Settings -> Updates.
+    for (channel, expected_snippet) in [
+        (
+            InstallChannel::Tarball,
+            "https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh",
+        ),
+        (
+            InstallChannel::Deb { custom_hint: None },
+            "sudo apt install ./rex-linux_0.6.0_",
+        ),
+        (InstallChannel::Nix, "nix flake update rex-rune"),
+    ] {
+        rt.update(|s, _| s.updates.channel = channel);
+        rt.frame(1. / 60.);
+        let texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+        assert!(
+            texts.iter().any(|t| t.contains(expected_snippet)),
+            "expected {expected_snippet:?} in {texts:?}"
+        );
+    }
+
+    let _ = std::fs::remove_file(&state_path);
+    let _ = std::fs::remove_file(state_path.with_extension("lock"));
+    let _ = std::fs::remove_file(&rt.state.settings_path);
 }
