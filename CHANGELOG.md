@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.2 - 2026-11-10
+
 ### Added
 
 - Signed one-command user installer, published as immutable `install.sh` and `install.sh.minisig` release assets. Embedded CI and backup keys verify release checksums with minisign or OpenSSL 3+ before any downloaded code runs. Supports upgrades, checks, explicit version pins and uninstall; refuses automatic downgrades. Repository-key fallback is opt-in only (`--trust-repo-keys`).
