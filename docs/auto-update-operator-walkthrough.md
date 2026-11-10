@@ -199,9 +199,31 @@ and cannot run after any non-draft pacman release exists:
 gh workflow run repo.yml --repo shuv1337/rex-rune --ref master -f bootstrap=true
 ```
 
-Do not retrofit packages onto 0.5.2 or earlier immutable releases. The first
-production package signatures and databases are produced by **0.5.3**; this
-implementation task does not cut it. A successful fixture test is not proof that
+Do not retrofit packages onto already-published immutable releases. The first
+release tagged after this merge (planned as **0.5.3**) is the first with pacman
+packages, signatures and a database; this implementation task does not cut it.
+The `arch-package` job is unconditional, so any tag cut from `master` after the
+merge ships them.
+
+Six pipeline guards that are worth knowing: the site build keeps the newest five
+eligible releases first and only then checks them, so a damaged old release ages
+out of the window instead of blocking rebuilds for ever; `publish` passes
+`--require-tag` so the release just published must appear in the site, with a
+short retry while the releases API catches up; `publish` and `repo.yml` share one
+concurrency group, so two rebuilds never interleave.
+
+Still open, by design, for the operator before 0.5.3: a **second offline copy** of
+the encrypted primary and its revocation certificate, stored apart from shuvbot,
+and moving the primary's passphrase out of the auto-unlocked login Keychain into
+a password manager or a separately locked keychain. A withdrawal via `exclude`
+applies to one run only; make a withdrawal permanent by marking the release as a
+prerelease, which the selection honours (GitHub keeps that flag editable on
+immutable releases), and only if that fails by committing an `exclude` default.
+
+**Known scope limit:** signing with two subkeys during a rotation overlap works
+only while both have more than 180 days left, because the expiry check applies
+to every secret subkey in CI. Rotate at about 2.5 years, with a few months of
+overlap, and remove the old subkey from the secret before its final 180 days. A successful fixture test is not proof that
 GitHub's stored production secrets have been exercised.
 
 Check the DNS, GitHub's Pages domain health and certificate, then enforce HTTPS:
@@ -443,9 +465,9 @@ A leaked key alone signs nothing useful: the attacker also has to control what g
 
 ### The OpenPGP subkey: expiry and rotation (after PR U2)
 
-- The subkey expires three years after it was made. From two years in, the release job fails when under 180 days remain, so rotation happens early.
+- The subkey expires three years after it was made (this one on 2029-11-09 PST). From about 2.5 years in, the release job fails when under 180 days remain, so rotation happens early.
 - **[User]**, offline: add a new signing subkey with the primary key and export the certificate and the new subkey, with the same script as in section 4.
-- **[Agent]:** commit the new certificate, replace the two secrets, and sign the repositories with **both** subkeys until the old one expires. Rebuild the site (section 5, step 5).
+- **[Agent]:** commit the new certificate, replace the two secrets, and sign the repositories with **both** subkeys during the overlap; drop the old subkey from the secret before it has 180 days left, since the expiry check covers every subkey in CI. Rebuild the site (section 5, step 5).
 - **What users must do:** pacman users run the `pacman-key --add` command again; the primary key they signed locally has not changed. APT users get the new certificate with a normal package upgrade, because the `.deb` carries `rex-linux.sources`.
 
 ### The OpenPGP subkey leaks (after PR U2)

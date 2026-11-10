@@ -115,10 +115,10 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: linux-*
           path: dist
@@ -127,7 +127,7 @@ jobs:
         run: |
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
           python3 scripts/package-arch.py --version "$version"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-pacman
           path: dist/*.pkg.tar.zst
@@ -230,6 +230,10 @@ jobs:
     runs-on: ubuntu-24.04
     # Default for plan question 6 (key custody): one reviewed job holds the signing secrets. See docs/releases.md.
     environment: release
+    # Shared with repo.yml: two signed site rebuilds must never interleave.
+    concurrency:
+      group: pkg-repository
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -322,8 +326,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
           PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
-        run: python3 scripts/build-repo-site.py
-      - uses: actions/upload-pages-artifact@5f327015a708106f6f1b7c9a633901af30fe80cb
+        run: python3 scripts/build-repo-site.py --require-tag "$GITHUB_REF_NAME"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site
 
@@ -340,5 +344,5 @@ jobs:
       group: pkg-pages-deployment
       cancel-in-progress: false
     steps:
-      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment

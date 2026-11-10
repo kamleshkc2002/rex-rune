@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 
 from package_signing import Signer
 
@@ -31,7 +32,13 @@ def version(tag):
     return tuple(map(int, tag[1:].split('.')))
 
 
-def select(releases, exclude):
+def required_assets(tag):
+    names = {f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
+             for a in ARCHES for suffix in ('', '.sig')}
+    return names | {'SHA256SUMS', 'SHA256SUMS.minisig'}
+
+
+def select(releases, exclude, require_tag=None):
     candidates = []
     for release in releases:
         tag = release['tag_name']
@@ -45,16 +52,21 @@ def select(releases, exclude):
         # Older releases have no pacman package: do not retrofit immutable assets.
         if not any(name.endswith('.pkg.tar.zst') for name in names):
             continue
-        required = {f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
-                    for a in ARCHES for suffix in ('', '.sig')}
-        required |= {'SHA256SUMS', 'SHA256SUMS.minisig'}
-        if not required <= names or not release.get('immutable'):
-            raise ValueError(f'{tag}: incomplete or mutable package release')
-        candidates.append((number, tag, required))
+        candidates.append((number, tag, names, bool(release.get('immutable'))))
     candidates.sort(reverse=True)
-    if len({tag for _, tag, _ in candidates}) != len(candidates):
+    if len({tag for _, tag, _, _ in candidates}) != len(candidates):
         raise ValueError('duplicate release tag')
-    return candidates[:5]
+    # Keep the newest five first: a broken old release must drop out of the window
+    # eventually instead of blocking every future rebuild. Inside the window it fails.
+    selected = []
+    for number, tag, names, immutable in candidates[:5]:
+        required = required_assets(tag)
+        if not required <= names or not immutable:
+            raise ValueError(f'{tag}: incomplete or mutable package release')
+        selected.append((number, tag, required))
+    if require_tag and require_tag not in [tag for _, tag, _ in selected]:
+        raise ValueError(f'{require_tag} is not among the publishable releases yet')
+    return selected
 
 
 def verify_release(directory, tag, keys, gpg_home):
@@ -104,7 +116,20 @@ def landing(site, certificate, tags):
 <p>Signed pacman repository: https://pkg.shuv.dev/arch/$arch. APT is not available yet.</p></html>\n''')
 
 
-def build(site, keys, exclude, releases_dir=None, bootstrap=False):
+def list_releases(require_tag):
+    # The release was published seconds ago; the API can lag behind.
+    for attempt in range(6):
+        pages = json.loads(subprocess.check_output([
+            'gh', 'api', '--paginate', '--slurp', f'repos/{REPO}/releases?per_page=100']))
+        releases = [release for page in pages for release in page]
+        visible = [r for r in releases if r['tag_name'] == require_tag]
+        if not require_tag or (visible and visible[0].get('immutable') and not visible[0]['draft']):
+            return releases
+        time.sleep(10 * (attempt + 1))
+    return releases
+
+
+def build(site, keys, exclude, releases_dir=None, bootstrap=False, require_tag=None):
     if site.exists():
         raise ValueError('site output must not already exist; never reuse a partial rebuild')
     site.mkdir(parents=True)
@@ -121,10 +146,8 @@ def build(site, keys, exclude, releases_dir=None, bootstrap=False):
         if releases_dir:
             releases = json.loads((releases_dir / 'releases.json').read_text())
         else:
-            pages = json.loads(subprocess.check_output([
-                'gh', 'api', '--paginate', '--slurp', f'repos/{REPO}/releases?per_page=100']))
-            releases = [release for page in pages for release in page]
-        selected = select(releases, exclude)
+            releases = list_releases(require_tag)
+        selected = select(releases, exclude, require_tag)
         if not selected:
             raise ValueError('no signed pacman releases; bootstrap explicitly instead')
         for _, tag, required in selected:
@@ -167,8 +190,11 @@ if __name__ == '__main__':
     parser.add_argument('--exclude', default='', help='comma-separated X.Y.Z versions to withdraw')
     parser.add_argument('--releases-dir', type=Path)
     parser.add_argument('--bootstrap', action='store_true')
+    parser.add_argument('--require-tag', help='fail unless this vX.Y.Z tag enters the site')
     args = parser.parse_args()
+    if args.require_tag:
+        version(args.require_tag)
     excluded = set(filter(None, args.exclude.split(',')))
     for item in excluded:
         version('v' + item)
-    build(args.site, args.keys_dir, excluded, args.releases_dir, args.bootstrap)
+    build(args.site, args.keys_dir, excluded, args.releases_dir, args.bootstrap, args.require_tag)

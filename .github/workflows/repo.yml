@@ -23,7 +23,7 @@ jobs:
     if: inputs.bootstrap && github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Refuse bootstrap after a pacman release exists
@@ -33,7 +33,7 @@ jobs:
           gh api --paginate --slurp repos/shuv1337/rex-rune/releases > releases.json
           python3 -c 'import json; assert not any(a["name"].endswith(".pkg.tar.zst") for page in json.load(open("releases.json")) for r in page if not r["draft"] for a in r["assets"]), "Use a signed tag rebuild, not bootstrap"'
       - run: python3 scripts/build-repo-site.py --bootstrap
-      - uses: actions/upload-pages-artifact@5f327015a708106f6f1b7c9a633901af30fe80cb
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site
 
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: release
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: sudo apt-get update && sudo apt-get install -y minisign gnupg
@@ -53,7 +53,7 @@ jobs:
           PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
           PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
         run: python3 scripts/build-repo-site.py --exclude "$EXCLUDE"
-      - uses: actions/upload-pages-artifact@5f327015a708106f6f1b7c9a633901af30fe80cb
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site
 
@@ -71,5 +71,5 @@ jobs:
       group: pkg-pages-deployment
       cancel-in-progress: false
     steps:
-      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment

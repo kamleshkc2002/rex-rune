@@ -51,7 +51,43 @@ def fixture(dist, version):
     arch.package(dist, version)
 
 
+def release(tag, immutable=True, complete=True, prerelease=False, pacman=True):
+    assets = [{'name': 'SHA256SUMS'}, {'name': 'SHA256SUMS.minisig'}]
+    if pacman:
+        for a in arch.ARCHES:
+            assets.append({'name': f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst'})
+            if complete:
+                assets.append({'name': f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst.sig'})
+    return {'tag_name': tag, 'draft': False, 'prerelease': prerelease, 'immutable': immutable, 'assets': assets}
+
+
+class SelectionTests(unittest.TestCase):
+    def tags(self, releases, exclude=(), require_tag=None):
+        return [tag for _, tag, _ in site_builder.select(releases, set(exclude), require_tag)]
+
+    def test_newest_five_numeric_order_only_pacman_releases(self):
+        releases = [release(f'v0.{n}.0') for n in (5, 12, 7, 9, 6, 10, 11)] + [release('v0.4.2', pacman=False)]
+        self.assertEqual(self.tags(releases), ['v0.12.0', 'v0.11.0', 'v0.10.0', 'v0.9.0', 'v0.7.0'])
+
+    def test_broken_release_fails_inside_window_and_ages_out(self):
+        broken = release('v0.5.3', complete=False)
+        self.assertRaises(ValueError, self.tags, [broken, release('v0.5.4')])
+        self.assertRaises(ValueError, self.tags, [release('v0.5.3', immutable=False), release('v0.5.4')])
+        newer = [release(f'v0.6.{n}') for n in range(5)]
+        self.assertEqual(len(self.tags(newer + [broken])), 5)
+
+    def test_exclude_prerelease_require_tag(self):
+        releases = [release('v0.5.3'), release('v0.5.4'), release('v0.5.5', prerelease=True), release('v0.5.6-rc1')]
+        self.assertEqual(self.tags(releases), ['v0.5.4', 'v0.5.3'])
+        self.assertEqual(self.tags(releases, exclude=['0.5.4']), ['v0.5.3'])
+        self.assertEqual(self.tags(releases, require_tag='v0.5.4'), ['v0.5.4', 'v0.5.3'])
+        self.assertRaises(ValueError, self.tags, releases, [], 'v0.5.5')
+        self.assertRaises(ValueError, self.tags, releases, ['0.5.4'], 'v0.5.4')
+        self.assertRaises(ValueError, self.tags, releases + [release('v0.5.4')])
+
+
 def main():
+    unittest.main(module=__name__, argv=['selection'], exit=False, verbosity=1)
     with tempfile.TemporaryDirectory(prefix='rex-arch-test-') as temp:
         root = Path(temp); root.chmod(0o755)
         keys = root / 'keys'; keys.mkdir()
@@ -94,13 +130,25 @@ def main():
                                      '--keys-dir', str(keys), '--releases-dir', str(releases)], env=sign_env, capture_output=True)
             assert result.returncode != 0 and not list((root / 'bad').rglob('*.db'))
             damaged.write_bytes(original)
+            # A tampered detached signature alone, with a wrong-tag checksum comment, both refuse.
+            for path, mutate in (
+                (damaged.with_name(damaged.name + '.sig'), lambda b: b[:-4] + bytes(x ^ 1 for x in b[-4:])),
+                (releases / 'v99.0.1/SHA256SUMS.minisig', lambda b: b.replace(b'v99.0.1 SHA256SUMS', b'v99.0.0 SHA256SUMS')),
+            ):
+                keep = path.read_bytes(); path.write_bytes(mutate(keep))
+                result = subprocess.run(['python3', str(SCRIPTS / 'build-repo-site.py'), '--site', str(root / ('bad-' + path.name)),
+                                         '--keys-dir', str(keys), '--releases-dir', str(releases)], env=sign_env, capture_output=True)
+                assert result.returncode != 0, path.name
+                path.write_bytes(keep)
             # Do not mount the signing home or any secret into the consumer container.
             consumer = root / 'consumer'; consumer.mkdir()
             for name in ('old', 'new'):
                 shutil.copytree(root / name, consumer / name)
             shutil.copy2(keys / 'rex-linux-archive-key.asc', consumer / 'key.asc')
-            for name in ('bad-package', 'bad-database'):
+            for name in ('bad-package', 'bad-database', 'bad-signature'):
                 shutil.copytree(consumer / 'new', consumer / name)
+            sig = consumer / 'bad-signature/arch/x86_64/rex-linux-bin-99.0.1-1-x86_64.pkg.tar.zst.sig'
+            sig_bytes = bytearray(sig.read_bytes()); sig_bytes[-1] ^= 1; sig.write_bytes(sig_bytes)
             bad_package = consumer / 'bad-package/arch/x86_64/rex-linux-bin-99.0.1-1-x86_64.pkg.tar.zst'
             data = bytearray(bad_package.read_bytes()); data[len(data) // 2] ^= 1
             bad_package.write_bytes(data)
@@ -136,10 +184,14 @@ def main():
                 # Isolate signature rejection as well, not only the database checksum.
                 if pacman-key --verify /fixtures/bad-package/arch/x86_64/rex-linux-bin-99.0.1-1-x86_64.pkg.tar.zst.sig > /tmp/refusal 2>&1; then exit 1; fi
                 grep -i 'BAD signature' /tmp/refusal
+                # Intact package, altered detached signature: pacman -U reads the .sig beside it.
+                if pacman -U --noconfirm /fixtures/bad-signature/arch/x86_64/rex-linux-bin-99.0.1-1-x86_64.pkg.tar.zst > /tmp/refusal 2>&1; then exit 1; fi
+                grep -Ei 'signature|invalid|corrupt' /tmp/refusal
+                test -z "$(pacman -Qq rex-linux-bin 2>/dev/null)"
                 use_repo bad-database
                 if pacman -Sy --noconfirm > /tmp/refusal 2>&1; then exit 1; fi
                 grep -Ei 'signature|invalid|corrupt' /tmp/refusal
-                echo 'PASS: pacman install, upgrade, package tamper, database tamper'
+                echo 'PASS: pacman install, upgrade, package tamper, signature tamper, database tamper'
             ''', 'bash', primary], check=True)
         finally:
             subprocess.run(['gpgconf', '--homedir', str(home), '--kill', 'gpg-agent'])
