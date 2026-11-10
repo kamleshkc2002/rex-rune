@@ -153,8 +153,11 @@ mod tests {
             format_info("0.5.0", "unknown", "unknown", "source", "linux", None),
             "Rex Linux 0.5.0\nCommit: unknown\nBuild date: unknown\nBuild channel: source\nOS: linux\n"
         );
-        // Plain cargo builds carry no channel marker and must not claim an official one.
-        assert_eq!(rex_linux::BUILD_CHANNEL, "source");
+        // Plain cargo builds default to source; release CI supplies its own marker.
+        assert_eq!(
+            rex_linux::BUILD_CHANNEL,
+            option_env!("REX_LINUX_CHANNEL").unwrap_or("source")
+        );
         assert_eq!(
             release_url(),
             format!("{REPOSITORY}/releases/tag/v{}", env!("CARGO_PKG_VERSION"))
