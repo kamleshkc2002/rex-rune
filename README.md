@@ -154,7 +154,7 @@ Optionally, [mise](https://mise.jdx.dev/) can provide the toolchain: [`mise.toml
 
 The repository is also a Nix flake: `nix build .#rex-linux` builds a package with the desktop entry and icons, and `nix develop` gives a shell with the toolchain and libraries. See [Nix packaging](docs/nix.md).
 
-`Cargo.lock` pins the dependency graph. TLS uses Rustls with the system trust roots. The workspace also builds three probes (`rex-probe`, `rex-workspace-probe`, `rex-update-probe`) that do not need the UI; use `--no-default-features` to build only those.
+`Cargo.lock` pins the dependency graph. Server connections use Rustls with the system trust roots; release metadata checks use Rustls with WebPKI roots and verify Ed25519 Minisign signatures against the embedded release public keys. The workspace also builds three probes (`rex-probe`, `rex-workspace-probe`, `rex-update-probe`) that do not need the UI; use `--no-default-features` to build only those.
 
 ## Run
 

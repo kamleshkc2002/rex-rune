@@ -4519,7 +4519,8 @@ fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_n
 
 #[test]
 fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failures() {
-    use rex_linux::update::{InstallChannel, UpdateState};
+    use rex_linux::update::{CHECK_INTERVAL_SECS, InstallChannel, UpdateState};
+    use std::time::{Duration, Instant};
     let mut ws = workspace();
     let state_path = ws.settings_path.with_extension("update-settings.json");
     ws.updates.config.state_path = state_path.clone();
@@ -4529,6 +4530,26 @@ fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failure
         omarchy: true,
         custom_hint: None,
     };
+
+    // Even when never checked (`last_checked: None`), a failed background check must back off for ~24h, not 30s.
+    ws.updates.state = UpdateState::default();
+    ws.init_updates();
+    ws.finish_update_check(false, Err(anyhow::anyhow!("network unreachable")));
+    assert!(
+        ws.notices.is_empty(),
+        "background failure must not push a toast notice"
+    );
+    assert!(ws.updates.last_error.is_none());
+    let next_wait = ws
+        .updates
+        .next_check
+        .expect("next check scheduled after failure")
+        .saturating_duration_since(Instant::now());
+    assert!(
+        next_wait >= Duration::from_secs(CHECK_INTERVAL_SECS - 60),
+        "failed background check must wait ~24h, got {next_wait:?}"
+    );
+
     ws.updates.state = UpdateState {
         last_checked: Some(1_762_000_000),
         highest_verified: Some("0.6.0".into()),
@@ -4539,18 +4560,8 @@ fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failure
         dismissed_version: None,
         announced_version: Some("0.6.0".into()),
     };
-    ws.init_updates();
-    assert!(ws.updates.next_check.is_some());
 
-    // Background failure is completely silent: no notice toast, no last_error.
-    ws.finish_update_check(false, Err(anyhow::anyhow!("network unreachable")));
-    assert!(
-        ws.notices.is_empty(),
-        "background failure must not push a toast notice"
-    );
-    assert!(ws.updates.last_error.is_none());
-
-    // Manual failure records last_error and informs the user.
+    // Manual failure records last_error and informs the user, while still backing off background checks by ~24h.
     ws.finish_update_check(true, Err(anyhow::anyhow!("offline")));
     assert_eq!(ws.updates.last_error.as_deref(), Some("offline"));
     assert!(
@@ -4590,11 +4601,16 @@ fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failure
         Some("omarchy update")
     );
 
-    // Flipping the Automatic update checks switch opts out, saves to workspace.json, and clears the timer.
+    // Flipping the Automatic update checks switch opts out, saves to workspace.json, clears the timer, and hides the cached toast.
     assert!(rt.state.settings.updates.check);
+    assert!(has(&rt, "toast-update"));
     click(&mut rt, "updates-auto-switch");
     assert!(!rt.state.settings.updates.check);
     assert!(rt.state.updates.next_check.is_none());
+    assert!(
+        !has(&rt, "toast-update"),
+        "opting out hides cached update toast"
+    );
     let reloaded = Settings::load(&rt.state.settings_path).unwrap();
     assert!(!reloaded.updates.check);
 

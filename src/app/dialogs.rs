@@ -284,7 +284,9 @@ pub fn toasts(s: &Workspace) -> Option<El> {
     }
     let room = 3usize
         .saturating_sub(usize::from(s.model().notice.is_some()))
-        .saturating_sub(usize::from(s.updates.visible_notice().is_some()));
+        .saturating_sub(usize::from(
+            s.updates.visible_notice(s.settings.updates.check).is_some(),
+        ));
     for notice in s.notices.iter().rev().take(room) {
         let id = notice.id;
         region = region.child(toast(

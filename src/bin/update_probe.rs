@@ -23,13 +23,15 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
+    let ephemeral_state = args.state_path.is_none();
+    let state_path = args.state_path.unwrap_or_else(|| {
+        std::env::temp_dir().join(format!("rex-update-probe-{}.json", std::process::id()))
+    });
     let mut config = CheckConfig {
         current_version: args.current_version,
         manifest_url: args.manifest_url,
         signature_url: args.signature_url,
-        state_path: args
-            .state_path
-            .unwrap_or_else(rex_linux::update::UpdateState::default_path),
+        state_path: state_path.clone(),
         allow_loopback_http: args.allow_loopback_http,
         ..CheckConfig::default()
     };
@@ -46,5 +48,10 @@ fn main() {
         }
         config.public_keys = keys;
     }
-    std::process::exit(run_cli_check(&config));
+    let code = run_cli_check(&config);
+    if ephemeral_state {
+        let _ = std::fs::remove_file(&state_path);
+        let _ = std::fs::remove_file(state_path.with_extension("lock"));
+    }
+    std::process::exit(code);
 }

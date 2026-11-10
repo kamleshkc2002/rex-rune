@@ -9,7 +9,7 @@ use super::{
 };
 use rex_linux::update::{
     AvailableUpdate, CHECK_INTERVAL_SECS, CheckConfig, CheckOutcome, InstallChannel, STARTUP_DELAY,
-    UpdateState, check_for_updates, env_disabled, now_epoch_secs,
+    UpdateState, check_for_updates, now_epoch_secs,
 };
 use rune::{Cursor, El, Key, KeyEvent, Tx, col, el, row, text};
 use rune_kit::Switch;
@@ -27,18 +27,43 @@ pub struct Updates {
 
 impl Default for Updates {
     fn default() -> Self {
-        let channel = InstallChannel::detect();
-        let config = CheckConfig::default();
-        let state = UpdateState::load(&config.state_path);
-        let env_opt_out = env_disabled();
-        Self {
-            channel,
-            state,
-            config,
-            checking: false,
-            last_error: None,
-            next_check: None,
-            env_opt_out,
+        #[cfg(test)]
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static NEXT: AtomicUsize = AtomicUsize::new(0);
+            let id = NEXT.fetch_add(1, Ordering::Relaxed);
+            let config = CheckConfig {
+                state_path: std::env::temp_dir().join(format!(
+                    "rex-linux-test-updates-{}-{id}.json",
+                    std::process::id()
+                )),
+                ..CheckConfig::default()
+            };
+            Self {
+                channel: InstallChannel::Source,
+                state: UpdateState::default(),
+                config,
+                checking: false,
+                last_error: None,
+                next_check: None,
+                env_opt_out: false,
+            }
+        }
+        #[cfg(not(test))]
+        {
+            let channel = InstallChannel::detect();
+            let config = CheckConfig::default();
+            let state = UpdateState::load(&config.state_path);
+            let env_opt_out = rex_linux::update::env_disabled();
+            Self {
+                channel,
+                state,
+                config,
+                checking: false,
+                last_error: None,
+                next_check: None,
+                env_opt_out,
+            }
         }
     }
 }
@@ -49,8 +74,11 @@ impl Updates {
         self.state.available_update(&self.config.current_version)
     }
 
-    /// Available update that has not been dismissed for this version.
-    pub fn visible_notice(&self) -> Option<AvailableUpdate> {
+    /// Available update that has not been dismissed for this version, when update checks are not opted out.
+    pub fn visible_notice(&self, setting_enabled: bool) -> Option<AvailableUpdate> {
+        if !setting_enabled || self.env_opt_out {
+            return None;
+        }
         self.available().filter(|u| !u.dismissed)
     }
 
@@ -59,7 +87,7 @@ impl Updates {
         setting_enabled && !self.env_opt_out && self.channel.checks_by_default()
     }
 
-    /// Schedule or clear the next background check deadline.
+    /// Schedule or clear the next background check deadline from `last_checked`.
     pub fn schedule(&mut self, setting_enabled: bool, now: Instant) {
         if !self.auto_check_enabled(setting_enabled) {
             self.next_check = None;
@@ -78,6 +106,15 @@ impl Updates {
             None => STARTUP_DELAY,
         };
         self.next_check = Some(now + wait);
+    }
+
+    /// Back off for a full check interval (~24h) after a failed check so offline/429/rollback errors never retry every 30s.
+    pub fn schedule_after_failure(&mut self, setting_enabled: bool, now: Instant) {
+        if !self.auto_check_enabled(setting_enabled) {
+            self.next_check = None;
+            return;
+        }
+        self.next_check = Some(now + Duration::from_secs(CHECK_INTERVAL_SECS));
     }
 }
 
@@ -230,7 +267,7 @@ pub fn section(s: &Workspace) -> El {
 
 /// Non-blocking toast card for an available update, with What's new, Updates…, and Dismiss.
 pub fn toast_card(s: &Workspace) -> Option<El> {
-    let avail = s.updates.visible_notice()?;
+    let avail = s.updates.visible_notice(s.settings.updates.check)?;
     let guidance = s.updates.channel.guidance(&avail.version);
     let summary = match &avail.unsupported_floor {
         Some(floor) => format!(
@@ -409,9 +446,15 @@ impl Workspace {
         result: anyhow::Result<(CheckOutcome, UpdateState)>,
     ) {
         self.updates.checking = false;
+        let now = Instant::now();
         match result {
             Ok((outcome, mut state)) => {
                 self.updates.last_error = None;
+                if state.dismissed_version.is_none()
+                    && let Some(dismissed) = &self.updates.state.dismissed_version
+                {
+                    state.dismissed_version = Some(dismissed.clone());
+                }
                 match &outcome {
                     CheckOutcome::UpdateAvailable { version, .. }
                     | CheckOutcome::UnsupportedFloor {
@@ -433,6 +476,7 @@ impl Workspace {
                     }
                 }
                 self.updates.state = state;
+                self.updates.schedule(self.settings.updates.check, now);
             }
             Err(error) => {
                 // Background checks fail silently: no toast, no modal, no crash.
@@ -441,9 +485,9 @@ impl Workspace {
                     self.updates.last_error = Some(msg.clone());
                     self.notify(format!("Update check failed: {msg}"));
                 }
+                self.updates
+                    .schedule_after_failure(self.settings.updates.check, now);
             }
         }
-        self.updates
-            .schedule(self.settings.updates.check, Instant::now());
     }
 }

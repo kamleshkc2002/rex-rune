@@ -617,8 +617,8 @@ impl InstallChannel {
                 summary: format!(
                     "Rex Linux {version} is available on GitHub Releases."
                 ),
-                detail: "Standalone binary without an install receipt. Download the latest release or run the verified install.sh script.".into(),
-                command: Some(INSTALL_SCRIPT_COMMAND.into()),
+                detail: "Standalone binary without a package marker or install receipt. Download the latest release from GitHub Releases.".into(),
+                command: None,
             },
         }
     }
@@ -786,11 +786,12 @@ impl UpdateState {
         if latest <= current {
             return None;
         }
+        let expected_notes_url = format!("{REPOSITORY}/releases/tag/v{latest_str}");
         let notes_url = self
             .notes_url
             .clone()
-            .filter(|u| u.starts_with(&format!("{REPOSITORY}/releases/tag/v")))
-            .unwrap_or_else(|| format!("{REPOSITORY}/releases/tag/v{latest_str}"));
+            .filter(|u| u == &expected_notes_url)
+            .unwrap_or(expected_notes_url);
         let unsupported_floor = self
             .unsupported_floor
             .as_deref()
@@ -915,13 +916,11 @@ pub fn check_for_updates(config: &CheckConfig, force: bool) -> Result<(CheckOutc
     let manifest_bytes = fetch_bytes(
         &config.manifest_url,
         MAX_MANIFEST_BYTES,
-        &config.current_version,
         config.allow_loopback_http,
     )?;
     let sig_bytes = fetch_bytes(
         &config.signature_url,
         MAX_SIGNATURE_BYTES,
-        &config.current_version,
         config.allow_loopback_http,
     )?;
     let sig_text = std::str::from_utf8(&sig_bytes).context("signature is not valid UTF-8")?;
@@ -1003,18 +1002,14 @@ fn is_loopback_host(host: Option<&str>) -> bool {
     matches!(host, Some("127.0.0.1" | "localhost" | "[::1]" | "::1"))
 }
 
-fn fetch_bytes(
-    raw_url: &str,
-    max_bytes: usize,
-    current_version: &str,
-    allow_loopback_http: bool,
-) -> Result<Vec<u8>> {
+fn fetch_bytes(raw_url: &str, max_bytes: usize, allow_loopback_http: bool) -> Result<Vec<u8>> {
     let parsed = validate_fetch_url(raw_url, allow_loopback_http)?;
     let _ = rustls::crypto::ring::default_provider().install_default();
     let config = ureq::Agent::config_builder()
         .timeout_global(Some(HTTP_TIMEOUT))
+        .https_only(!allow_loopback_http)
         .max_redirects(5)
-        .user_agent(format!("rex-linux/{current_version}"))
+        .user_agent("rex-linux")
         .build();
     let agent: ureq::Agent = config.into();
     let mut response = agent
