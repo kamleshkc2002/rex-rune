@@ -29,8 +29,8 @@ The package's check phase runs rustfmt, Clippy with warnings denied, the Rust un
 
 The unqualified GitHub reference follows **master**, which can be ahead of a release.
 There is no `stable` branch. Nix builds set `REX_LINUX_CHANNEL=nix`; the app never
-replaces a Nix store binary. This release supplies provenance only: the in-app
-update notice is a later roadmap item, not an implemented feature.
+replaces a Nix store binary, and its in-app update notice shows the Nix flake/profile
+upgrade commands above.
 
 ## Reproducibility
 

@@ -56,6 +56,10 @@ pub enum Intent {
     ChooseChrome,
     /// Draw the chrome in this palette from now on, then return to Settings.
     Chrome(ChromeTheme),
+    /// Open Settings → Updates.
+    Updates,
+    /// Trigger an immediate release metadata check.
+    CheckUpdates,
 }
 impl Intent {
     fn shortcut(&self) -> Option<(&'static str, Value)> {
@@ -98,6 +102,7 @@ impl Intent {
                 | Intent::RenameWindow(_)
                 | Intent::CloseWindow(_)
                 | Intent::Settings
+                | Intent::Updates
                 | Intent::Fonts
                 | Intent::ClientLabel
                 | Intent::ChooseTheme
@@ -181,16 +186,18 @@ pub enum SettingsSection {
     Integrations,
     Hosts,
     Shortcuts,
+    Updates,
     About,
 }
 impl SettingsSection {
-    pub const ALL: [SettingsSection; 7] = [
+    pub const ALL: [SettingsSection; 8] = [
         SettingsSection::Interface,
         SettingsSection::Terminal,
         SettingsSection::Notifications,
         SettingsSection::Integrations,
         SettingsSection::Hosts,
         SettingsSection::Shortcuts,
+        SettingsSection::Updates,
         SettingsSection::About,
     ];
     pub fn title(self) -> &'static str {
@@ -201,6 +208,7 @@ impl SettingsSection {
             SettingsSection::Integrations => "Integrations",
             SettingsSection::Hosts => "Remote Hosts",
             SettingsSection::Shortcuts => "Shortcuts",
+            SettingsSection::Updates => "Updates",
             SettingsSection::About => "About",
         }
     }
@@ -212,6 +220,7 @@ impl SettingsSection {
             SettingsSection::Integrations => "integrations",
             SettingsSection::Hosts => "hosts",
             SettingsSection::Shortcuts => "shortcuts",
+            SettingsSection::Updates => "updates",
             SettingsSection::About => "about",
         }
     }
@@ -615,6 +624,7 @@ impl Workspace {
                 ("Remote control", "", Intent::RemoteControl(self.active)),
                 ("Default shell…", "", Intent::HostShell(self.active)),
                 ("Settings…", "", Intent::Settings),
+                ("Check for updates", "", Intent::CheckUpdates),
                 ("Add host…", "", Intent::AddHost),
                 ("Edit host…", "", Intent::EditHost(self.active)),
                 ("Reconnect host", "", Intent::Retry),
@@ -657,6 +667,14 @@ impl Workspace {
                     entry.action = Intent::ClientAction(name, args);
                 }
                 entries.push(entry);
+            }
+            if let Some(avail) = self.updates.available() {
+                entries.push(Entry::new(
+                    format!("Update Rex Linux ({})…", avail.version),
+                    self.updates.channel.id(),
+                    "Workspace",
+                    Intent::Updates,
+                ));
             }
             if self.can_start_ssh(self.active) {
                 entries.push(Entry::new(

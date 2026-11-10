@@ -12,7 +12,8 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 ## Features
 
-- **Settings → About** shows the app version, build commit and date, and the active server’s negotiated API revision when connected. Open the repository, this version’s release notes or MIT license, or **Copy version info** for a bug report (OS and architecture included; no host addresses or credentials). Source archives without Git show `unknown` for build metadata. Install channel and server software version are not inferred.
+- **Settings → About** shows the app version, build commit, build date and build channel (`official`, `nix` or `source`), and the active server’s negotiated API revision when connected. Open the repository, this version’s release notes or MIT license, or **Copy version info** for a bug report (OS and architecture included; no host addresses or credentials). Source archives without Git show `unknown` for build metadata. Server software version is not inferred.
+- **In-app update notice and Settings → Updates:** official and Nix builds check the signed GitHub release manifest (`latest.json` and `latest.json.minisig`) against embedded CI and backup Minisign public keys about 30 seconds after launch and at most once every 24 hours while running. When a newer stable release is verified, a non-blocking toast offers **What's new** (opening the GitHub release page in your browser), **Updates…** and **Dismiss for this version**. Guidance matches the detected install channel (`REX_LINUX_CHANNEL`, `/usr/share/rex-linux/channel` and `~/.local/share/rex-linux/install.json`): `sudo pacman -Syu rex-linux-bin` on Arch (`omarchy update` on Omarchy), the verified `install.sh` one-command upgrade for tarball/script installs, `.deb` upgrade instructions for Debian/Ubuntu, and `nix flake update rex-rune` / `nix profile upgrade rex-linux` for Nix. Source builds never check automatically; turn automatic checks off in Settings → Updates (`updates.check` in `workspace.json`) or with `REX_LINUX_NO_UPDATE_CHECK=1`, or check on demand with **Check now** or `rex-linux --check-update`. Background check failures are silent, and the client never self-updates or downloads binaries.
 
 - Multiple saved hosts, each with its sessions; session windows are tabs and splits follow the server's layout.
 - Unix-socket, HTTPS/WSS and SSH endpoints. Add host lists the machines on your tailnet: a server that answers shows its reachable endpoint and, on API 12, a review of its listener addresses and access rules before connecting. Other machines take an SSH user name and are reached by forwarding their Rex socket over SSH (Tailscale SSH needs no keys).
@@ -81,11 +82,11 @@ Download a package and `SHA256SUMS` from [Releases](https://github.com/shuv1337/
 sha256sum --ignore-missing -c SHA256SUMS
 
 # Debian/Ubuntu: install the one .deb matching your architecture.
-sudo apt install ./rex-linux_0.5.3_amd64.deb
+sudo apt install ./rex-linux_0.6.0_amd64.deb
 
 # Or extract the matching tarball and install for your user (no root).
-tar -xzf rex-linux-0.5.3-x86_64-linux-gnu.tar.gz
-cd rex-linux-0.5.3-x86_64-linux-gnu
+tar -xzf rex-linux-0.6.0-x86_64-linux-gnu.tar.gz
+cd rex-linux-0.6.0-x86_64-linux-gnu
 bash install.sh
 ```
 
@@ -112,8 +113,8 @@ The offline recovery public key is committed as
   `d9fe424ca8b20725e11d6039c39445d38a33023a8d366c69e0612a1c3528de76`.
 
 See the [public-key registry](packaging/keys/README.md). Both public trust roots
-are present; tag publication still fails closed on missing secrets or invalid
-signatures. No client auto-update is implemented.
+are embedded in the client for signed release metadata checks (`latest.json`); tag publication still fails closed on missing secrets or invalid
+signatures. The client never self-updates or downloads binaries.
 
 For a signed release, obtain and retain a trusted copy of those public keys
 separately from the downloaded assets. With `minisign` installed, and the package,
@@ -153,7 +154,7 @@ Optionally, [mise](https://mise.jdx.dev/) can provide the toolchain: [`mise.toml
 
 The repository is also a Nix flake: `nix build .#rex-linux` builds a package with the desktop entry and icons, and `nix develop` gives a shell with the toolchain and libraries. See [Nix packaging](docs/nix.md).
 
-`Cargo.lock` pins the dependency graph. TLS uses Rustls with the system trust roots. The workspace also builds two protocol probes (`rex-probe`, `rex-workspace-probe`) that do not need the UI; use `--no-default-features` to build only those.
+`Cargo.lock` pins the dependency graph. TLS uses Rustls with the system trust roots. The workspace also builds three probes (`rex-probe`, `rex-workspace-probe`, `rex-update-probe`) that do not need the UI; use `--no-default-features` to build only those.
 
 ## Run
 
@@ -187,6 +188,7 @@ Options:
 | `--font-size <PT>` | Override the saved terminal size (8–48 pt, initially 15). |
 | `--config <PATH>` | Use a separate workspace preferences file. |
 | `--window-size <WxH>` | Requested startup size (default `1440x900`); tiling compositors may override it. |
+| `--check-update` | Verify the latest signed release manifest, print channel-specific upgrade guidance, and exit without starting the UI. |
 
 Without `--session`, the workspace restores the saved host and session; on a new host it selects the first listed session. Rune's own developer flags go after `--` (for example `-- --snap out.png`). `REX_FRAME_STATS=1` prints per-frame CPU percentiles.
 
@@ -203,9 +205,9 @@ With mise, `mise run install` builds the release binary and runs the script with
 
 ## Configuration
 
-Preferences are stored as JSON in `$XDG_CONFIG_HOME/rex-linux/workspace.json` (default `~/.config/rex-linux/workspace.json`): saved hosts (label, endpoint, collapsed state, optional default shell), the last host and session per host, whether the sidebar is open and its width, tab position (`vertical_tabs`), pane density (`pane_density`: `"compact"` or `"comfortable"`, the default), terminal font family (`font_family`), ordered fallback families (`font_fallbacks`), font size, the chrome palette (`chrome_theme`: `"midnight"`, `"rose_pine"`, `"rose_pine_moon"` or `"gruvbox_dark"`; an unknown value is Midnight), the terminal theme (`terminal_theme`: `"follow_server"`, `"builtin_default"` for Rex's own colours, `"follow_chrome"`, or `"named:<name>"` with `rex/midnight`, `rex/rose-pine`, `rex/rose-pine-moon`, `rex/gruvbox-dark` or a Ghostty theme's file name), whether you have picked a terminal theme yourself (`terminal_theme_chosen`) and whether this client has ever declared one (`terminal_theme_declared`), interface zoom (`ui_scale`), the corner notices appear in (`notice_position`), the activity and notification choices (`notifications`) and whether agents may name sessions (`agent_session_naming`). Use `--config <path>` to keep a separate workspace.
+Preferences are stored as JSON in `$XDG_CONFIG_HOME/rex-linux/workspace.json` (default `~/.config/rex-linux/workspace.json`): saved hosts (label, endpoint, collapsed state, optional default shell), the last host and session per host, whether the sidebar is open and its width, tab position (`vertical_tabs`), pane density (`pane_density`: `"compact"` or `"comfortable"`, the default), pane padding (`pane_padding`: 0–32 pt, default 8 pt), terminal font family (`font_family`), ordered fallback families (`font_fallbacks`), font size, the chrome palette (`chrome_theme`: `"midnight"`, `"rose_pine"`, `"rose_pine_moon"` or `"gruvbox_dark"`; an unknown value is Midnight), the terminal theme (`terminal_theme`: `"follow_server"`, `"builtin_default"` for Rex's own colours, `"follow_chrome"`, or `"named:<name>"` with `rex/midnight`, `rex/rose-pine`, `rex/rose-pine-moon`, `rex/gruvbox-dark` or a Ghostty theme's file name), whether you have picked a terminal theme yourself (`terminal_theme_chosen`) and whether this client has ever declared one (`terminal_theme_declared`), interface zoom (`ui_scale`), the corner notices appear in (`notice_position`), the activity and notification choices (`notifications`), automatic update checks (`updates.check`, default `true`), and whether agents may name sessions (`agent_session_naming`). Update check state and dismissed versions are stored in `$XDG_STATE_HOME/rex-linux/update.json`. Use `--config <path>` to keep a separate workspace.
 
-Settings (the sliders button in the toolbar, `Ctrl ,`, or Settings… in Commands) has Interface (chrome theme, zoom, pane density, sidebar, tab position, notice corner), Terminal (font family, fallback families, size, theme, each host's default shell), Notifications (activity in tabs, desktop notifications and which changes send one), Integrations (Rex's skill and hooks for coding agents on this machine), Remote Hosts (add, edit or remove saved hosts) and Shortcuts sections. A host's name, endpoint and default shell can also be edited from its sidebar header's right-click menu, from Edit host… in Commands, or from an offline session's menu. Removing a host only stops this client connecting to it; its sessions keep running on the server. A changed endpoint connects to that server as a new host. How hosts are added is described under [Hosts](#hosts).
+Settings (the sliders button in the toolbar, `Ctrl ,`, or Settings… in Commands) has Interface (chrome theme, zoom, pane density, sidebar, tab position, notice corner), Terminal (font family, fallback families, size, pane padding, theme, each host's default shell), Notifications (activity in tabs, desktop notifications and which changes send one), Integrations (Rex's skill and hooks for coding agents on this machine), Remote Hosts (add, edit or remove saved hosts), Shortcuts, Updates and About sections. A host's name, endpoint and default shell can also be edited from its sidebar header's right-click menu, from Edit host… in Commands, or from an offline session's menu. Removing a host only stops this client connecting to it; its sessions keep running on the server. A changed endpoint connects to that server as a new host. How hosts are added is described under [Hosts](#hosts).
 
 In Interface settings, **Pane density → Compact** removes pane headers, outer borders, shadows, rounded corners, gaps and outer margins. One straight separator remains at each split boundary. Split placement and divider dragging stay available, and reconnect controls float over the affected pane. Pane actions remain on right-click or `Ctrl Shift Space`; per-pane activity words and progress bars are hidden, but tab activity remains. **Comfortable** is the default and keeps pane cards. A single, unzoomed pane stays edge to edge in either mode.
 

@@ -67,6 +67,18 @@ impl Default for NotificationsConfig {
     }
 }
 
+/// Whether the client checks for signed release metadata in the background.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UpdatesConfig {
+    pub check: bool,
+}
+impl Default for UpdatesConfig {
+    fn default() -> Self {
+        Self { check: true }
+    }
+}
+
 /// The palette the chrome is drawn in. A value this version doesn't know reads as Midnight.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -155,6 +167,7 @@ pub struct Settings {
     pub ui_scale: f32,
     pub notice_position: NoticePosition,
     pub notifications: NotificationsConfig,
+    pub updates: UpdatesConfig,
     /// Passed to `rex skill setup` as `--session-naming`, always explicitly.
     pub agent_session_naming: bool,
     pub chrome_theme: ChromeTheme,
@@ -197,6 +210,7 @@ impl Default for Settings {
             ui_scale: 1.,
             notice_position: NoticePosition::default(),
             notifications: NotificationsConfig::default(),
+            updates: UpdatesConfig::default(),
             agent_session_naming: false,
             chrome_theme: ChromeTheme::default(),
             terminal_theme: TerminalThemeChoice::default(),
@@ -528,6 +542,22 @@ mod tests {
             assert_eq!(json["pane_density"], saved);
             let back: Settings = serde_json::from_value(json).unwrap();
             assert_eq!(back.pane_density, density);
+        }
+    }
+
+    #[test]
+    fn updates_check_defaults_to_true_and_round_trips() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert!(old.updates.check);
+        for check in [false, true] {
+            let settings = Settings {
+                updates: UpdatesConfig { check },
+                ..Settings::default()
+            };
+            let json = serde_json::to_value(&settings).unwrap();
+            assert_eq!(json["updates"]["check"], check);
+            let back: Settings = serde_json::from_value(json).unwrap();
+            assert_eq!(back.updates.check, check);
         }
     }
 

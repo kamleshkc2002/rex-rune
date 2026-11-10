@@ -15,5 +15,6 @@ pub mod tailnet;
 pub mod terminal;
 pub mod terminal_theme;
 pub mod transport;
+pub mod update;
 pub mod upload;
 pub mod wire;

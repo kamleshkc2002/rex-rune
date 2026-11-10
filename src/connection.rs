@@ -53,6 +53,9 @@ pub struct Options {
     pub config: Option<PathBuf>,
     #[arg(long, default_value = "1440x900")]
     pub window_size: String,
+    /// Check signed release metadata for updates and exit (0 = up to date, 10 = update available, 1 = error).
+    #[arg(long)]
+    pub check_update: bool,
     /// Rune's own flags (`--snap out.png`, `--tree`, `--script steps.json`), after `--`.
     #[arg(last = true, hide = true)]
     pub rune: Vec<String>,

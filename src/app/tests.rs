@@ -106,7 +106,9 @@ fn creates(rx: &flume::Receiver<HostCommand>) -> Vec<(Option<String>, Option<Str
 }
 
 fn has(rt: &Runtime<Workspace>, key: &str) -> bool {
-    rt.elements().iter().any(|e| e.key.as_deref() == Some(key))
+    rt.elements()
+        .iter()
+        .any(|e| !e.exiting && e.key.as_deref() == Some(key))
 }
 
 #[test]
@@ -1276,7 +1278,7 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     ws.perform(Intent::Settings, &mut rune::Tx::default());
     let mut rt = runtime(ws);
     // The existing Settings section list exposes About without another shortcut.
-    for _ in 0..6 {
+    for _ in 0..7 {
         press(&mut rt, Key::Down);
     }
     press(&mut rt, Key::Enter);
@@ -4396,4 +4398,228 @@ fn ctrl_shift_f_searches_the_focused_terminal_without_typing_into_it() {
         focused(&rt)
     );
     std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
+fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_newer() {
+    use rex_linux::update::{CheckOutcome, InstallChannel, UpdateState};
+    let mut ws = workspace();
+    let state_path = ws.settings_path.with_extension("update.json");
+    ws.updates.config.state_path = state_path.clone();
+    ws.updates.config.current_version = "0.5.3".into();
+    ws.updates.channel = InstallChannel::Pacman {
+        omarchy: false,
+        custom_hint: None,
+    };
+
+    let state = UpdateState {
+        last_checked: Some(1_762_000_000),
+        highest_verified: Some("0.6.0".into()),
+        latest_version: Some("0.6.0".into()),
+        notes_url: Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into()),
+        published: Some("2026-11-10T00:00:00Z".into()),
+        unsupported_floor: None,
+        dismissed_version: None,
+        announced_version: None,
+    };
+    ws.finish_update_check(
+        false,
+        Ok((
+            CheckOutcome::UpdateAvailable {
+                version: "0.6.0".into(),
+                notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into(),
+                published: "2026-11-10T00:00:00Z".into(),
+            },
+            state,
+        )),
+    );
+
+    let mut rt = runtime(ws);
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
+    assert!(
+        has(&rt, "toast-update"),
+        "update toast appears when newer version exists"
+    );
+    let toast_texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+    assert!(
+        toast_texts
+            .iter()
+            .any(|t| t.contains("sudo pacman -Syu rex-linux-bin")),
+        "toast carries pacman channel command: {toast_texts:?}"
+    );
+
+    click(&mut rt, "toast-update-whats-new");
+    assert_eq!(
+        std::mem::take(&mut rt.state.opened_links),
+        ["https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0"]
+    );
+    assert!(
+        has(&rt, "toast-update"),
+        "What's new leaves the toast visible until dismissed"
+    );
+
+    click(&mut rt, "toast-update-dismiss");
+    assert!(
+        !has(&rt, "toast-update"),
+        "Dismiss hides the toast for 0.6.0"
+    );
+    let saved = UpdateState::load(&state_path);
+    assert_eq!(saved.dismissed_version.as_deref(), Some("0.6.0"));
+
+    // A later background check returning the same 0.6.0 stays dismissed.
+    rt.update(|s, _| {
+        let same = saved.clone();
+        s.finish_update_check(
+            false,
+            Ok((
+                CheckOutcome::UpdateAvailable {
+                    version: "0.6.0".into(),
+                    notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into(),
+                    published: "2026-11-10T00:00:00Z".into(),
+                },
+                same,
+            )),
+        );
+    });
+    rt.frame(1. / 60.);
+    assert!(
+        !has(&rt, "toast-update"),
+        "0.6.0 remains dismissed on background check"
+    );
+
+    // When 0.6.1 is released, the toast resurfaces automatically.
+    rt.update(|s, _| {
+        let mut newer = UpdateState::load(&state_path);
+        newer.highest_verified = Some("0.6.1".into());
+        newer.latest_version = Some("0.6.1".into());
+        newer.notes_url = Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.1".into());
+        s.finish_update_check(
+            false,
+            Ok((
+                CheckOutcome::UpdateAvailable {
+                    version: "0.6.1".into(),
+                    notes_url: "https://github.com/shuv1337/rex-rune/releases/tag/v0.6.1".into(),
+                    published: "2026-11-11T00:00:00Z".into(),
+                },
+                newer,
+            )),
+        );
+    });
+    rt.frame(1. / 60.);
+    assert!(
+        has(&rt, "toast-update"),
+        "0.6.1 resurfaces the update toast"
+    );
+    let _ = std::fs::remove_file(&state_path);
+    let _ = std::fs::remove_file(state_path.with_extension("lock"));
+    let _ = std::fs::remove_file(&rt.state.settings_path);
+}
+
+#[test]
+fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failures() {
+    use rex_linux::update::{InstallChannel, UpdateState};
+    let mut ws = workspace();
+    let state_path = ws.settings_path.with_extension("update-settings.json");
+    ws.updates.config.state_path = state_path.clone();
+    ws.updates.config.current_version = "0.5.3".into();
+    ws.updates.env_opt_out = false;
+    ws.updates.channel = InstallChannel::Pacman {
+        omarchy: true,
+        custom_hint: None,
+    };
+    ws.updates.state = UpdateState {
+        last_checked: Some(1_762_000_000),
+        highest_verified: Some("0.6.0".into()),
+        latest_version: Some("0.6.0".into()),
+        notes_url: Some("https://github.com/shuv1337/rex-rune/releases/tag/v0.6.0".into()),
+        published: Some("2026-11-10T00:00:00Z".into()),
+        unsupported_floor: None,
+        dismissed_version: None,
+        announced_version: Some("0.6.0".into()),
+    };
+    ws.init_updates();
+    assert!(ws.updates.next_check.is_some());
+
+    // Background failure is completely silent: no notice toast, no last_error.
+    ws.finish_update_check(false, Err(anyhow::anyhow!("network unreachable")));
+    assert!(
+        ws.notices.is_empty(),
+        "background failure must not push a toast notice"
+    );
+    assert!(ws.updates.last_error.is_none());
+
+    // Manual failure records last_error and informs the user.
+    ws.finish_update_check(true, Err(anyhow::anyhow!("offline")));
+    assert_eq!(ws.updates.last_error.as_deref(), Some("offline"));
+    assert!(
+        ws.notices
+            .iter()
+            .any(|n| n.text.contains("Update check failed: offline"))
+    );
+    ws.notices.clear();
+    ws.updates.last_error = None;
+
+    // Clicking "Updates…" on the update toast opens Settings -> Updates directly.
+    let mut rt = runtime(ws);
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
+    click(&mut rt, "toast-update-open");
+    assert!(matches!(
+        rt.state.panel.as_ref().map(|p| &p.kind),
+        Some(PanelKind::Settings)
+    ));
+    assert_eq!(
+        rt.state.settings_section,
+        super::panel::SettingsSection::Updates
+    );
+
+    // Omarchy channel shows `omarchy update` and copies the command.
+    let texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+    assert!(
+        texts.iter().any(|t| t.contains("omarchy update")),
+        "Omarchy guidance shown: {texts:?}"
+    );
+    click(&mut rt, "updates-copy-command");
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some("omarchy update")
+    );
+
+    // Flipping the Automatic update checks switch opts out, saves to workspace.json, and clears the timer.
+    assert!(rt.state.settings.updates.check);
+    click(&mut rt, "updates-auto-switch");
+    assert!(!rt.state.settings.updates.check);
+    assert!(rt.state.updates.next_check.is_none());
+    let reloaded = Settings::load(&rt.state.settings_path).unwrap();
+    assert!(!reloaded.updates.check);
+
+    // Check other channels render their specific guidance in Settings -> Updates.
+    for (channel, expected_snippet) in [
+        (
+            InstallChannel::Tarball,
+            "https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh",
+        ),
+        (
+            InstallChannel::Deb { custom_hint: None },
+            "sudo apt install ./rex-linux_0.6.0_",
+        ),
+        (InstallChannel::Nix, "nix flake update rex-rune"),
+    ] {
+        rt.update(|s, _| s.updates.channel = channel);
+        rt.frame(1. / 60.);
+        let texts: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
+        assert!(
+            texts.iter().any(|t| t.contains(expected_snippet)),
+            "expected {expected_snippet:?} in {texts:?}"
+        );
+    }
+
+    let _ = std::fs::remove_file(&state_path);
+    let _ = std::fs::remove_file(state_path.with_extension("lock"));
+    let _ = std::fs::remove_file(&rt.state.settings_path);
 }
