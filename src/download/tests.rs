@@ -1370,3 +1370,16 @@ fn no_partial_file_is_made_when_its_record_cannot_be_written() {
     );
     assert!(names(&dir).is_empty(), "no file without a record");
 }
+
+#[test]
+fn the_low_space_failure_rounds_like_the_question() {
+    // 104_999_999 bytes free: the question says "105 MB free", and so must the refusal.
+    let free = 104_999_999;
+    let text = Failure::LowSpace { free }.to_string();
+    assert!(
+        text.contains(&format!("{} free", size_text(free))),
+        "{text}"
+    );
+    assert!(text.contains("105 MB free"), "{text}");
+    assert!(!text.contains("104"), "{text}");
+}

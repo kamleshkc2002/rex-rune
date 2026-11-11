@@ -318,6 +318,55 @@ fn bar_button(
         )
 }
 
+/// One chip while a transfer receives, `↓ build.log 42%` or `↓ 3 files`, and none otherwise,
+/// like the pending-sequence chip. When the bar is short of room it is `↓ 42%` (see
+/// `downloads_view::chip_label`). A press opens the Downloads popover under the chip.
+fn download_chip(s: &Workspace) -> El {
+    let Some(text_of) = super::downloads_view::chip_label(s) else {
+        return el();
+    };
+    let super::downloads_view::ChipText {
+        label,
+        short,
+        compact,
+        percent,
+    } = text_of;
+    let spoken = match &percent {
+        Some(percent) => format!("{label} {percent}"),
+        None => label.clone(),
+    };
+    let spoken = format!("Downloads: {}", spoken.trim_start_matches("↓ "));
+    let shown = if compact { short } else { label };
+    chip_press(chip(
+        row()
+            .key("download-chip")
+            .role("button")
+            .label(spoken.clone())
+            .h(28.)
+            .max_w(190.)
+            .px(8.)
+            .gap(5.)
+            .center_y()
+            .hover(white(0.08))
+            .help(format!("{spoken} · click for the list"))
+            .on_layout(|s: &mut Workspace, r| s.downloads.chip = r)
+            .on_press_tx(|s: &mut Workspace, tx: &mut Tx| {
+                s.open_downloads_from_chip(tx);
+                tx.blur();
+            })
+            // Cut by width in the middle, so a long name keeps its extension and the percent
+            // keeps its place.
+            .child(
+                text(shown)
+                    .font(medium(11.5))
+                    .color(rgb(ink()))
+                    .truncate_middle()
+                    .shrink(),
+            )
+            .children(percent.map(|p| text(p).font(medium(11.5)).color(rgb(muted())))),
+    ))
+}
+
 pub fn toolbar(s: &Workspace) -> El {
     row()
         .key("toolbar")
@@ -356,6 +405,7 @@ pub fn toolbar(s: &Workspace) -> El {
             ),
             None => el(),
         })
+        .child(download_chip(s))
         // Always at least 48pt of window to drag, outside the tabs.
         .child(el().key("title-drag").grow(1.).min_w(48.).h_full())
         .child(

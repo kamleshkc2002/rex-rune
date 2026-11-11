@@ -11,6 +11,7 @@ pub const NEXT_GLOBAL: &str = "client.tab.next_global";
 pub const PREVIOUS_GLOBAL: &str = "client.tab.previous_global";
 pub const HISTORY_BACK: &str = "client.history.back";
 pub const HISTORY_FORWARD: &str = "client.history.forward";
+pub const DOWNLOAD: &str = "pane.download";
 
 #[derive(Clone, Copy)]
 enum Handler {
@@ -46,6 +47,7 @@ enum Handler {
     RenameSession,
     ClosePane,
     SendKey,
+    Download,
     SelectAll,
     CopyPaneId,
     ClearTerminal,
@@ -118,6 +120,7 @@ specs! {
     "session.rename" => RenameSession,
     "pane.close" => ClosePane,
     "pane.send_key" => SendKey,
+    DOWNLOAD => Download,
     "pane.select_all" => SelectAll,
     "pane.copy_id" => CopyPaneId,
     "pane.clear" => ClearTerminal,
@@ -183,6 +186,9 @@ impl Spec {
             ),
             RenameTab => Remote::Never("Use rex window rename instead."),
             RenameSession => Remote::Never("Use rex session rename instead."),
+            Download => Remote::Never(
+                "Only the person at this computer can choose a file to download; nothing a host sends can start one.",
+            ),
             Palette | Settings | Search | SwitchSession | PaneActions => {
                 Remote::Never("Only the person at this computer can open dialogs and popups.")
             }
@@ -231,6 +237,11 @@ impl Spec {
             }
             About => Remote::Never("Only the person at this computer can open dialogs and popups."),
         }
+    }
+    /// An action only this person's own key or click may run: a returned client action must
+    /// not start it.
+    pub fn starts_download(&self) -> bool {
+        matches!(self.handler, Handler::Download)
     }
     pub fn global(&self) -> bool {
         matches!(
@@ -291,6 +302,7 @@ impl Spec {
             Handler::RenameSession => "Rename session",
             Handler::ClosePane => "Close pane",
             Handler::SendKey => "Send key",
+            Handler::Download => "Download file",
             Handler::SelectAll => "Select all",
             Handler::CopyPaneId => "Copy pane ID",
             Handler::ClearTerminal => "Clear terminal",
@@ -362,6 +374,7 @@ impl Spec {
             | Handler::ZoomPane
             | Handler::FocusPane
             | Handler::PaneActions
+            | Handler::Download
             | Handler::Reconnect
             | Handler::CopyPaneId
             | Handler::ClearTerminal
@@ -558,6 +571,11 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::ClosePane => {
             if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
                 s.perform(Intent::Pane(target, super::panel::PaneAction::Close), tx);
+            }
+        }
+        Handler::Download => {
+            if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
+                s.perform(Intent::Pane(target, super::panel::PaneAction::Download), tx);
             }
         }
         Handler::SelectAll

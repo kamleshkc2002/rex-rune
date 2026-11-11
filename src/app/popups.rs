@@ -131,6 +131,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
         panel.kind,
         PanelKind::Pane
             | PanelKind::Form(super::panel::Form::RenamePane(_))
+            | PanelKind::Download(_)
             | PanelKind::Confirm { .. }
     ) {
         return None;

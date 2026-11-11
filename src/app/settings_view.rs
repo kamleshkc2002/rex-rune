@@ -146,6 +146,19 @@ fn interface(s: &Workspace) -> El {
             ])],
         ),
         section(
+            "Downloads",
+            [card([disclosure(
+                "download-folder",
+                "Download folder",
+                "Where Download file… saves.",
+                &super::downloads::folder_text(
+                    &s.download_folder(),
+                    super::downloads::FOLDER_CHARS,
+                ),
+                |s, tx| s.perform(Intent::DownloadFolder, tx),
+            )])],
+        ),
+        section(
             "Notices",
             [card([select_row(
                 "notice-position",

@@ -25,6 +25,8 @@ pub enum Intent {
     StartSsh(usize),
     /// The default shell form for a host.
     HostShell(usize),
+    /// The download folder form (Settings).
+    DownloadFolder,
     Pane(PaneTarget, PaneAction),
     Session(SessionTarget, SessionAction),
     /// A tab action on a named tab of any host and session.
@@ -64,6 +66,8 @@ pub enum Intent {
     Updates,
     /// Trigger an immediate release metadata check.
     CheckUpdates,
+    /// The Downloads popover.
+    Downloads,
     /// Open Settings → About.
     About,
     /// Take this option of the open `Choice` list (a Settings `select_row`).
@@ -98,6 +102,7 @@ impl Intent {
                 PaneAction::Split(way) => ("pane.split", json!({"direction":way.arg()})),
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
+                PaneAction::Download => (super::actions::DOWNLOAD, Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
                 PaneAction::Copy => ("pane.copy", Value::Null),
                 PaneAction::Paste => ("pane.paste", Value::Null),
@@ -128,6 +133,7 @@ impl Intent {
                 )
                 | Intent::ChooseHost(_)
                 | Intent::HostShell(_)
+                | Intent::DownloadFolder
                 | Intent::StartSsh(_)
                 | Intent::RenameSession
                 | Intent::RenameWindow(_)
@@ -138,6 +144,7 @@ impl Intent {
                 )
                 | Intent::Settings
                 | Intent::Updates
+                | Intent::Downloads
                 | Intent::About
                 | Intent::Fonts
                 | Intent::ClientLabel
@@ -149,7 +156,10 @@ impl Intent {
                 | Intent::AddHostManually
                 | Intent::EditHost(_)
                 | Intent::RemoveHost(_)
-                | Intent::Pane(_, PaneAction::Rename | PaneAction::Close)
+                | Intent::Pane(
+                    _,
+                    PaneAction::Rename | PaneAction::Close | PaneAction::Download
+                )
                 | Intent::Session(_, SessionAction::Rename | SessionAction::Close)
         )
     }
@@ -191,6 +201,8 @@ pub enum PaneAction {
     Rename,
     Close,
     Reconnect,
+    /// Open the Download from <host> dialog for this pane.
+    Download,
     /// The pane's selected text to the clipboard.
     Copy,
     /// The clipboard into the pane, as Ctrl Shift V does for the focused one.
@@ -211,6 +223,8 @@ pub enum Form {
     ClientLabel,
     /// A host's default shell for new terminals.
     HostShell(usize),
+    /// Where downloads are saved: `downloads.directory`.
+    DownloadFolder,
     /// `None`: the selected session (Commands); `Some`: a sidebar row's session.
     RenameSession(Option<SessionTarget>),
     RenameWindow(String),
@@ -320,6 +334,10 @@ pub enum PanelKind {
         change: super::integrations::AgentChange,
         steps: Vec<super::integrations::Step>,
     },
+    /// Download a file from the captured pane's machine; see `downloads.rs`.
+    Download(super::downloads::Dialog),
+    /// The Downloads popover: this launch's transfers.
+    Downloads,
 }
 
 pub struct Panel {
@@ -730,6 +748,7 @@ impl Workspace {
                 ),
                 ("Rename pane…", 2, PaneAction::Rename),
                 ("Copy pane ID", 2, PaneAction::CopyId),
+                ("Download file…", 2, PaneAction::Download),
                 ("Clear terminal", 3, PaneAction::Clear),
                 ("Reset terminal", 3, PaneAction::Reset),
                 ("Reconnect terminal", 3, PaneAction::Reconnect),

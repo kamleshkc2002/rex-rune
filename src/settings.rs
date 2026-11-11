@@ -107,6 +107,16 @@ impl Default for UpdatesConfig {
     }
 }
 
+/// Where downloaded files are saved.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DownloadsConfig {
+    /// The folder, absolute or starting with `~`, as the person wrote it. None is the XDG
+    /// download folder (`xdg-user-dir DOWNLOAD`, else `~/Downloads`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub directory: Option<String>,
+}
+
 /// The palette the chrome is drawn in. A value this version doesn't know reads as Midnight.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -197,6 +207,7 @@ pub struct Settings {
     pub notice_position: NoticePosition,
     pub notifications: NotificationsConfig,
     pub updates: UpdatesConfig,
+    pub downloads: DownloadsConfig,
     /// Passed to `rex skill setup` as `--session-naming`, always explicitly.
     pub agent_session_naming: bool,
     pub chrome_theme: ChromeTheme,
@@ -244,6 +255,7 @@ impl Default for Settings {
             notice_position: NoticePosition::default(),
             notifications: NotificationsConfig::default(),
             updates: UpdatesConfig::default(),
+            downloads: DownloadsConfig::default(),
             agent_session_naming: false,
             chrome_theme: ChromeTheme::default(),
             terminal_theme: TerminalThemeChoice::default(),
@@ -577,6 +589,48 @@ mod tests {
             let back: Settings = serde_json::from_value(json).unwrap();
             assert_eq!(back.pane_density, density);
         }
+    }
+
+    #[test]
+    fn the_downloads_directory_defaults_to_none_and_round_trips() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.downloads.directory, None);
+        assert!(
+            serde_json::to_value(&old).unwrap()["downloads"]
+                .get("directory")
+                .is_none(),
+            "an unset folder is not written"
+        );
+        let path = std::env::temp_dir().join(format!(
+            "rex-downloads-settings-{}.json",
+            std::process::id()
+        ));
+        for directory in [Some("~/Downloads/rex"), Some("/srv/files"), None] {
+            let mut settings = Settings::default();
+            settings.downloads.directory = directory.map(str::to_owned);
+            settings.save(&path).unwrap();
+            let saved = std::fs::read_to_string(&path).unwrap();
+            assert_eq!(saved.contains("\"directory\""), directory.is_some());
+            assert_eq!(
+                Settings::load(&path)
+                    .unwrap()
+                    .downloads
+                    .directory
+                    .as_deref(),
+                directory
+            );
+        }
+        std::fs::write(&path, r#"{"downloads":{"directory":"/a/b"}}"#).unwrap();
+        assert_eq!(
+            Settings::load(&path)
+                .unwrap()
+                .downloads
+                .directory
+                .as_deref(),
+            Some("/a/b"),
+            "the key is downloads.directory"
+        );
+        std::fs::remove_file(path).unwrap();
     }
 
     #[test]

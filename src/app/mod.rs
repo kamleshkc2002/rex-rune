@@ -6,6 +6,8 @@ mod bindings;
 mod commands;
 mod dialogs;
 mod discover;
+mod downloads;
+mod downloads_view;
 mod find;
 mod font_size;
 mod fonts;
@@ -98,6 +100,9 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
     }
     let open = match &s.panel {
         Some(panel) if panel.is_list() => Some(popups::list_popup(s, viewport)),
+        Some(panel) if matches!(panel.kind, panel::PanelKind::Downloads) => {
+            Some(downloads_view::popover(s, viewport))
+        }
         Some(_) => dialogs::dialog(s, viewport),
         None => None,
     };
@@ -159,7 +164,12 @@ fn poll(s: &mut Workspace, _: f64, tx: &mut Tx) -> bool {
     // A tab that moved within its session's order is revealed again where it now is.
     let place = s.active_tab_place();
     let tab = place.as_ref().map(|(id, _)| id.clone());
-    let reveal = (place, s.area[2].round() as i32, s.sidebar.is_open());
+    let reveal = (
+        place,
+        s.area[2].round() as i32,
+        s.sidebar.is_open(),
+        s.bar_chips(),
+    );
     let again = std::mem::take(&mut s.reveal_tab_again);
     if reveal != s.last_tab || again {
         if let Some(id) = &tab {
@@ -228,6 +238,7 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
     if let Err(error) = rune::set_app_icon(APP_ICON) {
         eprintln!("Could not load the Rex window icon: {error}");
     }
+    Workspace::clean_up_download_leftovers();
     let rune_args = std::mem::take(&mut options.rune);
     let app = rune::App::new(AppSpec {
         min_size: Some((640., 480.)),
@@ -259,5 +270,17 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
         app = app.on_frame_encoded(move |f| frames.record(f));
     }
     app.run();
+    // The window is gone and the workspace with it: every host connection has been told to shut
+    // down. Give the host threads a moment to drop their transfers, so a download in flight
+    // deletes its partial file before the process ends (the next launch sweeps whatever a host
+    // stuck connecting leaves behind).
+    wait_for_hosts_at_exit();
     Ok(())
+}
+
+/// The longest the app waits for its host threads once the window is closed.
+const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+fn wait_for_hosts_at_exit() {
+    rex_linux::connection::wait_for_hosts(EXIT_WAIT);
 }

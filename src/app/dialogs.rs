@@ -68,7 +68,7 @@ pub fn modal_layer(s: &Workspace, surface: El, under: bool, top: f32) -> El {
     layer.child(panel)
 }
 
-fn title(t: &str) -> El {
+pub(super) fn title(t: &str) -> El {
     text(t.to_owned()).font(strong(17.)).color(rgb(ink()))
 }
 
@@ -132,6 +132,14 @@ fn form(s: &Workspace, form: &Form) -> El {
     if let Form::HostShell(_) = form {
         body = body.child(
             text("Used for new sessions, tabs and splits on this host. Running terminals are unchanged.")
+                .font(ui(12.))
+                .color(rgb(muted()))
+                .wrap(),
+        );
+    }
+    if let Form::DownloadFolder = form {
+        body = body.child(
+            text("Where Download file… saves. Empty uses the system's Downloads folder. The folder must exist; nothing is overwritten.")
                 .font(ui(12.))
                 .color(rgb(muted()))
                 .wrap(),
@@ -252,6 +260,7 @@ pub fn dialog(s: &Workspace, viewport: [f32; 2]) -> Option<El> {
             )
         }
         PanelKind::StartSsh { endpoint } => super::ssh_setup::dialog(s, endpoint),
+        PanelKind::Download(d) => super::downloads_view::dialog(s, d),
         PanelKind::AgentChange { change, steps } => {
             super::integrations::confirm(s, &panel.title, change, steps)
         }

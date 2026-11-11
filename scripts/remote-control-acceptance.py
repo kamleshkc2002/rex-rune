@@ -12,10 +12,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import pwd
-import shlex
 import shutil
-import socket
 import subprocess
 import tempfile
 import time
@@ -47,6 +44,9 @@ os.environ["PATH"] = str(work / "bin") + os.pathsep + os.environ["PATH"]
 spec = importlib.util.spec_from_file_location("accept", ROOT / "scripts/rune-acceptance-x11.py")
 accept = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(accept)
+spec = importlib.util.spec_from_file_location("private_sshd", ROOT / "scripts/private_ssh.py")
+private_sshd = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(private_sshd)
 processes = []
 desk = None
 
@@ -106,53 +106,12 @@ def perform(host, action, args=None, error=None, direct=False, **context):
 
 
 def private_ssh():
-    sshd, ssh, keygen = (shutil.which(tool) for tool in ("sshd", "ssh", "ssh-keygen"))
-    if not all((sshd, ssh, keygen)):
-        print("SKIP SSH: sshd/ssh/ssh-keygen not available; using two local sockets", flush=True)
+    started = private_sshd.start(work)
+    if isinstance(started, str):
+        print(f"SKIP SSH: {started}; using two local sockets", flush=True)
         return endpoints[1]
-    for name in ("host-key", "client-key"):
-        subprocess.run([keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(work / name)], check=True)
-    with socket.socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        port = listener.getsockname()[1]
-    user = pwd.getpwuid(os.getuid()).pw_name
-    server_config = work / "sshd_config"
-    server_config.write_text(f"""ListenAddress 127.0.0.1
-Port {port}
-HostKey {work}/host-key
-PidFile {work}/sshd.pid
-AuthorizedKeysFile {work}/client-key.pub
-StrictModes no
-UsePAM no
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-AllowUsers {user}
-AllowTcpForwarding yes
-AllowStreamLocalForwarding yes
-""")
-    client_config = work / "ssh_config"
-    client_config.write_text(f"""Host *
-  IdentityFile {work}/client-key
-  IdentitiesOnly yes
-  UserKnownHostsFile {work}/known_hosts
-  GlobalKnownHostsFile /dev/null
-  StrictHostKeyChecking accept-new
-  BatchMode yes
-  ConnectTimeout 2
-""")
-    server = subprocess.Popen([sshd, "-D", "-e", "-f", str(server_config)],
-                              stdout=(work / "sshd.log").open("w"), stderr=subprocess.STDOUT)
+    server, port, user = started
     processes.append(server)
-    time.sleep(.4)
-    test = subprocess.run([ssh, "-F", str(client_config), "-p", str(port), f"{user}@127.0.0.1", "true"],
-                          capture_output=True, text=True, timeout=5)
-    if test.returncode:
-        (work / "ssh-check.log").write_text(test.stderr)
-        stop(server)
-        print("SKIP SSH: private sshd cannot authenticate; see ssh-check.log and sshd.log. Using two local sockets.", flush=True)
-        return endpoints[1]
-    (work / "bin/ssh").write_text(f"#!/bin/sh\nexec {shlex.quote(ssh)} -F {shlex.quote(str(client_config))} \"$@\"\n")
-    (work / "bin/ssh").chmod(0o755)
     print("PASS real private SSH server and disposable-key authentication", flush=True)
     return f"ssh://{user}@127.0.0.1:{port}{work}/b.sock"
 

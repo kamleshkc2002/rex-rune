@@ -101,9 +101,9 @@ pub struct Workspace {
     pub title: String,
     #[cfg(test)]
     pub opened_links: Vec<String>,
-    /// (active tab and its place, pane width, sidebar open) when the active tab was last
-    /// revealed.
-    pub last_tab: (Option<(String, usize)>, i32, bool),
+    /// (active tab and its place, pane width, sidebar open, chips in the bar) when the active
+    /// tab was last revealed.
+    pub last_tab: (Option<(String, usize)>, i32, bool, u8),
     pub reveal_tab_again: bool,
     pub tab_strip: TabStrip,
     pub tab_pos: rune::Live<[f32; 2]>,
@@ -137,6 +137,8 @@ pub struct Workspace {
     /// The Ghostty themes the theme picker lists, read when it opens.
     pub themes: Vec<ThemeInfo>,
     pub updates: super::updates::Updates,
+    /// What this launch's downloads have told the person, and what finished rows may offer.
+    pub downloads: super::downloads::Downloads,
 }
 
 #[derive(Default)]
@@ -242,7 +244,7 @@ impl Workspace {
             title: "Rex".into(),
             #[cfg(test)]
             opened_links: Vec::new(),
-            last_tab: (None, 0, false),
+            last_tab: (None, 0, false, 0),
             reveal_tab_again: false,
             tab_strip: TabStrip::default(),
             tab_pos: rune::Live::new([0.; 2]),
@@ -267,6 +269,7 @@ impl Workspace {
             theme_dirs,
             themes: Vec::new(),
             updates: Default::default(),
+            downloads: Default::default(),
         };
         this.init_updates();
         if let Some(error) = theme_error {
@@ -516,6 +519,11 @@ impl Workspace {
             self.keymap_generation,
         );
         for queued in client_actions {
+            // Only this person's own key or click starts a download, whatever a host returns.
+            if super::actions::find(&queued.action.action).is_some_and(|s| s.starts_download()) {
+                self.inform("Returned client action skipped: a host cannot start a download.");
+                continue;
+            }
             // Focus events following the reply may legitimately move to another pane.
             // Keep host/session/generation guards, and never act behind a popup or dialog.
             if self.panel.is_some()
@@ -564,6 +572,7 @@ impl Workspace {
             self.inform("That pane is no longer available.");
         }
         self.sync_tabs(index, tx);
+        self.process_downloads(index, tx);
         if index == self.active && old_session != self.hosts[index].model.selected {
             self.drag = None;
         }
@@ -1268,6 +1277,14 @@ impl Workspace {
                     &[("Shell", "Server default — e.g. zsh or /bin/zsh", &shell)],
                 );
             }
+            Intent::DownloadFolder => {
+                let text = self.download_folder_text();
+                self.open_panel(
+                    PanelKind::Form(Form::DownloadFolder),
+                    "Download folder",
+                    &[("Folder", "/path/to/folder or ~/folder", &text)],
+                );
+            }
             Intent::Pane(target, action) => self.pane_action(target, action, tx),
             Intent::Session(target, action) => self.session_action(target, action, tx),
             Intent::AddHost => self.open_add_host(),
@@ -1333,6 +1350,7 @@ impl Workspace {
                 self.open_section(SettingsSection::About);
             }
             Intent::CheckUpdates => self.check_updates_now(),
+            Intent::Downloads => self.open_panel(PanelKind::Downloads, "Downloads", &[]),
             Intent::EditHost(host) => {
                 let h = self.settings.hosts[host].clone();
                 self.open_panel(
@@ -1614,6 +1632,7 @@ impl Workspace {
                 let key = (self.hosts[target.host].id, target.block);
                 self.terminal_command(&key, Command::Reconnect);
             }
+            PaneAction::Download => self.download_dialog(target),
             PaneAction::Copy
             | PaneAction::Paste
             | PaneAction::SelectAll
@@ -1775,6 +1794,7 @@ impl Workspace {
     }
 
     pub fn close_panel(&mut self, tx: &mut Tx) {
+        self.leave_download_dialog();
         self.bindings.sequence.clear();
         self.panel = None;
         tx.blur();
@@ -1782,6 +1802,10 @@ impl Workspace {
 
     /// Escape on a modal: back to the panel it came from, or closed.
     pub fn cancel_panel_quiet(&mut self) {
+        if self.leave_folder_field() {
+            return;
+        }
+        self.leave_download_dialog();
         if let Some(mut back) = self.panel.as_mut().and_then(|p| p.back.take()) {
             if let Some(input) = back.inputs.first_mut() {
                 input.focused = true;
@@ -1793,6 +1817,10 @@ impl Workspace {
     }
 
     pub fn cancel_panel(&mut self, tx: &mut Tx) {
+        if self.leave_folder_field() {
+            return;
+        }
+        self.leave_download_dialog();
         if let Some(mut back) = self.panel.as_mut().and_then(|p| p.back.take()) {
             if let Some(input) = back.inputs.first_mut() {
                 input.focused = true;
@@ -1874,6 +1902,9 @@ impl Workspace {
                         .chars()
                         .any(|c| c.is_whitespace() || c.is_control())
                         .then(|| "Enter one shell name or path, without arguments.".to_owned())
+                } else if let Form::DownloadFolder = form {
+                    // Empty goes back to the system's Downloads folder.
+                    super::downloads::folder_error(&values[0]).map(str::to_owned)
                 } else if values.first().is_none_or(|s| s.is_empty()) {
                     Some("Enter a name".to_owned())
                 } else if let Form::AddSsh(index) = form {
@@ -1939,6 +1970,7 @@ impl Workspace {
                             (!values[0].is_empty()).then(|| values[0].clone());
                         self.save();
                     }
+                    Form::DownloadFolder => self.set_download_folder(&values[0]),
                     Form::RenameSession(None) => self.request("session.set_label", json!({"label":values[0]})),
                     Form::RenameSession(Some(session)) => {
                         self.session_request(&session, "session.set_label", json!({"label":values[0]}))
@@ -1995,6 +2027,7 @@ impl Workspace {
                 self.panel = back;
             }
             PanelKind::StartSsh { endpoint } => self.start_ssh(endpoint),
+            PanelKind::Download(_) => self.start_download(),
             PanelKind::AgentChange { change, .. } => {
                 let back = self.settings_back();
                 self.apply_agents(change);

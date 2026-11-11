@@ -493,6 +493,9 @@ impl Workspace {
             pane("pane.copy_id", "Copy pane ID", PaneAction::CopyId)
                 .keywords("block clipboard")
                 .section(4),
+            pane("pane.download", "Download file…", PaneAction::Download)
+                .keywords("save fetch get file transfer")
+                .section(4),
             pane("pane.clear", "Clear terminal", PaneAction::Clear)
                 .keywords("screen scrollback")
                 .section(5),
@@ -698,6 +701,8 @@ impl Workspace {
         let mut rows = vec![
             Command::action("app.settings", G, "Settings…", "client.settings")
                 .keywords("preferences options"),
+            Command::new("app.downloads", G, "Downloads", Intent::Downloads)
+                .keywords("files transfers progress saved"),
             Command::new(
                 "app.check_updates",
                 G,
