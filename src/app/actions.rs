@@ -50,6 +50,7 @@ enum Handler {
     CopyPaneId,
     ClearTerminal,
     ResetTerminal,
+    PaneHeaders,
 }
 
 pub struct Spec {
@@ -100,6 +101,7 @@ specs! {
     "pane.copy_id" => CopyPaneId,
     "pane.clear" => ClearTerminal,
     "pane.reset" => ResetTerminal,
+    "client.pane_headers.toggle" => PaneHeaders,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -152,6 +154,9 @@ impl Spec {
             ClearTerminal | ResetTerminal => Remote::Never(
                 "Only the person at this computer can clear or reset terminals from here.",
             ),
+            PaneHeaders => {
+                Remote::Never("Only the person at this computer can show or hide pane headers.")
+            }
         }
     }
     pub fn global(&self) -> bool {
@@ -211,6 +216,7 @@ impl Spec {
             Handler::CopyPaneId => "Copy pane ID",
             Handler::ClearTerminal => "Clear terminal",
             Handler::ResetTerminal => "Reset terminal",
+            Handler::PaneHeaders => "Reveal pane headers",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -220,7 +226,8 @@ impl Spec {
             | Handler::Sidebar
             | Handler::ZoomIn
             | Handler::ZoomOut
-            | Handler::ZoomReset => "Interface",
+            | Handler::ZoomReset
+            | Handler::PaneHeaders => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -345,6 +352,7 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::Palette => s.picker(false),
         Handler::Settings => s.perform(Intent::Settings, tx),
         Handler::Sidebar => s.perform(Intent::Sidebar, tx),
+        Handler::PaneHeaders => s.toggle_pane_headers(),
         Handler::Close => s.close_focused(tx),
         Handler::Search => s.open_search(),
         Handler::NewTab => s.perform(Intent::NewWindow, tx),

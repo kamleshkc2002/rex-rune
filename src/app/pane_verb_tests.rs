@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 /// Make `block` a live terminal showing `output`, with its commands on `sender`. The returned
 /// terminal stands in for the pane's worker.
-fn framed_terminal(
+pub(super) fn framed_terminal(
     ws: &mut Workspace,
     block: &str,
     sender: &flume::Sender<HostCommand>,
@@ -43,7 +43,7 @@ fn framed_terminal(
 }
 
 /// What terminals were sent, as (block, verb), without keys and pointer reports.
-fn sent_verbs(rx: &flume::Receiver<HostCommand>) -> Vec<(String, String)> {
+pub(super) fn sent_verbs(rx: &flume::Receiver<HostCommand>) -> Vec<(String, String)> {
     rx.try_iter()
         .filter_map(|c| match c {
             HostCommand::Terminal { block, command, .. } => Some((
@@ -87,7 +87,7 @@ fn choose(rt: &mut Runtime<Workspace>, label: &str) {
     click(rt, &format!("entry:{index}"));
 }
 
-fn rect(rt: &Runtime<Workspace>, key: &str) -> [f32; 4] {
+pub(super) fn rect(rt: &Runtime<Workspace>, key: &str) -> [f32; 4] {
     rt.elements()
         .into_iter()
         .find(|e| !e.exiting && e.key.as_deref() == Some(key))
@@ -601,21 +601,21 @@ fn a_rebound_verb_shows_its_keys_in_the_menu() {
 
 /// Draws the window to `REX_TEST_SNAP_DIR/<name>.png` at 2×, when that directory is named.
 /// One painter for a run: the glyph atlas uploads each glyph once.
-struct Camera {
+pub(super) struct Camera {
     dir: std::path::PathBuf,
     gpu: rune::render::Gpu,
     painter: rune::render::Renderer,
 }
 
 impl Camera {
-    fn new() -> Option<Self> {
+    pub(super) fn new() -> Option<Self> {
         let dir = std::path::PathBuf::from(std::env::var_os("REX_TEST_SNAP_DIR")?);
         let gpu = rune::render::Gpu::headless();
         let painter = rune::render::Renderer::new(&gpu.device, rune::render::OFFSCREEN_FORMAT);
         Some(Self { dir, gpu, painter })
     }
 
-    fn snap(&mut self, rt: &mut Runtime<Workspace>, name: &str) {
+    pub(super) fn snap(&mut self, rt: &mut Runtime<Workspace>, name: &str) {
         let (w, h) = (2048, 1400);
         let (device, queue) = (&self.gpu.device, &self.gpu.queue);
         self.painter.upload_images(device, queue, &mut rt.images);

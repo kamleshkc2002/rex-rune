@@ -6,6 +6,8 @@ mod bindings_integration_tests;
 mod menu_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
+#[path = "pane_header_tests.rs"]
+mod pane_header_tests;
 #[path = "pane_verb_tests.rs"]
 mod pane_verb_tests;
 #[path = "remote_session_tests.rs"]

@@ -59,7 +59,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
         .into_iter()
         .find(|p| p.block == target.block)?;
     let [ax, ay, aw, ah] = s.area;
-    let bleed = super::panes::full_bleed(current);
+    let bleed = super::pane_header::full_bleed(s, current);
     let ([x, y, w, h], radius) = if bleed {
         ([0., 0., aw, ah], 0.)
     } else {

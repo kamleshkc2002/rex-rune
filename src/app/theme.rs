@@ -408,6 +408,36 @@ icon!(
     r#"rect x="3" y="4" width="14" height="12" rx="3""#,
     r#"path d="M8 4v12""#
 );
+// The pane header's actions: a pane cut in two side by side, cut in two one over the other,
+// grown to its tab's corners, and brought back from them.
+icon!(
+    SPLIT_RIGHT,
+    "rex-split-right",
+    r#"rect x="3" y="4.5" width="14" height="11" rx="2""#,
+    r#"path d="M10 4.5v11""#
+);
+icon!(
+    SPLIT_DOWN,
+    "rex-split-down",
+    r#"rect x="3" y="4.5" width="14" height="11" rx="2""#,
+    r#"path d="M3 10h14""#
+);
+icon!(
+    ZOOM,
+    "rex-zoom",
+    r#"path d="M11.5 4.5h4v4""#,
+    r#"path d="m15.5 4.5-4.25 4.25""#,
+    r#"path d="M8.5 15.5h-4v-4""#,
+    r#"path d="m4.5 15.5 4.25-4.25""#
+);
+icon!(
+    RESTORE,
+    "rex-restore",
+    r#"path d="M11.5 4.5v4h4""#,
+    r#"path d="m11.5 8.5 4-4""#,
+    r#"path d="M8.5 15.5v-4h-4""#,
+    r#"path d="m8.5 11.5-4 4""#
+);
 icon!(MINUS, "rex-minus", r#"path d="M6 10h8""#);
 
 // Programs a tab can show instead of the terminal glyph (`activity::program_icon`).

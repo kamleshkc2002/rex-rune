@@ -85,6 +85,8 @@ pub struct Workspace {
     pub window_focused: bool,
     /// The pane a file drag from another app is over.
     pub drop_hover: Option<String>,
+    /// Pane headers brought out by the pointer or by Reveal pane headers.
+    pub header_reveal: super::pane_header::Reveal,
     /// The pane area in window points, for divider drags and target outlines.
     pub area: [f32; 4],
     pub viewport: [f32; 2],
@@ -227,6 +229,7 @@ impl Workspace {
             handle,
             window_focused: true,
             drop_hover: None,
+            header_reveal: Default::default(),
             area: [0.; 4],
             viewport: [1440., 900.],
             sidebar,

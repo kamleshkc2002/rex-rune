@@ -675,6 +675,15 @@ impl Workspace {
                     "",
                     Intent::Sidebar,
                 ),
+                (
+                    if self.header_reveal.pinned {
+                        "Hide pane headers"
+                    } else {
+                        "Reveal pane headers"
+                    },
+                    "",
+                    Intent::ClientAction("client.pane_headers.toggle", Value::Null),
+                ),
                 ("Remote control", "", Intent::RemoteControl(self.active)),
                 ("Default shell…", "", Intent::HostShell(self.active)),
                 ("Settings…", "", Intent::Settings),
@@ -690,6 +699,13 @@ impl Workspace {
                 }
                 if matches!(entry.action, Intent::EditHost(_)) {
                     entry.label = format!("Edit host {host_name}…");
+                }
+                if matches!(
+                    entry.action,
+                    Intent::ClientAction("client.pane_headers.toggle", _)
+                ) {
+                    entry.enabled =
+                        self.header_reveal.pinned || super::pane_header::can_reveal(self);
                 }
                 if matches!(entry.action, Intent::RemoteControl(_)) {
                     entry.label = format!(

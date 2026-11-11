@@ -6,7 +6,7 @@ use super::{
     widgets::{Pill, glyph, pill},
     workspace::Workspace,
 };
-use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity};
+use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity, PaneHeader};
 use rune::{Cursor, El, ScrollSpec, Tx, col, el, row, text};
 use rune_kit::{IconButton, Keybind, SegmentedControl, Switch};
 
@@ -86,6 +86,14 @@ fn stepper(
         )
 }
 
+/// The Pane headers choices, in the order the control lists them.
+const PANE_HEADERS: [PaneHeader; 4] = [
+    PaneHeader::Auto,
+    PaneHeader::Always,
+    PaneHeader::OnHover,
+    PaneHeader::Hidden,
+];
+
 fn interface(s: &Workspace) -> El {
     let k = kit();
     let percent = (s.settings.ui_scale * 100.).round() as i32;
@@ -132,7 +140,7 @@ fn interface(s: &Workspace) -> El {
         .child(divider())
         .child(setting(
             "Pane density",
-            "Compact uses straight separators, without pane headers or gaps.",
+            "Compact uses straight separators, without card borders or gaps.",
             SegmentedControl::new(
                 &["Compact", "Comfortable"],
                 Some(usize::from(s.settings.pane_density == PaneDensity::Comfortable)),
@@ -149,6 +157,26 @@ fn interface(s: &Workspace) -> El {
             })
             .build(k)
             .key("pane-density"),
+        ))
+        .child(setting(
+            "Pane headers",
+            "Auto: on split panes in Comfortable density. On hover: at a pane's top edge.",
+            SegmentedControl::new(
+                &["Auto", "Always", "On hover", "Hidden"],
+                PANE_HEADERS
+                    .iter()
+                    .position(|h| *h == s.settings.pane_header),
+            )
+            .fit()
+            .on_pick(|s: &mut Workspace, i, tx| {
+                s.settings.pane_header = PANE_HEADERS[i];
+                // A header that was brought out by hand goes back with the old choice.
+                s.header_reveal = Default::default();
+                s.save();
+                tx.instant();
+            })
+            .build(k)
+            .key("pane-header"),
         ))
         .child(divider())
         .child(setting(
