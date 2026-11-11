@@ -53,6 +53,18 @@ const IDS: &[&str] = &[
     "pane.focus.right",
     "pane.focus.up",
     "pane.focus.down",
+    "pane.move.left",
+    "pane.move.right",
+    "pane.move.up",
+    "pane.move.down",
+    "pane.resize.left",
+    "pane.resize.right",
+    "pane.resize.up",
+    "pane.resize.down",
+    "pane.balance",
+    "pane.move_to_tab",
+    "pane.page_up",
+    "pane.page_down",
     "pane.rename",
     "pane.copy_id",
     "pane.download",
@@ -60,7 +72,9 @@ const IDS: &[&str] = &[
     "pane.reset",
     "pane.reconnect",
     "pane.close_focused",
+    "pane.close_others",
     "pane.close",
+    "host.switch",
     "host.add",
     "host.edit",
     "host.shell",
@@ -88,6 +102,10 @@ const IDS: &[&str] = &[
     "app.report_issue",
     "app.copy_version",
     "app.copy_debug",
+    "app.config_reload",
+    "app.config_path",
+    "app.mode_exit",
+    "app.mode_exit_all",
     "app.close",
 ];
 
@@ -314,6 +332,7 @@ fn a_search_is_one_list_with_the_best_match_first() {
             "Close other tabs…",
             "Close tab…",
             "Close pane or tab…",
+            "Close other panes…",
             "Close pane…",
             "Close app"
         ]
@@ -328,7 +347,10 @@ fn a_search_is_one_list_with_the_best_match_first() {
     );
     // The command named exactly comes before a longer one that starts the same way.
     search(&mut ws, "close pane");
-    assert_eq!(labels(&ws), ["Close pane…", "Close pane or tab…"]);
+    assert_eq!(
+        labels(&ws),
+        ["Close pane…", "Close pane or tab…", "Close other panes…"]
+    );
     // Words in any order; each must be found.
     search(&mut ws, "size font");
     assert_eq!(

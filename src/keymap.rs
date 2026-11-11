@@ -534,11 +534,7 @@ pub struct ResolvedBinding {
 }
 impl From<Binding> for ResolvedBinding {
     fn from(binding: Binding) -> Self {
-        let chords = if binding.mode.is_none() {
-            parse_keys(&binding.keys).ok()
-        } else {
-            None
-        };
+        let chords = parse_keys(&binding.keys).ok();
         Self { binding, chords }
     }
 }
@@ -1004,7 +1000,7 @@ mod tests {
     }
 
     #[test]
-    fn server_binding_keeps_prefix_strings_and_disables_unknown_or_mode_keys() {
+    fn server_binding_keeps_prefix_strings_and_parses_mode_keys() {
         let readable = Binding::new(["SUPER+K", "C"], "client.key.forward");
         let parsed = ResolvedBinding::from(readable.clone());
         assert_eq!(parsed.binding.keys, readable.keys);
@@ -1013,7 +1009,7 @@ mod tests {
         assert!(unknown.chords.is_none());
         assert_eq!(display(&unknown.binding.keys), "ctrl+FutureKey");
         let mode = ResolvedBinding::from(Binding::new(["left"], "pane.focus").mode("resize"));
-        assert!(mode.chords.is_none());
+        assert!(mode.chords.is_some());
     }
 
     #[test]

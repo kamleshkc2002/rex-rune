@@ -37,7 +37,99 @@ pub const REPORT_ISSUE: &str = "client.issue.report";
 /// Registered actions with no row: each needs an argument Commands cannot ask for, or is
 /// the list itself.
 #[cfg(test)]
-pub const NOT_LISTED: [(&str, &str); 6] = [
+pub const NOT_LISTED: [(&str, &str); 29] = [
+    (
+        "client.prompt.previous",
+        "recognized but prompt navigation is not implemented",
+    ),
+    (
+        "client.prompt.next",
+        "recognized but prompt navigation is not implemented",
+    ),
+    (
+        "pane.move.left",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.move.right",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.move.up",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.move.down",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.move_to_new_tab",
+        "recognized but the supported server API cannot move an existing pane to a new window",
+    ),
+    (
+        "pane.focus.left",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.focus.right",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.focus.up",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.focus.down",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.split.left",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.split.right",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.split.up",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.split.down",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "pane.split.auto",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.find.open",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.find.next",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.find.previous",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.tab.move.backward",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.tab.move.forward",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.theme.change",
+        "compatibility alias of an existing Commands row",
+    ),
+    (
+        "client.mode.enter",
+        "needs a mode name defined by the active host",
+    ),
     ("client.palette.toggle", "opens this list"),
     (
         actions::SELECT_SESSION,
@@ -488,7 +580,37 @@ impl Workspace {
             .zip(self.focus_commands())
             .map(|(id, entry)| Command::row(id, G, entry).section(3)),
         );
+        for action in ["pane.move", "pane.resize"] {
+            for side in rex_linux::layout::Side::ALL {
+                rows.push(
+                    Command::new(
+                        format!("{action}.{}", side.arg()),
+                        G,
+                        format!("{} {}", actions::find(action).unwrap().title(), side.arg()),
+                        Intent::ClientAction(action, serde_json::json!({"direction":side.arg()})),
+                    )
+                    .section(3),
+                );
+            }
+        }
         rows.extend([
+            Command::action("pane.balance", G, "Balance splits", "pane.balance").section(3),
+            Command::action(
+                "pane.move_to_tab",
+                G,
+                "Move pane to tab…",
+                "pane.move_to_tab",
+            )
+            .section(3),
+            Command::action("pane.page_up", G, "Scroll page up", "client.scroll.page_up")
+                .section(3),
+            Command::action(
+                "pane.page_down",
+                G,
+                "Scroll page down",
+                "client.scroll.page_down",
+            )
+            .section(3),
             pane("pane.rename", "Rename pane…", PaneAction::Rename).section(4),
             pane("pane.copy_id", "Copy pane ID", PaneAction::CopyId)
                 .keywords("block clipboard")
@@ -516,6 +638,13 @@ impl Workspace {
             )
             .keywords("focused")
             .destructive(),
+            Command::action(
+                "pane.close_others",
+                G,
+                "Close other panes…",
+                "pane.close_others",
+            )
+            .destructive(),
             pane("pane.close", "Close pane…", PaneAction::Close).destructive(),
         ]);
         rows
@@ -527,6 +656,7 @@ impl Workspace {
         let saved = &self.settings.hosts[host];
         let name = &saved.label;
         let mut rows = vec![
+            Command::action("host.switch", G, "Switch host…", "client.host.switch"),
             Command::new("host.add", G, "Add host…", Intent::AddHost)
                 .keywords("remote connect server"),
             Command::new(
@@ -736,6 +866,25 @@ impl Workspace {
                 .keywords("about build clipboard"),
             Command::action("app.copy_debug", G, "Copy debug info", about::COPY_DEBUG)
                 .keywords("about diagnostics support clipboard"),
+            Command::action(
+                "app.config_reload",
+                G,
+                "Reload config",
+                "client.config.reload",
+            ),
+            Command::action(
+                "app.config_path",
+                G,
+                "Copy config file path",
+                "client.config.copy_path",
+            ),
+            Command::action("app.mode_exit", G, "Exit key mode", "client.mode.exit"),
+            Command::action(
+                "app.mode_exit_all",
+                G,
+                "Exit all key modes",
+                "client.mode.exit_all",
+            ),
             Command::new("app.close", G, "Close app", Intent::Command(Run::CloseApp))
                 .detail("Programs keep running")
                 .keywords("quit exit window"),

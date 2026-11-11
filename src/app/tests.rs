@@ -6,6 +6,8 @@ mod about_tests;
 mod bindings_integration_tests;
 #[path = "command_tests.rs"]
 mod command_tests;
+#[path = "compatibility_tests.rs"]
+mod compatibility_tests;
 #[path = "downloads_tests.rs"]
 mod downloads_tests;
 #[path = "find_tests.rs"]

@@ -225,10 +225,76 @@ pub struct Context {
 
 #[derive(Default)]
 pub struct State {
+    pub modes: Vec<(String, bool)>,
+    /// Map used for the current sequence, including mode blocks and priority.
+    pub mode_map: Option<Resolved>,
     pub sequence: Sequence,
     pub context: Option<Context>,
     /// Consumed presses, even repeating actions, keep releases local.
     pub consumed: std::collections::HashMap<Identity, bool>,
+}
+
+impl State {
+    pub fn pending_label(&self, map: &Resolved) -> Option<String> {
+        self.sequence.label(self.mode_map.as_ref().unwrap_or(map))
+    }
+
+    pub fn enter_mode(&mut self, name: &str, once: bool) {
+        self.sequence.clear();
+        self.modes.push((name.into(), once));
+    }
+    pub fn exit_mode(&mut self) {
+        self.sequence.clear();
+        self.modes.pop();
+    }
+    pub fn clear_modes(&mut self) {
+        self.sequence.clear();
+        self.modes.clear();
+        self.mode_map = None;
+    }
+}
+
+/// Highest active mode first; its explicit bindings beat blocks. Unbound keys fall through
+/// to the next mode and then the ordinary map, unless a mode is exclusive.
+pub fn mode_map(
+    map: &Resolved,
+    active: &[(String, bool)],
+    modes: &[rexrs::api::client::Mode],
+) -> Resolved {
+    let mut result = Resolved::default();
+    for (name, _) in active.iter().rev() {
+        result.bindings.extend(
+            map.bindings
+                .iter()
+                .filter(|b| b.binding.mode.as_deref() == Some(name))
+                .cloned(),
+        );
+        if let Some(mode) = modes.iter().find(|m| m.name == *name) {
+            for keys in mode.blocked.iter().flatten() {
+                result.bindings.push(
+                    rexrs::api::client::Binding::new(keys.clone(), "linux.mode.block")
+                        .mode(name.clone())
+                        .into(),
+                );
+            }
+        }
+        // Escape leaves the top mode unless it explicitly binds Escape.
+        result.bindings.push(
+            rexrs::api::client::Binding::new(["escape"], "client.mode.exit")
+                .mode(name.clone())
+                .into(),
+        );
+        if modes.iter().any(|m| m.name == *name && m.exclusive) {
+            return result;
+        }
+    }
+    result.bindings.extend(
+        map.bindings
+            .iter()
+            .filter(|b| b.binding.mode.is_none())
+            .cloned(),
+    );
+    result
 }
 
 #[cfg(test)]

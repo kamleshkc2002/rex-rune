@@ -173,6 +173,7 @@ fn commands_keep_destructive_rows_last_and_a_filtered_list_is_flat() {
             "Close other tabs…",
             "Close tab…",
             "Close pane or tab…",
+            "Close other panes…",
             "Close pane…",
             "Remove host test-0…"
         ]

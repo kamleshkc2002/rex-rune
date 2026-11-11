@@ -351,6 +351,24 @@ defaults plus overrides work instead. A keymap error never disconnects the host;
 Settings → Shortcuts retains its explanation. Config changes refresh by hash and
 server instance, and every reconnect registers again.
 
+### Rex action compatibility
+
+Settings → Shortcuts lists supported actions even when **Unbound**, with their action names; compatibility spellings are marked **alias**. This is a focused subset of the [official Mac action reference](https://www.superlogical.com/rex/docs/reference/mac-actions), not full Mac parity. Every newly added compatibility action is **local-only**; the remote allowed set below is unchanged.
+
+| Status | Actions / behavior |
+| --- | --- |
+| Supported | `client.config.reload` rereads local shortcut overrides and requests `server.config_reload` on the active host (its `init.lua`, not a server restart). Rex permits reload only over a local Unix socket or SSH-forwarded socket; HTTPS/Tailscale hosts return an error notice. `client.config.copy_path` copies that host's reported config path. |
+| Supported | `pane.resize` takes `direction` (`left/right/up/down`) and optional positive numeric `amount` (percentage points of the split, default 5). It moves the next border from server geometry, clamped like a divider drag. `pane.balance` evenly distributes branches along each same-direction split chain; `pane.move` swaps with the neighbour in `direction`. |
+| Supported | `pane.rename`, `pane.close_others` (confirmation), `pane.move_to_tab` (picker for another tab in the same session; optional `window_id`). No program is restarted by a move. |
+| Supported | `session.close/next/previous/refresh`; `client.host.switch/add/remove`; `client.tab.close_others` and `client.tab.move` (`direction`: `left/right` or `backward/forward`). |
+| Supported | `pane.select_all`, `pane.focus_next/focus_previous`, `client.font.increase/decrease/reset`, and `client.scroll.page_up/page_down` (one visible page). |
+| Supported | `client.mode.enter` (`name`, optional boolean `once`), `client.mode.exit/exit_all`: host-defined modes, nesting, sequences, exclusive modes, blocked keys and Escape to leave. |
+| Aliases | `pane.focus.left/right/up/down`, `pane.split.left/right/up/down/auto`, `pane.move.left/right/up/down`; `client.tab.move.backward/forward`; `client.find.open/next/previous` for `client.search[.next/.previous]`; `client.theme.change` for `client.theme.choose`. Find next/previous also accept `when = "searching"`. |
+| Recognized, not supported | `client.prompt.previous/next`: prompt positions in scrollback are not tracked. `pane.move_to_new_tab`: the supported server API cannot create a window containing an existing block; `session.new_window` starts new programs. These produce explicit Problems diagnostics and a notice when invoked, not silent no-ops. |
+| Not applicable | Mac system permissions, Quick Look and Sparkle updater actions. Native multi-window, floating-pane controls and other reference actions not listed here are not implemented by this compatibility pass. |
+
+Declare modes in the host's `init.lua`, using [Rex's key-mode syntax](https://www.superlogical.com/rex/docs/customize/key-modes); local `shortcuts.json` can bind entry/exit actions but does not define mode-scoped keys. Modes are cleared when the host, session, connection or keymap changes. Resize amounts and the same-session move picker above describe Linux behavior: the Mac action index does not publish full argument schemas, and exact Mac behavior beyond its documented examples is not claimed. Unsupported prompt jumps and move-to-new-tab remain gaps in [#44](https://github.com/shuv1337/rex-rune/issues/44).
+
 ### Remote control
 
 Settings → Remote Hosts has a **Remote control** switch for each saved host,
@@ -452,7 +470,7 @@ server’s original prefix spellings. Action arguments are checked before dispat
 Keys accept modifier aliases, named keys, F1–F12, W3C physical codes and `>` sequences.
 Letters follow the keyboard layout, with physical US-position fallbacks on
 non-Latin layouts; Shift stays a modifier instead of being folded into the key.
-Key modes, a recording editor and pane-resize bindings are not implemented. Commands
+A recording editor is not implemented. Key modes and pane-resize bindings are described above. Commands
 runs a server action with `client.action` (origin `palette`) for the session and pane
 on screen, once: a failure is a notice and is never retried. Server actions that
 require arguments are not listed. Cross-server `client_call_requested` relaying is also not

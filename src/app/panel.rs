@@ -20,6 +20,8 @@ pub enum Intent {
     /// Create a session on a host at once, named when a switcher query gave a name.
     CreateOn(usize, Option<String>),
     ChooseHost(String),
+    SwitchHost(usize),
+    MovePaneTo(String),
     RetryHost(usize),
     /// Review an opt-in, one-time personal server start.
     StartSsh(usize),
@@ -81,6 +83,8 @@ impl Intent {
         Some(match self {
             Self::ClientAction(name, args) => (*name, args.clone()),
             Self::Switcher => ("session.switch", Value::Null),
+            Self::AddHost => ("client.host.add", Value::Null),
+            Self::RemoveHost(_) => ("client.host.remove", Value::Null),
             Self::NewSession => ("session.new", Value::Null),
             Self::NewWindow => ("client.tab.new", Value::Null),
             Self::RenameSession => ("session.rename", Value::Null),
@@ -110,7 +114,7 @@ impl Intent {
                 PaneAction::CopyId => ("pane.copy_id", Value::Null),
                 PaneAction::Clear => ("pane.clear", Value::Null),
                 PaneAction::Reset => ("pane.reset", Value::Null),
-                _ => return None,
+                PaneAction::Rename => ("pane.rename", Value::Null),
             },
             _ => return None,
         })
@@ -128,9 +132,15 @@ impl Intent {
                 )
                 // Each asks or lists before anything happens.
                 | Intent::ClientAction(
-                    "client.close" | super::commands::CLOSE_SESSION | super::commands::CHOOSE_THEME,
+                    "client.close"
+                        | "client.host.switch"
+                        | "pane.move_to_tab"
+                        | "pane.close_others"
+                        | super::commands::CLOSE_SESSION
+                        | super::commands::CHOOSE_THEME,
                     _
                 )
+                | Intent::MovePaneTo(_)
                 | Intent::ChooseHost(_)
                 | Intent::HostShell(_)
                 | Intent::DownloadFolder
@@ -302,6 +312,8 @@ pub enum PanelKind {
     /// `true`: the session switcher; `false`: Commands.
     Picker(bool),
     Hosts(String),
+    SwitchHost,
+    MovePane,
     Pane,
     Session,
     /// A sidebar host header's right-click menu.
@@ -395,7 +407,9 @@ impl Panel {
     pub fn is_list(&self) -> bool {
         matches!(
             self.kind,
-            PanelKind::Picker(_)
+            PanelKind::SwitchHost
+                | PanelKind::MovePane
+                | PanelKind::Picker(_)
                 | PanelKind::Hosts(_)
                 | PanelKind::Pane
                 | PanelKind::Session
@@ -670,6 +684,55 @@ impl Workspace {
                     let mut e = Entry::new(option.clone(), "", "", Intent::Choose(index));
                     e.current = choice.current == Some(index);
                     e
+                })
+                .collect();
+        }
+        if matches!(panel.kind, PanelKind::SwitchHost) {
+            return self
+                .hosts
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| {
+                    self.settings.hosts[*i]
+                        .label
+                        .to_lowercase()
+                        .contains(&lower)
+                })
+                .map(|(i, _)| {
+                    let mut entry = Entry::new(
+                        self.settings.hosts[i].label.clone(),
+                        "",
+                        "",
+                        Intent::SwitchHost(i),
+                    );
+                    entry.current = i == self.active;
+                    entry
+                })
+                .collect();
+        }
+        if matches!(panel.kind, PanelKind::MovePane) {
+            let Some(target) = &panel.target else {
+                return Vec::new();
+            };
+            return self.hosts[target.host]
+                .model
+                .views
+                .get(&target.session)
+                .into_iter()
+                .flat_map(|v| &v.windows)
+                .filter(|w| {
+                    !w.layers
+                        .iter()
+                        .flat_map(|l| &l.blocks)
+                        .any(|b| b.block_id.as_deref() == Some(&target.block))
+                })
+                .filter_map(|w| {
+                    let id = w.window_id.clone()?;
+                    let title = super::activity::tab_name(&self.hosts[target.host].model, w);
+                    title
+                        .to_lowercase()
+                        .contains(&lower)
+                        .then(|| Entry::new(title, "", "", Intent::MovePaneTo(id)))
                 })
                 .collect();
         }

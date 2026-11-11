@@ -17,6 +17,8 @@ fn sample_args(name: &str) -> Value {
     match name {
         "session.select" => json!({"session_id": "s"}),
         "pane.split" | "client.tab.move" => json!({"direction": "right"}),
+        "pane.move" | "pane.resize" => json!({"direction": "right"}),
+        "client.mode.enter" => json!({"name":"resize"}),
         "pane.focus" => json!({"direction": "up"}),
         "pane.scroll" => json!({"lines": 3}),
         "client.tab.goto" => json!({"index": 2}),
@@ -62,7 +64,10 @@ fn all_bound() -> Workspace {
     ws.local_keymap = actions::resolve(&ws.settings.shortcut_file.overrides);
     ws.keymap_generation += 1;
     assert!(
-        ws.effective_keymap().diagnostics.is_empty(),
+        ws.effective_keymap().diagnostics.iter().all(|d| d
+            .action
+            .as_deref()
+            .is_some_and(|a| crate::app::compatibility::unsupported(a).is_some())),
         "{:?}",
         ws.effective_keymap().diagnostics
     );

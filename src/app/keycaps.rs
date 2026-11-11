@@ -16,11 +16,27 @@ impl Workspace {
     /// (or bound only to a key this client cannot read).
     pub fn shortcut_chords(&self, action: &str, args: &Value) -> Chords {
         let empty = |args: &Value| args.is_null() || args.as_object().is_some_and(|a| a.is_empty());
-        self.effective_bindings()
+        let effective = self.effective_bindings();
+        effective
             .iter()
             .find(|b| {
                 let bound = b.binding.args.as_ref().unwrap_or(&Value::Null);
-                b.binding.action == action && (bound == args || (empty(bound) && empty(args)))
+                b.binding.mode.is_none()
+                    && b.binding.action == action
+                    && (bound == args || (empty(bound) && empty(args)))
+            })
+            .or_else(|| {
+                effective.iter().find(|b| {
+                    if b.binding.mode.is_some() {
+                        return false;
+                    }
+                    super::compatibility::alias(&b.binding.action).is_some_and(
+                        |(name, alias_args)| {
+                            name == action
+                                && (alias_args == *args || empty(&alias_args) && empty(args))
+                        },
+                    )
+                })
             })
             .and_then(|b| b.chords.as_ref())
             .map(|chords| chords.iter().map(|c| c.keycaps()).collect())
