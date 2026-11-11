@@ -53,8 +53,9 @@ pub struct Options {
     /// Use a separate workspace preferences file.
     #[arg(long)]
     pub config: Option<PathBuf>,
-    #[arg(long, default_value = "1440x900")]
-    pub window_size: String,
+    /// Startup size, as WxH; else the size the window last had, else 1440x900.
+    #[arg(long)]
+    pub window_size: Option<String>,
     /// Check signed release metadata for updates and exit (0 = up to date, 10 = update available, 1 = error).
     #[arg(long)]
     pub check_update: bool,
@@ -64,6 +65,17 @@ pub struct Options {
 }
 
 impl Options {
+    pub fn startup_size(&self, settings: &crate::settings::Settings) -> (f32, f32) {
+        self.window_size
+            .as_deref()
+            .and_then(|size| size.split_once('x'))
+            .and_then(|(w, h)| Some([w.parse::<f32>().ok()?, h.parse::<f32>().ok()?]))
+            .filter(|size| size.iter().all(|v| v.is_finite()))
+            .or(settings.window_size)
+            .filter(|size| size.iter().all(|v| v.is_finite()))
+            .map_or((1440., 900.), |[w, h]| (w.max(640.), h.max(480.)))
+    }
+
     pub fn fonts<'a>(&'a self, settings: &'a crate::settings::Settings) -> (&'a str, &'a [String]) {
         (
             self.font.as_deref().unwrap_or(&settings.font_family),

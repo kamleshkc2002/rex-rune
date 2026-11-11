@@ -90,6 +90,8 @@ pub struct Workspace {
     /// The pane area in window points, for divider drags and target outlines.
     pub area: [f32; 4],
     pub viewport: [f32; 2],
+    /// Last resize awaiting the one-second settle delay before saving preferences.
+    pub resized: Option<std::time::Instant>,
     pub sidebar: rune_kit::PaneState,
     /// The resolved terminal family, or None when the requested one isn't installed.
     pub terminal_family: Option<&'static str>,
@@ -237,6 +239,7 @@ impl Workspace {
             header_reveal: Default::default(),
             area: [0.; 4],
             viewport: [1440., 900.],
+            resized: None,
             sidebar,
             terminal_family,
             launch_font,
@@ -879,6 +882,33 @@ impl Workspace {
             .expect("host model")
             .notice = None;
         self.hosts[host].model.notice = None;
+    }
+
+    /// Keep window points, not zoomed content points. Maximizing leaves the saved normal
+    /// size alone and cancels any pending save from the preceding resize.
+    pub fn window_resized(&mut self, size: [f32; 2], maximized: bool) {
+        self.viewport = size;
+        if maximized || self.settings.window_size == Some(size.map(f32::round)) {
+            self.resized = None;
+            return;
+        }
+        if self.resized.is_none() {
+            self.handle.wake();
+        }
+        self.resized = Some(std::time::Instant::now());
+    }
+
+    /// A drag writes preferences once, after the window has kept its size for a second.
+    pub fn save_window_size(&mut self) -> Option<std::time::Duration> {
+        const SETTLE: std::time::Duration = std::time::Duration::from_secs(1);
+        let left = SETTLE.saturating_sub(self.resized?.elapsed());
+        if !left.is_zero() {
+            return Some(left);
+        }
+        self.resized = None;
+        self.settings.window_size = Some(self.viewport.map(f32::round));
+        self.save();
+        None
     }
 
     pub fn save(&mut self) {

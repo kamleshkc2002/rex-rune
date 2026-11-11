@@ -91,6 +91,84 @@ fn relaunch(ws: &Workspace) -> Workspace {
 }
 
 #[test]
+fn the_window_size_is_saved_once_a_resize_settles_but_not_when_maximized() {
+    use std::time::{Duration, Instant};
+    let mut ws = workspace();
+    ws.window_resized([1920., 1080.], true);
+    assert_eq!(ws.save_window_size(), None);
+    assert_eq!(ws.settings.window_size, None);
+    ws.window_resized([1200.4, 799.6], false);
+    assert!(
+        ws.save_window_size().is_some(),
+        "waits for a drag to settle"
+    );
+    assert!(!ws.settings_path.exists());
+    ws.resized = Some(Instant::now() - Duration::from_secs(2));
+    // A new resize starts the settle delay again.
+    ws.window_resized([1100.4, 749.6], false);
+    assert!(ws.save_window_size().is_some());
+    assert_eq!(ws.settings.window_size, None);
+    ws.resized = Some(Instant::now() - Duration::from_secs(2));
+    assert_eq!(ws.save_window_size(), None);
+    assert_eq!(ws.settings.window_size, Some([1100., 750.]));
+    assert_eq!(relaunch(&ws).settings.window_size, Some([1100., 750.]));
+    ws.window_resized([1100., 750.], false);
+    assert_eq!(ws.resized, None, "the saved size needs no new save");
+    // Maximizing during the delay cancels the pending write.
+    ws.window_resized([1000., 700.], false);
+    ws.window_resized([1920., 1080.], true);
+    assert_eq!(ws.resized, None);
+    assert_eq!(ws.save_window_size(), None);
+    assert_eq!(relaunch(&ws).settings.window_size, Some([1100., 750.]));
+    std::fs::remove_file(&ws.settings_path).unwrap();
+}
+
+#[test]
+fn a_failed_window_size_save_rebuilds_to_show_the_notice() {
+    let mut ws = workspace();
+    let parent = ws.settings_path.clone();
+    std::fs::write(&parent, "not a directory").unwrap();
+    ws.settings_path = parent.join("workspace.json");
+    let mut tx = rune::Tx::default();
+    super::poll(&mut ws, 0., &mut tx);
+    assert!(!super::poll(&mut ws, 0., &mut tx));
+    ws.window_resized([1100., 750.], false);
+    ws.resized = Some(std::time::Instant::now() - std::time::Duration::from_secs(2));
+    assert!(super::poll(&mut ws, 0., &mut tx));
+    assert!(
+        ws.notices
+            .iter()
+            .any(|n| n.text.starts_with("Preferences not saved:"))
+    );
+    assert!(ws.resized.is_none(), "failed writes do not loop");
+    std::fs::remove_file(parent).unwrap();
+}
+
+#[test]
+fn window_layout_remembers_window_points_not_interface_zoom() {
+    let mut ws = workspace();
+    ws.settings.ui_scale = 1.5;
+    let mut rt = runtime_at(ws, (1200., 800.));
+    assert_eq!(rt.state.viewport, [1200., 800.]);
+    assert!(rt.state.resized.is_some());
+    rt.state.resized = Some(std::time::Instant::now() - std::time::Duration::from_secs(2));
+    rt.state.save_window_size();
+    assert_eq!(rt.state.settings.window_size, Some([1200., 800.]));
+    rt.set_window_maximized(true);
+    rt.set_viewport((1600., 1000.), 1.);
+    for _ in 0..4 {
+        rt.frame(1. / 60.);
+    }
+    assert_eq!(rt.state.viewport, [1600., 1000.]);
+    assert_eq!(rt.state.resized, None);
+    assert_eq!(
+        relaunch(&rt.state).settings.window_size,
+        Some([1200., 800.])
+    );
+    std::fs::remove_file(&rt.state.settings_path).unwrap();
+}
+
+#[test]
 fn the_sidebar_opens_at_launch_as_it_was_left() {
     let mut ws = workspace();
     assert!(!ws.sidebar.is_open(), "closed on a first launch");

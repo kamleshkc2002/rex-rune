@@ -196,6 +196,9 @@ pub struct Settings {
     pub sidebar_width: f32,
     /// The sidebar was open when the app last saved, so it opens again at launch.
     pub sidebar_open: bool,
+    /// The last non-maximized window size in window points, independent of interface zoom.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_size: Option<[f32; 2]>,
     pub vertical_tabs: bool,
     pub pane_density: PaneDensity,
     pub pane_header: PaneHeader,
@@ -244,6 +247,7 @@ impl Default for Settings {
             sessions: HashMap::new(),
             sidebar_width: 236.,
             sidebar_open: false,
+            window_size: None,
             vertical_tabs: false,
             pane_density: PaneDensity::default(),
             pane_header: PaneHeader::default(),

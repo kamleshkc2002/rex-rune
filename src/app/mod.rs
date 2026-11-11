@@ -71,6 +71,7 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
     set_palette(palette_of(s.settings.chrome_theme));
     let scale = s.ui_scale();
     let viewport = s.viewport.map(|v| v / scale);
+    let maximized = cx.window_maximized();
     let mut body = row().key("body").grow(1.).w_full().min_h(0.);
     if s.sidebar.is_open() {
         body = body
@@ -128,7 +129,7 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         .w_full()
         .h_full()
         .fill(rgb(ground()))
-        .on_layout(|s: &mut Workspace, r| s.viewport = [r[2], r[3]])
+        .on_layout(move |s: &mut Workspace, r| s.window_resized([r[2], r[3]], maximized))
         .child(root);
     // Native resize targets stay in window points at every content zoom. The corner above
     // Close belongs to Close rather than the resize band.
@@ -182,6 +183,13 @@ fn poll(s: &mut Workspace, _: f64, tx: &mut Tx) -> bool {
     if s.expire_notices() {
         changed = true;
     }
+    let saving_size = s.resized.is_some();
+    if let Some(next) = s.save_window_size() {
+        tx.wake_after(next);
+    } else if saving_size {
+        // Saving may have added a Preferences not saved notice.
+        changed = true;
+    }
     let failed: Vec<String> = s
         .terminals
         .values_mut()
@@ -220,16 +228,7 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
         Some(path) => (Settings::load(path)?, path.clone()),
         None => Settings::load_default()?,
     };
-    let size = options
-        .window_size
-        .split_once('x')
-        .and_then(|(w, h)| {
-            Some((
-                w.parse::<f32>().ok()?.max(640.),
-                h.parse::<f32>().ok()?.max(480.),
-            ))
-        })
-        .unwrap_or((1440., 900.));
+    let size = options.startup_size(&settings);
     let (family, fallbacks) = options.fonts(&settings);
     let fonts = fonts::load(family, fallbacks);
     rune::text::set_app_font_paths(fonts.paths)

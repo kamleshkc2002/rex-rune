@@ -3073,6 +3073,7 @@ dependencies = [
  "futures-util",
  "gethostname",
  "ghostty-vt",
+ "image",
  "libc",
  "log",
  "rexrs",
