@@ -4,7 +4,7 @@
 //! passes `--autostart=false` so it can never start a server.
 use super::{
     panel::PanelKind,
-    settings_view::{divider, group, setting},
+    settings_kit::{self, CONTROL, card, footnote, page, row_frame, setting},
     theme::*,
     widgets::{Pill, pill},
     workspace::Workspace,
@@ -534,7 +534,7 @@ fn agent_row(s: &Workspace, harness: &Harness) -> El {
                 &format!("agent-setup:{id}"),
                 label,
                 Pill::Neutral,
-                28.,
+                CONTROL,
                 move |s, _| {
                     s.preview_agents(AgentChange::Setup {
                         agents: agents.clone(),
@@ -558,7 +558,7 @@ fn agent_row(s: &Workspace, harness: &Harness) -> El {
                 &format!("agent-remove:{id}"),
                 "Remove…",
                 Pill::Neutral,
-                28.,
+                CONTROL,
                 move |s, _| {
                     s.preview_agents(AgentChange::Remove {
                         agents: agents.clone(),
@@ -568,12 +568,8 @@ fn agent_row(s: &Workspace, harness: &Harness) -> El {
             busy,
         ));
     }
-    row()
+    row_frame(true)
         .key(format!("agent:{id}"))
-        .w_full()
-        .min_h(52.)
-        .gap(16.)
-        .center_y()
         .child(detail)
         .child(actions)
 }
@@ -602,75 +598,78 @@ pub fn setup_all(harnesses: &[Harness]) -> Option<AgentChange> {
 }
 
 pub fn section(s: &Workspace) -> El {
-    let mut body = col().gap(4.).child(
-        text("On this machine, Rex can teach coding agents to use the rex command (a skill) and, where the agent supports it, tell each agent session which Rex session and terminal it runs in (a hook). Every change is shown before it's made.")
-            .font(ui(12.))
-            .color(rgb(muted()))
-            .wrap()
-            .mb(6.),
+    let note = footnote(
+        "On this machine, Rex can teach coding agents to use the rex command (a skill) and, where the agent supports it, tell each agent session which Rex session and terminal it runs in (a hook). Every change is shown before it's made.",
     );
     let refresh = pill(
         "agents-refresh",
         "Check again",
         Pill::Neutral,
-        28.,
+        CONTROL,
         |s, _| {
             s.integrations.status = AgentStatus::Unknown;
             s.refresh_integrations();
         },
     );
-    match &s.integrations.status {
-        AgentStatus::Unknown | AgentStatus::Checking => {
-            body = body.child(
+    let agents = match &s.integrations.status {
+        AgentStatus::Unknown | AgentStatus::Checking => vec![
+            card([row_frame(false).child(
                 text("Checking agents…")
                     .key("agents-checking")
                     .font(ui(13.))
                     .color(rgb(muted())),
-            );
-        }
+            )]),
+            note,
+        ],
         AgentStatus::Unavailable(words) => {
-            body = body.child(setting("Agents unavailable", words, refresh));
+            vec![card([setting("Agents unavailable", words, refresh)]), note]
         }
         AgentStatus::Ready(harnesses) => {
-            body = body.child(group("Agents"));
             let known = AGENTS
                 .iter()
                 .filter_map(|(id, _)| harnesses.iter().find(|h| h.id == *id));
             let others = harnesses
                 .iter()
                 .filter(|h| !AGENTS.iter().any(|(id, _)| *id == h.id));
-            for (i, harness) in known.chain(others).enumerate() {
-                if i > 0 {
-                    body = body.child(divider());
-                }
-                body = body.child(agent_row(s, harness));
-            }
-            let mut all = row().gap(8.).mt(10.).child(refresh);
+            let mut all = row().gap(8.).px(2.).child(refresh);
             if let Some(change) = setup_all(harnesses) {
                 all = all.child(wait(
                     pill(
                         "agents-setup-all",
                         "Set up all detected…",
                         Pill::Primary,
-                        28.,
+                        CONTROL,
                         move |s, _| s.preview_agents(change.clone()),
                     ),
                     s.integrations.busy,
                 ));
             }
-            body = body.child(all);
+            vec![
+                card(known.chain(others).map(|harness| agent_row(s, harness))),
+                all,
+                note,
+            ]
         }
-    }
-    body.child(divider()).child(setting(
-        "Let agents name sessions",
-        "Agents rename the Rex session after their task. Applies the next time Rex sets up your agents.",
-        Switch::new(s.settings.agent_session_naming)
-            .label("Let agents name sessions")
-            .hide_label()
-            .on_toggle(|s: &mut Workspace| s.toggle_session_naming())
-            .build(kit())
-            .key("agent-naming"),
-    ))
+    };
+    page([
+        settings_kit::section("Agents", agents),
+        settings_kit::section(
+            "Sessions",
+            [
+                card([setting(
+                    "Let agents name sessions",
+                    "Agents rename the Rex session after their task.",
+                    Switch::new(s.settings.agent_session_naming)
+                        .label("Let agents name sessions")
+                        .hide_label()
+                        .on_toggle(|s: &mut Workspace| s.toggle_session_naming())
+                        .build(kit())
+                        .key("agent-naming"),
+                )]),
+                footnote("Applies the next time Rex sets up your agents."),
+            ],
+        ),
+    ])
 }
 
 fn step_line(s: &Workspace, step: &Step) -> El {

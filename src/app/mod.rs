@@ -15,6 +15,7 @@ mod panel;
 mod panes;
 mod popups;
 mod remote;
+mod settings_kit;
 mod settings_view;
 mod sidebar;
 mod sprites;

@@ -107,6 +107,8 @@ pub struct Workspace {
     pub tab_fade: [rune::Live<f32>; 2],
     pub sidebar_fx: ScrollFx,
     pub switcher_fx: ScrollFx,
+    /// The Settings page's scroll thumb.
+    pub settings_fx: ScrollFx,
     pub sidebar_drag_start: Option<f32>,
     scratch: TextEdit,
     next_host: u64,
@@ -243,6 +245,7 @@ impl Workspace {
             tab_fade: [rune::Live::new(0.4), rune::Live::new(1.)],
             sidebar_fx: ScrollFx::default(),
             switcher_fx: ScrollFx::default(),
+            settings_fx: ScrollFx::default(),
             sidebar_drag_start: None,
             scratch: TextEdit::new(""),
             next_host: 0,
@@ -1168,7 +1171,10 @@ impl Workspace {
     pub fn perform(&mut self, action: Intent, tx: &mut Tx) {
         // Applying a theme goes back to Settings itself.
         if !action.opens_followup()
-            && !matches!(action, Intent::Theme(_) | Intent::Chrome(_))
+            && !matches!(
+                action,
+                Intent::Theme(_) | Intent::Chrome(_) | Intent::Choose(_)
+            )
             && self.panel.is_some()
         {
             self.close_panel(tx);
@@ -1218,6 +1224,7 @@ impl Workspace {
                     self.panel.as_mut().unwrap().selected = current;
                 }
             }
+            Intent::Choose(index) => self.choose(index, tx),
             Intent::Chrome(chrome) => {
                 self.set_chrome(chrome, tx);
                 match self.settings_back() {
@@ -1708,6 +1715,7 @@ impl Workspace {
                     | PanelKind::StartSsh { .. }
                     | PanelKind::Themes
                     | PanelKind::Chromes
+                    | PanelKind::Choice(_)
                     | PanelKind::Discover
             ) && previous
                 .as_ref()

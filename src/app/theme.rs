@@ -291,6 +291,11 @@ pub fn strong(size: f32) -> TextStyle {
 pub fn label_caps() -> TextStyle {
     TextStyle::new(10.5, 650.).tracking(0.6)
 }
+/// Code-like values in chrome (paths, commits, endpoints, ids, commands): the terminal's font
+/// stack, which ends in the bundled IBM Plex Mono.
+pub fn mono(size: f32) -> TextStyle {
+    TextStyle::new(size, 450.).mono()
+}
 
 /// A glassy pill every control in the bar sits on.
 pub fn chip(e: El) -> El {
@@ -389,6 +394,33 @@ icon!(
     r#"path d="M8 4v12""#
 );
 icon!(MINUS, "rex-minus", r#"path d="M6 10h8""#);
+// A popup button's badge: the value opens a list.
+icon!(
+    UPDOWN,
+    "rex-updown",
+    r#"path d="m7 8 3-3 3 3""#,
+    r#"path d="m7 12 3 3 3-3""#
+);
+// Pane density: cards with gaps, or panes that share their borders.
+icon!(
+    PANES_APART,
+    "rex-panes-apart",
+    r#"rect x="3.5" y="4.5" width="5.5" height="11" rx="1.5""#,
+    r#"rect x="11" y="4.5" width="5.5" height="11" rx="1.5""#
+);
+icon!(
+    PANES_JOINED,
+    "rex-panes-joined",
+    r#"rect x="3.5" y="4.5" width="13" height="11" rx="1.5""#,
+    r#"path d="M10 4.5v11""#
+);
+// Tab position: a strip along the top (the sidebar position uses `SIDEBAR`).
+icon!(
+    TABS_TOP,
+    "rex-tabs-top",
+    r#"rect x="3" y="4" width="14" height="12" rx="3""#,
+    r#"path d="M3 8h14""#
+);
 
 // Programs a tab can show instead of the terminal glyph (`activity::program_icon`).
 icon!(

@@ -1,11 +1,10 @@
 //! Build identity and bug-report text; no server request is made by this section.
 use super::{
-    settings_view::{divider, setting},
-    theme::*,
-    widgets::{Pill, pill},
+    settings_kit::{self, button, card, mono_value, page, setting, value},
+    widgets::Pill,
     workspace::Workspace,
 };
-use rune::{El, Key, KeyEvent, Tx, col, text};
+use rune::El;
 
 pub const REPOSITORY: &str = "https://github.com/shuv1337/rex-rune";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -49,37 +48,14 @@ pub fn version_info(s: &Workspace) -> String {
     )
 }
 
-fn value(value: impl Into<String>) -> El {
-    text(value.into())
-        .font(ui(12.))
-        .color(rgb(muted()))
-        .selectable(true)
-}
-
-fn button(
-    key: &str,
-    label: &str,
-    action: impl Fn(&mut Workspace, &mut Tx) + Clone + 'static,
-) -> El {
-    pill(key, label, Pill::Neutral, 30., action.clone()).on_key(
-        move |s: &mut Workspace, event: &KeyEvent, tx: &mut Tx| {
-            (event.key == Key::Enter).then(|| action(s, tx)).is_some()
-        },
-    )
-}
-
 pub fn section(s: &Workspace) -> El {
-    let mut body = col()
-        .gap(4.)
-        .child(setting(
-            "Rex Linux",
-            "Native Linux client for Rex",
-            value(VERSION),
-        ))
-        .child(setting("Commit", "", value(COMMIT)))
-        .child(setting("Build date", "", value(BUILD_DATE)));
+    let mut build = vec![
+        setting("Rex Linux", "Native Linux client for Rex", value(VERSION)),
+        setting("Commit", "", mono_value(COMMIT)),
+        setting("Build date", "", value(BUILD_DATE)),
+    ];
     if let Some(revision) = server_api(s) {
-        body = body.child(
+        build.push(
             setting(
                 "Server API revision",
                 "Active host · negotiated protocol",
@@ -88,8 +64,7 @@ pub fn section(s: &Workspace) -> El {
             .key("about-server"),
         );
     }
-    body = body.child(divider());
-    for (key, label, detail, url) in [
+    let links = [
         (
             "about-repository",
             "Repository",
@@ -108,24 +83,33 @@ pub fn section(s: &Workspace) -> El {
             "MIT",
             format!("{REPOSITORY}/blob/v{VERSION}/LICENSE"),
         ),
-    ] {
-        body = body.child(setting(
+    ]
+    .map(|(key, label, detail, url)| {
+        setting(
             label,
             detail,
             button(
                 key,
                 &format!("Open {}", label.to_lowercase()),
+                Pill::Neutral,
                 move |s, _| s.open_link(url.clone()),
             ),
-        ));
-    }
-    body.child(divider()).child(setting(
-        "Bug reports",
-        "Version details only; no host addresses or credentials.",
-        button("about-copy", "Copy version info", |s, tx| {
-            tx.copy(version_info(s));
-        }),
-    ))
+        )
+    });
+    page([
+        settings_kit::section("", [card(build)]),
+        settings_kit::section("Project", [card(links)]),
+        settings_kit::section(
+            "Support",
+            [card([setting(
+                "Bug reports",
+                "Version details only; no host addresses or credentials.",
+                button("about-copy", "Copy version info", Pill::Neutral, |s, tx| {
+                    tx.copy(version_info(s));
+                }),
+            )])],
+        ),
+    ])
 }
 
 #[cfg(test)]

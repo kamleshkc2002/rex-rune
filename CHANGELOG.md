@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- **Settings layout:** Settings is a wider dialog (816×680, clamped to the window) whose pages are grouped into headed cards with a divider between every row, one-sentence helpers and controls aligned to one edge. The window palette, terminal theme and notice position are popup buttons whose lists open over Settings beside the control instead of replacing it; font family, client label and each host's default shell are rows that open their form; pane density and tab position are segmented controls with glyphs. Long pages fade at the scrolled edge and show a scroll thumb. Settings and saved preferences are unchanged.
+
 ## 0.6.0 - 2026-11-10
 
 ### Added
