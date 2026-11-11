@@ -52,10 +52,11 @@ pub(crate) fn dropped(c: char) -> bool {
 }
 
 /// Whether a character shows as something: not white space (the ASCII kind or any other, such as
-/// U+3000 and U+00A0), not a joiner standing alone, not a variation selector standing alone.
+/// U+3000 and U+00A0), not a joiner standing alone, not a variation selector standing alone
+/// (the Mongolian ones included).
 fn visible(c: char) -> bool {
     !c.is_whitespace()
-        && !matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe00}'..='\u{fe0f}' | '\u{e0100}'..='\u{e01ef}')
+        && !matches!(c, '\u{180b}'..='\u{180d}' | '\u{180f}' | '\u{200c}' | '\u{200d}' | '\u{fe00}'..='\u{fe0f}' | '\u{e0100}'..='\u{e01ef}')
 }
 
 /// Trailing dots and white space of every kind go: they are invisible, and some systems drop
@@ -236,6 +237,9 @@ mod tests {
             ("\u{200d}\u{200c}.tar.gz", "download.tar.gz"),
             ("\u{fe0f}.png", "download.png"),
             ("\u{200d}.", "download"),
+            ("\u{180b}", "download"),
+            ("\u{180d}.sh", "download.sh"),
+            ("\u{180c}\u{180f}.txt", "download.txt"),
             (" .sh", "download.sh"),
             ("\u{3000}.txt", "download.txt"),
             ("\u{a0}\u{a0}", "download"),
@@ -258,7 +262,7 @@ mod tests {
         let pieces = [
             "a", ".", "..", "/", "\\", "\0", "\n", " ", "é", "界", "\u{202e}", "\u{200d}",
             "\u{7f}", "x.y", ".tar", ".gz", "-", "\u{85}", "😀", "\u{feff}", "\u{3000}", "\u{a0}",
-            "\u{fe0f}", ".sh",
+            "\u{fe0f}", ".sh", "\u{180d}",
         ];
         // Every combination of up to four pieces.
         let mut stack = vec![String::new()];

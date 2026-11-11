@@ -124,6 +124,10 @@ const RISKY_MARKERS: &[&[u8]] = &[
     b"\n=head1 name",
     b"\n=head1 description",
     b"begin {",
+    // Flatpak references and repositories (application/vnd.flatpak.ref and .repo) are installed
+    // by the software centre.
+    b"[flatpak ref]",
+    b"[flatpak repo]",
     // A shell archive (text/x-shellscript) has its marker at offset 10.
     b"# this is a shell archive",
 ];
@@ -139,10 +143,16 @@ const RISKY_STARTS: &[&[u8]] = &[
     b"# kde config file",
     b"eval \"exec /",
     b"#@~^",
+    // A registry file (text/x-ms-regedit).
+    b"regedit",
+    b"windows registry editor version 5.00",
 ];
 
 /// First bytes of programs that have no ELF header: the old a.out forms (application/
-/// x-executable), MZ (DOS and Windows programs), Java classes, Python byte code.
+/// x-executable), MZ (DOS and Windows programs), Java classes, Python byte code, and the
+/// installers and launchers denied by name: RPM packages, Flatpak bundles, Windows shortcuts
+/// (.lnk), Windows registry files in UTF-16 and Flash movies. The OLE magic (.msi) is left out
+/// on purpose: it is also every old Word and Excel document.
 const RISKY_MAGIC: &[&[u8]] = &[
     b"MZ",
     b"\x1c\x52",
@@ -151,6 +161,14 @@ const RISKY_MAGIC: &[&[u8]] = &[
     b"\x83\x01",
     b"\xca\xfe\xba\xbe",
     b"\x99\x4e\x0d\x0a",
+    b"\xed\xab\xee\xdb",
+    b"xdg-app\0\x01\0\x89\xe5",
+    b"flatpak\0\x01\0\x89\xe5",
+    b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46",
+    b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
+    b"FWS",
+    b"CWS",
+    b"ZWS",
 ];
 
 /// Whether the name alone rules out opening.
@@ -174,6 +192,8 @@ pub fn risky_content(head: &[u8]) -> bool {
     head.starts_with(b"\x7fELF")
         || head.starts_with(b"#!")
         || RISKY_MAGIC.iter().any(|magic| head.starts_with(magic))
+        // A Debian package: an ar archive whose first member is `debian-binary`.
+        || (head.starts_with(b"!<arch>") && head.get(8..).is_some_and(|rest| rest.starts_with(b"debian")))
         || RISKY_STARTS.iter().any(|marker| {
             start.len() >= marker.len() && start[..marker.len()].eq_ignore_ascii_case(marker)
         })
@@ -351,6 +371,19 @@ mod tests {
             b"\x83\x01abc",
             b"\xca\xfe\xba\xbe\x00\x00",
             b"\x99\x4e\x0d\x0a\x00",
+            // Installers and launchers that are denied by name: Flatpak, deb, rpm, bundles,
+            // Windows shortcuts, registry files, Flash movies.
+            b"[Flatpak Ref]\nTitle=x\n",
+            b"[Flatpak Repo]\nTitle=x\n",
+            b"!<arch>\ndebian-binary   1\n",
+            b"\xed\xab\xee\xdb\x03\x00",
+            b"xdg-app\0\x01\0\x89\xe5",
+            b"flatpak\0\x01\0\x89\xe5",
+            b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46x",
+            b"Windows Registry Editor Version 5.00\r\n",
+            b"REGEDIT4\r\n",
+            b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
+            b"FWS\x09\0",
         ] {
             assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
         }
@@ -366,6 +399,9 @@ mod tests {
             b"\xff\xd8\xff\xe0JFIF",
             b"PK\x03\x04",
             b"{\"title\": 1}",
+            // Other archives, and the OLE magic of documents.
+            b"!<arch>\nlibfoo.o/",
+            b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",
         ] {
             assert!(!risky_content(fine), "{}", String::from_utf8_lossy(fine));
         }
