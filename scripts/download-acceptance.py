@@ -15,7 +15,9 @@ It starts and owns everything it touches: two private servers (own HOME, XDG, so
 Xvfb, all under one temporary directory below ~/.cache/agent-ws that holds every download
 folder, state directory and artifact (the directory is printed; it is deleted when every case
 passed and kept when any failed or was skipped, or with --keep). A stub xdg-open on
-PATH logs every call; the run fails if it is ever called. Every REX_* and display variable is
+PATH logs every call; the run fails if it is ever called. A stub xdg-mime answers the file-type
+question the client asks before offering Open (by file name, as GNOME and KDE do) and logs it;
+the run fails if it is ever asked anything but `query filetype <absolute path>`. Every REX_* and display variable is
 scrubbed and an endpoint under /run/user is refused, so nothing can reach another server.
 Processes are stopped by PID.
 
@@ -29,7 +31,9 @@ least MIN_SAVED saved files. Naming case functions on the command line runs only
 final checks), for development.
 
 Cases: names (spaces, Unicode, leading dash, empty file, symlink, same file twice, modes, Open
-offered for a .txt and withheld for programs, scripts, no extension and .svg); relative paths
+offered for a .txt and withheld for programs, scripts, no extension and .svg); a zip with a jar
+signature saved as report.zip and as notes.txt, which get no Open (and are never even sent to
+the file-type question), next to a plain zip, which does; relative paths
 after cd; a folder, a FIFO, a missing and an unreadable file refused in the server's words; API 12
 "too old" with nothing sent; the 1 GiB question (held by the server while asked, released by
 Escape with the app still running); a 1 GiB file cancelled partway (partial gone, the server's
@@ -80,7 +84,22 @@ os.environ.update(HOME=str(work / "home"), XDG_CONFIG_HOME=str(work / "home/conf
 (work / "bin/tailscale").write_text("#!/bin/sh\nexit 1\n")
 XDG_LOG = work / "xdg-open.log"
 (work / "bin/xdg-open").write_text(f"#!/bin/sh\nprintf '%s\\n' \"$*\" >> {XDG_LOG}\n")
-for stub in ("tailscale", "xdg-open"):
+# The desktop's file-type answer, by name (what GNOME and KDE do), so that only the client's own
+# checks of the first bytes can refuse a hostile file with an ordinary name. Logs every call.
+XDG_MIME_LOG = work / "xdg-mime.log"
+(work / "bin/xdg-mime").write_text(f"""#!/bin/sh
+printf '%s\\n' "$*" >> {XDG_MIME_LOG}
+[ "$1" = query ] && [ "$2" = filetype ] || exit 2
+case "$3" in
+  *.txt|*.TXT) echo text/plain ;;
+  *.md) echo text/markdown ;;
+  *.zip) echo application/zip ;;
+  *.svg) echo image/svg+xml ;;
+  *.sh) echo application/x-shellscript ;;
+  *) echo application/octet-stream ;;
+esac
+""")
+for stub in ("tailscale", "xdg-open", "xdg-mime"):
     (work / "bin" / stub).chmod(0o755)
 CLIENT_PATH = f"{work / 'bin'}:/usr/bin:/bin"
 
@@ -191,6 +210,29 @@ class Server:
         return found
 
 
+def zip_bytes(entries):
+    import io
+    import zipfile
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for info, data in entries:
+            archive.writestr(info, data)
+    return buffer.getvalue()
+
+
+def jar_zip():
+    import zipfile
+    meta = zipfile.ZipInfo("META-INF/")
+    meta.extra = b"\xfe\xca\x00\x00"
+    return zip_bytes([(meta, b""), ("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nMain-Class: A\n"),
+                      ("A.class", b"\xca\xfe\xba\xbe\0\0\0\x34")])
+
+
+JAR_ZIP = jar_zip()
+assert JAR_ZIP.startswith(b"PK\x03\x04")
+PLAIN_ZIP = zip_bytes([("hello.txt", "hello\n")])
+
+
 def make_fixtures(home):
     def write(name, data, mode=None):
         path = home / name
@@ -223,6 +265,11 @@ def make_fixtures(home):
     write("sub dir/rel.txt", b"this is in the sub dir\n")
     write("other-dir/only-there.txt", b"this is in the other dir\n")
     write("private.txt", b"secret\n", 0)
+    # A zip whose first entry is META-INF/ with the 0xCAFE extra field: `file` calls it a Java
+    # archive and the default handler would run it with `java -jar`, under any of these names.
+    write("jar/report.zip", JAR_ZIP)
+    write("jar/notes.txt", JAR_ZIP)
+    write("jar/plain.zip", PLAIN_ZIP)
     (home / "adir").mkdir()
     os.mkfifo(home / "fifo")
     os.symlink("notes.txt", home / "link-to-notes")
@@ -639,6 +686,36 @@ def names(rex13):
     return f"{len(sources)} files, modes {sorted(set(modes.values()))}, the dialog took each name from the server"
 
 
+@case("Open: a jar-signature zip saved as report.zip or notes.txt gets Show in folder only, a plain zip gets Open")
+def open_needs_more_than_a_name(rex13):
+    home = rex13.home
+    asked_before = XDG_MIME_LOG.read_text() if XDG_MIME_LOG.exists() else ""
+    order = ["~/jar/report.zip", "~/jar/notes.txt", "~/jar/plain.zip"]
+    steps, t = [], 2.5
+    for path in order:
+        steps += download_steps(t, path)
+        t += 3.6
+    steps += popover_steps(t)
+    run = run_app("open-jar", steps, t + 3, server=rex13)
+    expect_clean_exit(run)
+    for name, source in (("report.zip", "jar/report.zip"), ("notes.txt", "jar/notes.txt"), ("plain.zip", "jar/plain.zip")):
+        saved(run, name, home / source)
+    assert run.listing() == ["notes.txt", "plain.zip", "report.zip"], run.listing()
+    tree = run.tree
+    for name in ("report.zip", "notes.txt"):
+        state, ident = state_of(run, name)
+        assert state.startswith("Saved to"), (name, state)
+        assert f"download-show:{ident}" in tree, f"Show in folder is missing for {name}"
+        assert f"download-open:{ident}" not in tree, f"Open is offered for the jar saved as {name}"
+    state, ident = state_of(run, "plain.zip")
+    assert f"download-open:{ident}" in tree and f"download-show:{ident}" in tree, "a plain zip lost Open or Show in folder"
+    asked = XDG_MIME_LOG.read_text()[len(asked_before):].splitlines()
+    assert len(asked) == 1 and asked[0].startswith("query filetype ") and asked[0].endswith("/plain.zip"), \
+        f"the file-type question was asked for something other than the plain zip: {asked}"
+    expect_no_partials(run)
+    return "report.zip and notes.txt (jar bytes) refused by their first bytes before the desktop was asked; plain.zip asked once and offered Open"
+
+
 @case("~ and a relative path follow the shell's cd and the foreground program's directory")
 def relative_paths(rex13):
     home = rex13.home
@@ -993,6 +1070,11 @@ def kill_midway(desk, rex13):
 def final_checks():
     opened = XDG_LOG.read_text() if XDG_LOG.exists() else ""
     assert opened == "", f"xdg-open was called: {opened!r}"
+    asked = XDG_MIME_LOG.read_text().splitlines() if XDG_MIME_LOG.exists() else []
+    stray = [line for line in asked if not re.fullmatch(r"query filetype /.+", line)]
+    assert not stray, f"xdg-mime was asked something other than `query filetype <absolute path>`: {stray}"
+    for line in asked:
+        assert not re.search(r"/(prog|run\.sh|--help|logo\.svg|report\.zip)$", line), f"the file-type question was asked for {line}"
     problems = []
     for folder in DOWNLOAD_DIRS:
         if not folder.exists():
@@ -1011,7 +1093,7 @@ def final_checks():
         checked += 1
     if not FILTER:
         assert checked >= MIN_SAVED, f"only {checked} saved files compared with their sources; expected at least {MIN_SAVED}"
-    return f"{checked} saved files compared with their sources; xdg-open stub log empty; {len(DOWNLOAD_DIRS)} folders scanned"
+    return f"{checked} saved files compared with their sources; xdg-open stub log empty; {len(asked)} file-type questions, all `query filetype <path>`; {len(DOWNLOAD_DIRS)} folders scanned"
 
 
 def main():
@@ -1030,6 +1112,7 @@ def main():
     print(f"servers: API {rex13.revision} {REX}" + (f", API {rex12.revision} {REX12}" if rex12 else "") +
           f"; client {APP}; Xvfb {desk.display}", flush=True)
     names(rex13)
+    open_needs_more_than_a_name(rex13)
     relative_paths(rex13)
     refusals(rex13)
     api12(rex12, rex13)
