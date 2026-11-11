@@ -499,6 +499,44 @@ impl Term {
         }
     }
 
+    /// Select everything the terminal holds, scrollback included. The pane's worker makes
+    /// the selection on its terminal, so the marked rows and the text to copy arrive with
+    /// its next frame; until then nothing is selected.
+    pub fn select_all(&mut self) {
+        use rex_linux::terminal::selection::{Geometry, Input, Phase};
+        self.selection = None;
+        self.selection_anchor = None;
+        self.selecting = false;
+        self.selection_revision = self.selection_revision.wrapping_add(1);
+        let input = Input {
+            generation: self.restore_generation,
+            revision: self.selection_revision,
+            phase: Phase::All,
+            at: (0, 0),
+            position: (0., 0.),
+            geometry: Geometry {
+                columns: u32::from(self.frame.as_ref().map_or(1, |f| f.cols)),
+                cell_width: 1,
+                padding_left: 0,
+                screen_height: self.rect[3].ceil().max(1.) as u32,
+            },
+        };
+        // Kept so that the next click, or anything else that clears, reaches the worker.
+        self.last_selection_input = Some(input);
+        self.send(Command::Selection(input));
+    }
+
+    /// Whether `copy_text` has text to give, without building it.
+    pub fn has_selection(&self) -> bool {
+        match (self.selection, &self.frame) {
+            (Some(_), Some(frame)) => {
+                frame.selection_revision != self.selection_revision
+                    || frame.selection_text.as_ref().is_some_and(|t| !t.is_empty())
+            }
+            _ => false,
+        }
+    }
+
     pub fn copy_text(&self) -> Option<String> {
         let (a, b) = self.selection?;
         let frame = self.frame.as_ref()?;

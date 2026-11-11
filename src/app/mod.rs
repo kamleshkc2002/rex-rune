@@ -12,6 +12,7 @@ mod keycaps;
 mod keys;
 mod navigation;
 mod notify;
+mod pane_verbs;
 mod panel;
 mod panes;
 mod popups;

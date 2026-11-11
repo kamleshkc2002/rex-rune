@@ -27,6 +27,9 @@ pub enum Phase {
     Move,
     Up,
     Clear,
+    /// Select everything the terminal holds, scrollback included; `at`, `position` and
+    /// `geometry` are unused.
+    All,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -89,14 +92,18 @@ impl Controller {
             self.pointer = None;
             terminal.set_selection(None)?;
             self.screen = Some(screen);
-            if !matches!(input.phase, Phase::Down(_)) {
+            if !matches!(input.phase, Phase::Down(_) | Phase::All) {
                 return Ok(());
             }
         }
-        if matches!(input.phase, Phase::Clear) {
+        if matches!(input.phase, Phase::Clear | Phase::All) {
             self.gesture.reset(terminal);
-            terminal.set_selection(None)?;
             self.pointer = None;
+            let all = match input.phase {
+                Phase::All => terminal.select_all()?,
+                _ => None,
+            };
+            terminal.set_selection(all.as_ref())?;
             return Ok(());
         }
         let at = terminal.grid_ref(Point::Viewport(Self::point(terminal, input)?))?;
@@ -129,7 +136,7 @@ impl Controller {
                 self.release.apply(&mut self.gesture, terminal, Some(at))?;
                 self.pointer = None;
             }
-            Phase::Clear => unreachable!(),
+            Phase::Clear | Phase::All => unreachable!(),
         }
         Ok(())
     }
@@ -298,6 +305,67 @@ mod tests {
             &*text(&terminal, &mut buffer).unwrap().unwrap(),
             "e\u{301} 🦀 tail"
         );
+    }
+}
+
+#[cfg(test)]
+mod select_all_tests {
+    use super::*;
+
+    fn input(phase: Phase) -> Input {
+        Input {
+            generation: 0,
+            revision: 1,
+            phase,
+            at: (0, 0),
+            position: (0., 0.),
+            geometry: Geometry {
+                columns: 20,
+                cell_width: 10,
+                padding_left: 0,
+                screen_height: 100,
+            },
+        }
+    }
+
+    #[test]
+    fn select_all_takes_the_screen_and_scrollback_and_a_click_replaces_it() {
+        let mut terminal = Terminal::new(ghostty_vt::TerminalOptions {
+            cols: 20,
+            rows: 5,
+            ..Default::default()
+        })
+        .unwrap();
+        let mut selection = Controller::new().unwrap();
+        let mut buffer = Vec::new();
+        selection.apply(&terminal, input(Phase::All)).unwrap();
+        assert!(
+            text(&terminal, &mut buffer)
+                .unwrap()
+                .is_none_or(|t| t.is_empty()),
+            "an empty terminal has nothing to select"
+        );
+        for n in 0..40 {
+            terminal.vt_write(format!("line-{n:02}\r\n").as_bytes());
+        }
+        terminal.vt_write(b"tail");
+        selection.apply(&terminal, input(Phase::All)).unwrap();
+        let all = text(&terminal, &mut buffer).unwrap().unwrap();
+        assert!(all.starts_with("line-00\nline-01"), "{all:?}");
+        assert!(all.ends_with("line-39\ntail"), "{all:?}");
+        assert_eq!(all.lines().count(), 41);
+        // Scrolling leaves it attached to its content.
+        terminal.scroll_viewport(ScrollViewport::Delta(-12));
+        assert_eq!(text(&terminal, &mut buffer).unwrap().unwrap(), all);
+        // A stray release does nothing; a click starts over.
+        selection.apply(&terminal, input(Phase::Up)).unwrap();
+        assert_eq!(text(&terminal, &mut buffer).unwrap().unwrap(), all);
+        selection.apply(&terminal, input(Phase::Down(1))).unwrap();
+        selection.apply(&terminal, input(Phase::Up)).unwrap();
+        assert!(text(&terminal, &mut buffer).unwrap().is_none());
+        selection.apply(&terminal, input(Phase::All)).unwrap();
+        selection.apply(&terminal, input(Phase::Clear)).unwrap();
+        assert!(text(&terminal, &mut buffer).unwrap().is_none());
     }
 }
 

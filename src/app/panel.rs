@@ -82,6 +82,12 @@ impl Intent {
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
+                PaneAction::Copy => ("pane.copy", Value::Null),
+                PaneAction::Paste => ("pane.paste", Value::Null),
+                PaneAction::SelectAll => ("pane.select_all", Value::Null),
+                PaneAction::CopyId => ("pane.copy_id", Value::Null),
+                PaneAction::Clear => ("pane.clear", Value::Null),
+                PaneAction::Reset => ("pane.reset", Value::Null),
                 _ => return None,
             },
             _ => return None,
@@ -155,6 +161,18 @@ pub enum PaneAction {
     Rename,
     Close,
     Reconnect,
+    /// The pane's selected text to the clipboard.
+    Copy,
+    /// The clipboard into the pane, as Ctrl Shift V does for the focused one.
+    Paste,
+    /// Select the pane's screen and scrollback.
+    SelectAll,
+    /// The pane's block ID to the clipboard, for `rex` commands that name a block.
+    CopyId,
+    /// `terminal.clear`: screen and scrollback, keeping the current line.
+    Clear,
+    /// `terminal.reset`: the terminal's starting state; the program keeps running.
+    Reset,
 }
 
 #[derive(Clone, Debug)]
@@ -748,22 +766,30 @@ impl Workspace {
             let zoomed = model
                 .window()
                 .is_some_and(|w| w.zoomed_block_id.as_ref() == Some(&target.block));
-            // Layout, then the pane itself, then Close: last and destructive.
+            // Clipboard, layout, the pane itself, its terminal, then Close: last and
+            // destructive.
             for (label, section, action) in [
-                ("Split right", 0, PaneAction::Split("horizontal")),
-                ("Split down", 0, PaneAction::Split("vertical")),
+                ("Copy", 0, PaneAction::Copy),
+                ("Paste", 0, PaneAction::Paste),
+                ("Select all", 0, PaneAction::SelectAll),
+                ("Split right", 1, PaneAction::Split("horizontal")),
+                ("Split down", 1, PaneAction::Split("vertical")),
                 (
                     if zoomed { "Restore pane" } else { "Zoom pane" },
-                    0,
+                    1,
                     PaneAction::Zoom,
                 ),
-                ("Rename pane…", 1, PaneAction::Rename),
-                ("Reconnect terminal", 1, PaneAction::Reconnect),
-                ("Close pane…", 2, PaneAction::Close),
+                ("Rename pane…", 2, PaneAction::Rename),
+                ("Copy pane ID", 2, PaneAction::CopyId),
+                ("Clear terminal", 3, PaneAction::Clear),
+                ("Reset terminal", 3, PaneAction::Reset),
+                ("Reconnect terminal", 3, PaneAction::Reconnect),
+                ("Close pane…", 4, PaneAction::Close),
             ] {
                 let mut entry = Entry::new(label, "", &group, Intent::Pane(target.clone(), action))
                     .in_section(section);
                 entry.danger = matches!(action, PaneAction::Close);
+                entry.enabled = self.pane_verb_available(&target, action);
                 entries.push(entry);
             }
         }

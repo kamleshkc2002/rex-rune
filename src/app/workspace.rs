@@ -1431,6 +1431,10 @@ impl Workspace {
         let panel = self.panel.as_mut().unwrap();
         panel.target = Some(target);
         panel.anchor = anchor;
+        // The rows' availability is the target's (Copy needs its selection), known only now.
+        if let Some(first) = self.entries().iter().position(|e| e.enabled) {
+            self.panel.as_mut().unwrap().selected = first;
+        }
     }
 
     /// A sidebar session row's right-click menu, at the pointer (window points).
@@ -1596,6 +1600,12 @@ impl Workspace {
                 let key = (self.hosts[target.host].id, target.block);
                 self.terminal_command(&key, Command::Reconnect);
             }
+            PaneAction::Copy
+            | PaneAction::Paste
+            | PaneAction::SelectAll
+            | PaneAction::CopyId
+            | PaneAction::Clear
+            | PaneAction::Reset => self.pane_verb(target, action, tx),
         }
     }
 

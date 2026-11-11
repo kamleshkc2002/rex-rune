@@ -48,16 +48,29 @@ impl Workspace {
     /// Ctrl+Shift+V: copied files upload, else text pastes, else an image uploads. The read
     /// answers later and goes only to the pane that asked, if it is still focused by then.
     pub fn paste_clipboard(&mut self, tx: &mut Tx) {
-        let Some(block) = self.focused_block() else {
-            return;
-        };
-        if !self.active_terminal().is_some_and(|t| t.status().live) {
+        if let Some(block) = self.focused_block() {
+            self.paste_into(&block, true, tx);
+        }
+    }
+
+    /// Paste into `block` of the session on screen. A keyboard paste follows the focus
+    /// (`while_focused`); a pane menu's names its pane, focused or not, and reaches it as long
+    /// as it is still a pane of that session. Either way nothing is pasted under a dialog.
+    pub fn paste_into(&mut self, block: &str, while_focused: bool, tx: &mut Tx) {
+        let asked = self.term_key(block);
+        if !self.terminals.get(&asked).is_some_and(|t| t.status().live) {
             return;
         }
-        let asked = self.term_key(&block);
+        let session = self.model().selected.clone();
         tx.read_clipboard(move |s: &mut Workspace, content, _| {
-            let focused = s.focused_block().map(|block| s.term_key(&block));
-            if focused.as_ref() != Some(&asked) || s.panel.is_some() {
+            let still = if while_focused {
+                s.focused_block().map(|block| s.term_key(&block)).as_ref() == Some(&asked)
+            } else {
+                s.hosts[s.active].id == asked.0
+                    && s.model().selected == session
+                    && s.target(&asked.1).is_some_and(|t| s.target_exists(&t))
+            };
+            if !still || s.panel.is_some() {
                 return;
             }
             if !content.files().is_empty() {

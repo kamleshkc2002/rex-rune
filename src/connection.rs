@@ -111,6 +111,11 @@ pub enum Command {
     SearchStep(bool),
     TakeControl,
     Reconnect,
+    /// `terminal.reset`: the terminal back to its starting state, screen and scrollback
+    /// cleared, the program left running. Sent once, to this block only.
+    Reset,
+    /// `terminal.clear`: the screen and scrollback cleared, the current line kept.
+    Clear,
 }
 
 #[derive(Default)]
@@ -1884,6 +1889,22 @@ async fn handle_command(
                 }
                 Command::Reconnect => {
                     let _ = worker.commands.send(DataCommand::Reconnect);
+                }
+                // Neither is input: the block is not claimed. A refusal becomes the host's
+                // notice and a transport failure reconnects; either way it is not sent again.
+                verb @ (Command::Reset | Command::Clear) => {
+                    let method = match verb {
+                        Command::Reset => "com.superlogical.terminal.reset",
+                        _ => "com.superlogical.terminal.clear",
+                    };
+                    request(
+                        control,
+                        method,
+                        json!({"session_id":session,"block_id":block,"args":{}}),
+                    )
+                    .await?;
+                    // The history the view may have been scrolled into is gone.
+                    let _ = worker.commands.send(DataCommand::Bottom);
                 }
                 input => {
                     let (connected, owner) = {

@@ -109,8 +109,8 @@ fn every_menu_separates_its_groups_and_ends_with_its_destructive_row() {
     assert_structured(&rt, "pane", "Close pane…");
     assert_eq!(
         rows(&rt).iter().map(|r| r.1).collect::<Vec<_>>(),
-        [0, 0, 0, 1, 1, 2],
-        "layout, the pane itself, Close"
+        [0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 3, 4],
+        "clipboard, layout, the pane itself, its terminal, Close"
     );
     assert_eq!(label_color(&mut rt, "Close pane…"), rgb(danger()));
     assert_eq!(label_color(&mut rt, "Split right"), rgb(ink()));
@@ -169,8 +169,8 @@ fn commands_keep_destructive_rows_last_and_a_filtered_list_is_flat() {
         let last = entries.iter().rfind(|e| e.group == group).unwrap();
         assert!(last.danger, "{group} ends with its destructive row");
     }
-    // One line before Close tab…, two in the pane's group; none across a group header.
-    assert_eq!(separators(&rt), 3);
+    // One line before Close tab…, four in the pane's group; none across a group header.
+    assert_eq!(separators(&rt), 5);
 
     rt.update(|s, _| {
         s.panel.as_mut().unwrap().inputs[0].text = "pane".into();
