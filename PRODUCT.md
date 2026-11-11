@@ -27,4 +27,4 @@ SSH attachment uses OpenSSH socket forwarding. If SSH succeeds but finds no defa
 
 ## Out of scope for now
 
-Complete Kitty graphics, accessibility (AT-SPI) and distribution packages. See the README for the current list of unvalidated areas.
+Complete Kitty graphics, distribution packages, and screen-reader support for the terminal itself. Rune's AT-SPI tree is on and names the chrome, but it has not been tried with a screen reader, and the terminal pane exposes only visible text as plain labels (no caret, selection or focus). See the README's Accessibility section and its list of unvalidated areas.

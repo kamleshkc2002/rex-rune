@@ -291,6 +291,7 @@ fn pane_card(
             let menu_block = block.to_owned();
             let mut grid = el()
                 .key(format!("grid:{block}"))
+                .label(format!("Terminal {}", s.pane_name(block)))
                 .grow(1.)
                 .w_full()
                 .min_h(0.)

@@ -235,6 +235,7 @@ fn window_row(s: &Workspace, index: usize, session: &str, tab: &rexrs::api::sess
     let mut row = row()
         .key(format!("sidebar-tab:{index}:{session}:{id}"))
         .role("tab")
+        .focus_selected(active)
         .label(label.clone())
         .h(32.)
         .ml(12.)
