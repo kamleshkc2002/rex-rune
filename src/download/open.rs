@@ -7,6 +7,7 @@ use std::{io::Read, os::unix::fs::OpenOptionsExt, path::Path};
 const RISKY_EXTENSIONS: &[&str] = &[
     // Launchers and scripts.
     "desktop",
+    "kdelnk",
     "directory",
     "sh",
     "bash",
@@ -17,8 +18,13 @@ const RISKY_EXTENSIONS: &[&str] = &[
     "command",
     "run",
     "py",
+    "py2",
+    "py3",
     "pyw",
+    "pyi",
     "pl",
+    "pm",
+    "perl",
     "rb",
     "php",
     "lua",
@@ -27,7 +33,10 @@ const RISKY_EXTENSIONS: &[&str] = &[
     "cjs",
     "vbs",
     "vbe",
+    "jse",
     "wsf",
+    "wsc",
+    "sct",
     "ps1",
     "psm1",
     "bat",
@@ -70,7 +79,23 @@ const RISKY_EXTENSIONS: &[&str] = &[
 ];
 
 /// How many bytes of a file's start decide [`risky_content`].
-pub const SNIFF_BYTES: usize = 4;
+pub const SNIFF_BYTES: usize = 512;
+
+/// Text that makes a file a web page, an SVG or XML document, or a desktop launcher wherever the
+/// system's type detection looks for it, whatever the file is called. Compared without case,
+/// anywhere in the first [`SNIFF_BYTES`] bytes.
+const RISKY_MARKERS: &[&[u8]] = &[
+    b"<!doctype",
+    b"<html",
+    b"<head",
+    b"<body",
+    b"<script",
+    b"<svg",
+    b"<?xml",
+    b"[desktop entry]",
+    b"[desktop action",
+    b"[kde desktop entry]",
+];
 
 /// Whether the name alone rules out opening.
 pub fn risky_name(name: &str) -> bool {
@@ -82,13 +107,20 @@ pub fn risky_name(name: &str) -> bool {
     })
 }
 
-/// Whether the first bytes of the file are an ELF program or a `#!` script.
+/// Whether the first bytes of the file are an ELF program or a `#!` script, or hold the markers
+/// of a web page, SVG or XML document or desktop launcher (a hostile host can give those any
+/// name or none, and the browser would run their script).
 pub fn risky_content(head: &[u8]) -> bool {
-    head.starts_with(b"\x7fELF") || head.starts_with(b"#!")
+    head.starts_with(b"\x7fELF")
+        || head.starts_with(b"#!")
+        || RISKY_MARKERS.iter().any(|marker| {
+            head.windows(marker.len())
+                .any(|window| window.eq_ignore_ascii_case(marker))
+        })
 }
 
-/// Whether the app may offer to open this finished download: its name and its first bytes are
-/// both unremarkable. A file that can't be read is not offered.
+/// Whether the app may offer to open this finished download: its name and its first
+/// [`SNIFF_BYTES`] bytes are both unremarkable. A file that can't be read is not offered.
 pub fn may_open(path: &Path) -> bool {
     let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
         return false;
@@ -138,6 +170,15 @@ mod tests {
             "setup.exe",
             "x.bat",
             "x.ps1",
+            "x.kdelnk",
+            "t.py3",
+            "t.PY2",
+            "stubs.pyi",
+            "Mod.pm",
+            "x.perl",
+            "x.jse",
+            "x.sct",
+            "x.wsc",
             "weird.name.sh",
             "a.tar.sh",
         ] {
@@ -172,6 +213,36 @@ mod tests {
         assert!(!risky_content(b"PK\x03\x04"));
         assert!(!risky_content(b"\x7fEL"));
         assert!(!risky_content(b""));
+        // Markup under any name: whitespace, a byte order mark or other text in front, any case.
+        for markup in [
+            &b"<!DOCTYPE html><script>alert(1)</script>"[..],
+            b"<html><body>x",
+            b"\n\n  \t<HTML>",
+            b"\xef\xbb\xbf<!doctype html>",
+            b"<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\">",
+            b"<svg onload=\"x()\"></svg>",
+            b"some text first\n<Script>x()</Script>",
+            b"[Desktop Entry]\nExec=sh\n",
+            b"# comment\n[Desktop Entry]\nType=Application",
+            b"[KDE Desktop Entry]\n",
+        ] {
+            assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
+        }
+        // Plain text, data and documents are fine.
+        for fine in [
+            &b"Dear Sir,\nthe invoice is attached.\n"[..],
+            b"%PDF-1.7\n",
+            b"\x89PNG\r\n\x1a\n",
+            b"a < b and b > c",
+            b"{\"html\": true}",
+        ] {
+            assert!(!risky_content(fine), "{}", String::from_utf8_lossy(fine));
+        }
+        // `may_open` reads only SNIFF_BYTES; markup beyond them is not seen.
+        let mut late = vec![b'a'; SNIFF_BYTES];
+        late.extend_from_slice(b"<html>");
+        assert!(!risky_content(&late[..SNIFF_BYTES]));
+        assert!(risky_content(&late[6..SNIFF_BYTES + 6]));
     }
 
     #[test]
@@ -188,6 +259,16 @@ mod tests {
         assert!(!may_open(&file("run.sh", b"echo")));
         assert!(!may_open(&file("innocent.txt", b"#!/bin/sh\nrm -rf ~\n")));
         assert!(!may_open(&file("program", b"\x7fELF\x02\x01\x01")));
+        // Markup is refused whatever the name: none, an unknown extension, a numbered copy.
+        for name in ["invoice", "report.dat", "logo.dat", "invoice (1)", "lead"] {
+            for body in [
+                &b"<!DOCTYPE html><script>alert(1)</script>"[..],
+                b"  \n<html>",
+                b"<?xml version=\"1.0\"?><svg>",
+            ] {
+                assert!(!may_open(&file(name, body)), "{name}");
+            }
+        }
         assert!(!may_open(&dir.join("missing.txt")));
         let link = dir.join("link.txt");
         std::os::unix::fs::symlink(dir.join("notes.txt"), &link).unwrap();

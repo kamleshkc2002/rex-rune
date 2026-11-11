@@ -114,8 +114,8 @@ pub struct Confirmation {
     pub reason: Reason,
     /// The file's size as the server reported it, in bytes.
     pub hint: u64,
-    /// Free space in the destination, in bytes.
-    pub free: u64,
+    /// Free space in the destination, in bytes; `None` when the filesystem wouldn't say.
+    pub free: Option<u64>,
 }
 
 impl Limits {
@@ -129,7 +129,22 @@ impl Limits {
         } else {
             return None;
         };
-        Some(Confirmation { reason, hint, free })
+        Some(Confirmation {
+            reason,
+            hint,
+            free: Some(free),
+        })
+    }
+
+    /// The same question when the destination's free space can't be read: only the size can
+    /// make it a large file. A filesystem that can't say is not a reason to skip the question,
+    /// or to stop.
+    pub fn confirmation_without_space(&self, hint: u64) -> Option<Confirmation> {
+        (hint >= self.confirm_at).then_some(Confirmation {
+            reason: Reason::Large,
+            hint,
+            free: None,
+        })
     }
 
     /// The most bytes a stream may carry for a hint: the larger of twice the hint and the hint
@@ -262,8 +277,6 @@ pub enum Failure {
     LowSpace { free: u64 },
     /// The stream went past the growth cap.
     TooMuchData { limit: u64 },
-    /// The stream ended normally with fewer bytes than the size hint.
-    Short { received: u64, expected: u64 },
     /// No bytes for the stall timeout.
     Stalled,
     /// The stream ended another way than Rex's normal end.
@@ -282,12 +295,14 @@ impl std::fmt::Display for Failure {
                 write!(f, "{limit} downloads from this host are already running")
             }
             Self::Disconnected => write!(f, "the host isn't connected"),
-            Self::Server(message) => write!(f, "{message}"),
+            Self::Server(message) => write!(f, "{}", display_text(message)),
             Self::NoAnswer => write!(f, "Rex didn't answer in time; the download was not retried"),
             Self::Destination(message) | Self::Disk(message) | Self::Connection(message) => {
-                write!(f, "{message}")
+                write!(f, "{}", display_text(message))
             }
-            Self::UnexpectedReply(what) => write!(f, "unexpected reply from Rex: {what}"),
+            Self::UnexpectedReply(what) => {
+                write!(f, "unexpected reply from Rex: {}", display_text(what))
+            }
             Self::ConfirmationExpired => {
                 write!(
                     f,
@@ -307,17 +322,15 @@ impl std::fmt::Display for Failure {
                 "the file grew past {} MB while downloading",
                 limit / 1_000_000
             ),
-            Self::Short { received, expected } => write!(
-                f,
-                "the file ended after {received} of {expected} bytes; it may have changed on the host"
-            ),
             Self::Stalled => write!(f, "no data for 30 seconds"),
-            Self::Closed { code, reason } => match (code, reason.is_empty()) {
-                (Some(code), false) => write!(f, "Rex ended the transfer: {reason} ({code})"),
-                (Some(code), true) => write!(f, "Rex ended the transfer ({code})"),
+            Self::Closed { code, reason } => match (code, display_text(reason)) {
+                (Some(code), reason) if !reason.trim().is_empty() => {
+                    write!(f, "Rex ended the transfer: {reason} ({code})")
+                }
+                (Some(code), _) => write!(f, "Rex ended the transfer ({code})"),
                 (None, _) => write!(f, "the connection ended before the file was complete"),
             },
-            Self::Protocol(what) => write!(f, "unexpected data from Rex: {what}"),
+            Self::Protocol(what) => write!(f, "unexpected data from Rex: {}", display_text(what)),
         }
     }
 }
@@ -335,10 +348,13 @@ pub enum State {
         received: u64,
         hint: u64,
     },
-    /// The file is complete at `path`.
+    /// The file Rex sent is at `path`. `short_of` is Rex's size hint when the stream ended
+    /// normally with fewer bytes than that (a file that shrank, or one whose reported size is
+    /// wrong, like most files under `/sys`): the file is kept and the UI says so.
     Saved {
         path: PathBuf,
         bytes: u64,
+        short_of: Option<u64>,
     },
     Cancelled,
     Failed(Failure),
@@ -369,6 +385,7 @@ pub enum Event {
     Saved {
         path: PathBuf,
         bytes: u64,
+        short_of: Option<u64>,
     },
     Cancelled,
     Failed(Failure),
@@ -469,8 +486,19 @@ impl Transfer {
                     hint: *hint,
                 };
             }
-            (Receiving { .. }, Event::Saved { path, bytes }) => {
-                self.state = Saved { path, bytes };
+            (
+                Receiving { .. },
+                Event::Saved {
+                    path,
+                    bytes,
+                    short_of,
+                },
+            ) => {
+                self.state = Saved {
+                    path,
+                    bytes,
+                    short_of,
+                };
             }
             (Requested | AwaitingConfirmation(_) | Receiving { .. }, Event::Cancelled) => {
                 self.state = Cancelled;
@@ -507,13 +535,19 @@ pub fn active(list: &[Transfer]) -> usize {
     list.iter().filter(|t| !t.state.is_final()).count()
 }
 
-/// Server text for display: control characters removed, cut to a length that fits a notice.
-/// Rex's messages repeat the whole path, which can be thousands of characters.
+/// Server text for display: control characters become spaces, direction controls and other
+/// invisible format characters (the set file names are cleaned of) are removed, and the whole is
+/// cut to a length that fits a notice. Rex's messages repeat the whole path, which can be
+/// thousands of characters. Cleaning text that was already cleaned changes nothing.
 pub fn display_text(text: &str) -> String {
     const LIMIT: usize = 300;
     let cleaned: String = text
         .chars()
-        .map(|c| if c.is_control() { ' ' } else { c })
+        .filter_map(|c| match c {
+            c if c.is_control() => Some(' '),
+            c if name::dropped(c) => None,
+            c => Some(c),
+        })
         .collect();
     if cleaned.chars().count() <= LIMIT {
         return cleaned;

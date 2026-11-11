@@ -3,7 +3,8 @@
 //!
 //! The stream's end is the rule observed in D0: the last data message, one empty binary message,
 //! then a Close with status 1000. That whole shape is success; every other ending, including a
-//! 1000 without the empty message, is a failure and the partial file is deleted.
+//! 1000 without the empty message, is a failure and the partial file is deleted. The size Rex
+//! reported is a hint: a normal end short of it still saves the file.
 use super::{Config, Destination, Failure, FreeSpace, Meter};
 use crate::{transport, wire};
 use futures_util::{SinkExt, StreamExt};
@@ -29,7 +30,12 @@ pub enum Stop {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Outcome {
-    Saved { path: PathBuf, bytes: u64 },
+    Saved {
+        path: PathBuf,
+        bytes: u64,
+        /// The size hint, when the stream ended normally but short of it.
+        short_of: Option<u64>,
+    },
     Cancelled,
     Failed(Failure),
 }
@@ -58,6 +64,26 @@ async fn goodbye(socket: &mut transport::Socket) {
     };
     let _ = tokio::time::timeout(GOODBYE, async {
         let _ = socket.close(Some(frame)).await;
+    })
+    .await;
+}
+
+/// How long [`release`] may take in all.
+const RELEASE: Duration = Duration::from_secs(2);
+
+/// Frees a ticket that will not be used. Rex holds the file open, and one of the terminal's 16
+/// slots, from `download_begin` until the ticket is used or expires a minute later, and it takes
+/// no notice of the client giving up; opening the stream and closing it at once frees both. Best
+/// effort and bounded: a failure here leaves what Rex's expiry would have done anyway. Not for a
+/// ticket whose control connection is gone, which Rex has already revoked.
+pub async fn release(endpoint: &str, ticket: &str) {
+    let _ = tokio::time::timeout(RELEASE, async {
+        let Ok(mut socket) = transport::socket(endpoint, "/api/data", super::PROTOCOL).await else {
+            return;
+        };
+        if wire::handshake(&mut socket, ticket).await.is_ok() {
+            goodbye(&mut socket).await;
+        }
     })
     .await;
 }
@@ -92,7 +118,13 @@ pub async fn receive(
     };
     let mut socket = tokio::select! {
         biased;
-        s = &mut stop => return stopped(s),
+        s = &mut stop => {
+            // The ticket was never opened: free it on Rex now.
+            if s == Stop::Cancel {
+                release(job.endpoint, job.ticket).await;
+            }
+            return stopped(s);
+        }
         socket = connected => match socket {
             Ok(socket) => socket,
             Err(failure) => return Outcome::Failed(failure),
@@ -156,7 +188,9 @@ pub async fn receive(
             }
             Message::Close(frame) => {
                 let code = frame.as_ref().map(|f| u16::from(f.code));
-                let reason = frame.map(|f| f.reason.to_string()).unwrap_or_default();
+                let reason = frame
+                    .map(|f| super::display_text(&f.reason))
+                    .unwrap_or_default();
                 // Answer the close, then judge it.
                 goodbye(&mut socket).await;
                 if code != Some(1000) {
@@ -166,16 +200,14 @@ pub async fn receive(
                     break Failure::Protocol("the stream closed without its end marker".into());
                 }
                 let received = meter.received();
-                if received < job.hint {
-                    break Failure::Short {
-                        received,
-                        expected: job.hint,
-                    };
-                }
+                // A stream that ends normally is complete as Rex defines it, whatever the hint
+                // said: the file shrank, or its reported size was never right (sysfs).
+                let short_of = (received < job.hint).then_some(job.hint);
                 return match partial.finish_with(job.name, job.config.placement).await {
                     Ok(path) => Outcome::Saved {
                         path,
                         bytes: received,
+                        short_of,
                     },
                     Err(error) => Outcome::Failed(Failure::Disk(format!("{error:#}"))),
                 };

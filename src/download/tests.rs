@@ -67,7 +67,7 @@ fn confirmation_is_for_large_files_and_for_files_that_would_eat_the_reserve() {
     let large = limits.confirmation(GIB, free).unwrap();
     assert_eq!(
         (large.reason, large.hint, large.free),
-        (Reason::Large, GIB, free)
+        (Reason::Large, GIB, Some(free))
     );
     assert_eq!(
         limits.confirmation(50 * GIB, free).unwrap().reason,
@@ -92,6 +92,14 @@ fn confirmation_is_for_large_files_and_for_files_that_would_eat_the_reserve() {
     );
     assert_eq!(limits.confirmation(0, 100 * MIB), None);
     assert_eq!(limits.confirmation(0, 0), None);
+
+    // Space that can't be read still allows the question about a large file, and no other.
+    assert_eq!(limits.confirmation_without_space(GIB - 1), None);
+    let large = limits.confirmation_without_space(5 * GIB).unwrap();
+    assert_eq!(
+        (large.reason, large.hint, large.free),
+        (Reason::Large, 5 * GIB, None)
+    );
 }
 
 #[test]
@@ -204,7 +212,7 @@ fn at_most_three_transfers_run_per_host() {
         State::AwaitingConfirmation(Confirmation {
             reason: Reason::Large,
             hint: 1,
-            free: 1,
+            free: Some(1),
         }),
     ));
     assert_eq!(active(&list), 3);
@@ -260,13 +268,15 @@ fn a_transfer_goes_requested_receiving_saved() {
     );
     assert!(t.apply(Event::Saved {
         path: "/d/b.txt".into(),
-        bytes: 100
+        bytes: 100,
+        short_of: None
     }));
     assert_eq!(
         t.state,
         State::Saved {
             path: "/d/b.txt".into(),
-            bytes: 100
+            bytes: 100,
+            short_of: None
         }
     );
     assert!(t.state.is_final());
@@ -278,7 +288,7 @@ fn a_large_file_waits_for_confirmation_before_receiving() {
     let confirmation = Confirmation {
         reason: Reason::Large,
         hint: 2 * GIB,
-        free: 10 * GIB,
+        free: Some(10 * GIB),
     };
     let mut t = fresh();
     assert!(t.apply(begun(2 * GIB, Some(confirmation))));
@@ -288,7 +298,8 @@ fn a_large_file_waits_for_confirmation_before_receiving() {
     assert!(!t.apply(Event::Progress { received: 1 }));
     assert!(!t.apply(Event::Saved {
         path: "/x".into(),
-        bytes: 0
+        bytes: 0,
+        short_of: None
     }));
     assert!(t.apply(Event::Confirmed));
     assert_eq!(
@@ -306,7 +317,7 @@ fn cancel_and_failure_end_it_from_any_live_state_and_final_states_stay() {
     let confirmation = Confirmation {
         reason: Reason::LowSpace,
         hint: 5,
-        free: 1,
+        free: Some(1),
     };
     let live = |setup: &dyn Fn(&mut Transfer)| {
         let mut t = fresh();
@@ -339,6 +350,7 @@ fn cancel_and_failure_end_it_from_any_live_state_and_final_states_stay() {
                 Event::Saved {
                     path: "/x".into(),
                     bytes: 1,
+                    short_of: None,
                 },
                 Event::Cancelled,
                 Event::Failed(Failure::ConnectionLost),
@@ -354,6 +366,7 @@ fn cancel_and_failure_end_it_from_any_live_state_and_final_states_stay() {
     saved.apply(Event::Saved {
         path: "/d/b.txt".into(),
         bytes: 1,
+        short_of: None,
     });
     assert!(!saved.apply(Event::Failed(Failure::ConnectionLost)));
     assert!(!saved.apply(Event::Cancelled));
@@ -388,6 +401,42 @@ fn server_text_is_cleaned_and_cut_for_display() {
     assert_eq!(long.chars().count(), 301);
     assert!(long.ends_with('…'));
     assert_eq!(display_text(&"界".repeat(300)).chars().count(), 300);
+}
+
+#[test]
+fn display_text_drops_direction_controls_and_invisible_fillers() {
+    let shown = display_text("/home/u/\u{202e}gpj.exe\u{2066}\u{3164}");
+    assert_eq!(shown, "/home/u/gpj.exe");
+    assert_eq!(display_text(&shown), shown);
+    // Cleaning is idempotent, cut text included.
+    let long = display_text(&"y".repeat(10_000));
+    assert_eq!(display_text(&long), long);
+    // Every string a failure shows goes through it.
+    let dirty = "a\nb\u{202e}c";
+    for failure in [
+        Failure::Server(dirty.into()),
+        Failure::Connection(dirty.into()),
+        Failure::Disk(dirty.into()),
+        Failure::Destination(dirty.into()),
+        Failure::Protocol(dirty.into()),
+        Failure::UnexpectedReply(dirty.into()),
+        Failure::Closed {
+            code: Some(1011),
+            reason: dirty.into(),
+        },
+    ] {
+        let text = failure.to_string();
+        assert!(text.contains("a bc"), "{failure:?}: {text}");
+        assert!(!text.contains(['\n', '\u{202e}']), "{failure:?}: {text}");
+    }
+    assert_eq!(
+        Failure::Closed {
+            code: Some(1011),
+            reason: "\u{202e}\n".into()
+        }
+        .to_string(),
+        "Rex ended the transfer (1011)"
+    );
 }
 
 #[test]
@@ -714,6 +763,49 @@ fn leftover_partials_of_dead_processes_are_deleted_and_forgotten() {
     assert!(records.list().is_empty());
     // Nothing left to do.
     assert!(records.clean_up_leftovers().is_empty());
+}
+
+#[test]
+fn hosts_on_different_threads_never_lose_each_others_records() {
+    // Each host runs on its own thread and records its partial files in the same file.
+    let temp = Temp::new("concurrent");
+    let records = temp.records();
+    let dir = temp.0.clone();
+    let threads: Vec<_> = (0..8)
+        .map(|t| {
+            let (records, dir) = (records.clone(), dir.clone());
+            std::thread::spawn(move || {
+                for n in 0..40 {
+                    let name = format!(".t{t}-{n}.{UUID_A}.rex-part");
+                    records.add(&dir, &name).expect("a record is written");
+                    // Half of them finish straight away.
+                    if n % 2 == 0 {
+                        records.remove(&dir, &name);
+                    }
+                }
+            })
+        })
+        .collect();
+    for thread in threads {
+        thread.join().unwrap();
+    }
+    let kept = records.list();
+    assert_eq!(kept.len(), 8 * 20, "no record was lost");
+    for record in &kept {
+        let n: u32 = record.name[1..]
+            .split(['-', '.'])
+            .nth(1)
+            .unwrap()
+            .parse()
+            .unwrap();
+        assert_eq!(n % 2, 1, "{}: a removed record came back", record.name);
+    }
+    let state = records.path().parent().unwrap();
+    assert_eq!(
+        names(state),
+        ["downloads.json"],
+        "no temporary file is left"
+    );
 }
 
 #[test]

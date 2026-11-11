@@ -9,11 +9,13 @@ pub const FALLBACK: &str = "download";
 /// The longest suffix treated as a file extension, in bytes, dot included.
 const MAX_EXTENSION: usize = 16;
 
-/// A character that never survives into a name: control characters (C0, DEL, C1), the line and
-/// paragraph separators, and Unicode format controls, which include every direction override and
-/// isolate. Zero-width joiner and non-joiner are the exceptions: they are not direction controls
-/// and real text (emoji sequences, Persian, Indic scripts) needs them.
-fn dropped(c: char) -> bool {
+/// A character that never survives into a name or into server text shown to the person: control
+/// characters (C0, DEL, C1), the line and paragraph separators, Unicode format controls, which
+/// include every direction override and isolate, and the invisible fillers that render as blank
+/// (Hangul and braille fillers and the like), which let `a.pdf<filler>.exe` read as harmless.
+/// Zero-width joiner and non-joiner are the exceptions: they are not direction controls and real
+/// text (emoji sequences, Persian, Indic scripts) needs them.
+pub(crate) fn dropped(c: char) -> bool {
     if c.is_control() {
         return true;
     }
@@ -22,16 +24,22 @@ fn dropped(c: char) -> bool {
     }
     matches!(c,
         '\u{00ad}'
+        | '\u{034f}'
         | '\u{0600}'..='\u{0605}'
         | '\u{061c}'
         | '\u{06dd}'
         | '\u{070f}'
         | '\u{08e2}'
+        | '\u{115f}'..='\u{1160}'
+        | '\u{17b4}'..='\u{17b5}'
         | '\u{180e}'
         | '\u{200b}'..='\u{200f}'
         | '\u{2028}'..='\u{202e}'
         | '\u{2060}'..='\u{206f}'
+        | '\u{2800}'
+        | '\u{3164}'
         | '\u{feff}'
+        | '\u{ffa0}'
         | '\u{fff9}'..='\u{fffb}'
         | '\u{110bd}'
         | '\u{110cd}'
@@ -189,6 +197,11 @@ mod tests {
             ("m\u{200e}a\u{200f}r\u{061c}k", "mark"),
             ("zero\u{200b}width\u{feff}\u{2060}", "zerowidth"),
             ("soft\u{ad}hyphen", "softhyphen"),
+            // Invisible fillers that render as blank.
+            ("invoice.pdf\u{3164}.exe", "invoice.pdf.exe"),
+            ("a\u{2800}b", "ab"),
+            ("x\u{115f}y\u{1160}z", "xyz"),
+            ("c\u{34f}d\u{17b4}e\u{17b5}f\u{ffa0}g", "cdefg"),
             ("line\u{2028}sep\u{2029}", "linesep"),
             ("tag\u{e0041}\u{e007f}s", "tags"),
             // Joiners stay: emoji sequences and several scripts need them.

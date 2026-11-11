@@ -159,9 +159,29 @@ impl Downloads {
                 update(shared, id, Event::Failed(Failure::Server(message)));
                 return Ok(());
             }
-            Ok(Err(error)) => {
+            // Only a broken connection takes the control connection down with it. A reply that
+            // can't be decoded, or a request too big to send, fails this transfer alone.
+            Ok(Err(
+                error @ (rexrs::Error::Transport(_)
+                | rexrs::Error::Closed { .. }
+                | rexrs::Error::Protocol(_)),
+            )) => {
                 update(shared, id, Event::Failed(Failure::ConnectionLost));
                 return Err(error.into());
+            }
+            Ok(Err(rexrs::Error::TimedOut)) => {
+                update(shared, id, Event::Failed(Failure::NoAnswer));
+                return Ok(());
+            }
+            Ok(Err(error @ rexrs::Error::Json(_))) => {
+                let what = download::display_text(&error.to_string());
+                update(shared, id, Event::Failed(Failure::UnexpectedReply(what)));
+                return Ok(());
+            }
+            Ok(Err(error)) => {
+                let message = download::display_text(&error.to_string());
+                update(shared, id, Event::Failed(Failure::Server(message)));
+                return Ok(());
             }
         };
         if reply.not_modified == Some(true) {
@@ -231,9 +251,13 @@ impl Task {
             && free < config.limits.reserve
         {
             update(&shared, id, Event::Failed(Failure::LowSpace { free }));
+            stream::release(&endpoint, &ticket).await;
             return;
         }
-        let confirmation = free.and_then(|free| config.limits.confirmation(hint, free));
+        let confirmation = match free {
+            Some(free) => config.limits.confirmation(hint, free),
+            None => config.limits.confirmation_without_space(hint),
+        };
         update(
             &shared,
             id,
@@ -251,11 +275,18 @@ impl Task {
             tokio::select! {
                 signal = signals.recv_async() => match signal {
                     Ok(Signal::Confirm) => {}
-                    Ok(Signal::Cancel) => return update(&shared, id, Event::Cancelled),
+                    Ok(Signal::Cancel) => {
+                        update(&shared, id, Event::Cancelled);
+                        stream::release(&endpoint, &ticket).await;
+                        return;
+                    }
+                    // Rex has revoked the ticket with the connection that issued it.
                     Err(_) => return update(&shared, id, Event::Failed(Failure::ConnectionLost)),
                 },
                 _ = tokio::time::sleep_until(deadline) => {
-                    return update(&shared, id, Event::Failed(Failure::ConfirmationExpired));
+                    update(&shared, id, Event::Failed(Failure::ConfirmationExpired));
+                    stream::release(&endpoint, &ticket).await;
+                    return;
                 }
             }
             update(&shared, id, Event::Confirmed);
@@ -289,7 +320,15 @@ impl Task {
             &shared,
             id,
             match outcome {
-                Outcome::Saved { path, bytes } => Event::Saved { path, bytes },
+                Outcome::Saved {
+                    path,
+                    bytes,
+                    short_of,
+                } => Event::Saved {
+                    path,
+                    bytes,
+                    short_of,
+                },
                 Outcome::Cancelled => Event::Cancelled,
                 Outcome::Failed(failure) => Event::Failed(failure),
             },

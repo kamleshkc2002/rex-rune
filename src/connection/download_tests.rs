@@ -189,6 +189,21 @@ async fn state_of(
     .await
 }
 
+/// Whether the client opened the ticket's stream, got its WELCOME and closed it with 1000 at
+/// once, which is how Rex is told to free a file and slot it was holding for the ticket.
+async fn released(listener: &TcpListener) -> bool {
+    let accepted = tokio::time::timeout(Duration::from_secs(3), async {
+        serve_data(listener, vec![Step::Hold]).await
+    })
+    .await;
+    let Ok((hello, ended)) = accepted else {
+        return false;
+    };
+    hello.first() == Some(&1)
+        && hello[1..] == URL_SAFE_NO_PAD.decode(TICKET).unwrap()
+        && ended == Ended::ClientClose(Some(1000))
+}
+
 /// A partial file appears in `dir`.
 async fn partial_appears(dir: &Path) -> String {
     let deadline = Instant::now() + Duration::from_secs(8);
@@ -278,7 +293,7 @@ async fn a_download_sends_the_documented_request_and_saves_the_exact_bytes() {
         matches!(ended, Ended::ClientGone | Ended::ClientClose(Some(1000))),
         "{ended:?}"
     );
-    let State::Saved { path, bytes: n } = state else {
+    let State::Saved { path, bytes: n, .. } = state else {
         panic!("{state:?}")
     };
     assert_eq!(n, 100_000);
@@ -305,7 +320,7 @@ async fn an_empty_file_and_a_hostile_name_save_safely() {
     connected(&host).await;
     host.commands.send(command).unwrap();
     let state = finished(&host, id).await;
-    let State::Saved { path, bytes } = state else {
+    let State::Saved { path, bytes, .. } = state else {
         panic!("{state:?}")
     };
     assert_eq!(bytes, 0);
@@ -320,18 +335,24 @@ async fn an_empty_file_and_a_hostile_name_save_safely() {
 }
 
 #[tokio::test]
-async fn a_stream_shorter_than_the_hint_fails_and_leaves_nothing() {
-    let mut steps = chunks(&pattern(5_000));
+async fn a_stream_shorter_than_the_hint_is_kept_and_says_so() {
+    // Rex ends a stream at the file's end whatever its size said (sysfs reports 4096 for a
+    // 6-byte file), so a normal end is a complete file that is shorter than the hint.
+    let bytes = pattern(5_000);
+    let mut steps = chunks(&bytes);
     steps.extend([Step::End, Step::Close(1000, "")]);
     let (state, _, _, f) = run(9_000, steps, |_| {}).await;
-    assert_eq!(
-        state,
-        State::Failed(Failure::Short {
-            received: 5_000,
-            expected: 9_000
-        })
-    );
-    assert_clean(&f, &[]);
+    let State::Saved {
+        path,
+        bytes: n,
+        short_of,
+    } = state
+    else {
+        panic!("{state:?}")
+    };
+    assert_eq!((n, short_of), (5_000, Some(9_000)));
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    assert_clean(&f, &["file.bin"]);
 }
 
 #[tokio::test]
@@ -355,7 +376,7 @@ async fn a_stream_past_the_growth_cap_fails_and_one_within_it_succeeds() {
     let mut steps = chunks(&pattern(1_800));
     steps.extend([Step::End, Step::Close(1000, "")]);
     let (state, _, _, f) = run(1_000, steps, |c| c.limits = limits).await;
-    let State::Saved { path, bytes } = state else {
+    let State::Saved { path, bytes, .. } = state else {
         panic!("{state:?}")
     };
     assert_eq!(bytes, 1_800);
@@ -386,6 +407,18 @@ async fn an_ending_that_is_not_the_normal_one_fails() {
             Failure::Closed {
                 code: Some(4000),
                 reason: "block closed".into(),
+            },
+        ),
+        // The reason is the server's text: cleaned before anyone shows it.
+        (
+            [
+                data(),
+                vec![Step::Close(1011, "bad\n\u{1b}[0m\u{202e}reason")],
+            ]
+            .concat(),
+            Failure::Closed {
+                code: Some(1011),
+                reason: "bad  [0mreason".into(),
             },
         ),
         // The end marker and then something other than 1000.
@@ -531,6 +564,40 @@ async fn a_reconnect_mid_transfer_fails_it_and_sends_nothing_again() {
 }
 
 #[tokio::test]
+async fn a_reconnect_while_a_question_is_open_fails_it_without_touching_the_ticket() {
+    // No host-side sweep fails it: its own task sees the control connection go away. Rex has
+    // revoked the ticket with that connection, so nothing is opened on the data endpoint.
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1_000;
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut first = control(&listener, 13).await;
+        let request = recv(&mut first).await;
+        send(&mut first, reply(&request, ticket_reply(5_000))).await;
+        let second = control(&listener, 13).await;
+        let extra = tokio::time::timeout(Duration::from_millis(600), listener.accept()).await;
+        (extra.is_err(), first, second)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    host.commands.send(HostCommand::Reconnect).unwrap();
+    assert_eq!(
+        finished(&host, id).await,
+        State::Failed(Failure::ConnectionLost)
+    );
+    assert!(server.await.unwrap().0, "no data connection was opened");
+    drop(host);
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
 async fn an_old_revision_never_sends_the_request() {
     for revision in [10, 11, 12] {
         let f = Fixture::new().await;
@@ -610,6 +677,54 @@ async fn rex_refusing_the_request_is_shown_in_its_words_and_nothing_is_streamed(
         assert!(no_stream, "{code}: no data connection was opened");
         // The host stays connected: a refusal is not a broken connection.
         assert!(host.model.lock().unwrap().connected);
+        drop(host);
+        assert_clean(&f, &[]);
+    }
+}
+
+#[tokio::test]
+async fn an_undecodable_reply_or_an_oversized_request_fails_only_that_transfer() {
+    for case in ["no size", "huge path"] {
+        let f = Fixture::new().await;
+        let (id, mut command) = f.request(f.config());
+        if case == "huge path" {
+            let HostCommand::Download(request) = &mut command else {
+                unreachable!()
+            };
+            // The mock server's message limit is 64 KiB.
+            request.path = "x".repeat(200_000);
+        }
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, 13).await;
+            if case == "no size" {
+                let request = recv(&mut ws).await;
+                let mut payload = ticket_reply(1);
+                payload.as_object_mut().unwrap().remove("size");
+                send(&mut ws, reply(&request, payload)).await;
+            }
+            // The control connection must still be the one in use.
+            let extra = tokio::time::timeout(Duration::from_millis(500), listener.accept()).await;
+            (extra.is_err(), ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        let epoch = host.model.lock().unwrap().connection_epoch;
+        host.commands.send(command).unwrap();
+        let state = finished(&host, id).await;
+        let State::Failed(failure) = &state else {
+            panic!("{case}: {state:?}")
+        };
+        assert!(
+            !matches!(failure, Failure::ConnectionLost),
+            "{case}: {failure:?}"
+        );
+        let (kept, _ws) = server.await.unwrap();
+        assert!(kept, "{case}: the host did not reconnect");
+        let model = host.model.lock().unwrap();
+        assert!(model.connected, "{case}");
+        assert_eq!(model.connection_epoch, epoch, "{case}");
+        drop(model);
         drop(host);
         assert_clean(&f, &[]);
     }
@@ -744,7 +859,7 @@ async fn a_large_file_waits_for_a_yes_and_streams_only_after_it() {
         .send(HostCommand::DownloadConfirm(id))
         .unwrap();
     confirmed.await.unwrap();
-    let State::Saved { path, bytes } = finished(&host, id).await else {
+    let State::Saved { path, bytes, .. } = finished(&host, id).await else {
         panic!()
     };
     assert_eq!(bytes, 5_000);
@@ -754,7 +869,7 @@ async fn a_large_file_waits_for_a_yes_and_streams_only_after_it() {
 }
 
 #[tokio::test]
-async fn cancelling_or_ignoring_the_question_never_opens_a_stream() {
+async fn cancelling_or_ignoring_the_question_frees_the_ticket_without_taking_data() {
     for answer in ["cancel", "expire"] {
         let f = Fixture::new().await;
         let mut config = f.config();
@@ -770,8 +885,7 @@ async fn cancelling_or_ignoring_the_question_never_opens_a_stream() {
                 payload["expires_in_ms"] = json!(5_150);
             }
             send(&mut ws, reply(&request, payload)).await;
-            let extra = tokio::time::timeout(Duration::from_millis(900), listener.accept()).await;
-            (extra.is_err(), ws)
+            (released(&listener).await, ws)
         });
         let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
         connected(&host).await;
@@ -788,15 +902,82 @@ async fn cancelling_or_ignoring_the_question_never_opens_a_stream() {
             "cancel" => assert_eq!(state, State::Cancelled),
             _ => assert_eq!(state, State::Failed(Failure::ConfirmationExpired)),
         }
-        assert!(server.await.unwrap().0);
+        assert!(server.await.unwrap().0, "{answer}: the ticket was released");
         drop(host);
         assert_clean(&f, &[]);
     }
 }
 
 #[tokio::test]
+async fn a_large_file_is_confirmed_even_when_free_space_cannot_be_read() {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1_000;
+    config.space = Some(Arc::new(|| -> std::io::Result<u64> {
+        Err(std::io::Error::other("no statvfs"))
+    }));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(5_000))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let state = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    let State::AwaitingConfirmation(question) = state else {
+        unreachable!()
+    };
+    assert_eq!(
+        (question.reason, question.hint, question.free),
+        (Reason::Large, 5_000, None)
+    );
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    assert_eq!(finished(&host, id).await, State::Cancelled);
+    assert!(server.await.unwrap().0);
+    drop(host);
+}
+
+#[tokio::test]
+async fn cancelling_before_the_stream_is_open_frees_the_ticket() {
+    // The first connection never gets its WELCOME; the cancel lands while it is opening.
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(1_000))).await;
+        let mut stuck = accept(&listener, crate::upload::PROTOCOL).await;
+        let _hello = stuck.next().await;
+        (released(&listener).await, ws, stuck)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    // Receiving{0, hint} while the stream opens.
+    state_of(&host, id, "receiving", |s| {
+        matches!(s, State::Receiving { .. })
+    })
+    .await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    assert_eq!(finished(&host, id).await, State::Cancelled);
+    let (released, _ws, _stuck) = server.await.unwrap();
+    assert!(released, "the ticket was released");
+    drop(host);
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
 async fn too_little_free_space_stops_it_before_and_during_the_stream() {
-    // Before: under the reserve, a question can't help, so no stream is opened.
+    // Before: under the reserve, a question can't help, so the ticket is freed and no data is taken.
     let f = Fixture::new().await;
     let mut config = f.config();
     config.space = Some(Arc::new(|| -> std::io::Result<u64> {
@@ -808,8 +989,7 @@ async fn too_little_free_space_stops_it_before_and_during_the_stream() {
         let mut ws = control(&listener, 13).await;
         let request = recv(&mut ws).await;
         send(&mut ws, reply(&request, ticket_reply(1_000))).await;
-        let extra = tokio::time::timeout(Duration::from_millis(300), listener.accept()).await;
-        (extra.is_err(), ws)
+        (released(&listener).await, ws)
     });
     let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
     connected(&host).await;
@@ -820,7 +1000,7 @@ async fn too_little_free_space_stops_it_before_and_during_the_stream() {
             free: 100 * 1024 * 1024
         })
     );
-    assert!(server.await.unwrap().0);
+    assert!(server.await.unwrap().0, "the ticket was released");
     drop(host);
 
     // During: the disk fills while the file arrives.

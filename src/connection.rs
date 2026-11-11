@@ -1307,10 +1307,6 @@ async fn run_host(
             shared.update(|m| {
                 m.connection_epoch += 1;
                 m.performs.clear();
-                // Rex ends a stream when the connection that issued its ticket goes away.
-                for transfer in &mut m.downloads {
-                    transfer.apply(crate::download::Event::Failed(crate::download::Failure::ConnectionLost));
-                }
                 m.client_id = identity.id.clone();
                 m.protocol.api_revision = control.welcome().api_revision;
                 m.views.clear();

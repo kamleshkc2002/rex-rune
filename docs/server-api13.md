@@ -431,6 +431,7 @@ Each REJECT is one 2-byte binary message (`82 <reason>`) and then a Close.
 | --- | --- |
 | Lifetime | `expires_in_ms` = 60000, measured: used at 30 s it works; at 62.5 s it is REJECT `0x01`. |
 | Held while unused | The server **holds the file open** from `download_begin` until the ticket is used or expires (an `fd` on the file at 0 s and 30 s, none at 62.5 s), and the slot is held: with 16 unopened tickets the 17th was refused for 56 s and accepted at 60 s. |
+| Giving an unopened ticket up | Opening it (HELLO, WELCOME) and sending Close 1000 at once frees the file and the slot immediately (an `fd` count of 16 went to 0, and the 17th `download_begin` was accepted). Without it a cancelled or abandoned ticket holds both for the full 60 s. The Linux client does this when a transfer is cancelled, expires or is refused for space before its stream opened. A ticket whose control connection closed is already revoked and cannot be released this way. |
 | Reuse | A second HELLO with a finished ticket, or with one that is mid-stream: REJECT `0x01`. |
 | Two connections at once with one ticket | One gets the WELCOME and the file; the other gets REJECT `0x01`. |
 | The issuing control connection closes | Unopened ticket: REJECT `0x01` afterwards (revoked). Mid-stream: the stream ends with 1001 `data provider canceled`. A client reconnecting its control connection therefore loses its transfers. |

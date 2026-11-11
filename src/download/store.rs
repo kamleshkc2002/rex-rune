@@ -17,7 +17,10 @@ use std::{
         unix::ffi::OsStrExt,
     },
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 use tokio::io::AsyncWriteExt;
 
@@ -382,7 +385,9 @@ struct RecordFile {
 }
 
 /// `$XDG_STATE_HOME/rex-linux/downloads.json`: the partial files this app has made. Only these
-/// are ever deleted after a crash, and only if they still look like a partial file.
+/// are ever deleted after a crash, and only if they still look like a partial file. Updates are
+/// serialised within the process; two running apps updating the file at the same instant can
+/// still lose an entry (the file is replaced whole, never half written).
 #[derive(Clone, Debug)]
 pub struct Records {
     path: PathBuf,
@@ -400,6 +405,16 @@ fn process_start(pid: u32) -> Option<u64> {
     // The command name is in parentheses and may hold anything; the fields follow its last one.
     let rest = &stat[stat.rfind(')')? + 1..];
     rest.split_whitespace().nth(19)?.parse().ok()
+}
+
+/// Serialises every load-modify-save of a records file in this process: each host runs on its
+/// own thread, and two of them starting or ending a download at once must not lose each other's
+/// entries. (A second running app is not covered; see [`Records`].)
+static RECORDS_LOCK: Mutex<()> = Mutex::new(());
+static TEMPORARIES: AtomicU64 = AtomicU64::new(0);
+
+fn records_lock() -> std::sync::MutexGuard<'static, ()> {
+    RECORDS_LOCK.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 impl Records {
@@ -422,15 +437,22 @@ impl Records {
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let temporary = self
-            .path
-            .with_extension(format!("json.tmp.{}", std::process::id()));
-        std::fs::write(&temporary, serde_json::to_vec_pretty(file)?)?;
-        std::fs::rename(temporary, &self.path)?;
-        Ok(())
+        // A name of its own per save, so no two writers ever share a temporary file.
+        let temporary = self.path.with_extension(format!(
+            "json.tmp.{}.{}",
+            std::process::id(),
+            TEMPORARIES.fetch_add(1, Ordering::Relaxed)
+        ));
+        let written = std::fs::write(&temporary, serde_json::to_vec_pretty(file)?)
+            .and_then(|()| std::fs::rename(&temporary, &self.path));
+        if written.is_err() {
+            let _ = std::fs::remove_file(&temporary);
+        }
+        Ok(written?)
     }
 
     pub fn add(&self, dir: &Path, name: &str) -> Result<()> {
+        let _lock = records_lock();
         let mut file = self.load();
         let pid = std::process::id();
         file.partials.push(Record {
@@ -443,6 +465,7 @@ impl Records {
     }
 
     pub fn remove(&self, dir: &Path, name: &str) {
+        let _lock = records_lock();
         let mut file = self.load();
         let before = file.partials.len();
         file.partials.retain(|r| !(r.dir == dir && r.name == name));
@@ -462,6 +485,7 @@ impl Records {
     /// a regular file, directly inside the recorded folder, whose name has the form of a partial
     /// file; nothing is followed through a symlink. Returns what was deleted.
     pub fn clean_up_leftovers(&self) -> Vec<PathBuf> {
+        let _lock = records_lock();
         let file = self.load();
         if file.partials.is_empty() {
             return Vec::new();

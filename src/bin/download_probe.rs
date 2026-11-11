@@ -132,7 +132,7 @@ impl Probe {
         std::fs::create_dir_all(&dest)?;
         let started = Instant::now();
         let id = self.start(source, &dest);
-        let State::Saved { path, bytes } = self.finish(id).await? else {
+        let State::Saved { path, bytes, .. } = self.finish(id).await? else {
             bail!("did not save: {:?}", self.state(id));
         };
         let elapsed = started.elapsed();
@@ -391,6 +391,84 @@ async fn run() -> Result<()> {
     }
     .await;
     probe.report("cancel halfway", result);
+
+    // Cancelling at the question must free Rex's reservation at once: a terminal allows 16
+    // reserved files, so 17 cancels in a row and then a normal download only work if each
+    // cancel gave its slot back.
+    let result = async {
+        let dest = probe.work.join("dest-questions");
+        std::fs::create_dir_all(&dest)?;
+        for round in 1..=17 {
+            let id = probe.start(&source.join("sparse-1.5GiB.img"), &dest);
+            probe
+                .wait("the confirmation", |m| {
+                    m.downloads
+                        .iter()
+                        .find(|t| t.id == id)
+                        .filter(|t| matches!(t.state, State::AwaitingConfirmation(_)))
+                        .map(|_| ())
+                })
+                .await?;
+            probe
+                .host
+                .commands
+                .send(HostCommand::DownloadCancel(id))
+                .unwrap();
+            let state = probe.finish(id).await?;
+            ensure!(state == State::Cancelled, "round {round}: {state:?}");
+        }
+        let mut detail = "17 questions cancelled".to_owned();
+        if probe.server_pid.is_some() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let open = probe.open_files("sparse-1.5GiB.img").unwrap_or(usize::MAX);
+            ensure!(
+                open == 0,
+                "the server still has the file open ({open} descriptors)"
+            );
+            detail.push_str(", server holds no descriptor");
+        }
+        let after = probe
+            .fetch("after-questions", &source.join("small.txt"), "small.txt")
+            .await?;
+        detail.push_str(&format!(", then: {after}"));
+        ensure!(
+            std::fs::read_dir(&dest)?.next().is_none(),
+            "something was written"
+        );
+        Ok(detail)
+    }
+    .await;
+    probe.report("cancel at the question, 17 times", result);
+
+    // A file whose reported size is wrong: Rex ends the stream at its end, so it is saved and
+    // says it was short (sysfs reports 4096 for a few bytes).
+    let sysfs = Path::new("/sys/class/net/lo/mtu");
+    if sysfs.exists() {
+        let result = async {
+            let dest = probe.work.join("dest-short");
+            std::fs::create_dir_all(&dest)?;
+            let id = probe.start(sysfs, &dest);
+            let State::Saved {
+                path,
+                bytes,
+                short_of,
+            } = probe.finish(id).await?
+            else {
+                bail!("not saved: {:?}", probe.state(id));
+            };
+            ensure!(
+                std::fs::read(&path)? == std::fs::read(sysfs)?,
+                "content differs"
+            );
+            ensure!(
+                short_of.is_some_and(|hint| hint > bytes),
+                "short_of {short_of:?}, {bytes} bytes"
+            );
+            Ok(format!("{bytes} bytes saved, Rex reported {short_of:?}"))
+        }
+        .await;
+        probe.report("file shorter than its size", result);
+    }
 
     if probe.failed.is_empty() {
         println!("all checks passed");
