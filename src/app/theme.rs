@@ -195,6 +195,27 @@ pub fn on_accent() -> u32 {
     palette().on_accent
 }
 
+/// How much of its tone the `SELECTION` fill is.
+pub const SELECTION_FILL: f32 = 0.18;
+
+/// `SELECTION`, the keyboard-selected row of a list, as (fill, outline): a tint of `ACCENT`
+/// under a 1 pt outline in it, so selection is never fill alone and never reads as a hover. A
+/// destructive row tints in `DANGER` instead. Text on it is `INK`.
+pub fn selection(destructive: bool) -> (Color, Color) {
+    let tone = rgb(if destructive { danger() } else { accent() });
+    (tone.alpha(SELECTION_FILL), tone)
+}
+
+/// A keycap's chip: white at this opacity over its surface, and `KEYCAP_LIT` on a selected row.
+pub const KEYCAP_FILL: f32 = 0.07;
+pub const KEYCAP_LIT: f32 = 0.12;
+
+/// A keycap's text: halfway from `MUTED` to `INK`, so that 10.5 pt keys meet 4.5:1 on their
+/// chip in every palette. `MUTED` alone does not on the lighter popovers.
+pub fn keycap_ink() -> u32 {
+    mix(ink(), muted(), 0.5)
+}
+
 pub const TOOLBAR: f32 = 52.;
 pub const GUTTER: f32 = 8.;
 pub const MARGIN: f32 = 10.;
@@ -359,13 +380,12 @@ icon!(
     "rex-command",
     r#"path d="M12.5 5v10a2.5 2.5 0 1 0 2.5-2.5H5a2.5 2.5 0 1 0 2.5 2.5V5a2.5 2.5 0 1 0-2.5 2.5h10a2.5 2.5 0 1 0-2.5-2.5""#
 );
+// A gear: eight teeth around a hub. Sliders read as view options, not Settings.
 icon!(
     SETTINGS,
     "rex-settings",
-    r#"path d="M4 6.5h5M13 6.5h3""#,
-    r#"circle cx="11" cy="6.5" r="2""#,
-    r#"path d="M4 13.5h3M11 13.5h5""#,
-    r#"circle cx="9" cy="13.5" r="2""#
+    r#"path d="M8.69 4.55L9.02 2.56A7.5 7.5 0 0 1 10.98 2.56L11.31 4.55A5.6 5.6 0 0 1 12.93 5.23L14.57 4.05A7.5 7.5 0 0 1 15.95 5.43L14.77 7.07A5.6 5.6 0 0 1 15.45 8.69L17.44 9.02A7.5 7.5 0 0 1 17.44 10.98L15.45 11.31A5.6 5.6 0 0 1 14.77 12.93L15.95 14.57A7.5 7.5 0 0 1 14.57 15.95L12.93 14.77A5.6 5.6 0 0 1 11.31 15.45L10.98 17.44A7.5 7.5 0 0 1 9.02 17.44L8.69 15.45A5.6 5.6 0 0 1 7.07 14.77L5.43 15.95A7.5 7.5 0 0 1 4.05 14.57L5.23 12.93A5.6 5.6 0 0 1 4.55 11.31L2.56 10.98A7.5 7.5 0 0 1 2.56 9.02L4.55 8.69A5.6 5.6 0 0 1 5.23 7.07L4.05 5.43A7.5 7.5 0 0 1 5.43 4.05L7.07 5.23A5.6 5.6 0 0 1 8.69 4.55Z""#,
+    r#"circle cx="10" cy="10" r="2.4""#
 );
 icon!(
     MONITOR,
@@ -533,6 +553,28 @@ mod tests {
             let name = chrome.name();
             assert!(contrast(p.muted, p.card) >= 4.5, "{name}: muted on card");
             assert!(contrast(p.ink, p.popover) >= 4.5, "{name}: ink on popover");
+            // Keycaps: on a popover's rows, and on the sidebar's search chip (itself 8% white
+            // over the card).
+            let keys = mix(p.ink, p.muted, 0.5);
+            for (surface, under, lift) in [("popover", p.popover, 0.), ("sidebar", p.card, 0.08)] {
+                let chip = mix(0xffffff, under, KEYCAP_FILL + lift);
+                assert!(
+                    contrast(keys, chip) >= 4.5,
+                    "{name}: keycaps on the {surface}"
+                );
+            }
+            // A selected row keeps its label and its keycaps in ink on either tint, and its
+            // outline stands clear of the popover around it.
+            for (kind, tone) in [("selection", p.accent), ("destructive selection", p.danger)] {
+                let fill = mix(tone, p.popover, SELECTION_FILL);
+                assert!(contrast(p.ink, fill) >= 4.5, "{name}: ink on the {kind}");
+                let chip = mix(0xffffff, fill, KEYCAP_LIT);
+                assert!(
+                    contrast(p.ink, chip) >= 4.5,
+                    "{name}: keycaps on the {kind}"
+                );
+                assert!(contrast(tone, p.popover) >= 3., "{name}: {kind} outline");
+            }
             // Trouble always carries a word; Gruvbox's brightest red is 4.3:1 on its ground.
             for (word, color) in [("warning", p.warning), ("danger", p.danger)] {
                 for surface in [p.card, p.popover] {

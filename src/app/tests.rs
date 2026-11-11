@@ -2,6 +2,8 @@
 //! socket that does not exist).
 #[path = "bindings_integration_tests.rs"]
 mod bindings_integration_tests;
+#[path = "menu_tests.rs"]
+mod menu_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
 #[path = "remote_session_tests.rs"]
@@ -192,8 +194,8 @@ fn host_menu_rows_online_and_offline() {
         rows(&rt),
         [
             ("New session".to_owned(), String::new(), false),
-            ("Default shell…".to_owned(), String::new(), true),
             ("Retry connection".to_owned(), String::new(), true),
+            ("Default shell…".to_owned(), String::new(), true),
             ("Edit host…".to_owned(), String::new(), true),
             ("Remove host…".to_owned(), String::new(), true),
         ]
@@ -707,7 +709,7 @@ fn a_tabs_menu_and_middle_click_act_on_that_tab() {
     assert!(matches!(&panel.kind, PanelKind::Window(id) if id == "split"));
     assert_eq!(panel.title, "dev");
     let labels: Vec<String> = rt.state.entries().into_iter().map(|e| e.label).collect();
-    assert_eq!(labels, ["Rename tab…", "Close tab…", "New tab"]);
+    assert_eq!(labels, ["Rename tab…", "New tab", "Close tab…"]);
     assert!(has(&rt, "menu-surface"));
     press(&mut rt, Key::Escape);
     assert!(rt.state.panel.is_none());
@@ -1076,9 +1078,9 @@ fn session_menu_on_an_edge_row_and_an_offline_host() {
             ("Rename session…".to_owned(), false),
             ("Move up".to_owned(), false),
             ("Move down".to_owned(), false),
-            ("Close session…".to_owned(), false),
             ("Retry connection".to_owned(), true),
             ("Edit host…".to_owned(), true),
+            ("Close session…".to_owned(), false),
         ]
     );
     assert_eq!(panel.selected, 0);

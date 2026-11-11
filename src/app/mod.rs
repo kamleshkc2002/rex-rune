@@ -8,6 +8,7 @@ mod discover;
 mod fonts;
 mod input;
 mod integrations;
+mod keycaps;
 mod keys;
 mod navigation;
 mod notify;

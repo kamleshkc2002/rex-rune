@@ -620,7 +620,10 @@ fn empty(s: &Workspace) -> El {
     } else {
         (
             "Choose a session",
-            "Select a session in the sidebar or press Ctrl K.".into(),
+            match s.shortcut_detail("session.switch", &serde_json::Value::Null) {
+                keys if keys.is_empty() => "Select a session in the sidebar.".into(),
+                keys => format!("Select a session in the sidebar or press {keys}."),
+            },
             "New session",
             Intent::NewSession,
         )
