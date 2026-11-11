@@ -1747,3 +1747,238 @@ fn the_launch_cleanup_deletes_a_recorded_partial_of_a_dead_process_and_nothing_e
     std::fs::remove_dir_all(dir).ok();
     std::fs::remove_dir_all(state).ok();
 }
+
+/// Change the host's model the way its worker does (views, connection), then deliver the wake.
+fn change_model(
+    rt: &mut Runtime<Workspace>,
+    index: usize,
+    f: impl FnOnce(&mut rex_linux::connection::HostModel),
+) {
+    rt.update(|s, tx| {
+        let mut model = s.hosts[index].model.clone();
+        f(&mut model);
+        *s.hosts[index].connection.model.lock().unwrap() = model;
+        s.sync(index, tx);
+    });
+    for _ in 0..10 {
+        rt.frame(1. / 60.);
+    }
+}
+
+/// What the dialog's transfer looks like to the client when the host's pane or connection goes.
+#[derive(Clone, Copy, Debug)]
+enum Waiting {
+    /// Asked, and the worker has not listed it yet.
+    Unlisted,
+    /// Listed, Rex has not answered.
+    ForRex,
+    /// Rex answered with the large-file question.
+    ForAnswer,
+}
+
+/// Open the dialog for `block:b`, press Enter on a path and put the transfer in `waiting`.
+fn dialog_waiting(
+    waiting: Waiting,
+) -> (
+    Runtime<Workspace>,
+    flume::Receiver<HostCommand>,
+    PathBuf,
+    u64,
+) {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, "/home/dev/build.img");
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    let state = match waiting {
+        Waiting::Unlisted => None,
+        Waiting::ForRex => Some(State::Requested),
+        Waiting::ForAnswer => Some(State::AwaitingConfirmation(Confirmation {
+            reason: Reason::Large,
+            hint: 3_200_000_000,
+            free: Some(41_000_000_000),
+        })),
+    };
+    if let Some(state) = state {
+        feed(&mut rt, |list| {
+            list.push(transfer(id, "build.img", &dir, state))
+        });
+    }
+    assert!(rt.state.panel.is_some(), "{waiting:?}: the dialog is open");
+    assert!(asked(&rx).is_empty());
+    (rt, rx, dir, id)
+}
+
+#[test]
+fn the_pane_closing_under_a_waiting_dialog_closes_it_and_cancels_once() {
+    for waiting in [Waiting::Unlisted, Waiting::ForRex, Waiting::ForAnswer] {
+        let (mut rt, rx, dir, id) = dialog_waiting(waiting);
+        change_model(&mut rt, 0, |model| {
+            model.views.get_mut("s").unwrap().windows[1].layers[0]
+                .blocks
+                .retain(|b| b.block_id.as_deref() != Some("block:b"));
+        });
+        assert!(rt.state.panel.is_none(), "{waiting:?}: the dialog closes");
+        assert!(
+            rt.state
+                .notices
+                .iter()
+                .any(|n| n.text.contains("no longer available"))
+        );
+        let sent = asked(&rx);
+        assert!(
+            matches!(&sent[..], [Asked::Cancel(c)] if *c == id),
+            "{waiting:?}: {} commands, want one cancel",
+            sent.len()
+        );
+        // Later wakes do not ask again.
+        change_model(&mut rt, 0, |_| {});
+        assert!(asked(&rx).is_empty(), "{waiting:?}: not asked twice");
+        std::fs::remove_dir_all(dir).ok();
+    }
+}
+
+#[test]
+fn the_host_disconnecting_under_a_waiting_dialog_closes_it_and_cancels_once() {
+    for waiting in [Waiting::Unlisted, Waiting::ForRex, Waiting::ForAnswer] {
+        let (mut rt, rx, dir, id) = dialog_waiting(waiting);
+        // A reconnect: the connection drops, and the new one starts with no views.
+        change_model(&mut rt, 0, |model| {
+            model.connected = false;
+            model.connection_epoch += 1;
+            model.views.clear();
+        });
+        assert!(rt.state.panel.is_none(), "{waiting:?}: the dialog closes");
+        let sent = asked(&rx);
+        assert!(
+            matches!(&sent[..], [Asked::Cancel(c)] if *c == id),
+            "{waiting:?}: {} commands, want one cancel",
+            sent.len()
+        );
+        change_model(&mut rt, 0, |_| {});
+        assert!(asked(&rx).is_empty(), "{waiting:?}: not asked twice");
+        std::fs::remove_dir_all(dir).ok();
+    }
+}
+
+#[test]
+fn rows_from_two_hosts_each_name_their_host_and_cancel_goes_to_that_host() {
+    let mut ws = workspace_hosts(2);
+    let first = capture_host(&mut ws, 0);
+    let second = capture_host(&mut ws, 1);
+    let dir = scratch();
+    ws.settings.downloads.directory = Some(dir.display().to_string());
+    for host in &mut ws.hosts {
+        host.model.connected = true;
+        host.model.protocol.api_revision = 13;
+    }
+    ws.perform(Intent::Downloads, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    change_model(&mut rt, 0, |m| {
+        m.downloads
+            .push(transfer(21, "one.log", &dir, receiving(1, 10)))
+    });
+    change_model(&mut rt, 1, |m| {
+        m.downloads
+            .push(transfer(22, "two.log", &dir, receiving(2, 10)));
+        m.downloads.push(transfer(
+            23,
+            "three.log",
+            &dir,
+            State::Failed(Failure::Stalled),
+        ));
+    });
+    let (_, one) = label_of(&rt, "download:21").expect("a row for host 0");
+    let (_, two) = label_of(&rt, "download:22").expect("a row for host 1");
+    let (_, three) = label_of(&rt, "download:23").expect("a failed row for host 1");
+    assert!(one.contains("one.log") && one.contains("test-0"), "{one}");
+    assert!(two.contains("two.log") && two.contains("test-1"), "{two}");
+    assert!(
+        three.contains("test-1") && !three.contains("test-0"),
+        "{three}"
+    );
+    assert!(shows(&rt, "test-0 · 1 of 10 bytes"), "{:?}", texts(&rt));
+    assert!(shows(&rt, "test-1 · 2 of 10 bytes"), "{:?}", texts(&rt));
+
+    click(&mut rt, "download-cancel:22");
+    let to_second = asked(&second);
+    assert!(
+        matches!(&to_second[..], [Asked::Cancel(22)]),
+        "{} commands to host 1",
+        to_second.len()
+    );
+    assert!(asked(&first).is_empty(), "host 0 is not told");
+
+    click(&mut rt, "download-cancel:21");
+    let to_first = asked(&first);
+    assert!(
+        matches!(&to_first[..], [Asked::Cancel(21)]),
+        "{} commands to host 0",
+        to_first.len()
+    );
+    assert!(asked(&second).is_empty(), "host 1 is not told");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_opener_gets_the_absolute_saved_path_whole_and_the_file_manager_uri_is_encoded() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    let names = [
+        "-rf %41 #x?.txt",
+        "two  spaces & 100%.txt",
+        "-dash.txt",
+        "a#b?c=d%2Fe.md",
+        "ünï ファイル.txt",
+    ];
+    for (i, name) in names.iter().enumerate() {
+        std::fs::write(dir.join(name), b"plain words").unwrap();
+        let saved = State::Saved {
+            path: dir.join(name),
+            bytes: 11,
+            short_of: None,
+        };
+        feed(&mut rt, |list| {
+            list.push(transfer(i as u64 + 1, name, &dir, saved))
+        });
+    }
+    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
+    rt.frame(1. / 60.);
+    for (i, name) in names.iter().enumerate() {
+        click(&mut rt, &format!("download-open:{}", i + 1));
+        click(&mut rt, &format!("download-show:{}", i + 1));
+        let want = dir.join(name);
+        let opened = std::mem::take(&mut rt.state.downloads.opened);
+        assert_eq!(
+            opened,
+            [Opened::File(want.clone()), Opened::Folder(want.clone())],
+            "{name}"
+        );
+        // One argument: the absolute path itself, never relative and never split or quoted.
+        assert!(want.is_absolute());
+        assert_eq!(want.file_name().unwrap(), std::ffi::OsStr::new(name));
+        // What the real ShowItems call sends: a file: URI that names this path alone.
+        let uri = url::Url::from_file_path(&want).unwrap().to_string();
+        assert!(uri.starts_with("file:///"), "{uri}");
+        assert!(!uri.contains(['#', '?', ' ', '\n']), "{uri}");
+        let back = url::Url::parse(&uri).unwrap().to_file_path().unwrap();
+        assert_eq!(back, want, "{uri}");
+        if name.contains('%') {
+            assert!(uri.contains("%25"), "a percent sign is encoded: {uri}");
+        }
+        if name.contains('#') {
+            assert!(uri.contains("%23"), "{uri}");
+        }
+        if name.contains('?') {
+            assert!(uri.contains("%3F"), "{uri}");
+        }
+        if name.contains(' ') {
+            assert!(uri.contains("%20"), "{uri}");
+        }
+    }
+    std::fs::remove_dir_all(dir).ok();
+}

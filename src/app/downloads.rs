@@ -482,6 +482,10 @@ impl Workspace {
             dialog.id = None;
         }
         if pending {
+            // Told once: the sweep for unowned questions must not ask again before the core
+            // has finished the cancel.
+            let host_id = self.hosts[host].id;
+            self.downloads.orphans.insert((host_id, id));
             self.send(host, HostCommand::DownloadCancel(id));
         }
     }
