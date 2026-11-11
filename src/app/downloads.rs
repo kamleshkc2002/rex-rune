@@ -41,18 +41,85 @@ pub enum Opened {
     Folder(PathBuf),
 }
 
-#[derive(Default)]
+/// A worker's result waiting to be delivered to the workspace.
+#[cfg(test)]
+type Pending = Box<dyn FnOnce(&mut Workspace) + Send>;
+
 pub struct Downloads {
     /// Finished transfers already told to the person, so each is told once.
     announced: HashSet<(HostId, u64)>,
-    /// Whether a saved file may be offered **Open**, decided when it finished.
+    /// Whether a saved file may be offered **Open**: the name and first bytes when it finished,
+    /// then the desktop's own file-type answer, which arrives from a worker. Absent until then,
+    /// and a missing answer is a no.
     openable: HashMap<(HostId, u64), bool>,
+    /// Where a file's type comes from: `xdg-mime`, or a stand-in in tests.
+    pub type_of: open::TypeQuery,
     /// Confirmations nobody can answer any more, already cancelled.
     orphans: HashSet<(HostId, u64)>,
     /// Where the toolbar chip was laid out, for the popover that opens under it.
     pub chip: [f32; 4],
     #[cfg(test)]
     pub opened: Vec<Opened>,
+    /// Tests: hold each worker's result back until `finish_pending`, as a slow one would.
+    #[cfg(test)]
+    pub defer: bool,
+    #[cfg(test)]
+    pending: Vec<Pending>,
+}
+
+impl Default for Downloads {
+    fn default() -> Self {
+        Self {
+            announced: HashSet::new(),
+            openable: HashMap::new(),
+            #[cfg(test)]
+            type_of: stand_in_type,
+            #[cfg(not(test))]
+            type_of: open::desktop_type,
+            orphans: HashSet::new(),
+            chip: [0.; 4],
+            #[cfg(test)]
+            opened: Vec::new(),
+            #[cfg(test)]
+            defer: false,
+            #[cfg(test)]
+            pending: Vec::new(),
+        }
+    }
+}
+
+/// What tests give as the desktop's answer: the first type the table allows for the name, so a
+/// file the name and first-bytes checks pass is also one the "desktop" accepts.
+#[cfg(test)]
+pub fn stand_in_type(path: &Path) -> Option<String> {
+    const TYPES: &[&str] = &[
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "text/tab-separated-values",
+        "application/json",
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "application/zip",
+        "application/x-tar",
+        "application/gzip",
+        "application/x-compressed-tar",
+        "application/x-xz",
+        "application/x-xz-compressed-tar",
+        "application/zstd",
+        "application/x-zstd-compressed-tar",
+        "application/x-bzip2",
+        "application/x-bzip2-compressed-tar",
+        "application/x-7z-compressed",
+    ];
+    let kind = open::name_kind(path.file_name()?.to_str()?)?;
+    TYPES
+        .iter()
+        .find(|t| open::type_allowed(kind, t))
+        .map(|t| (*t).to_owned())
 }
 
 /// A transfer of one host, for the popover and the chip.
@@ -625,9 +692,7 @@ impl Workspace {
                 bytes,
                 short_of,
             } => {
-                self.downloads
-                    .openable
-                    .insert((host, transfer.id), open::may_open(path));
+                self.check_openable(host, transfer.id, path.clone());
                 let saved = path
                     .file_name()
                     .map_or(name, |n| n.to_string_lossy().into_owned());
@@ -659,17 +724,103 @@ impl Workspace {
         }
     }
 
-    /// **Open** on a finished row. The row only offers it for files that may be opened; the
-    /// file is looked at again now, since it can have changed since.
+    /// Decide whether a saved file is offered **Open**. The name and first bytes are read now,
+    /// which is quick; only a candidate asks the desktop for its file type (`xdg-mime`), on a
+    /// worker, and the button appears once that agrees. Until then, and if it cannot be
+    /// asked, there is no button.
+    fn check_openable(&mut self, host: HostId, id: u64, path: PathBuf) {
+        let key = (host, id);
+        let candidate = open::may_open(&path);
+        self.downloads.openable.insert(key, false);
+        if !candidate {
+            return;
+        }
+        let query = self.downloads.type_of;
+        self.off_ui(
+            "check",
+            move || open::may_open_with(&path, query),
+            move |s, verdict| {
+                s.downloads.openable.insert(key, verdict);
+            },
+        );
+    }
+
+    /// **Open** on a finished row. The row only offers it for files that may be opened, and the
+    /// file is looked at again now, since it can have changed since: name, first bytes and the
+    /// desktop's file-type answer, immediately before `xdg-open`, on a worker. If anything
+    /// disagrees, nothing is opened and the person is told.
     pub fn open_download(&mut self, host: HostId, id: u64) {
+        let refused = "Rex Linux doesn't open this kind of file; show it in its folder instead.";
         let Some(path) = self.saved_path(host, id) else {
             return;
         };
-        if !self.downloadable(host, id) || !open::may_open(&path) {
-            self.notify("Rex Linux doesn't open this kind of file; show it in its folder instead.");
+        if !self.downloadable(host, id) {
+            self.notify(refused);
             return;
         }
-        self.open_file(path);
+        let query = self.downloads.type_of;
+        self.off_ui(
+            "open",
+            move || {
+                if !open::may_open_with(&path, query) {
+                    return Ok(None);
+                }
+                #[cfg(not(test))]
+                open::xdg_open(&path)?;
+                Ok::<_, String>(Some(path))
+            },
+            move |s, result| match result {
+                Ok(Some(_path)) => {
+                    #[cfg(test)]
+                    s.downloads.opened.push(Opened::File(_path));
+                }
+                Ok(None) => {
+                    s.downloads.openable.insert((host, id), false);
+                    s.notify(refused);
+                }
+                Err(error) => s.notify(format!("Couldn't open the file: {error}")),
+            },
+        );
+    }
+
+    /// Tests: deliver the results held back by `defer`.
+    #[cfg(test)]
+    pub fn finish_pending(&mut self) {
+        for done in std::mem::take(&mut self.downloads.pending) {
+            done(self);
+        }
+    }
+
+    /// Run `work` off the UI thread, then `done` with its result on it. Tests run both at
+    /// once, so they see the outcome without waiting.
+    fn off_ui<T: Send + 'static>(
+        &mut self,
+        what: &'static str,
+        work: impl FnOnce() -> T + Send + 'static,
+        done: impl FnOnce(&mut Workspace, T) + Send + 'static,
+    ) {
+        #[cfg(test)]
+        {
+            let _ = what;
+            let result = work();
+            if self.downloads.defer {
+                self.downloads
+                    .pending
+                    .push(Box::new(move |s| done(s, result)));
+            } else {
+                done(self, result);
+            }
+        }
+        #[cfg(not(test))]
+        {
+            let handle = self.handle.clone();
+            let _ = std::thread::Builder::new()
+                .name(format!("rex-{what}-download"))
+                .spawn(move || {
+                    let result = work();
+                    handle.update(move |s, _| done(s, result));
+                });
+        }
     }
 
     fn saved_path(&self, host: HostId, id: u64) -> Option<PathBuf> {
@@ -686,18 +837,8 @@ impl Workspace {
     }
 
     #[cfg(test)]
-    fn open_file(&mut self, path: PathBuf) {
-        self.downloads.opened.push(Opened::File(path));
-    }
-
-    #[cfg(test)]
     fn show_in_folder(&mut self, path: PathBuf) {
         self.downloads.opened.push(Opened::Folder(path));
-    }
-
-    #[cfg(not(test))]
-    fn open_file(&mut self, path: PathBuf) {
-        self.on_desktop("open", move || xdg_open(path.as_os_str()));
     }
 
     #[cfg(not(test))]
@@ -707,7 +848,7 @@ impl Workspace {
             if show_items(&path).is_ok() {
                 return Ok(());
             }
-            xdg_open(path.parent().unwrap_or(Path::new("/")).as_os_str())
+            open::xdg_open(path.parent().unwrap_or(Path::new("/")))
         });
     }
 
@@ -746,22 +887,6 @@ impl Workspace {
                 records.clean_up_leftovers();
             })
             .ok()
-    }
-}
-
-#[cfg(not(test))]
-fn xdg_open(target: &std::ffi::OsStr) -> Result<(), String> {
-    use std::process::{Command, Stdio};
-    match Command::new("xdg-open")
-        .arg(target)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-    {
-        Ok(status) if status.success() => Ok(()),
-        Ok(status) => Err(status.to_string()),
-        Err(error) => Err(error.to_string()),
     }
 }
 
