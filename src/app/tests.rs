@@ -10,6 +10,8 @@ mod remote_session_tests;
 mod remote_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
+#[path = "workspace_fixes_tests.rs"]
+mod workspace_fixes_tests;
 use super::{
     panel::{Form, Intent, PanelKind, SessionAction},
     placeholder, view,
@@ -459,7 +461,10 @@ fn tabs_and_splits_start_the_right_hosts_shell() {
         .expect("a view"),
     );
     ws.perform(
-        Intent::Pane(target, super::panel::PaneAction::Split("horizontal")),
+        Intent::Pane(
+            target,
+            super::panel::PaneAction::Split(super::splits::SplitWay::Right),
+        ),
         &mut tx,
     );
     let sent = requests(&other);
@@ -785,7 +790,10 @@ fn capture_host(ws: &mut Workspace, index: usize) -> flume::Receiver<HostCommand
 #[test]
 fn split_uses_the_focused_pane_as_its_directory_source() {
     let (mut ws, rx) = tabbed_workspace("split");
-    ws.perform(Intent::Split("vertical"), &mut rune::Tx::default());
+    ws.perform(
+        Intent::Split(super::splits::SplitWay::Down),
+        &mut rune::Tx::default(),
+    );
     let sent = requests(&rx);
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].0, "session.new_split");

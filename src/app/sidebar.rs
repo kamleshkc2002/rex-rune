@@ -121,7 +121,14 @@ fn host_header(s: &Workspace, index: usize) -> El {
 fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
     let host = &s.hosts[index];
     let selected = index == s.active && host.model.selected.as_deref() == Some(id);
-    let count = host.model.views.get(id).map(|v| v.windows.len());
+    // A count earns its place only when it says something: a session has one tab unless
+    // told otherwise.
+    let count = host
+        .model
+        .views
+        .get(id)
+        .map(|v| v.windows.len())
+        .filter(|count| *count > 1);
     let target = id.to_owned();
     let menu_id = id.to_owned();
     // The session a session menu, its rename form or its close confirm acts on.
@@ -204,6 +211,8 @@ fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
     if let Some(count) = count {
         e = e.child(
             text(count.to_string())
+                .key(format!("session-count:{index}:{id}"))
+                .label(format!("{count} tabs"))
                 .font(medium(10.5))
                 .color(rgb(muted())),
         );

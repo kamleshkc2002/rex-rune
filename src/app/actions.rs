@@ -1,6 +1,6 @@
 //! Named workspace actions shared by keyboard, pointer and Commands dispatch.
 //! The registry structure follows Andrea Zito (nivox), commit 8037d78.
-use super::{panel::Intent, workspace::Workspace};
+use super::{panel::Intent, splits::SplitWay, workspace::Workspace};
 use rex_linux::connection::Command;
 use rune::Tx;
 use serde_json::{Value, json};
@@ -49,6 +49,12 @@ enum Handler {
     MoveTab,
     MuteTab,
     CloseOtherTabs,
+    FocusNextPane,
+    FocusPreviousPane,
+    FontIncrease,
+    FontDecrease,
+    FontReset,
+    Help,
 }
 
 pub struct Spec {
@@ -98,6 +104,12 @@ specs! {
     "client.tab.move" => MoveTab,
     "client.tab.mute" => MuteTab,
     "client.tab.close_others" => CloseOtherTabs,
+    super::splits::FOCUS_NEXT => FocusNextPane,
+    super::splits::FOCUS_PREVIOUS => FocusPreviousPane,
+    super::font_size::INCREASE => FontIncrease,
+    super::font_size::DECREASE => FontDecrease,
+    super::font_size::RESET => FontReset,
+    super::help::ACTION => Help,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -147,6 +159,13 @@ impl Spec {
                 Remote::Never("Use rex do session.select on the target host instead.")
             }
             Reconnect => Remote::Never("Only the person at this computer can reconnect terminals."),
+            FocusNextPane | FocusPreviousPane => {
+                Remote::Never("Use pane.focus with a direction instead.")
+            }
+            FontIncrease | FontDecrease | FontReset => Remote::Never(
+                "Only the person at this computer can change saved terminal preferences.",
+            ),
+            Help => Remote::Never("Only the person at this computer can open its browser."),
         }
     }
     pub fn global(&self) -> bool {
@@ -165,6 +184,10 @@ impl Spec {
                     | Handler::Scroll
                     | Handler::NextGlobal
                     | Handler::PreviousGlobal
+                    | Handler::FocusNextPane
+                    | Handler::FocusPreviousPane
+                    | Handler::FontIncrease
+                    | Handler::FontDecrease
             )
     }
 
@@ -205,6 +228,12 @@ impl Spec {
             Handler::MoveTab => "Move tab",
             Handler::MuteTab => "Mute or unmute tab",
             Handler::CloseOtherTabs => "Close other tabs",
+            Handler::FocusNextPane => "Focus next pane",
+            Handler::FocusPreviousPane => "Focus previous pane",
+            Handler::FontIncrease => "Increase terminal font size",
+            Handler::FontDecrease => "Decrease terminal font size",
+            Handler::FontReset => "Reset terminal font size",
+            Handler::Help => "Rex help",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -214,7 +243,8 @@ impl Spec {
             | Handler::Sidebar
             | Handler::ZoomIn
             | Handler::ZoomOut
-            | Handler::ZoomReset => "Interface",
+            | Handler::ZoomReset
+            | Handler::Help => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -238,12 +268,17 @@ impl Spec {
             | Handler::ZoomPane
             | Handler::FocusPane
             | Handler::PaneActions
-            | Handler::Reconnect => "Panes",
+            | Handler::Reconnect
+            | Handler::FocusNextPane
+            | Handler::FocusPreviousPane => "Panes",
             Handler::Copy
             | Handler::Paste
             | Handler::Scroll
             | Handler::SendKey
-            | Handler::Search => "Text and view",
+            | Handler::Search
+            | Handler::FontIncrease
+            | Handler::FontDecrease
+            | Handler::FontReset => "Text and view",
         }
     }
     fn schema(&self) -> Option<Value> {
@@ -255,7 +290,7 @@ impl Spec {
         let (key, schema) = match self.handler {
             Handler::Split => (
                 "direction",
-                json!({"type":"string","enum":["right","down"]}),
+                json!({"type":"string","enum":SplitWay::ALL.map(SplitWay::arg)}),
             ),
             Handler::FocusPane => (
                 "direction",
@@ -301,9 +336,7 @@ impl Spec {
                         .get("window_id")
                         .is_none_or(|id| id.as_str().is_some_and(|id| !id.is_empty()))
             }
-            Handler::Split => {
-                object.len() == 1 && matches!(args["direction"].as_str(), Some("right" | "down"))
-            }
+            Handler::Split => object.len() == 1 && split_way(args).is_some(),
             Handler::FocusPane => {
                 object.len() == 1
                     && matches!(
@@ -367,14 +400,11 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
             }
         }
         Handler::NewSession => s.perform(Intent::NewSession, tx),
-        Handler::Split => s.perform(
-            Intent::Split(if args["direction"] == "right" {
-                "horizontal"
-            } else {
-                "vertical"
-            }),
-            tx,
-        ),
+        Handler::Split => {
+            if let Some(way) = split_way(args) {
+                s.perform(Intent::Split(way), tx);
+            }
+        }
         Handler::ZoomPane => s.perform(Intent::Zoom, tx),
         Handler::FocusPane => s.request("session.focus_direction", args.clone()),
         Handler::PaneActions => {
@@ -439,6 +469,12 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
                 s.perform(Intent::Window(target, action), tx);
             }
         }
+        Handler::FocusNextPane => s.cycle_pane(true),
+        Handler::FocusPreviousPane => s.cycle_pane(false),
+        Handler::FontIncrease => s.step_font_size(1),
+        Handler::FontDecrease => s.step_font_size(-1),
+        Handler::FontReset => s.step_font_size(0),
+        Handler::Help => s.open_link(super::help::url()),
         Handler::SendKey => {
             if let Some(payloads) = args["key"].as_str().and_then(super::keys::synthesize)
                 && let Some(term) = s.active_terminal_mut()
@@ -450,6 +486,10 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         }
     }
     true
+}
+
+fn split_way(args: &Value) -> Option<SplitWay> {
+    args["direction"].as_str().and_then(SplitWay::parse)
 }
 
 pub fn tab_index(args: &Value, count: usize) -> Option<usize> {
@@ -528,9 +568,11 @@ pub fn binding_title(binding: &rexrs::api::client::Binding) -> String {
         return title.into();
     };
     let detail = match binding.action.as_str() {
-        "pane.split" | "pane.focus" | "client.tab.move" => {
-            args["direction"].as_str().unwrap_or_default().to_owned()
-        }
+        // `best_fit` reads as two words.
+        "pane.split" | "pane.focus" | "client.tab.move" => args["direction"]
+            .as_str()
+            .unwrap_or_default()
+            .replace('_', " "),
         "pane.scroll" => {
             let lines = args["lines"].as_i64().unwrap_or_default();
             let direction = if lines < 0 { "up" } else { "down" };
@@ -613,7 +655,7 @@ mod tests {
         assert!(
             !find("pane.split")
                 .unwrap()
-                .accepts(&json!({"direction":"left"}))
+                .accepts(&json!({"direction":"sideways"}))
         );
         assert!(!find("pane.scroll").unwrap().accepts(&json!({"lines":1.5})));
         assert!(

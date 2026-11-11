@@ -743,13 +743,13 @@ impl Workspace {
 
     pub fn update_title(&mut self, tx: &mut Tx) {
         let model = &self.hosts[self.active].model;
-        let session = model
-            .view()
-            .and_then(|v| v.label.clone())
-            .unwrap_or_else(|| "Choose session".into());
-        let title = format!(
-            "{session} — {} — Rex",
-            self.settings.hosts[self.active].label
+        let title = window_title(
+            model
+                .window()
+                .map(|tab| super::activity::tab_name(model, tab))
+                .as_deref(),
+            model.view().and_then(|v| v.label.as_deref()),
+            &self.settings.hosts[self.active].label,
         );
         if title != self.title {
             tx.set_title(title.clone());
@@ -817,9 +817,6 @@ impl Workspace {
             self.settings.ui_scale = scale;
             self.save();
         }
-        if let Some(id) = self.zoom_notice.take() {
-            self.dismiss_notice(id);
-        }
         let effective = (self.ui_scale() * 100.).round() as i32;
         let suffix = if effective < percent {
             format!(" · showing {effective}% to fit this window")
@@ -830,9 +827,17 @@ impl Workspace {
         } else {
             String::new()
         };
-        self.inform(format!("Zoom {percent}%{suffix}"));
-        self.zoom_notice = Some(self.next_notice);
+        self.size_notice(format!("Zoom {percent}%{suffix}"));
         tx.instant();
+    }
+
+    /// Say a size change (interface zoom or terminal font) in one notice, replacing the last.
+    pub(super) fn size_notice(&mut self, text: String) {
+        if let Some(id) = self.zoom_notice.take() {
+            self.dismiss_notice(id);
+        }
+        self.inform(text);
+        self.zoom_notice = Some(self.next_notice);
     }
 
     fn push_notice(&mut self, text: String, sticky: bool) {
@@ -1282,7 +1287,8 @@ impl Workspace {
             Intent::Split(direction) => {
                 if let (Some(session), Some(block)) = (self.model().selected.clone(), self.focused_block()) {
                     let layout = self.new_terminal(self.active);
-                    self.open_terminal(self.active, "session.new_split", split_payload(&block, direction, layout), &session, Some(&block));
+                    let payload = self.split_payload(self.active, &block, direction, layout);
+                    self.open_terminal(self.active, "session.new_split", payload, &session, Some(&block));
                 }
             }
             Intent::RenameSession => {
@@ -1552,10 +1558,11 @@ impl Workspace {
         match action {
             PaneAction::Split(direction) => {
                 let layout = self.new_terminal(target.host);
+                let payload = self.split_payload(target.host, &target.block, direction, layout);
                 self.open_terminal(
                     target.host,
                     "session.new_split",
-                    split_payload(&target.block, direction, layout),
+                    payload,
                     &target.session,
                     Some(&target.block),
                 )
@@ -2111,6 +2118,26 @@ impl Workspace {
     }
 }
 
-fn split_payload(block: &str, direction: &str, layout: Value) -> Value {
-    json!({"anchor_id":block,"direction":direction,"side":"after","layout":layout,"focus":true})
+/// The window's title, for task switchers: the tab on screen, then its session and host.
+/// Until a session is chosen it is the app's name and the host.
+fn window_title(tab: Option<&str>, session: Option<&str>, host: &str) -> String {
+    match (tab, session) {
+        (Some(tab), Some(session)) => format!("{tab} - {session} · {host}"),
+        (Some(name), None) | (None, Some(name)) => format!("{name} · {host}"),
+        (None, None) => format!("Rex · {host}"),
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn window_title_leads_with_the_tab_then_names_session_and_host() {
+    assert_eq!(
+        window_title(Some("vim"), Some("lunar-basin"), "shuvdev"),
+        "vim - lunar-basin · shuvdev"
+    );
+    assert_eq!(
+        window_title(None, Some("lunar-basin"), "shuvdev"),
+        "lunar-basin · shuvdev"
+    );
+    assert_eq!(window_title(None, None, "shuvdev"), "Rex · shuvdev");
 }

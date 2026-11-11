@@ -10,11 +10,28 @@ use super::{
 };
 use rune::{Cursor, El, PointerButton, ScrollPos, Tx, col, el, row, text};
 
+/// The identity chip's width limits.
+const IDENTITY_MIN: f32 = 120.;
+const IDENTITY_MAX: f32 = 210.;
+
 /// A chip's press: consume it (chips never drag the window) and keep the terminal focused.
 fn chip_press(e: El) -> El {
     e.cursor(Cursor::Pointer)
         .preserve_focus_on_press(true)
         .tab_index(-1)
+}
+
+/// The host line under the session's name: trouble always, and otherwise the host only while
+/// a second host is connected, when the session's name alone could be either's.
+fn identity_detail(s: &Workspace) -> Option<(String, u32)> {
+    let host = &s.settings.hosts[s.active].label;
+    if !s.model().connected {
+        Some((format!("{host} · Reconnecting"), warning()))
+    } else if s.hosts.iter().filter(|h| h.model.connected).count() > 1 {
+        Some((host.clone(), muted()))
+    } else {
+        None
+    }
 }
 
 fn identity(s: &Workspace) -> El {
@@ -24,18 +41,30 @@ fn identity(s: &Workspace) -> El {
         .view()
         .and_then(|v| v.label.clone())
         .unwrap_or_else(|| "Choose session".into());
-    // Only trouble is worth words: a healthy host shows just its name.
-    let (detail, tone) = if model.connected {
-        (host.clone(), muted())
-    } else {
-        (format!("{host} · Reconnecting"), warning())
-    };
+    let mut words = col().grow(1.).shrink().min_w(0.).gap(1.).child(
+        text(session.clone())
+            .font(strong(12.5))
+            .color(rgb(ink()))
+            .truncate(),
+    );
+    if let Some((detail, tone)) = identity_detail(s) {
+        words = words.child(
+            text(detail)
+                .key("identity-host")
+                .font(ui(10.5))
+                .color(rgb(tone))
+                .truncate(),
+        );
+    }
     chip_press(chip(
         row()
             .key("identity")
             .role("button")
             .label(format!("{session} · {host} · Switch session"))
-            .w(210.)
+            // As wide as its words, between a floor that keeps it a comfortable target and
+            // the width a long name truncates at.
+            .min_w(IDENTITY_MIN)
+            .max_w(IDENTITY_MAX)
             .h(34.)
             .pl(6.)
             .pr(8.)
@@ -57,19 +86,8 @@ fn identity(s: &Workspace) -> El {
                 16.,
                 rgb(muted()),
             )))
-            .child(
-                col()
-                    .grow(1.)
-                    .min_w(0.)
-                    .gap(1.)
-                    .child(
-                        text(session)
-                            .font(strong(12.5))
-                            .color(rgb(ink()))
-                            .truncate(),
-                    )
-                    .child(text(detail).font(ui(10.5)).color(rgb(tone)).truncate()),
-            )
+            // The words take any room the floor leaves, so the chevron keeps to the edge.
+            .child(words)
             .child(glyph(&CHEVRON, 14., rgb(muted()))),
     ))
 }

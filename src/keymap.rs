@@ -395,6 +395,12 @@ pub fn defaults() -> KeymapDefault {
         ("ctrl+[NumpadSubtract]", "client.zoom.out"),
         ("ctrl+0", "client.zoom.reset"),
         ("ctrl+[Numpad0]", "client.zoom.reset"),
+        // Terminal font size, beside interface zoom rather than in place of it.
+        ("ctrl+alt+=", "client.font.increase"),
+        ("ctrl+alt+shift+=", "client.font.increase"),
+        ("ctrl+alt++", "client.font.increase"),
+        ("ctrl+alt+-", "client.font.decrease"),
+        ("ctrl+alt+0", "client.font.reset"),
     ] {
         bindings.push(Binding::new([keys], action));
     }
@@ -802,7 +808,7 @@ mod tests {
         let layer = defaults();
         assert_eq!(layer.name, "linux");
         assert!(layer.removals.is_empty());
-        assert_eq!(layer.bindings.len(), 35);
+        assert_eq!(layer.bindings.len(), 40);
         for binding in &layer.bindings {
             assert_eq!(normalize(&binding.keys.join(">")).unwrap(), binding.keys);
             assert!(binding.source.is_none() && binding.mode.is_none());
@@ -813,6 +819,11 @@ mod tests {
             ("ctrl+shift+f", "client.search"),
             ("ctrl++", "client.zoom.in"),
             ("ctrl+[Numpad0]", "client.zoom.reset"),
+            ("ctrl+0", "client.zoom.reset"),
+            ("ctrl+alt+=", "client.font.increase"),
+            ("ctrl+alt++", "client.font.increase"),
+            ("ctrl+alt+-", "client.font.decrease"),
+            ("ctrl+alt+0", "client.font.reset"),
             ("ctrl+shift+pageup", "client.tab.move"),
             ("ctrl+shift+pagedown", "client.tab.move"),
         ] {

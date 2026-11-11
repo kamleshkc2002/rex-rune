@@ -1,4 +1,5 @@
 //! Popup and dialog state, and the action lists the switcher, Commands and menus show.
+use super::splits::SplitWay;
 use super::tabs::{TabAction, TabTarget};
 use super::theme::{MONITOR, SERVER};
 use super::workspace::Workspace;
@@ -30,7 +31,7 @@ pub enum Intent {
     Window(TabTarget, TabAction),
     NewSession,
     NewWindow,
-    Split(&'static str),
+    Split(SplitWay),
     RenameSession,
     RenameWindow(String),
     CloseWindow(String),
@@ -88,10 +89,7 @@ impl Intent {
             Self::Sidebar => ("client.sidebar.toggle", Value::Null),
             Self::Settings => ("client.settings", Value::Null),
             Self::Pane(_, pane) => match pane {
-                PaneAction::Split(direction) => (
-                    "pane.split",
-                    json!({"direction":if *direction=="horizontal" {"right"} else {"down"}}),
-                ),
+                PaneAction::Split(way) => ("pane.split", json!({"direction":way.arg()})),
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
@@ -167,7 +165,7 @@ pub struct PaneTarget {
 
 #[derive(Clone, Copy, Debug)]
 pub enum PaneAction {
-    Split(&'static str),
+    Split(SplitWay),
     Zoom,
     Rename,
     Close,
@@ -717,6 +715,8 @@ impl Workspace {
                 ));
             }
             entries.extend(self.tab_commands());
+            entries.extend(self.font_commands());
+            entries.push(super::help::command());
         }
         if !sessions_only
             && let Some(target) = panel
@@ -732,9 +732,23 @@ impl Workspace {
             let zoomed = model
                 .window()
                 .is_some_and(|w| w.zoomed_block_id.as_ref() == Some(&target.block));
+            // A pane's own menu offers the four sides; Commands adds the split that picks a
+            // side and the focus moves, which act on the focused pane.
+            for way in SplitWay::ALL {
+                if pane_only && way == SplitWay::BestFit {
+                    continue;
+                }
+                entries.push(Entry::new(
+                    way.label(),
+                    "",
+                    &group,
+                    Intent::Pane(target.clone(), PaneAction::Split(way)),
+                ));
+            }
+            if !pane_only {
+                entries.extend(self.focus_commands(&group));
+            }
             for (label, key, action) in [
-                ("Split right", "", PaneAction::Split("horizontal")),
-                ("Split down", "", PaneAction::Split("vertical")),
                 (
                     if zoomed { "Restore pane" } else { "Zoom pane" },
                     "",
@@ -744,12 +758,12 @@ impl Workspace {
                 ("Reconnect terminal", "", PaneAction::Reconnect),
                 ("Close pane…", "", PaneAction::Close),
             ] {
-                entries.push(Entry::new(
-                    label,
-                    key,
-                    &group,
-                    Intent::Pane(target.clone(), action),
-                ));
+                let mut entry =
+                    Entry::new(label, key, &group, Intent::Pane(target.clone(), action));
+                // The menu's groups: where to split, this pane, and Close last.
+                entry.separated =
+                    pane_only && matches!(action, PaneAction::Zoom | PaneAction::Close);
+                entries.push(entry);
             }
         }
         // A typed switcher query names a new session wherever it is created.
