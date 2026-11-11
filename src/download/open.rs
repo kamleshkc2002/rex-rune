@@ -958,6 +958,113 @@ mod tests {
         assert!(!type_allowed(k("text", false), "text/plain"));
     }
 
+    /// What the earlier deny list refused by name or by content stays refused now that an allow
+    /// list decides: no name is allowed, and no start passes under any allowed extension.
+    #[test]
+    fn what_the_old_deny_list_refused_the_allow_list_refuses() {
+        for name in [
+            "launcher.desktop",
+            "run.sh",
+            "RUN.SH",
+            "tool.py",
+            "app.jar",
+            "App-1.2.AppImage",
+            "thing.appimage",
+            "pkg.deb",
+            "pkg.rpm",
+            "page.html",
+            "page.HTM",
+            "image.svg",
+            "setup.exe",
+            "x.bat",
+            "x.ps1",
+            "x.kdelnk",
+            "t.py3",
+            "t.PY2",
+            "stubs.pyi",
+            "Mod.pm",
+            "x.perl",
+            "x.jse",
+            "x.sct",
+            "x.wsc",
+            "weird.name.sh",
+            "a.tar.sh",
+            "page.xht",
+            "data.xml",
+            "POM.XML",
+            "style.xsl",
+            "style.xslt",
+            "app.pyz",
+            "app.pyzw",
+            "mod.pyc",
+            "mod.pyo",
+            "x.des\u{212A}top",
+            "x.DES\u{212A}TOP",
+            "x.\u{212A}delnk",
+        ] {
+            assert!(name_kind(name).is_none(), "{name}");
+        }
+        // A package is a `.tar.zst` by name now, so only its start and the desktop's type can
+        // refuse it; these starts are refused under every allowed extension.
+        let starts: &[&[u8]] = &[
+            b"\x7fELF\x02\x01",
+            b"#!/bin/sh\n",
+            b"#!",
+            b"<!DOCTYPE html><script>alert(1)</script>",
+            b"<html><body>x",
+            b"\n\n  \t<HTML>",
+            b"\xef\xbb\xbf<!doctype html>",
+            b"<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\">",
+            b"<svg onload=\"x()\"></svg>",
+            b"some text first\n<Script>x()</Script>",
+            b"[Desktop Entry]\nExec=sh\n",
+            b"# comment\n[Desktop Entry]\nType=Application",
+            b"[KDE Desktop Entry]\n",
+            b"<!-- saved page -->\n<p>hi</p>",
+            b"<!--",
+            b"<H1>Index</H1>",
+            b"Some text\n<TITLE>Report</TITLE>",
+            b"<hta:application id=x>",
+            b"<jnlp spec=\"1.0\">",
+            b"<scriptlet>",
+            b"<xsl:stylesheet version=\"1.0\">",
+            b"<?php echo 1;",
+            b"MZ\x90\x00",
+            b"\xca\xfe\xba\xbe\x00\x00",
+            b"[Flatpak Ref]\nTitle=x\n",
+            b"!<arch>\ndebian-binary   1\n",
+            b"\xed\xab\xee\xdb\x03\x00",
+            b"Windows Registry Editor Version 5.00\r\n",
+            b"FWS\x09\0",
+        ];
+        // The text types no longer refuse these by content: a `.txt` is
+        // `text/plain` to the desktop by its name whatever it says, and the type check refuses
+        // anything else. The other types are refused here by their own magic bytes.
+        let text_only: &[&[u8]] = &[
+            b"# comment\n[Desktop Entry]\nType=Application",
+            b"Some text\n<TITLE>Report</TITLE>",
+            b"<hta:application id=x>",
+            b"<jnlp spec=\"1.0\">",
+            b"<xsl:stylesheet version=\"1.0\">",
+            b"<?php echo 1;",
+            b"[Flatpak Ref]\nTitle=x\n",
+            b"!<arch>\ndebian-binary   1\n",
+            b"Windows Registry Editor Version 5.00\r\n",
+        ];
+        for extension in OPENABLE_EXTENSIONS {
+            for start in starts {
+                if is_text(extension) && text_only.contains(start) {
+                    continue;
+                }
+                assert!(
+                    !content_allows(extension, start),
+                    "{extension}: {}",
+                    String::from_utf8_lossy(start)
+                );
+            }
+        }
+    }
+
     #[test]
     fn may_open_allows_the_listed_types_and_nothing_else() {
         let dir = std::env::temp_dir().join(format!("rex-open-test-{}", std::process::id()));
