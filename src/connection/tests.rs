@@ -9,6 +9,10 @@ mod keymap_tests;
 mod navigation_tests;
 #[path = "perform_tests.rs"]
 mod perform_tests;
+#[path = "server_info_tests.rs"]
+mod server_info_tests;
+#[path = "verb_tests.rs"]
+mod verb_tests;
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{WebSocketStream, tungstenite::Message};
@@ -826,6 +830,56 @@ async fn destroying_a_session_forgets_it_without_an_error() {
         let m = host.model.lock().unwrap();
         assert_eq!(m.notice, None);
         assert_eq!(m.selected, None);
+        assert!(m.connected);
+    }
+    drop(host);
+    server.await.unwrap();
+}
+
+#[tokio::test]
+async fn refreshing_sessions_reads_the_list_and_the_selected_layout_and_nothing_else() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let mut ws = accept(&listener, "rex.control.v1").await;
+        welcome(&mut ws, 11).await;
+        let request = recv(&mut ws).await;
+        reply(&mut ws, &request, 1, serde_json::to_value(boot()).unwrap()).await;
+        let list = recv(&mut ws).await;
+        assert_eq!(list["method"], "session.attach_all");
+        reply(
+            &mut ws,
+            &list,
+            2,
+            json!({"sessions":[{"session_id":SESSION,"label":"renamed"},
+                {"session_id":OTHER,"label":"elsewhere"}]}),
+        )
+        .await;
+        let view = recv(&mut ws).await;
+        assert_eq!(view["method"], "session.view");
+        assert_eq!(view["payload"]["session_id"], SESSION);
+        reply(
+            &mut ws,
+            &view,
+            3,
+            json!({"session_id":SESSION,"label":"renamed","revision":2}),
+        )
+        .await;
+        // Neither an attach nor a create follows: the next thing is the client leaving.
+        assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
+    });
+    let host = HostConnection::spawn(endpoint, None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(HostCommand::RefreshSessions).unwrap();
+    until(&host, |m| {
+        m.sessions.len() == 2 && m.views.get(SESSION).is_some_and(|v| v.revision == 2)
+    })
+    .await;
+    {
+        let m = host.model.lock().unwrap();
+        assert_eq!(m.sessions[0].label, "renamed");
+        assert_eq!(m.selected.as_deref(), Some(SESSION));
+        assert_eq!(m.notice, None);
         assert!(m.connected);
     }
     drop(host);

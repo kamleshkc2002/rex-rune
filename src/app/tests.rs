@@ -1,13 +1,35 @@
 //! Headless focus and key-routing checks on Rune's runtime (no server: the one host is a
 //! socket that does not exist).
+#[path = "about_tests.rs"]
+mod about_tests;
 #[path = "bindings_integration_tests.rs"]
 mod bindings_integration_tests;
+#[path = "command_tests.rs"]
+mod command_tests;
+#[path = "find_tests.rs"]
+mod find_tests;
+#[path = "menu_tests.rs"]
+mod menu_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
+#[path = "pane_header_tests.rs"]
+mod pane_header_tests;
+#[path = "pane_verb_tests.rs"]
+mod pane_verb_tests;
+#[path = "polish_tests.rs"]
+mod polish_tests;
 #[path = "remote_session_tests.rs"]
 mod remote_session_tests;
 #[path = "remote_tests.rs"]
 mod remote_tests;
+#[path = "settings_tests.rs"]
+mod settings_tests;
+#[path = "tab_tests.rs"]
+mod tab_tests;
+#[path = "wiring_tests.rs"]
+mod wiring_tests;
+#[path = "workspace_fixes_tests.rs"]
+mod workspace_fixes_tests;
 use super::{
     panel::{Form, Intent, PanelKind, SessionAction},
     placeholder, view,
@@ -192,8 +214,8 @@ fn host_menu_rows_online_and_offline() {
         rows(&rt),
         [
             ("New session".to_owned(), String::new(), false),
-            ("Default shell…".to_owned(), String::new(), true),
             ("Retry connection".to_owned(), String::new(), true),
+            ("Default shell…".to_owned(), String::new(), true),
             ("Edit host…".to_owned(), String::new(), true),
             ("Remove host…".to_owned(), String::new(), true),
         ]
@@ -457,7 +479,10 @@ fn tabs_and_splits_start_the_right_hosts_shell() {
         .expect("a view"),
     );
     ws.perform(
-        Intent::Pane(target, super::panel::PaneAction::Split("horizontal")),
+        Intent::Pane(
+            target,
+            super::panel::PaneAction::Split(super::splits::SplitWay::Right),
+        ),
         &mut tx,
     );
     let sent = requests(&other);
@@ -704,10 +729,12 @@ fn a_tabs_menu_and_middle_click_act_on_that_tab() {
     let mut rt = runtime(ws);
     secondary_click(&mut rt, "tab:split");
     let panel = rt.state.panel.as_ref().expect("a tab menu");
-    assert!(matches!(&panel.kind, PanelKind::Window(id) if id == "split"));
+    assert!(matches!(&panel.kind, PanelKind::Window));
+    assert_eq!(panel.tab.as_ref().map(|t| t.window.as_str()), Some("split"));
     assert_eq!(panel.title, "dev");
     let labels: Vec<String> = rt.state.entries().into_iter().map(|e| e.label).collect();
-    assert_eq!(labels, ["Rename tab…", "Close tab…", "New tab"]);
+    assert_eq!(labels.first().map(String::as_str), Some("Rename tab…"));
+    assert_eq!(labels.last().map(String::as_str), Some("Close tab…"));
     assert!(has(&rt, "menu-surface"));
     press(&mut rt, Key::Escape);
     assert!(rt.state.panel.is_none());
@@ -781,7 +808,10 @@ fn capture_host(ws: &mut Workspace, index: usize) -> flume::Receiver<HostCommand
 #[test]
 fn split_uses_the_focused_pane_as_its_directory_source() {
     let (mut ws, rx) = tabbed_workspace("split");
-    ws.perform(Intent::Split("vertical"), &mut rune::Tx::default());
+    ws.perform(
+        Intent::Split(super::splits::SplitWay::Down),
+        &mut rune::Tx::default(),
+    );
     let sent = requests(&rx);
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].0, "session.new_split");
@@ -1076,9 +1106,9 @@ fn session_menu_on_an_edge_row_and_an_offline_host() {
             ("Rename session…".to_owned(), false),
             ("Move up".to_owned(), false),
             ("Move down".to_owned(), false),
-            ("Close session…".to_owned(), false),
             ("Retry connection".to_owned(), true),
             ("Edit host…".to_owned(), true),
+            ("Close session…".to_owned(), false),
         ]
     );
     assert_eq!(panel.selected, 0);
@@ -1295,16 +1325,36 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     assert!(
         rt.elements()
             .iter()
-            .any(|e| e.text.as_deref() == Some(env!("CARGO_PKG_VERSION")))
+            .any(|e| e.text.as_deref() == Some(concat!("Version ", env!("CARGO_PKG_VERSION"))))
     );
     assert!(!has(&rt, "about-server"));
+    // The header's two copies come first, then the project links.
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
     press(&mut rt, Key::Tab); // Close
-    press(&mut rt, Key::Tab); // Repository
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy"));
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::version_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy-debug"));
+    press(&mut rt, Key::Text(" ".into()));
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::debug_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
     assert!(focused(&rt).unwrap().ends_with("about-repository"));
     press(&mut rt, Key::Enter);
     press(&mut rt, Key::Tab);
     press(&mut rt, Key::Text(" ".into()));
     press(&mut rt, Key::Tab);
+    press(&mut rt, Key::Enter);
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-issues"));
     press(&mut rt, Key::Enter);
     assert_eq!(
         rt.state.opened_links,
@@ -1316,16 +1366,8 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
                 super::about::REPOSITORY,
                 env!("CARGO_PKG_VERSION")
             ),
+            format!("{}/issues", super::about::REPOSITORY),
         ]
-    );
-    let clipboard = rune::clipboard::memory();
-    rt.use_clipboard(&clipboard);
-    press(&mut rt, Key::Tab);
-    assert!(focused(&rt).unwrap().ends_with("about-copy"));
-    press(&mut rt, Key::Enter);
-    assert_eq!(
-        clipboard.text().as_deref().map(String::as_str),
-        Some(super::about::version_info(&rt.state).as_str())
     );
 }
 
@@ -2436,14 +2478,15 @@ fn integrations_list_agents_and_preview_changes_before_making_them() {
     let home = omp_home("list");
     let mut rt = integrations_open(Ok(SKILL_STATUS.into()), omp_at(&home));
     let codex = element_text(&rt, "agent:codex").join(" | ");
-    assert!(codex.contains("Not installed"), "{codex}");
-    assert!(codex.contains("with OpenCode and Pi and OMP"), "{codex}");
+    assert_eq!(codex, "Codex | Not installed | Install…");
     let omp = element_text(&rt, "agent:omp").join(" | ");
-    assert!(omp.contains("OMP"), "{omp}");
-    assert!(omp.contains("Not installed"), "{omp}");
-    assert!(omp.contains("with Codex and OpenCode and Pi"), "{omp}");
-    assert!(omp.contains("Shares Pi's skill directory"), "{omp}");
-    assert!(omp.contains("Install…"), "{omp}");
+    assert_eq!(omp, "OMP | Not installed | Install…");
+    // The skill these agents share is explained once for the group, not on each row.
+    let shared = element_text(&rt, "agents-shared").join(" | ");
+    assert!(
+        shared.starts_with("Codex, OpenCode, Pi and OMP share one skill"),
+        "{shared}"
+    );
     assert!(
         element_text(&rt, "agent:claude")
             .join(" ")
@@ -2535,8 +2578,13 @@ fn omp_mirrors_pis_skill_and_is_only_offered_when_found() {
 
     let rt = integrations_open(Ok(SKILL_STATUS.into()), Default::default());
     let row = element_text(&rt, "agent:omp").join(" | ");
-    assert!(row.contains("Not found on this machine"), "{row}");
-    assert!(!row.contains("Install…"), "{row}");
+    assert_eq!(row, "OMP | Not found", "nothing to install it for");
+    let chip = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("agent-state:omp"))
+        .expect("OMP's state chip");
+    assert_eq!(chip.help.as_deref(), Some("Not found on this machine"));
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
@@ -3249,6 +3297,15 @@ fn font_family_row_says_a_saved_font_waits_for_the_next_launch() {
         &rt,
         "JetBrainsMono Nerd Font isn't installed, so terminals use IBM Plex Mono (bundled)."
     ));
+    // The row's helper is one short sentence; what is drawn now is the footnote's.
+    let helper = rt
+        .elements()
+        .into_iter()
+        .filter_map(|e| e.text)
+        .find(|t| t.contains("reopen the client"))
+        .expect("the row's helper");
+    assert_eq!(helper, "Applies when you reopen the client.");
+    assert!(has(&rt, "font-drawn"));
 
     click(&mut rt, "font-change");
     rt.state.panel.as_mut().unwrap().inputs[0].text = "MonoLisaCode Variable".into();

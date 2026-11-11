@@ -21,6 +21,17 @@ pub struct Host {
     pub shell: Option<String>,
 }
 
+/// A tab this client keeps quiet: no activity word or progress bar on it and no desktop
+/// notification from it. Local to this client; the server and other clients never see it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MutedTab {
+    /// The saved host's endpoint.
+    pub endpoint: String,
+    pub session: String,
+    /// The Rex window id, unique on its server.
+    pub window: String,
+}
+
 /// The window corner in-app notices stack in.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,6 +48,23 @@ pub enum PaneDensity {
     Compact,
     #[default]
     Comfortable,
+}
+
+/// When a pane shows its header: its name, its program's activity and the Split, Zoom and
+/// Close buttons. A value this version doesn't know reads as Auto.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PaneHeader {
+    /// On every pane, a single one included, in either density.
+    Always,
+    /// Over the top of a pane while the pointer rests there; the terminal keeps its size.
+    OnHover,
+    Hidden,
+    /// With the density: on the cards of a split or zoomed tab in Comfortable, never in
+    /// Compact, and a single pane stays edge to edge.
+    #[default]
+    #[serde(other)]
+    Auto,
 }
 
 /// What program activity shows in tabs and which changes become desktop notifications.
@@ -160,6 +188,7 @@ pub struct Settings {
     pub sidebar_open: bool,
     pub vertical_tabs: bool,
     pub pane_density: PaneDensity,
+    pub pane_header: PaneHeader,
     pub pane_padding: f32,
     pub font_size: f32,
     pub font_family: String,
@@ -179,6 +208,9 @@ pub struct Settings {
     /// client's last declaration per block across launches, so Follow server then resets
     /// eligible blocks to Rex's colours. Never cleared automatically.
     pub terminal_theme_declared: bool,
+    /// Tabs muted from their menu, until unmuted or closed.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub muted_tabs: Vec<MutedTab>,
     /// Read-only sibling file, never serialized into workspace.json.
     #[serde(skip)]
     pub shortcut_file: shortcuts::Shortcuts,
@@ -203,6 +235,7 @@ impl Default for Settings {
             sidebar_open: false,
             vertical_tabs: false,
             pane_density: PaneDensity::default(),
+            pane_header: PaneHeader::default(),
             pane_padding: 8.,
             font_size: 15.,
             font_family: "JetBrainsMono Nerd Font".into(),
@@ -216,6 +249,7 @@ impl Default for Settings {
             terminal_theme: TerminalThemeChoice::default(),
             terminal_theme_chosen: false,
             terminal_theme_declared: false,
+            muted_tabs: Vec::new(),
             shortcut_file: shortcuts::Shortcuts::default(),
         }
     }
@@ -543,6 +577,30 @@ mod tests {
             let back: Settings = serde_json::from_value(json).unwrap();
             assert_eq!(back.pane_density, density);
         }
+    }
+
+    #[test]
+    fn pane_header_defaults_to_auto_round_trips_and_reads_an_unknown_value_as_auto() {
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.pane_header, PaneHeader::Auto);
+        for (header, saved) in [
+            (PaneHeader::Auto, "auto"),
+            (PaneHeader::Always, "always"),
+            (PaneHeader::OnHover, "on_hover"),
+            (PaneHeader::Hidden, "hidden"),
+        ] {
+            let settings = Settings {
+                pane_header: header,
+                ..Settings::default()
+            };
+            let json = serde_json::to_value(&settings).unwrap();
+            assert_eq!(json["pane_header"], saved);
+            let back: Settings = serde_json::from_value(json).unwrap();
+            assert_eq!(back.pane_header, header);
+        }
+        let newer: Settings =
+            serde_json::from_value(serde_json::json!({ "pane_header": "on_focus" })).unwrap();
+        assert_eq!(newer.pane_header, PaneHeader::Auto);
     }
 
     #[test]
