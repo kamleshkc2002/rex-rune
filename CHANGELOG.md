@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+
+- **An unfocused Rex window no longer overwrites the system clipboard, and its cursor is hollow.** Rune delivers native window focus to the view's first element, but Rex registered its handler on a child of it, so the app never learned that its window lost focus: terminal OSC 52 copies were still applied (the window-focus gate for them never closed) and the focused pane kept a solid block cursor. Checked on X11 and on a private Wayland compositor; the 0.6.0 release behaves the same way, so this is not new in the Rune bump. Found while looking into a report that OSC 52 copy doesn't work in the Codex CLI (reported by akakabuto).
+
+### Documentation
+
+- **README: Clipboard (OSC 52).** What copies reach the system clipboard and when, that reads are never answered and large payloads are dropped, and what to do for programs that only send OSC 52 when an `SSH_*` variable is set (the Codex CLI, Neovim 0.10.x, LazyVim) or prefer the server's own clipboard. Rex Linux cannot set environment variables in a remote terminal; the page gives the server-side workarounds that were checked. Reported by akakabuto. This does not change how Codex decides where to copy.
+
 ### Changed
 
 - **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. Two patches are dropped because Rune now provides them: `Tx::toggle_maximize` (now `Tx::toggle_maximized`) and the `fc-list` system-font discovery. The Linux window icon moved into Rune's `rune::set_app_icon`, whose Linux support is still a Rex patch. Scrolling and redraw cost far less: on the acceptance machine, p95 frame CPU while scrolling btop fell from about 35 ms to about 8 ms.
