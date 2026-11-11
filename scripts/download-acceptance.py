@@ -498,7 +498,10 @@ def run_app(name, steps, at, *, server, endpoint=None, session=None, label="devb
     (rdir / "script.json").write_text(json.dumps(steps))
     env = {"HOME": str(rdir / "home"), "XDG_CONFIG_HOME": str(rdir / "config"), "XDG_STATE_HOME": str(rdir / "state"),
            "XDG_CACHE_HOME": str(rdir / "cache"), "XDG_DATA_HOME": str(rdir / "data"), "PATH": CLIENT_PATH,
-           "SHELL": "/bin/bash", "USER": "user", "LOGNAME": "user", "LANG": "C.UTF-8"}
+           "SHELL": "/bin/bash", "USER": "user", "LOGNAME": "user", "LANG": "C.UTF-8",
+           # Open is only offered on a session with a display (xdg-open skips xdg-mime without one);
+           # this run draws offscreen and nothing connects to it.
+           "DISPLAY": ":99"}
     cmd = [APP, "--endpoint", endpoint, "--session", session, "--config", str(rdir / "workspace.json"), "--",
            "--script", str(rdir / "script.json"), "--snap", str(rdir / "end.png"), "--at", str(at),
            "--size", size, "--scale", "1.5", "--realtime", "--tree", str(rdir / "end.tree.json")]

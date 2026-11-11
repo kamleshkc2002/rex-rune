@@ -9,15 +9,17 @@
 //! 2. the first bytes: they fit the name and are not a program, page, SVG, launcher or jar
 //!    ([`content_allows`]; the text types have no magic, so there they only rule things out);
 //! 3. the desktop's own answer to "what type is this file": `xdg-mime query filetype`, run the
-//!    way `xdg-open` runs it, is one of the types allowed for that extension ([`type_allowed`]),
-//!    and the desktop has a default program for that type.
+//!    way `xdg-open` runs it on sessions it does not recognise, is one of the types allowed for
+//!    that extension ([`type_allowed`]), and the desktop has a default program for that type.
 //!
-//! The third is what decides the program, because `xdg-open` picks the handler from that same
-//! answer, which on some desktops comes from the name and on others from the content alone. It
-//! also needs a default program for that type (`xdg-mime query default`): without one `xdg-open`
+//! The third is what decides the program on those sessions (GNOME-family, KDE, XFCE and LXQt
+//! sessions type the file with their own opener and the same library), and the answer comes from
+//! the name on some desktops and from the content alone on others. Open also needs a default
+//! program for that type (`xdg-mime query default`) and a display: without either `xdg-open`
 //! ignores the type and gives the file to `$BROWSER` or mailcap, which type it their own way.
-//! It fails closed: no `xdg-mime`, no answer in [`TYPE_TIMEOUT`], a failure, an unlisted type or
-//! no default program means no Open. Everything else gets only **Show in folder**.
+//! The program that then opens the type is the desktop's, which Rex does not choose or check.
+//! It fails closed: no display, no `xdg-mime`, no answer in [`TYPE_TIMEOUT`], a failure, an
+//! unlisted type or no default program means no Open. Everything else gets only **Show in folder**.
 use std::{
     ffi::{OsStr, OsString},
     io::Read,
@@ -203,10 +205,11 @@ pub fn content_allows(extension: &str, head: &[u8]) -> bool {
 }
 
 /// Whether the desktop may call a file of this kind by `mime` (what `xdg-mime query filetype`
-/// printed) and still have `xdg-open` run an ordinary viewer for it. Each extension has its own
-/// type and the documented aliases of it (shared-mime-info's `aliases`, and the names `file`
-/// prints); a `.tar.gz`, `.tar.xz`, `.tar.zst` and `.tar.bz2` also its compressed-tar type.
-/// Anything else, a web page or a Java archive or a package among them, is refused.
+/// printed) and still have `xdg-open` run the desktop's handler for that type, which Rex does
+/// not vet. Each extension has its own type and the documented aliases of it (shared-mime-info's
+/// `aliases`, and the names `file` prints); a `.tar.gz`, `.tar.xz`, `.tar.zst` and `.tar.bz2` also
+/// its compressed-tar type. Anything else, a web page or a Java archive or a package among them,
+/// is refused.
 pub fn type_allowed(kind: Kind, mime: &str) -> bool {
     let mime = mime.to_ascii_lowercase();
     let mime = mime.as_str();
@@ -317,11 +320,32 @@ pub fn may_open_on_desktop(path: &Path) -> bool {
 /// filetype <path>`, which is what `xdg-open` asks to choose its handler, then `xdg-mime query
 /// default <that type>`, run in this process's own environment so both see the same desktop.
 /// Without a default program for the type `xdg-open` ignores the type and hands the file to
-/// `$BROWSER` or mailcap, which type it by their own rules, so that is no answer. `None` when
-/// there is no `xdg-mime`, it fails, says nothing or more than one word, there is no default
-/// program, or both together take longer than [`TYPE_TIMEOUT`]. `path` must be absolute.
+/// `$BROWSER` or mailcap, which type it by their own rules, so that is no answer. Without a
+/// display (`DISPLAY` or `WAYLAND_DISPLAY`, non-empty) `xdg-open` does not ask `xdg-mime` at all
+/// and goes straight to those, so that is no answer either. `None` when there is no display or
+/// `xdg-mime`, it fails, says nothing or more than one word, there is no default program, or
+/// both together take longer than [`TYPE_TIMEOUT`]. `path` must be absolute.
 pub fn desktop_type(path: &Path) -> Option<String> {
-    type_from(|| Command::new("xdg-mime"), path, TYPE_TIMEOUT)
+    type_with_env(
+        |name| std::env::var_os(name),
+        || Command::new("xdg-mime"),
+        path,
+        TYPE_TIMEOUT,
+    )
+}
+
+/// [`type_from`] only on a session with a display, according to `env`.
+fn type_with_env(
+    env: impl Fn(&str) -> Option<OsString>,
+    program: impl Fn() -> Command,
+    path: &Path,
+    timeout: Duration,
+) -> Option<String> {
+    let shown = |name| env(name).is_some_and(|value| !value.is_empty());
+    if !shown("DISPLAY") && !shown("WAYLAND_DISPLAY") {
+        return None;
+    }
+    type_from(program, path, timeout)
 }
 
 /// [`desktop_type`] with the program and the time it gets given, so tests can stand in for
@@ -1240,6 +1264,52 @@ mod tests {
         let (answer, took) = within("sleep 30");
         assert_eq!(answer, None);
         assert!(took < Duration::from_secs(3), "{took:?}");
+    }
+
+    #[test]
+    fn without_a_display_there_is_no_type_because_xdg_open_would_not_ask() {
+        let path = Path::new("/tmp/n.txt");
+        let five = Duration::from_secs(5);
+        let script: &'static str =
+            Box::leak(typed("echo text/plain", "echo app.desktop").into_boxed_str());
+        let ask = |vars: &'static [(&'static str, &'static str)]| {
+            let env = move |name: &str| {
+                vars.iter()
+                    .find(|(key, _)| *key == name)
+                    .map(|(_, value)| OsString::from(value))
+            };
+            type_with_env(env, stand_in(script), path, five)
+        };
+        let some = Some("text/plain".to_owned());
+        assert_eq!(ask(&[("DISPLAY", ":0")]), some);
+        assert_eq!(ask(&[("WAYLAND_DISPLAY", "wayland-1")]), some);
+        assert_eq!(
+            ask(&[("DISPLAY", ""), ("WAYLAND_DISPLAY", "wayland-1")]),
+            some
+        );
+        assert_eq!(ask(&[]), None, "no variable");
+        assert_eq!(ask(&[("DISPLAY", "")]), None, "empty DISPLAY");
+        assert_eq!(
+            ask(&[("DISPLAY", ""), ("WAYLAND_DISPLAY", "")]),
+            None,
+            "both empty"
+        );
+        // Not a display variable.
+        assert_eq!(ask(&[("XDG_SESSION_TYPE", "wayland")]), None);
+    }
+
+    #[test]
+    fn a_symlink_to_an_allowed_file_is_not_followed() {
+        let dir = std::env::temp_dir().join(format!("rex-open-link-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("real.txt");
+        std::fs::write(&target, b"plain words").unwrap();
+        assert!(may_open(&target), "the target alone is allowed");
+        let link = dir.join("link.txt");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert!(!may_open(&link), "a symlink is never followed");
+        assert!(!may_open_with(&link, |_| Some("text/plain".into())));
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

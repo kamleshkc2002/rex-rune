@@ -73,6 +73,7 @@ fn trim_end(name: &str) -> &str {
 /// extension and never splitting a character. The result is always one ordinary path component:
 /// no separator, no NUL.
 pub fn sanitize(raw: &str) -> String {
+    // `\` splits too, so a saved name has none: xdg-open under dash echoes `\c` as an escape.
     let last = raw
         .rsplit(['/', '\\'])
         .find(|part| !part.is_empty())
@@ -163,6 +164,21 @@ pub fn is_component(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_saved_name_never_contains_a_backslash() {
+        for (raw, expected) in [
+            ("page.html\\c.txt", "c.txt"),
+            ("page.html\\c", "c"),
+            ("a\\0101.txt", "0101.txt"),
+            ("x.txt\\", "x.txt"),
+            ("\\\\x.txt", "x.txt"),
+        ] {
+            let name = sanitize(raw);
+            assert_eq!(name, expected, "{raw:?}");
+            assert!(!name.contains('\\'), "{raw:?}");
+        }
+    }
 
     #[test]
     fn the_name_table() {
