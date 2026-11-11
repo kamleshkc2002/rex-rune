@@ -278,6 +278,44 @@ fn bar_button(
         )
 }
 
+/// One chip while a transfer runs, `↓ build.log 42%` or `↓ 3 files`, and none otherwise, like
+/// the pending-sequence chip. A press opens the Downloads popover.
+fn download_chip(s: &Workspace) -> El {
+    let Some((label, percent)) = super::downloads_view::chip_label(s) else {
+        return el();
+    };
+    let spoken = match &percent {
+        Some(percent) => format!("{label} {percent}"),
+        None => label.clone(),
+    };
+    let spoken = format!("Downloads: {}", spoken.trim_start_matches("↓ "));
+    chip_press(chip(
+        row()
+            .key("download-chip")
+            .role("button")
+            .label(spoken.clone())
+            .h(28.)
+            .max_w(190.)
+            .px(8.)
+            .gap(5.)
+            .center_y()
+            .hover(white(0.08))
+            .help(format!("{spoken} · click for the list"))
+            .on_press_tx(|s: &mut Workspace, tx: &mut Tx| {
+                s.perform(Intent::Downloads, tx);
+                tx.blur();
+            })
+            .child(
+                text(label)
+                    .font(medium(11.5))
+                    .color(rgb(ink()))
+                    .truncate()
+                    .shrink(),
+            )
+            .children(percent.map(|p| text(p).font(medium(11.5)).color(rgb(muted())))),
+    ))
+}
+
 pub fn toolbar(s: &Workspace) -> El {
     row()
         .key("toolbar")
@@ -316,6 +354,7 @@ pub fn toolbar(s: &Workspace) -> El {
             ),
             None => el(),
         })
+        .child(download_chip(s))
         // Always at least 48pt of window to drag, outside the tabs.
         .child(el().key("title-drag").grow(1.).min_w(48.).h_full())
         .child(

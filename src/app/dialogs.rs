@@ -27,6 +27,12 @@ pub fn modal_frame(s: &Workspace, surface: El) -> El {
     let surface = surface
         .key("dialog")
         .role("dialog")
+        .label(
+            s.panel
+                .as_ref()
+                .map(|p| p.title.clone())
+                .unwrap_or_default(),
+        )
         .preserve_focus_on_press(true)
         .on_press(|_: &mut Workspace| {});
     let panel = glass(surface, 16., true).transition(pop_in());
@@ -47,7 +53,7 @@ pub fn modal_frame(s: &Workspace, surface: El) -> El {
     layer.child(panel)
 }
 
-fn title(t: &str) -> El {
+pub(super) fn title(t: &str) -> El {
     text(t.to_owned()).font(strong(17.)).color(rgb(ink()))
 }
 
@@ -206,6 +212,7 @@ pub fn dialog(s: &Workspace, viewport: [f32; 2]) -> Option<El> {
             )
         }
         PanelKind::StartSsh { endpoint } => super::ssh_setup::dialog(s, endpoint),
+        PanelKind::Download(d) => super::downloads_view::dialog(s, d),
         PanelKind::AgentChange { change, steps } => {
             super::integrations::confirm(s, &panel.title, change, steps)
         }

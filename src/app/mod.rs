@@ -5,6 +5,8 @@ mod activity;
 mod bindings;
 mod dialogs;
 mod discover;
+mod downloads;
+mod downloads_view;
 mod fonts;
 mod input;
 mod integrations;
@@ -89,6 +91,9 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
     }
     let open = match &s.panel {
         Some(panel) if panel.is_list() => Some(popups::list_popup(s, viewport)),
+        Some(panel) if matches!(panel.kind, panel::PanelKind::Downloads) => {
+            Some(downloads_view::popover(s, viewport))
+        }
         Some(_) => dialogs::dialog(s, viewport),
         None => None,
     };
@@ -215,6 +220,7 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
     if let Err(error) = rune::set_app_icon(APP_ICON) {
         eprintln!("Could not load the Rex window icon: {error}");
     }
+    Workspace::clean_up_download_leftovers();
     let rune_args = std::mem::take(&mut options.rune);
     let app = rune::App::new(AppSpec {
         min_size: Some((640., 480.)),

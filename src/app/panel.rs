@@ -60,6 +60,8 @@ pub enum Intent {
     Updates,
     /// Trigger an immediate release metadata check.
     CheckUpdates,
+    /// The Downloads popover.
+    Downloads,
 }
 impl Intent {
     fn shortcut(&self) -> Option<(&'static str, Value)> {
@@ -81,6 +83,7 @@ impl Intent {
                 ),
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
+                PaneAction::Download => (super::actions::DOWNLOAD, Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
                 _ => return None,
             },
@@ -103,6 +106,7 @@ impl Intent {
                 | Intent::CloseWindow(_)
                 | Intent::Settings
                 | Intent::Updates
+                | Intent::Downloads
                 | Intent::Fonts
                 | Intent::ClientLabel
                 | Intent::ChooseTheme
@@ -113,7 +117,10 @@ impl Intent {
                 | Intent::AddHostManually
                 | Intent::EditHost(_)
                 | Intent::RemoveHost(_)
-                | Intent::Pane(_, PaneAction::Rename | PaneAction::Close)
+                | Intent::Pane(
+                    _,
+                    PaneAction::Rename | PaneAction::Close | PaneAction::Download
+                )
                 | Intent::Session(_, SessionAction::Rename | SessionAction::Close)
         )
     }
@@ -155,6 +162,8 @@ pub enum PaneAction {
     Rename,
     Close,
     Reconnect,
+    /// Open the Download from <host> dialog for this pane.
+    Download,
 }
 
 #[derive(Clone, Debug)]
@@ -261,6 +270,10 @@ pub enum PanelKind {
         change: super::integrations::AgentChange,
         steps: Vec<super::integrations::Step>,
     },
+    /// Download a file from the captured pane's machine; see `downloads.rs`.
+    Download(super::downloads::Dialog),
+    /// The Downloads popover: this launch's transfers.
+    Downloads,
 }
 
 pub struct Panel {
@@ -621,6 +634,7 @@ impl Workspace {
                     "",
                     Intent::Sidebar,
                 ),
+                ("Downloads", "", Intent::Downloads),
                 ("Remote control", "", Intent::RemoteControl(self.active)),
                 ("Default shell…", "", Intent::HostShell(self.active)),
                 ("Settings…", "", Intent::Settings),
@@ -721,6 +735,7 @@ impl Workspace {
                     "",
                     PaneAction::Zoom,
                 ),
+                ("Download file…", "", PaneAction::Download),
                 ("Rename pane…", "", PaneAction::Rename),
                 ("Reconnect terminal", "", PaneAction::Reconnect),
                 ("Close pane…", "", PaneAction::Close),

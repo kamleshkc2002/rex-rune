@@ -39,7 +39,7 @@ pub struct Term {
     selection_anchor: Option<(usize, usize)>,
     selection_unit: SelectionUnit,
     pub selecting: bool,
-    selection_revision: u64,
+    pub(super) selection_revision: u64,
     last_selection_input: Option<rex_linux::terminal::selection::Input>,
     restore_generation: u64,
     pub preedit: String,
