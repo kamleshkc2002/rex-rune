@@ -102,9 +102,12 @@ impl Default for Limits {
 /// Why a download needs a yes before its stream is opened.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Reason {
-    /// The size hint is [`Limits::confirm_at`] or more.
+    /// The size hint is [`Limits::confirm_at`] or more. The destination has room for it and the
+    /// reserve: a free-space check during the transfer still stops it.
     Large,
-    /// The hint is more than the free space less [`Limits::reserve`].
+    /// The file fits in the free space but not with [`Limits::reserve`] left over. A yes means
+    /// this transfer may use the reserve; the growth cap, the stall timer and a full disk still
+    /// stop it.
     LowSpace,
 }
 
@@ -118,9 +121,41 @@ pub struct Confirmation {
     pub free: Option<u64>,
 }
 
+/// What to do with a reserved file, from its size hint and the destination's free space.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Admission {
+    /// Open the stream.
+    Start,
+    /// Ask first: no stream is open until the person says yes.
+    Ask(Confirmation),
+    /// It cannot succeed: do not ask, free Rex's reservation and fail with this.
+    Refuse(Failure),
+}
+
 impl Limits {
-    /// Whether a file of `hint` bytes needs confirming with `free` bytes available. A hint that
-    /// is both large and too big for the space is reported as [`Reason::LowSpace`].
+    /// Decides what happens to a file of `hint` bytes when `free` bytes are available (`None`
+    /// when the filesystem wouldn't say):
+    /// - less free space than the reserve, or a hint above the free space: refused with
+    ///   [`Failure::LowSpace`], since no answer could make it fit;
+    /// - a hint above the free space less the reserve: a [`Reason::LowSpace`] question;
+    /// - a hint of [`Limits::confirm_at`] or more: a [`Reason::Large`] question;
+    /// - otherwise it starts. Unknown free space asks only the large-file question.
+    pub fn admission(&self, hint: u64, free: Option<u64>) -> Admission {
+        let Some(free) = free else {
+            return self
+                .confirmation_without_space(hint)
+                .map_or(Admission::Start, Admission::Ask);
+        };
+        if free < self.reserve || hint > free {
+            return Admission::Refuse(Failure::LowSpace { free });
+        }
+        self.confirmation(hint, free)
+            .map_or(Admission::Start, Admission::Ask)
+    }
+
+    /// Whether a file of `hint` bytes that fits in `free` bytes needs confirming. A hint that is
+    /// both large and over the free space less the reserve is reported as [`Reason::LowSpace`].
+    /// [`Limits::admission`] is what decides; it refuses a hint that doesn't fit at all.
     pub fn confirmation(&self, hint: u64, free: u64) -> Option<Confirmation> {
         let reason = if hint > free.saturating_sub(self.reserve) {
             Reason::LowSpace
@@ -185,6 +220,15 @@ impl Meter {
 
     pub fn stalled(&self, now: Instant) -> bool {
         now >= self.deadline()
+    }
+
+    /// Whether `n` more bytes may be written: not if they would take the stream past its growth
+    /// cap. Asked before writing, so a hostile server never makes the client write past it.
+    pub fn admit(&self, n: u64) -> Result<(), Failure> {
+        if self.received.saturating_add(n) > self.cap {
+            return Err(Failure::TooMuchData { limit: self.cap });
+        }
+        Ok(())
     }
 
     /// Counts `n` bytes that arrived and were written. Fails when the stream passes its growth
@@ -273,7 +317,8 @@ pub enum Failure {
     Connection(String),
     /// The control connection ended, or was replaced by a reconnect, so Rex ended the stream.
     ConnectionLost,
-    /// The destination has less than the reserve left.
+    /// The destination has less than the reserve left, or (before the stream is opened) less
+    /// room than the file needs.
     LowSpace { free: u64 },
     /// The stream went past the growth cap.
     TooMuchData { limit: u64 },
@@ -536,12 +581,14 @@ pub fn active(list: &[Transfer]) -> usize {
 }
 
 /// Server text for display: control characters become spaces, direction controls and other
-/// invisible format characters (the set file names are cleaned of) are removed, and the whole is
-/// cut to a length that fits a notice. Rex's messages repeat the whole path, which can be
+/// invisible format characters (the set file names are cleaned of) are removed, and a text over
+/// 300 characters is shortened in the middle, keeping its start and its end (the end of a path
+/// is its file name) around an ellipsis. Rex's messages repeat the whole path, which can be
 /// thousands of characters. Cleaning text that was already cleaned changes nothing.
 pub fn display_text(text: &str) -> String {
     const LIMIT: usize = 300;
-    let cleaned: String = text
+    const HEAD: usize = 100;
+    let cleaned: Vec<char> = text
         .chars()
         .filter_map(|c| match c {
             c if c.is_control() => Some(' '),
@@ -549,11 +596,13 @@ pub fn display_text(text: &str) -> String {
             c => Some(c),
         })
         .collect();
-    if cleaned.chars().count() <= LIMIT {
-        return cleaned;
+    if cleaned.len() <= LIMIT {
+        return cleaned.into_iter().collect();
     }
-    let mut short: String = cleaned.chars().take(LIMIT).collect();
+    let tail = LIMIT - HEAD - 1;
+    let mut short: String = cleaned[..HEAD].iter().collect();
     short.push('…');
+    short.extend(&cleaned[cleaned.len() - tail..]);
     short
 }
 

@@ -51,11 +51,26 @@ pub(crate) fn dropped(c: char) -> bool {
     )
 }
 
+/// Whether a character shows as something: not white space (the ASCII kind or any other, such as
+/// U+3000 and U+00A0), not a joiner standing alone, not a variation selector standing alone.
+fn visible(c: char) -> bool {
+    !c.is_whitespace()
+        && !matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe00}'..='\u{fe0f}' | '\u{e0100}'..='\u{e01ef}')
+}
+
+/// Trailing dots and white space of every kind go: they are invisible, and some systems drop
+/// them anyway.
+fn trim_end(name: &str) -> &str {
+    name.trim_end_matches(|c: char| c == '.' || c.is_whitespace())
+}
+
 /// The name a downloaded file is saved under: the last path component of `raw` (both `/` and
 /// `\` separate components), without control, direction and other format characters; a leading
-/// dot becomes `_`, trailing dots and spaces go, an empty name, `.` or `..` becomes `download`,
-/// and the whole is cut to 255 bytes keeping its extension and never splitting a character.
-/// The result is always one ordinary path component: no separator, no NUL.
+/// dot becomes `_`, trailing dots and white space go, an empty name, `.` or `..` becomes
+/// `download`, a stem with nothing visible in it (only joiners or white space) becomes
+/// `download` too, keeping the extension, and the whole is cut to 255 bytes keeping its
+/// extension and never splitting a character. The result is always one ordinary path component:
+/// no separator, no NUL.
 pub fn sanitize(raw: &str) -> String {
     let last = raw
         .rsplit(['/', '\\'])
@@ -68,12 +83,18 @@ pub fn sanitize(raw: &str) -> String {
     if name.starts_with('.') {
         name.replace_range(..1, "_");
     }
-    let end = name.trim_end_matches(['.', ' ']).len();
+    let end = trim_end(&name).len();
     name.truncate(end);
     if name.is_empty() {
         return FALLBACK.into();
     }
-    fit(&name, MAX_NAME)
+    let name = fit(&name, MAX_NAME);
+    // Checked after the cut, which can leave only invisible characters of a long stem.
+    let (stem, extension) = split_extension(&name);
+    if stem.chars().any(visible) {
+        return name;
+    }
+    format!("{FALLBACK}{extension}")
 }
 
 /// Splits a name into its stem and extension (dot included; empty when there is none). A
@@ -108,7 +129,7 @@ pub fn fit(name: &str, max: usize) -> String {
     while !stem.is_char_boundary(cut) {
         cut -= 1;
     }
-    let stem = stem[..cut].trim_end_matches(['.', ' ']);
+    let stem = trim_end(&stem[..cut]);
     let stem = if stem.is_empty() { "_" } else { stem };
     format!("{stem}{extension}")
 }
@@ -207,6 +228,26 @@ mod tests {
             // Joiners stay: emoji sequences and several scripts need them.
             ("👨\u{200d}👩.txt", "👨\u{200d}👩.txt"),
             ("می\u{200c}خواهم", "می\u{200c}خواهم"),
+            // But a stem that is nothing else shows as blank or hidden: it becomes "download",
+            // and an extension stays, so the name is never a bare ".sh".
+            ("\u{200d}", "download"),
+            ("\u{200c}\u{200d}", "download"),
+            ("\u{200d}.sh", "download.sh"),
+            ("\u{200d}\u{200c}.tar.gz", "download.tar.gz"),
+            ("\u{fe0f}.png", "download.png"),
+            ("\u{200d}.", "download"),
+            (" .sh", "download.sh"),
+            ("\u{3000}.txt", "download.txt"),
+            ("\u{a0}\u{a0}", "download"),
+            // A visible character anywhere in the stem keeps it.
+            ("\u{200d}a.sh", "\u{200d}a.sh"),
+            ("a\u{200d}.sh", "a\u{200d}.sh"),
+            ("_.sh", "_.sh"),
+            // White space of every kind goes from the end, as the ASCII kind does.
+            ("report\u{3000}", "report"),
+            ("report.pdf\u{a0}", "report.pdf"),
+            ("x\u{2003}\u{a0}. \u{3000}.", "x"),
+            ("x\u{85}y\u{3000}z\u{3000}", "xy\u{3000}z"),
         ] {
             assert_eq!(sanitize(raw), expected, "{raw:?}");
         }
@@ -216,7 +257,8 @@ mod tests {
     fn every_result_is_one_ordinary_component() {
         let pieces = [
             "a", ".", "..", "/", "\\", "\0", "\n", " ", "é", "界", "\u{202e}", "\u{200d}",
-            "\u{7f}", "x.y", ".tar", ".gz", "-", "\u{85}", "😀", "\u{feff}",
+            "\u{7f}", "x.y", ".tar", ".gz", "-", "\u{85}", "😀", "\u{feff}", "\u{3000}", "\u{a0}",
+            "\u{fe0f}", ".sh",
         ];
         // Every combination of up to four pieces.
         let mut stack = vec![String::new()];
@@ -229,6 +271,12 @@ mod tests {
                     assert!(is_component(&name), "{candidate:?} -> {name:?}");
                     assert!(!name.starts_with('.'), "{candidate:?} -> {name:?}");
                     assert!(!name.ends_with(['.', ' ']), "{candidate:?} -> {name:?}");
+                    assert!(
+                        !name.chars().next_back().is_some_and(char::is_whitespace),
+                        "{candidate:?} -> {name:?}"
+                    );
+                    let (stem, _) = split_extension(&name);
+                    assert!(stem.chars().any(visible), "{candidate:?} -> {name:?}");
                     assert_eq!(sanitize(&name), name, "idempotent: {candidate:?}");
                     next.push(candidate);
                 }
@@ -275,6 +323,23 @@ mod tests {
         let tar = format!("{}.tar.gz", "t".repeat(300));
         let name = sanitize(&tar);
         assert!(name.ends_with(".tar.gz") && name.len() == 255, "{name}");
+    }
+
+    #[test]
+    fn a_stem_that_the_cut_leaves_invisible_becomes_download() {
+        // 300 joiners then a letter: the 255-byte cut keeps only joiners of the stem.
+        let raw = format!("{}a.txt", "\u{200d}".repeat(300));
+        let name = sanitize(&raw);
+        assert_eq!(name, "download.txt");
+        assert_eq!(sanitize(&name), name);
+        // White space left at the cut goes too.
+        let raw = format!("{}\u{3000}\u{3000}b.txt", "q".repeat(248));
+        let name = sanitize(&raw);
+        assert_eq!(name, format!("{}.txt", "q".repeat(248)));
+        assert!(
+            !name.trim_end_matches(".txt").ends_with(char::is_whitespace),
+            "{name:?}"
+        );
     }
 
     #[test]

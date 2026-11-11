@@ -103,6 +103,55 @@ fn confirmation_is_for_large_files_and_for_files_that_would_eat_the_reserve() {
 }
 
 #[test]
+fn admission_refuses_what_cannot_fit_asks_what_would_eat_the_reserve_and_starts_the_rest() {
+    let limits = Limits::default();
+    let ask = |reason, hint, free| Admission::Ask(Confirmation { reason, hint, free });
+    let refuse = |free| Admission::Refuse(Failure::LowSpace { free });
+    // Plenty of room: a small file starts, a large one is asked about.
+    assert_eq!(limits.admission(0, Some(100 * GIB)), Admission::Start);
+    assert_eq!(limits.admission(GIB - 1, Some(100 * GIB)), Admission::Start);
+    assert_eq!(
+        limits.admission(GIB, Some(100 * GIB)),
+        ask(Reason::Large, GIB, Some(100 * GIB))
+    );
+    // 300 MiB free, a 100 MiB file: it fits but would leave 200 MiB, under the 256 MiB reserve.
+    // That is a question (a yes lets it use the reserve), not a certain failure.
+    assert_eq!(
+        limits.admission(100 * MIB, Some(300 * MIB)),
+        ask(Reason::LowSpace, 100 * MIB, Some(300 * MIB))
+    );
+    // The edges: free less the reserve needs no question; a byte more does; exactly the free
+    // space is still a question; a byte more than it cannot fit.
+    assert_eq!(
+        limits.admission(144 * MIB, Some(400 * MIB)),
+        Admission::Start
+    );
+    assert_eq!(
+        limits.admission(145 * MIB, Some(400 * MIB)),
+        ask(Reason::LowSpace, 145 * MIB, Some(400 * MIB))
+    );
+    assert_eq!(
+        limits.admission(400 * MIB, Some(400 * MIB)),
+        ask(Reason::LowSpace, 400 * MIB, Some(400 * MIB))
+    );
+    assert_eq!(
+        limits.admission(400 * MIB + 1, Some(400 * MIB)),
+        refuse(400 * MIB)
+    );
+    // A file larger than the free space is refused without a question, large or not.
+    assert_eq!(limits.admission(2 * GIB, Some(GIB)), refuse(GIB));
+    // Less free space than the reserve: refused, whatever the file.
+    assert_eq!(limits.admission(1, Some(100 * MIB)), refuse(100 * MIB));
+    assert_eq!(limits.admission(0, Some(100 * MIB)), refuse(100 * MIB));
+    // Space that can't be read: only a large file is asked about, and nothing is refused.
+    assert_eq!(limits.admission(GIB - 1, None), Admission::Start);
+    assert_eq!(
+        limits.admission(5 * GIB, None),
+        ask(Reason::Large, 5 * GIB, None)
+    );
+}
+
+#[test]
 fn growth_past_the_hint_is_capped_at_the_larger_of_double_and_plus_64_mib() {
     let limits = Limits::default();
     assert_eq!(limits.growth_cap(0), 64 * MIB);
@@ -130,6 +179,72 @@ fn the_meter_aborts_past_the_growth_cap() {
         meter.wrote(1, now, &space),
         Err(Failure::TooMuchData { limit: cap })
     );
+}
+
+#[test]
+fn the_meter_refuses_bytes_that_would_cross_the_cap_before_they_are_counted() {
+    let limits = Limits {
+        growth: 1_000,
+        ..Limits::default()
+    };
+    let now = Instant::now();
+    let space = || -> std::io::Result<u64> { Ok(u64::MAX) };
+    // Hint 0: the cap is the growth allowance alone, 1000.
+    let mut meter = Meter::new(limits, 0, now);
+    assert_eq!(meter.admit(1_000), Ok(()));
+    assert_eq!(
+        meter.admit(1_001),
+        Err(Failure::TooMuchData { limit: 1_000 })
+    );
+    // Asking changes nothing: the count is only moved by what was written.
+    assert_eq!(meter.received(), 0);
+    meter.wrote(600, now, &space).unwrap();
+    assert_eq!(meter.admit(400), Ok(()));
+    assert_eq!(meter.admit(401), Err(Failure::TooMuchData { limit: 1_000 }));
+    // Huge messages cannot wrap the sum.
+    assert!(meter.admit(u64::MAX).is_err());
+}
+
+#[tokio::test]
+async fn a_chunk_that_would_cross_the_cap_is_not_written() {
+    use super::stream::write_chunk;
+    let temp = Temp::new("chunk");
+    let dir = temp.dir("out");
+    let records = temp.records();
+    let destination = Destination::open(&dir).unwrap();
+    let mut partial = destination.create_partial("x.bin", &records).unwrap();
+    let limits = Limits {
+        growth: 1_000,
+        check_every: u64::MAX,
+        ..Limits::default()
+    };
+    let space = || -> std::io::Result<u64> { Ok(u64::MAX) };
+    // Hint 0: the cap is 1000.
+    let mut meter = Meter::new(limits, 0, Instant::now());
+    write_chunk(&mut partial, &mut meter, &[1; 800], &space)
+        .await
+        .unwrap();
+    assert_eq!(partial.written(), 800);
+    // 900 KiB more would be far over: refused, and not a byte of it is written.
+    let failure = write_chunk(&mut partial, &mut meter, &vec![2; 900 * 1024], &space)
+        .await
+        .unwrap_err();
+    assert_eq!(failure, Failure::TooMuchData { limit: 1_000 });
+    assert_eq!((partial.written(), meter.received()), (800, 800));
+    // The same for a chunk that is only 201 bytes too many; 200 more is exactly the cap.
+    assert!(
+        write_chunk(&mut partial, &mut meter, &[3; 201], &space)
+            .await
+            .is_err()
+    );
+    assert_eq!(partial.written(), 800);
+    write_chunk(&mut partial, &mut meter, &[3; 200], &space)
+        .await
+        .unwrap();
+    assert_eq!((partial.written(), meter.received()), (1_000, 1_000));
+    // What was written is what is on disk once finished.
+    let saved = partial.finish("x.bin").await.unwrap();
+    assert_eq!(std::fs::metadata(saved).unwrap().len(), 1_000);
 }
 
 #[test]
@@ -398,9 +513,37 @@ fn server_text_is_cleaned_and_cut_for_display() {
         "not found: /a b [0m"
     );
     let long = display_text(&"x".repeat(10_000));
-    assert_eq!(long.chars().count(), 301);
-    assert!(long.ends_with('…'));
+    assert_eq!(long.chars().count(), 300);
+    assert!(long.contains('…'));
     assert_eq!(display_text(&"界".repeat(300)).chars().count(), 300);
+    assert_eq!(display_text(&"界".repeat(301)).chars().count(), 300);
+}
+
+#[test]
+fn a_long_path_is_shortened_in_the_middle_so_its_end_still_shows() {
+    // The end of a path is the part that tells files apart; cutting from the front hid it.
+    let path = format!("/home/user/{}final-name.tar.gz", "deep/".repeat(200));
+    let shown = display_text(&path);
+    assert_eq!(shown.chars().count(), 300);
+    assert!(shown.starts_with("/home/user/deep/"), "{shown}");
+    assert!(shown.ends_with("/deep/final-name.tar.gz"), "{shown}");
+    assert_eq!(shown.matches('…').count(), 1);
+    assert_eq!(display_text(&shown), shown, "idempotent");
+    // A sentence that repeats the path keeps its words at both ends.
+    let sentence = format!("not found: {path} does not exist");
+    let shown = display_text(&sentence);
+    assert!(shown.starts_with("not found: /home/user/"), "{shown}");
+    assert!(
+        shown.ends_with("final-name.tar.gz does not exist"),
+        "{shown}"
+    );
+    // Exactly the limit is untouched; a text one over is cut by one character, in the middle.
+    let exact = "a".repeat(150) + &"b".repeat(150);
+    assert_eq!(display_text(&exact), exact);
+    let over = format!("{exact}c");
+    let shown = display_text(&over);
+    assert_eq!(shown.chars().count(), 300);
+    assert!(shown.starts_with(&"a".repeat(100)) && shown.ends_with('c'));
 }
 
 #[test]
@@ -907,4 +1050,148 @@ fn damaged_or_missing_record_files_are_empty_not_errors() {
     assert!(store::expand_home("~/x").ends_with("x"));
     assert!(store::expand_home("~").is_absolute() || std::env::var_os("HOME").is_none());
     assert_eq!(store::expand_home("~other/x"), PathBuf::from("~other/x"));
+}
+
+// -- Leftovers at the next launch, and the record rules ---------------------------------------
+
+/// Not a test of its own: the child process of
+/// `a_killed_apps_partial_is_deleted_by_the_next_launch`. It does nothing unless that test
+/// started it with the folder and records file to use, and then it dies the way a killed app
+/// does: partial file written, no destructor run.
+#[test]
+fn killed_app_child() {
+    let (Some(dir), Some(records)) = (
+        std::env::var_os("REX_TEST_KILLED_DIR"),
+        std::env::var_os("REX_TEST_KILLED_RECORDS"),
+    ) else {
+        return;
+    };
+    let destination = Destination::open(Path::new(&dir)).unwrap();
+    let partial = destination
+        .create_partial("big.iso", &Records::at(records.into()))
+        .unwrap();
+    std::fs::write(Path::new(&dir).join(partial.file_name()), b"half a file").unwrap();
+    unsafe { libc::_exit(7) }
+}
+
+#[test]
+fn a_killed_apps_partial_is_deleted_by_the_next_launch_and_a_live_ones_is_kept() {
+    let temp = Temp::new("killed");
+    let dir = temp.dir("out");
+    let records = temp.records();
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "download::tests::killed_app_child",
+            "--test-threads=1",
+        ])
+        .env("REX_TEST_KILLED_DIR", &dir)
+        .env("REX_TEST_KILLED_RECORDS", records.path())
+        .output()
+        .unwrap();
+    assert_eq!(
+        output.status.code(),
+        Some(7),
+        "the child died as planned: {output:?}"
+    );
+
+    // This process is a second, running app with a partial file of its own, and there is an
+    // unrelated file that only looks like a partial one.
+    let destination = Destination::open(&dir).unwrap();
+    let live = destination.create_partial("live.bin", &records).unwrap();
+    let unrecorded = format!(".other.{UUID_B}.rex-part");
+    std::fs::write(dir.join(&unrecorded), "x").unwrap();
+    let recorded = records.list();
+    assert_eq!(recorded.len(), 2);
+    let dead = recorded
+        .iter()
+        .find(|r| r.name.contains("big.iso"))
+        .unwrap();
+    assert!(dead.pid != std::process::id() && dir.join(&dead.name).exists());
+
+    // The next launch.
+    let deleted = records.clean_up_leftovers();
+    assert_eq!(deleted, [dir.join(&dead.name)]);
+    assert!(!dir.join(&dead.name).exists());
+    assert!(
+        dir.join(live.file_name()).exists(),
+        "a running app's file stays"
+    );
+    assert!(
+        dir.join(&unrecorded).exists(),
+        "an unrecorded file is never touched"
+    );
+    let left = records.list();
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0].name, live.file_name());
+}
+
+#[tokio::test]
+async fn a_partial_name_that_cannot_be_removed_after_linking_stays_recorded() {
+    let temp = Temp::new("linked");
+    let dir = temp.dir("out");
+    let records = temp.records();
+    let destination = Destination::open(&dir).unwrap();
+    let nlink = |name: &str| {
+        use std::os::unix::fs::MetadataExt;
+        std::fs::metadata(dir.join(name)).unwrap().nlink()
+    };
+
+    // The fallback that works: one name is left, and nothing is recorded.
+    let mut partial = destination.create_partial("ok.bin", &records).unwrap();
+    partial.write(b"data").await.unwrap();
+    let saved = partial
+        .finish_with("ok.bin", Placement::Link)
+        .await
+        .unwrap();
+    assert_eq!(saved, dir.join("ok.bin"));
+    assert_eq!(names(&dir), ["ok.bin"]);
+    assert!(records.list().is_empty());
+
+    // The same, but the partial name can't be removed: the file is saved, the hidden name is a
+    // second hard link, and its record stays, so the next launch can remove that name.
+    let mut partial = destination.create_partial("a.bin", &records).unwrap();
+    partial.write(b"data").await.unwrap();
+    let hidden = partial.file_name().to_owned();
+    let saved = partial
+        .finish_with("a.bin", Placement::LinkUnlinkFails)
+        .await
+        .unwrap();
+    assert_eq!(saved, dir.join("a.bin"));
+    assert_eq!(std::fs::read(&saved).unwrap(), b"data");
+    assert_eq!(nlink("a.bin"), 2);
+    assert!(dir.join(&hidden).exists());
+    let recorded = records.list();
+    assert_eq!(recorded.len(), 1, "the record was kept");
+    assert_eq!(recorded[0].name, hidden);
+
+    // The next launch (its owner is gone) removes the extra name, and only that.
+    let mut record = recorded[0].clone();
+    record.started += 1;
+    write_records(&records, &[record]);
+    assert_eq!(records.clean_up_leftovers(), [dir.join(&hidden)]);
+    assert_eq!(names(&dir), ["a.bin", "ok.bin"]);
+    assert_eq!(std::fs::read(&saved).unwrap(), b"data");
+    assert_eq!(nlink("a.bin"), 1);
+    assert!(records.list().is_empty());
+}
+
+#[test]
+fn no_partial_file_is_made_when_its_record_cannot_be_written() {
+    let temp = Temp::new("norecord");
+    let dir = temp.dir("out");
+    // The records file's folder would have to be inside a file.
+    let blocker = temp.0.join("blocker");
+    std::fs::write(&blocker, "not a folder").unwrap();
+    let records = Records::at(blocker.join("downloads.json"));
+    let destination = Destination::open(&dir).unwrap();
+    let Err(error) = destination.create_partial("x.bin", &records) else {
+        panic!("a partial file was made with nowhere to record it");
+    };
+    let shown = format!("{error:#}");
+    assert!(
+        shown.contains("downloads.json"),
+        "names the records file: {shown}"
+    );
+    assert!(names(&dir).is_empty(), "no file without a record");
 }

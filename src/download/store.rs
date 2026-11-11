@@ -147,10 +147,11 @@ impl Destination {
         let partial = format!(".{stem}.{uuid}{PARTIAL_SUFFIX}");
         debug_assert!(partial.len() <= name::MAX_NAME);
         let c = c_string(partial.as_bytes())?;
-        // A record that outlives a failed create is harmless; a file without one is not.
-        if let Err(error) = records.add(&self.dir.path, &partial) {
-            log::warn!("download record not written: {error:#}");
-        }
+        // A record that outlives a failed create is harmless; a file without one is not: after a
+        // crash nothing would ever delete it. So no record, no file.
+        records.add(&self.dir.path, &partial).with_context(|| {
+            format!("Can't record the download in {}", records.path().display())
+        })?;
         let flags =
             libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_NOFOLLOW | libc::O_CLOEXEC;
         let fd =
@@ -183,6 +184,9 @@ pub enum Placement {
     Auto,
     /// Always `linkat` plus `unlinkat`.
     Link,
+    /// `Link`, but the `unlinkat` of the partial name fails, as it can on an odd filesystem.
+    #[cfg(test)]
+    LinkUnlinkFails,
 }
 
 /// A download in progress, on disk. Deleted when dropped unless [`Partial::finish`] succeeded.
@@ -236,9 +240,19 @@ impl Partial {
             let candidate = name::numbered(final_name, n);
             let to = c_string(candidate.as_bytes())?;
             match place(dir, &from, &to, how) {
-                Ok(()) => {
+                Ok(partial_removed) => {
                     self.done = true;
-                    self.records.remove(&self.dir.path, &self.name);
+                    // The file is saved. If its partial name could not be removed it is a
+                    // second hard link to the same data: keep the record, so that the next
+                    // launch deletes that name (and only that name).
+                    if partial_removed {
+                        self.records.remove(&self.dir.path, &self.name);
+                    } else {
+                        log::warn!(
+                            "the partial name {} of a saved download could not be removed",
+                            self.name
+                        );
+                    }
                     return Ok(self.dir.path.join(candidate));
                 }
                 Err(error) if error.raw_os_error() == Some(libc::EEXIST) => {}
@@ -271,7 +285,10 @@ impl Drop for Partial {
     }
 }
 
-fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<()> {
+/// Gives the finished file its final name without replacing anything. `Ok(true)` when the
+/// partial name is gone, `Ok(false)` when the file is saved but the partial name remains as a
+/// second hard link (only the link-and-unlink fallback can leave it).
+fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<bool> {
     const RENAME_NOREPLACE: libc::c_uint = 1;
     if how == Placement::Auto {
         let result = unsafe {
@@ -285,7 +302,7 @@ fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<()> {
             )
         };
         if result == 0 {
-            return Ok(());
+            return Ok(true);
         }
         let error = io::Error::last_os_error();
         // The filesystem, or an old kernel, doesn't know the flag.
@@ -298,9 +315,13 @@ fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<()> {
     }
     // linkat fails if the name exists and never replaces it.
     check(unsafe { libc::linkat(dir, from.as_ptr(), dir, to.as_ptr(), 0) })?;
-    // The file is saved; a partial name that can't be removed is left to the next launch.
-    let _ = unlink_at(dir, from);
-    Ok(())
+    // The file is saved. A partial name that can't be removed is reported, and its record kept
+    // for the next launch.
+    #[cfg(test)]
+    if how == Placement::LinkUnlinkFails {
+        return Ok(false);
+    }
+    Ok(unlink_at(dir, from).is_ok())
 }
 
 /// The process umask, read without changing it (`umask(2)` can only set it).

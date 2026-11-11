@@ -668,6 +668,44 @@ impl Drop for PaneWorker {
     }
 }
 
+/// The host worker threads that have started and not yet ended, named by their model's address.
+static RUNNING_HOSTS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+
+fn running_hosts() -> std::sync::MutexGuard<'static, Vec<usize>> {
+    RUNNING_HOSTS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Lists one host worker thread for as long as it lives, runtime and tasks included.
+struct HostThread(usize);
+impl Drop for HostThread {
+    fn drop(&mut self) {
+        running_hosts().retain(|host| *host != self.0);
+    }
+}
+
+fn wait_until(timeout: Duration, done: impl Fn(&[usize]) -> bool) -> bool {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if done(&running_hosts()) {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+/// Waits until every host worker thread has ended, or `timeout` has passed; returns whether they
+/// all have. To exit cleanly: drop the [`HostConnection`]s (each sends `HostCommand::Shutdown`),
+/// then call this. A host that ends drops its transfers, and a transfer's partial file is deleted
+/// as it drops, so a download in flight leaves nothing behind. The threads are detached: a
+/// process that exits without waiting ends them mid-transfer, and the partial files stay for
+/// [`crate::download::Records::clean_up_leftovers`] at the next launch.
+pub fn wait_for_hosts(timeout: Duration) -> bool {
+    wait_until(timeout, |hosts| hosts.is_empty())
+}
+
 impl HostConnection {
     pub fn spawn(
         endpoint: String,
@@ -718,9 +756,13 @@ impl HostConnection {
             theme,
             label,
         };
+        let alive = HostThread(Arc::as_ptr(&model) as usize);
+        running_hosts().push(alive.0);
         std::thread::Builder::new()
             .name("rex-host".into())
             .spawn(move || {
+                // Ends after the runtime and its tasks are gone, which deletes partial files.
+                let _alive = alive;
                 let result = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
@@ -1455,7 +1497,7 @@ async fn run_host(
                             continue;
                         }
                         if let HostCommand::Download(request) = command {
-                            downloads.start(&mut control, shared, &endpoint, *request).await?;
+                            downloads.start(&mut control, shared, &endpoint, *request, crate::download::new_ref).await?;
                             continue;
                         }
                         if let HostCommand::DownloadConfirm(id) = command { downloads.signal(id, downloads::Signal::Confirm); continue; }
