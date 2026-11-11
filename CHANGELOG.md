@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.7.0 - 2026-11-11
+
+File downloads from Rex API 13 servers, Rune bumped to `d70929a` with accessibility on, a fix for window focus (an unfocused window wrote terminal copies to the clipboard), and the first milestone of macOS-app parity: grouped menus, pane header buttons, a find bar, tab management, every command in Commands and a rebuilt Settings.
+
 ### Added
 
 - **File downloads (Rex API 13):** **Download file…** in the pane menu and Commands (action `pane.download`, no default key, never available to `client.perform`) saves a file from the terminal's machine into the XDG download folder, or `downloads.directory` in `workspace.json`, which **Change** in the dialog sets. Errors before any bytes stay in the dialog: Rex's own words for the file errors (no such file, a folder, a FIFO, no permission), the client's own sentence for a server older than API 13. A toolbar chip and a Downloads popover show progress, **Cancel** and, for a finished file, **Show in folder** (the file manager's `ShowItems`, else `xdg-open` on the folder). Files are never overwritten (`name (1).ext`), never opened by the client and never made executable. There is no **Open**: a file's name and content cannot pin which program a desktop runs, and the default program for a type is not Rex's to vet, so open a saved file from your file manager. Files of 1 GiB or more, or that would leave under 256 MiB free, ask first with **Cancel** focused; three transfers per host at once; growth and stall limits; nothing is retried or resumed; partial files are removed on cancel, failure and exit, and a killed app's at the next launch. Quitting cancels running downloads without asking, and nothing is resumed. A file that changes while it is sent can be saved partly updated or shorter than Rex reported (the notice says when the size differs); the download folder must already exist. Checked end to end with `scripts/download-acceptance.py`; see the README's Downloading files section.
