@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Real X11 event/clipboard regression, isolated from the user's desktop.
 
-Requires Xvfb, xdotool, rex and a built native binary (REX_BIN selects it).
-REX_SERVER must explicitly name a disposable server; autostart is disabled.
-Creates/destroys only its own Rex session. This validates XKB dead-key
-composition, not Wayland or a full input method editor.
+Requires Xvfb, xdotool, rex and a built native binary (REX_BIN selects it, default
+target/debug/rex-linux). REX_SERVER must explicitly name a disposable server; autostart is disabled
+and the script exits without it. Creates/destroys only its own Rex session. The client runs with
+its own HOME and XDG directories, no update check and a `tailscale` that finds no tailnet.
+This validates XKB dead-key composition, not Wayland or a full input method editor.
 """
 import json
 import os
@@ -15,6 +16,16 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+# Layout the pointer steps assume, pinned into the client's private workspace.json rather than
+# inherited from its defaults: the toolbar is 52 pt, a single pane is full-bleed, and the grid
+# starts PANE_PADDING in from the left and below the toolbar. Cells are 9 x 20 px at font size 15.
+PANE_PADDING, TOOLBAR, FONT_SIZE, CELL = 8, 52, 15, (9, 20)
+
+
+def cell_point(column, row, fx=0.5, fy=0.5):
+    """Window pixel `fx`/`fy` of the way across a cell of the single-pane grid."""
+    return (round(PANE_PADDING + (column + fx) * CELL[0]),
+            round(TOOLBAR + PANE_PADDING + (row + fy) * CELL[1]))
 
 
 def api(method, **payload):
@@ -50,8 +61,12 @@ def run():
             with os.fdopen(read_fd) as display:
                 number = display.readline().strip()
             assert number, "Xvfb failed to start"
-            env = dict(os.environ, DISPLAY=f":{number}")
+            env = dict(os.environ, DISPLAY=f":{number}", REX_LINUX_NO_UPDATE_CHECK="1")
             env.pop("WAYLAND_DISPLAY", None)
+            for name in ("config", "state", "cache", "data"):
+                env.pop(f"XDG_{name.upper()}_HOME", None)
+            env["HOME"] = str(Path(directory) / "home")
+            Path(env["HOME"]).mkdir()
             # Add host must not list, or check for Rex on, the machines of a real tailnet.
             stub = Path(directory) / "bin"
             stub.mkdir()
@@ -59,6 +74,7 @@ def run():
             (stub / "tailscale").chmod(0o755)
             env["PATH"] = f"{stub}{os.pathsep}{env['PATH']}"
             config = Path(directory) / "workspace.json"
+            config.write_text(json.dumps({"pane_padding": PANE_PADDING, "font_size": FONT_SIZE}))
             app = subprocess.Popen([
                 os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux")), "--session", sid,
                 "--config", str(config), "--window-size", "1200x800"], env=env)
@@ -141,16 +157,15 @@ def run():
             text("printf '\\033[2J\\033[HPOINTER_COPY_OK!\\n'")
             key("Return")
             time.sleep(0.3)
-            # A single pane is full-bleed: 52pt bar, grid 12pt in and 8pt down,
-            # 9px cells at the default font. Ghostty includes a dragged-over
-            # cell only past its 60% threshold (5px). The old x=142 is only
-            # 4px into K (column 14), so it correctly excludes K. End at x=150,
-            # 3px into the following ! (column 15), below ITS threshold. The
-            # exact pasted line must include K but not the ! sentinel.
-            x("mousemove", "--window", window, "16", "68")
+            # A single pane is full-bleed, with 9 px cells at font size 15. Ghostty starts a
+            # selection in the cell under the pointer only before 60% of its width, and includes
+            # a dragged-over cell only past that same threshold (5 px). Start 2 px into the
+            # first column (P). End 3 px into the following ! (column 15), below its threshold,
+            # so the exact pasted line includes K but not the ! sentinel.
+            x("mousemove", "--window", window, *map(str, cell_point(0, 0, fx=2 / 9)))
             x("mousedown", "1")
             time.sleep(0.1)
-            x("mousemove", "--window", window, "150", "68")
+            x("mousemove", "--window", window, *map(str, cell_point(15, 0, fx=3 / 9)))
             time.sleep(0.1)
             x("mouseup", "1")
             key("ctrl+shift+c")

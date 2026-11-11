@@ -2,8 +2,13 @@
 """Real-input check of terminal mouse reporting on a private headless Wayland display.
 
 Run with dbus-run-session -- python3 scripts/mouse-check.py. MOUSE_DIR must be a fresh
-directory. The script owns its upstream Rex fixture, compositor
-and client, so the user's live sessions, display and settings are never used.
+directory. The script owns its upstream Rex fixture, compositor and client, so the user's live
+sessions, display and settings are never used. REX_BIN selects the client (default
+target/release/rex-linux) and MOUSE_VPTR the `vptr` helper (default tools/vptr/target/release/vptr,
+built with `cargo build --release` there). Any inherited REX_SERVER is dropped: the script starts
+and talks only to its own private server. The client gets a `tailscale` that finds no tailnet and
+no update check. Every position is relative to the pane (the click offsets are distances in points
+and rows), and the pane padding is pinned in the private config.
 
 A small program in the pane turns on mouse modes and logs the bytes it receives, so
 each step asserts on the exact reports the program sees.
@@ -19,6 +24,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 WORK = Path(os.environ.get("MOUSE_DIR", Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "rex-linux/mouse"))
 W, H = 1280, 800
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
 KEYMAP = runpy.run_path(str(ROOT / "scripts/demo-record.py"))
 REPORT = re.compile(rb"\x1b\[<(\d+);(\d+);(\d+)([Mm])")
 
@@ -104,12 +110,19 @@ def main():
         call(["wlr-randr", "--output", "HEADLESS-1", "--custom-mode", f"{W}x{H}@60", "--scale", "1"], env)
         config = WORK / "workspace.json"
         config.write_text(json.dumps({"hosts": [{"label": "Mouse host", "endpoint": endpoint}],
-            "last_host": endpoint, "sessions": {endpoint: sid}, "font_size": 15, "ui_scale": 1.0}))
-        spawn([ROOT / "target/release/rex-linux", "--endpoint", endpoint, "--session", sid,
-               "--config", config, "--window-size", f"{W}x{H}"], "app", env)
+            "last_host": endpoint, "sessions": {endpoint: sid}, "font_size": 15, "ui_scale": 1.0,
+            "pane_padding": 8}))
+        # The Add host list runs `tailscale status`: this one finds no tailnet.
+        stub = WORK / "bin"
+        stub.mkdir()
+        (stub / "tailscale").write_text("#!/bin/sh\nexit 1\n")
+        (stub / "tailscale").chmod(0o755)
+        app_env = dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_LINUX_NO_UPDATE_CHECK="1")
+        spawn([APP, "--endpoint", endpoint, "--session", sid,
+               "--config", config, "--window-size", f"{W}x{H}"], "app", app_env)
         keymap = WORK / "us.xkb"
         keymap.write_text(call(["xkbcli", "compile-keymap", "--layout", "us"]))
-        driver = subprocess.Popen([str(ROOT / "tools/vptr/target/release/vptr"), str(W), str(H), str(keymap)],
+        driver = subprocess.Popen([os.environ.get("MOUSE_VPTR", str(ROOT / "tools/vptr/target/release/vptr")), str(W), str(H), str(keymap)],
                                   env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         processes.append(driver)
         assert driver.stdout.readline().strip() == "ready"
