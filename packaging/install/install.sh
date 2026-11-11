@@ -44,7 +44,7 @@ rex_install() (
         for size in 32 128 256; do rm -f -- "$data/icons/hicolor/${size}x${size}/apps/dev.shuv.rex-linux.png"; done
         if command -v update-desktop-database >/dev/null 2>&1 && [ -d "$data/applications" ]; then update-desktop-database "$data/applications"; fi
         if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -d "$data/icons/hicolor" ]; then gtk-update-icon-cache -f -t "$data/icons/hicolor" >/dev/null 2>&1 || :; fi
-        printf '%s\n' 'Removed Rex Linux user install; preferences kept.'
+        printf '%s\n' 'Removed Rex Linux desktop client user install (rex-linux); preferences and any Rex server (rex) kept.'
         exit 0
     fi
     # /etc/os-release is root-owned, but source it in a subshell so its variables
@@ -179,7 +179,13 @@ PY
     package="$work/unpack/$name"
     [ "$("$package/bin/rex-linux" --version)" = "rex-linux $version" ] || die 'downloaded binary cannot run or reports wrong version; old install untouched'
     bash "$package/install.sh" || die 'desktop installation failed'
-    printf 'Installed Rex Linux %s into %s.\n' "$version" "$bin"
+    printf 'Installed the Rex Linux desktop client (rex-linux %s) at %s/rex-linux.\n' "$version" "$bin"
+    printf '%s\n' 'This does not install or change the Rex server (rex).'
+    if rex_path=$(command -v rex 2>/dev/null) && [ -n "$rex_path" ]; then
+        printf 'Using your Rex server at %s.\n' "$rex_path"
+    else
+        printf 'rex-linux needs a Rex server installed separately; see %s#build-requirements.\n' "$REPO"
+    fi
     case ":$PATH:" in *":$bin:"*) ;; *) printf 'Add %s to PATH.\n' "$bin" ;; esac
 )
 # A complete command group also prevents a truncated final call losing its args.

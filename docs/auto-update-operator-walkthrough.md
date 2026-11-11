@@ -126,7 +126,7 @@ What users run:
 curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh
 ```
 
-The same command upgrades. `… | sh -s -- --uninstall` removes the install and keeps preferences.
+The same command upgrades. `… | sh -s -- --uninstall` removes the install and keeps preferences. Like every other channel (pacman `rex-linux-bin`, `.deb`, Nix and the tarball), it installs only the `rex-linux` desktop client (`~/.local/bin/rex-linux`), its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server.
 
 1. **Publishing is part of the release.** The source is `packaging/install/install.sh`. `publish` signs it and uploads it with the other assets, so it passes the same approval click and is immutable afterwards. There is nothing separate to deploy.
 2. **Keeping it in step with the keys.** The script carries both public keys as constants. `scripts/test-release.py` fails if they differ from `packaging/keys/release.pub` and `release-backup.pub`, so a key change that misses the script cannot merge. **[Agent]** after any change under `packaging/keys/`, run that test and `bash scripts/install-script-test.sh`.

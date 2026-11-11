@@ -43,6 +43,8 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 ## Install a binary release
 
+**Rex Linux is a desktop client, not a Rex server.** Every install method (pacman `rex-linux-bin`, `.deb`, Nix, tarball or `install.sh`) installs only the `rex-linux` client binary, its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server. On distributions where `/bin` is a symlink to `/usr/bin` (`usrmerge`), `which -a rex` can list both `/usr/bin/rex` and `/bin/rex`; that is one file, not a second server.
+
 ### One-command user install or upgrade (0.5.2+)
 
 ```sh
@@ -57,7 +59,7 @@ curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/relea
 The signed, immutable release asset detects x86_64/aarch64 Linux and requires
 **glibc 2.39+**, `curl`, `tar`, coreutils, `bash`, `desktop-file-utils`, and either
 **minisign or OpenSSL 3+**. It verifies the signed checksums with embedded CI and
-backup keys, verifies the tarball, then installs to `~/.local/bin` with a launcher
+backup keys, verifies the tarball, then installs `~/.local/bin/rex-linux` with a launcher
 and icons. `XDG_BIN_HOME`, `XDG_DATA_HOME` and `XDG_CACHE_HOME` are respected.
 No root, server changes or automatic downgrade. Uninstall keeps preferences.
 NixOS users should use [Nix](docs/nix.md); musl is unsupported.
