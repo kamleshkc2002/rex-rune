@@ -433,7 +433,7 @@ and reports a move only when at least one custom entry remains.
 
 Double-click selects a word (including shell paths), and triple-click selects a line. Selection stays attached to terminal content as history or output scrolls; dragging above or below the grid autoscrolls. Hold Shift to select locally or scroll local history when a fullscreen TUI owns the mouse. Without Shift, ordinary TUI mouse reporting is unchanged.
 
-Terminal-initiated clipboard writes are limited to 8 MiB and accepted only from the active session's focused pane while the app window is focused and no dialog is open. Background tabs cannot overwrite the clipboard. Clipboard read requests from terminal programs are not supported; the client never sends your clipboard to a remote program without a paste action.
+Terminal-initiated clipboard writes (OSC 52) are described under [Clipboard (OSC 52)](#clipboard-osc-52).
 
 **Uploading files.** Drop files on a pane, or paste with Ctrl Shift V when the clipboard holds copied files or only an image, and Rex stores them on the machine that terminal runs on and types their shell-quoted paths into it, as a paste, without pressing Enter. This works the same for local and remote hosts and needs no SSH access: the bytes go over the Rex connection with `upload_begin` (API revision 11). The server keeps each file in a private directory under its state directory; files dropped together are typed together, and nothing is typed unless every file arrived. Folders can't be uploaded. A pasted image is uploaded as `clipboard.png`; when the clipboard holds text as well, the text is pasted instead. A failed upload shows a notice and is never retried. An older server shows a notice asking you to update Rex on that host.
 
@@ -453,6 +453,41 @@ Needs a server with API revision 13 or newer (`rex` snapshots from 2026-11-10; p
 - **Known limits.** Filesystems that support neither a no-replace rename nor hard links (sshfs, CIFS without Unix extensions) fail cleanly (the transfer ends with an error and the partial file is deleted). A download folder that is itself a symlink is refused, and the message names the real folder. A transfer ends if the connection to the host drops, and is never resumed or retried; Rex ends every stream when a control connection goes.
 
 `python3 scripts/download-acceptance.py` checks this behaviour against the built binary (see [Development](#development)); HTTPS and Tailscale hosts, the real file-manager and `xdg-open` calls and Wayland pointer input were not part of that run.
+
+## Clipboard (OSC 52)
+
+A program in a terminal copies to your desktop clipboard by writing an OSC 52 sequence (`ESC ] 52 ; c ; <base64> BEL`). Rex Linux puts the text on the system clipboard of the machine the client runs on, with no environment variable and no setting, for a local server and for an `ssh://` host alike (checked live on X11 and on a private Wayland compositor, and through a private `ssh://` login).
+
+- A copy is applied only from the focused pane of the selected session on the active host, while the Rex window has keyboard focus and no dialog or popup is open. Any other copy (a background tab, an unfocused split pane, another session, an unfocused window) is dropped without a notice and leaves the clipboard as it was.
+- The selections `c`, `p` and `s` (and an empty one) all go to the clipboard; the primary selection is never set. The server drops a target of several letters such as `cp`.
+- Read requests (`?`) are never answered, so a remote program can't read your clipboard.
+- The server drops, without any event or notice here, a payload that is not valid base64, is empty or is not UTF-8 text, and a very large one: 6,000,000 bytes arrived and 6,291,456 did not in the server used for the check; the exact boundary was not measured. The client refuses text above 8 MiB from the server (`MAX_COPY_BYTES` in `src/connection/clipboard.rs`; this limit was read in the code, not reached in a test).
+- Only the newest copy counts when several arrive together.
+
+### Programs that don't copy through OSC 52
+
+Some programs send OSC 52 only when an `SSH_*` variable is set, or prefer the clipboard of the machine they run on. Neither is the client: **Rex Linux cannot set environment variables in a terminal on a remote server, because the Rex server owns the terminal's environment** (the session and block options have no environment field; an `env` option is accepted and ignored). What the sources and tests showed:
+
+- **OpenAI Codex CLI** (read from the source of `rust-v0.167.1`; Codex itself was not run): it always tries the native clipboard first, so on a server that has `DISPLAY` or `WAYLAND_DISPLAY` the text lands in the server's own clipboard whatever else is set. It additionally sends OSC 52 when `SSH_TTY` or `SSH_CONNECTION` (any value) or `HERDR_ENV=1` is set, even if the native copy succeeded; under `TMUX`/`TMUX_PANE` it forwards through tmux instead (`tmux load-buffer -w`, then a passthrough sequence), which reaches Rex with tmux's default `set-clipboard`. It falls back to OSC 52 alone only if the native copy fails.
+- **Neovim 0.10.x** enables its OSC 52 provider only when `SSH_TTY` is set (any value) and the `clipboard` option is empty (the default); without both there is no provider (checked with 0.10.4). **Neovim 0.11 and later** don't check `SSH_TTY` and, when the `clipboard` option is empty (the default), use OSC 52 on their own, which Rex advertises (checked with 0.12.6), but they pick `xclip`, `xsel` or `wl-copy` first when `DISPLAY` or `WAYLAND_DISPLAY` is set, whatever `SSH_TTY` says. **LazyVim** sets `clipboard` to empty only when `SSH_CONNECTION` is set, and that is what turns its OSC 52 provider on (checked live: `SSH_TTY` alone does not).
+- `rex server start` hands `DISPLAY` and `WAYLAND_DISPLAY` from the shell that starts the server on to every terminal.
+
+Workarounds on the machine that runs the Rex server (checked live):
+
+- Put this in the file your login shell reads (`~/.profile` or `~/.bash_profile` for bash, `~/.zprofile` for zsh; not only `~/.bashrc` or `~/.zshrc`, since Rex starts terminals as login shells). It keys on `TERM_PROGRAM=rex`, which the server sets in every terminal, and leaves an existing `SSH_TTY` alone:
+
+  ```sh
+  if [ "$TERM_PROGRAM" = rex ] && [ -z "${SSH_TTY+x}" ]; then
+    _rex_tty=$(tty 2>/dev/null)
+    case $_rex_tty in /dev/*) export SSH_TTY=$_rex_tty ;; esac
+    unset _rex_tty
+  fi
+  ```
+
+  It worked in a default login bash, `rex run`, splits, a nested `bash` and a zsh login shell; it does nothing for a `--shell=none` terminal. To keep it off machines with a desktop session, add `&& [ -z "$DISPLAY$WAYLAND_DISPLAY" ]` to the condition (this variant was not checked); with that guard, Codex on a machine that has a display keeps copying only to that machine's clipboard.
+- Or start a new server with `rex server start --env SSH_TTY=/dev/tty`. It applies to every terminal of that server and only when a new server is launched.
+
+Both make every terminal on that server look like an SSH session, local clients included: prompts such as Starship show the host and an SSH mark (checked with Starship), some dotfiles branch on `SSH_*`, and by its source Codex then also treats the session as remote: it turns off right-click paste, reading text from the clipboard and primary-selection copy. Neither workaround sets `SSH_CONNECTION`, which LazyVim needs, and neither stops a program that prefers the server's own clipboard (Neovim 0.11 and later) from using it while `DISPLAY` or `WAYLAND_DISPLAY` is set there.
 
 ## Development
 

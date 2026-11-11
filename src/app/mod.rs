@@ -77,7 +77,6 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         .scale(scale)
         .scale_motion(STILL)
         .fill(rgb(ground()))
-        .on_window_focus(|s: &mut Workspace, focused, _| s.window_focus(focused))
         .child(
             col()
                 .absolute(0., 0.)
@@ -114,6 +113,8 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         })
         // With no focused control, Rune sends releases only to the outermost node.
         .on_key_up(input::on_key_up)
+        // Rune delivers native window focus to the view's first element only.
+        .on_window_focus(|s: &mut Workspace, focused, _| s.window_focus(focused))
         .w_full()
         .h_full()
         .fill(rgb(ground()))
