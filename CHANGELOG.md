@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- **File downloads (Rex API 13):** **Download file…** in the pane menu and Commands (action `pane.download`, no default key, never available to `client.perform`) saves a file from the terminal's machine into the XDG download folder, or `downloads.directory` in `workspace.json`, which **Change** in the dialog sets. Errors before any bytes (no such file, a folder, a FIFO, no permission, a server older than API 13) stay in the dialog in Rex's words. A toolbar chip and a Downloads popover show progress, **Cancel**, **Show in folder** and **Open**. Files are never overwritten (`name (1).ext`), never opened or made executable by the client, and **Open** is withheld for programs, scripts and similar types. Files of 1 GiB or more, or that would leave under 256 MiB free, ask first with **Cancel** focused; three transfers per host at once; growth and stall limits; nothing is retried or resumed; partial files are removed on cancel, failure and exit, and a killed app's at the next launch. Checked end to end with `scripts/download-acceptance.py`; see the README's Downloading files section.
+
 ### Changed
 
 - **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. Two patches are dropped because Rune now provides them: `Tx::toggle_maximize` (now `Tx::toggle_maximized`) and the `fc-list` system-font discovery. The Linux window icon moved into Rune's `rune::set_app_icon`, whose Linux support is still a Rex patch. Scrolling and redraw cost far less: on the acceptance machine, p95 frame CPU while scrolling btop fell from about 35 ms to about 8 ms.

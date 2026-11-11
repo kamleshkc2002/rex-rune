@@ -29,7 +29,7 @@ Some probes and Python scripts in `scripts/` connect to the configured Rex serve
   - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition.
   - `terminal.rs`: Ghostty decoding and render frames. `terminal/search.rs`: searching the screen and scrollback with Ghostty's search. `links.rs`: OSC 8 hyperlinks and text URLs in a frame.
   - `layout.rs`: split placement. `settings.rs`: local configuration.
-  - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream, `open.rs` the "never Open" list); driven by `HostCommand::Download` in `connection/downloads.rs`. No UI yet.
+  - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream, `open.rs` the "never Open" list); driven by `HostCommand::Download` in `connection/downloads.rs`.
   - `ssh.rs`: `ssh://` endpoints, a Rex socket forwarded with `ssh -L`. `tailnet.rs`: the machines in `tailscale status --json` and the check for a Rex server on each.
 - `src/main.rs` and `src/app/`: the Rune front end (behind the default `ui` feature).
   - `workspace.rs`: workspace state and behavior (hosts, sessions, tabs, panes, requests, preferences, notices). Host and terminal workers wake the UI through `rune::AppHandle::update`.
@@ -38,10 +38,11 @@ Some probes and Python scripts in `scripts/` connect to the configured Rex serve
   - `term.rs`: one pane's view state and cell grid. Rows are text segments placed at `column × cell width`; a character joins a segment only if it advances exactly one cell; ligatures and kerning are off; rows are memoized by content.
   - `sprites.rs`: box-drawing and block element characters drawn as shapes on whole device pixels, as Ghostty does, instead of font glyphs.
   - `toolbar.rs`, `sidebar.rs`, `panes.rs`, `popups.rs`, `dialogs.rs`, `widgets.rs`: views on rune-kit, with design tokens pinned onto the kit in `theme.rs`.
+  - `downloads.rs`, `downloads_view.rs`: the Download file… dialog, Downloads popover, toolbar chip state and the `downloads.directory` setting's use (`toolbar::download_chip` draws the chip). `downloads_tests.rs`: headless UI tests for them. `actions.rs` has `pane.download` (`Remote::Never`).
   - `tests.rs`: headless UI tests.
-- `src/bin/`: `rex-probe` and `rex-workspace-probe`, live protocol probes.
+- `src/bin/`: `rex-probe`, `rex-workspace-probe` and `rex-download-probe` (downloads through the real host connection), live protocol probes; `update_probe.rs` builds `rex-update-probe`.
 - `examples/`: `chrome_spike` (borderless window chrome).
-- `scripts/`: integration and acceptance checks, and the desktop installer. `tools/`: small helpers for test scripts.
+- `scripts/`: integration and acceptance checks, and the desktop installer. `download-contract.py` observes the API 13 download contract; `download-acceptance.py` drives the built binary through downloads on private servers (`private_ssh.py` is the private sshd it shares with `remote-control-acceptance.py`). `tools/`: small helpers for test scripts.
 - `resources/`: desktop entry and icons.
 - `vendor/`: patched copies of Rune, rexrs and ghostty-vt.
 

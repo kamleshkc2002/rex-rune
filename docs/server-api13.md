@@ -2,7 +2,12 @@
 
 Verified on Linux x86-64 on **2026-11-10 (PST)**, based on Rex Linux 0.5.1.
 The client now advertises **API revisions 10–13**. Uploads still require 11;
-no download UI, new remote permissions or server lifecycle behavior was added.
+no new remote permissions or server lifecycle behavior was added.
+
+**Current state:** the client now has a file-download UI that requires revision
+13 (see [Client implementation and acceptance](#client-implementation-and-acceptance)).
+The statements below that no download UI or data-stream consumer exists describe
+the 0.5.1 snapshot this section was first written against.
 
 **Important correction to the original compatibility concern:** this snapshot
 supports older negotiated revisions. The installed Rex Linux **0.5.0 actually
@@ -88,9 +93,10 @@ Only regular files can be downloaded. The response contains:
 
 Downloads send bytes from server to client, unlike uploads. No existing client
 path calls this method, so **no breaking-change revision branch is needed**.
-A future download implementation must require revision 13 and handle absent
-validators, conditional responses and changing stream sizes. This PR does not
-implement that data-stream consumer or claim a download-transfer test.
+A download implementation must require revision 13 and handle absent
+validators, conditional responses and changing stream sizes. The original PR did
+not implement that data-stream consumer; the client does now (see
+[Client implementation and acceptance](#client-implementation-and-acceptance)).
 
 ## Implementation
 
@@ -199,11 +205,13 @@ under `~/.cache/agent-ws/rex-api13/`; private runtime data is not committed.
 
 ## Decisions and scope
 
-**No API-13 compatibility decision is needed.** Downloads are optional and
-remain SDK-only. A future save/download/open-file UI, cache policy and any
-remote permission for it should be a separate feature decision; none is needed
-to attach safely or retain existing remote-control behavior. No Wayland,
-macOS, aarch64, real remote-host restart or download-transfer claim is made.
+**No API-13 compatibility decision is needed.** Downloads are optional. The
+original compatibility change kept them SDK-only; the file-download UI that
+followed is described under
+[Client implementation and acceptance](#client-implementation-and-acceptance).
+It has no cache, and no remote permission: `client.perform` cannot start a
+download. None of it is needed to attach safely or retain existing
+remote-control behavior. No Wayland, macOS or aarch64 claim is made.
 
 ## Download contract (D0)
 
@@ -505,3 +513,25 @@ A longer one needs the client's own cap, which the plan already has.
 - `~` where the server's `$HOME` and the passwd home differ (here they did: it used `$HOME`, but it was not determined whether it is the server's or the terminal process's).
 - macOS or other servers, `permessage-deflate` (the client did not offer it), files on network or FUSE file systems, paths over `PATH_MAX`, a hard cap on open descriptors from unopened tickets.
 - `/dev` and `/proc` behavior beyond the cases listed.
+
+## Client implementation and acceptance
+
+Rex Linux implements the contract above as the **Download file…** action
+(`pane.download`; see the README's Downloads section). It gates on the negotiated
+revision (13 or higher), sends no `if_none_match` (a `not_modified` reply is an
+error), opens the data stream with `rex.data.bytes.v1` on the host's own data
+endpoint, counts a transfer as complete only after the empty message and a 1000
+close, enforces its own growth cap and stall timer, and gives an unopened ticket
+back at once (HELLO, WELCOME, Close 1000) when a transfer is cancelled or refused.
+
+[`scripts/download-acceptance.py`](../scripts/download-acceptance.py) exercises
+the built binary through the real UI against private API 13 and API 12 servers
+(and one transfer through a real private `ssh://` host). Its cases are listed in
+its docstring and in the README's Development section; it prints a PASS, FAIL or
+SKIP line for each. Rerun it, and `scripts/download-contract.py`, on every server
+bump.
+
+Still not observed with downloads: HTTPS, Tailscale and plain TCP endpoints (a
+Unix socket and an SSH forward were), and the real file-manager `ShowItems` call
+and `xdg-open` (the acceptance script puts a stub `xdg-open` on `PATH` and checks
+that it is never called).

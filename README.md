@@ -27,6 +27,7 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 - Inline Kitty graphics (RGB, RGBA and PNG), including image-bearing snapshots on reattach. Ghostty resolves placement, crop and paint order; the client caches decoded pixels and textures. Image storage is capped at 64 MiB per terminal. File, temporary-file and shared-memory image media are disabled: remote terminal output cannot read local files.
 - Synchronized output (mode 2026): while a program holds an update open (for up to a second, as in Ghostty) the pane keeps its last frame, so full-screen programs redrawing after a resize don't flash blank.
 - Links: Ctrl+click opens an `http`, `https`, `ftp` or `mailto` link with `xdg-open`, whether it is an OSC 8 hyperlink or a URL in the text (including one that soft-wraps across rows). Holding Ctrl over a link underlines it, shows a hand pointer and, after a moment, a tooltip naming its real target, so OSC 8 text cannot disguise where it goes. Ctrl+click works over programs that track the mouse too; clicks elsewhere still go to the program. Other schemes, `file://` among them, are never opened, since output may come from a remote host.
+- File downloads (API revision 13): **Download file…** in the pane menu and Commands saves a file from the terminal's machine into a folder on this one, over the Rex connection (also through SSH hosts). Nothing is overwritten, opened or run by itself. See [Downloading files](#downloading-files).
 - Reconnect handling: a transport failure pauses input on affected panes (input is never replayed) while parsed output survives reconnects and session changes. TCP connections are probed when idle, so a server that dropped this client while the network was gone (a laptop asleep, for example) is noticed within about 30 seconds and the host and its terminals reconnect.
 - Program activity on tabs. Programs that report their status with OSC 7501 (coding agents, for example) mark their tab with a word when they need you ("Needs approval", "Question", "Needs sign-in", "Needs input") or fail ("Error"), and with "Done" when they finish in a tab you weren't looking at. A terminal bell that rings out of sight marks its tab "Bell" until you see it. Progress that programs report with OSC 9;4 draws as a thin bar under the tab's label (and under a split pane's name) until they clear it or leave the foreground, with "Paused" (and its percentage, if it gave one) or "Error" as a word when the report says so; a working program's OSC 7501 percentage draws the same way when it sends no OSC 9;4. In a split, each pane's header carries its own word, so you can see which pane needs you. Each tab shows its focused pane's program icon (Claude Code, Codex, OpenCode, Pi and OMP, Vim, Git, Cargo, SSH; otherwise `>_`), and a tab or pane you haven't renamed takes the title its program sets (OSC 0 or 2), as a terminal window would, without changing its name on the server. Needs a server with API revision 8.
 - Desktop notifications through the freedesktop notification service when a tab you aren't looking at needs you, fails or finishes, and for notifications programs send themselves (OSC 9 and OSC 777). Clicking one raises the window and shows that tab. Each kind can be turned off in Settings → Notifications.
@@ -281,6 +282,7 @@ The following actions have no default key binding:
 | `session.rename` | None | Open the current session's rename dialog |
 | `pane.close` | None | Confirm closing the focused pane |
 | `pane.send_key` | `{"key": "single chord"}` | Send a synthesizable key directly to the PTY, bypassing Lua bindings |
+| `pane.download` | None | Open the Download file… dialog for the focused pane (API revision 13). Never available to `client.perform` |
 
 Omit `args` for actions with no arguments (an empty object also works).
 For argument-taking actions, supply exactly the required field: `pane.split`
@@ -328,7 +330,7 @@ Commands can turn it on or off for the host on screen. With it on, `rex do` and
 `client.tab.next`, `client.tab.previous`, `pane.focus`, `pane.zoom`, `pane.scroll`,
 and `client.sidebar.toggle` on that host.
 These requests cannot create or close terminals, type, access the clipboard, open
-dialogs, change interface zoom, or affect any host other than the requesting host. Refusals name the
+dialogs (so none can start a download), change interface zoom, or affect any host other than the requesting host. Refusals name the
 server command to use instead where one exists (`rex window new`, `rex send-key`,
 `rex capture`, etc.). Actions remain listed even with the switch off.
 
@@ -437,6 +439,21 @@ Terminal-initiated clipboard writes are limited to 8 MiB and accepted only from 
 
 Other interactions: click the session/host identity for grouped navigation, or right-click it for the current session's actions; in the switcher, rename a session in place (right-click its row, F2 or the pencil; Enter saves, Esc cancels) or close it with its ×; right-click a pane for actions targeting that pane; drag dividers to resize splits and the sidebar's edge to resize it (double-click resets); double-click a tab to rename it. Closing a pane or tab asks for confirmation, with **Keep running** as the default. The active window takes size ownership of a terminal automatically. On the borderless window, the toolbar's empty space moves it (double-click maximizes; right-click requests the window manager's menu on Wayland).
 
+## Downloading files
+
+Needs a server with API revision 13 or newer (`rex` snapshots from 2026-11-10; preview.14 is revision 12). On an older server the dialog says "Rex on <host> is too old to send files; update Rex there." and nothing is sent.
+
+- **Starting one.** Choose **Download file…** in the pane menu (right-click, or `Ctrl Shift Space`) or in Commands (`Ctrl Shift P`), or bind `pane.download` to a key (it has no default; see [Configuring shortcuts](#configuring-shortcuts)). The dialog is titled with the host of the pane it was opened from. Type a path on that machine: absolute, `~/…`, or relative to the pane's foreground program's directory (so it follows `cd`). A single-line selection in the pane fills the field. Enter starts; Escape closes. Only a person at this client starts a download: terminal output and `client.perform` cannot.
+- **Where files go.** The **Save in** folder shows under the field: the XDG download folder (`xdg-user-dirs`, else `~/Downloads`), or `downloads.directory` in `workspace.json` (absolute or `~/…`), which **Change** in the dialog writes. The file keeps the server's file name after cleaning: control characters, direction overrides and invisible characters are removed, a leading dot becomes `_`, trailing dots and spaces go, and a name that ends up empty becomes `download`. A leading dash and non-ASCII names are kept as they are.
+- **Never overwritten.** If the name exists, the new file is `name (1).ext`, then `(2)`. The saved file is mode 0644 less the umask and never executable, whatever the source's mode. While running, the data goes to a hidden `.name.<uuid>.rex-part` in the same folder, renamed into place only when the transfer finished completely.
+- **Never opened by itself.** A finished transfer leaves one notice ("Saved build.log from devbox to ~/Downloads"); nothing is shown in a file manager or run. A finished row in the Downloads popover offers **Show in folder** (the file manager's `ShowItems`, else `xdg-open` on the folder) and **Open** (`xdg-open`). **Open is not offered** for files that can run or script something when opened: ELF programs and `#!` scripts, HTML, SVG and XML, `.desktop` entries, and extensions such as `.sh`, `.py`, `.jar`, `.AppImage`, `.deb`, `.rpm`, `.pkg.tar.*` and `.exe`, judged by name and by the first 512 bytes.
+- **Progress.** While bytes arrive, a chip in the toolbar shows `↓ build.log 42%` (or `↓ 3 files`); click it, or choose **Downloads** in Commands, for a row per transfer of this launch with its state and **Cancel**. Cancelling closes the stream and deletes the partial file. A failure is a sticky notice and a row that says why; nothing is retried or resumed.
+- **Limits and confirmation.** A file of 1 GiB or more, or one that would leave under 256 MiB free, is not started until you answer a question in the dialog ("build.img is 3.2 GB. ~/Downloads has 41 GB free."), with **Cancel** focused. A file that cannot fit with 16 MiB left over is refused at once. After a yes to the low-space question the transfer stops if free space falls under 16 MiB; after a yes to a large file it stops under 256 MiB. A transfer ends if the file grows past the larger of twice Rex's size and that size plus 64 MiB (a file being appended to), or if no data arrives for 30 seconds. At most three downloads run at once per host; a fourth is refused. There is no other size limit.
+- **Leftovers.** A partial file is deleted on cancel, on failure and when the app quits; each is recorded in `$XDG_STATE_HOME/rex-linux/downloads.json`, and a partial left by a killed app is deleted at the next launch. Only recorded files are touched; the folder is never swept.
+- **Known limits.** Filesystems that support neither a no-replace rename nor hard links (sshfs, CIFS without Unix extensions) fail cleanly (the transfer ends with an error and the partial file is deleted). A download folder that is itself a symlink is refused, and the message names the real folder. A transfer ends if the connection to the host drops, and is never resumed or retried; Rex ends every stream when a control connection goes.
+
+`python3 scripts/download-acceptance.py` checks this behaviour against the built binary (see [Development](#development)); HTTPS and Tailscale hosts, the real file-manager and `xdg-open` calls and Wayland pointer input were not part of that run.
+
 ## Development
 
 ```sh
@@ -447,6 +464,9 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 # Protocol probes against a Rex server (endpoint optional; they create and remove their own sessions).
 cargo run --locked --no-default-features --bin rex-probe
 cargo run --locked --no-default-features --bin rex-workspace-probe
+
+# File downloads against a disposable server you control (creates a session there; refuses the default per-user socket).
+cargo run --locked --no-default-features --bin rex-download-probe -- unix:///path/to/private.sock /path/to/workdir
 ```
 
 With mise, `mise run test`, `fmt`, `clippy` and `test-rexrs` run the first three commands and the vendored SDK tests; `mise run check` runs them all.
@@ -461,6 +481,7 @@ The `scripts/` directory holds integration checks; each script's docstring lists
 
 - `connection-only-smoke.py`: a missing or stale socket must never execute the Rex CLI.
 - `ssh-setup-smoke.py`: the real opt-in setup UI against a private localhost sshd and preview.14 executable, with isolated HOME/XDG state and SSH config. Checks attachment-only, Not now, confirmed native start, zero created sessions and subsequent `ssh -L` attachment; stops its server and sshd by PID. Requires explicit `REX_CLI` and `REX_BIN`; no installation or real host setup is performed.
+- `download-acceptance.py`: file downloads through the built binary and the real UI, on its own private API 13 and API 12 servers, a private Xvfb and (when `sshd` can run as this user) a private SSH host. Covers names with spaces, Unicode and a newline, a leading dash, `~` and relative paths, a symlink, a folder and a FIFO refused, an empty file, a 1 GiB file cancelled partway, a file growing during the transfer, the same file twice, the "too old" message on API 12, the fourth concurrent transfer, low space (a size-limited tmpfs in a private user namespace), one transfer over `ssh://`, and quitting or killing the app mid-transfer; it checks every saved file's SHA-256, that nothing is executable and that a stub `xdg-open` is never called. Prints PASS, FAIL or SKIP per case. Also needs the client (`REX_BIN`) and `rex-download-probe` built; `REX12_BIN` selects the API 12 `rex`. `private_ssh.py` is the private sshd helper it shares with `remote-control-acceptance.py`.
 - `navigation-x11.py`: isolated single-host private-server checks for global tab shortcuts, reverse wrapping and mouse Back/Forward across sessions; also exercises named history Commands. Cross-host navigation and reconnect behavior are covered by headless/protocol tests, not this script.
 - `process-cwd-contract.py`: private-server process-directory and missing-directory fallback checks without OSC 7; set `REX_BIN` to also check keyboard/pane-menu splits and new tabs through the real client on X11. Keeps logs/captures under `~/.cache/agent-ws/`.
 - `x11-smoke.py`: real X11 events (forms, clipboard, exact pointer copy and raw Kitty key isolation). Requires `REX_SERVER` explicitly set to a disposable server (no autostart); `REX_BIN` selects a debug or release client.
