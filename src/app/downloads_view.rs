@@ -18,6 +18,9 @@ use rune_kit::TextField;
 /// A paragraph of the dialog. Text with no break opportunity (a 255-byte name, a long path in
 /// Rex's error) wraps inside the word instead of running through the dialog's edge, and a
 /// paragraph past `lines` is cut with an ellipsis; the accessibility text keeps all of it.
+/// Lines of a row's state text before it is cut with an ellipsis.
+const STATE_LINES: usize = 4;
+
 fn paragraph(message: String, size: f32, tone: u32, lines: usize) -> El {
     text(message)
         .font(ui(size))
@@ -306,7 +309,11 @@ fn download_row(s: &Workspace, r: &Row<'_>) -> El {
                 .key(format!("download-state:{id}"))
                 .font(ui(11.5))
                 .color(rgb(tone))
+                // A long error with no spaces breaks anywhere, as in the dialog, and is cut
+                // after a few lines so one bad row can't take the list.
                 .wrap()
+                .wrap_anywhere()
+                .max_lines(STATE_LINES)
                 .min_w(0.),
         );
     if let State::Receiving { received, hint } = &t.state {

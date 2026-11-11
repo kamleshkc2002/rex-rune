@@ -1455,6 +1455,45 @@ fn a_long_name_in_a_row_with_both_buttons_is_cut_by_width_inside_the_row() {
 }
 
 #[test]
+fn a_long_error_with_no_spaces_wraps_inside_a_failed_row_and_the_popover() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime_at(ws, (1440., 900.));
+    let unbroken = "E".repeat(300);
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "report.txt",
+            &dir,
+            State::Failed(Failure::Server(unbroken)),
+        ))
+    });
+    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
+    for _ in 0..40 {
+        rt.frame(1. / 60.);
+    }
+    let popover = rect_of(&rt, "downloads-popover").unwrap();
+    let state = rect_of(&rt, "download-state:1").expect("the state line");
+    let row = rect_of(&rt, "download:1").unwrap();
+    assert!(
+        state[0] + state[2] <= popover[0] + popover[2] + 0.5,
+        "state {state:?} runs past the popover {popover:?}"
+    );
+    assert!(
+        row[0] + row[2] <= popover[0] + popover[2] + 0.5,
+        "row {row:?} runs past the popover {popover:?}"
+    );
+    // The text breaks anywhere to fit (an unbroken word left to run on would sit on one line
+    // beside the "Failed:" and out of the box), and a line cap keeps one bad error from taking
+    // the list.
+    assert!(
+        (3. * 14.0..=4. * 16.).contains(&state[3]),
+        "state is {} pt tall",
+        state[3]
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
 fn a_chip_coming_into_a_wide_enough_bar_scrolls_the_active_tab_back_into_view() {
     let (mut rt, dir) = crowded_bar(1010.);
     settle(&mut rt);
