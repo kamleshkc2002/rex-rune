@@ -212,10 +212,21 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) {
         ),
         "pane.balance" => {
             if let Some(window) = s.model().window() {
-                let mut window = window.clone();
-                window.zoomed_block_id = None;
-                for divider in layout::placements(&window, None).1 {
-                    s.request("session.resize_pane", json!({"direction":if divider.horizontal {"horizontal"} else {"vertical"},"before_block_id":divider.before,"after_block_id":divider.after,"ratio":0.5}));
+                for divider in layout::balanced(window) {
+                    let direction = if divider.horizontal {
+                        "horizontal"
+                    } else {
+                        "vertical"
+                    };
+                    s.request(
+                        "session.resize_pane",
+                        json!({
+                            "direction": direction,
+                            "before_block_id": divider.before,
+                            "after_block_id": divider.after,
+                            "ratio": divider.ratio,
+                        }),
+                    );
                 }
             }
         }
@@ -320,6 +331,18 @@ impl Workspace {
             return;
         };
         self.close_panel(tx);
-        self.send(target.host, HostCommand::Request { method:"session.move_block".into(), payload:json!({"session_id":target.session,"block_id":target.block,"anchor_block_id":anchor,"direction":"horizontal","side":"after"}) });
+        self.send(
+            target.host,
+            HostCommand::Request {
+                method: "session.move_block".into(),
+                payload: json!({
+                    "session_id": target.session,
+                    "block_id": target.block,
+                    "anchor_block_id": anchor,
+                    "direction": "horizontal",
+                    "side": "after",
+                }),
+            },
+        );
     }
 }

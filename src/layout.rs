@@ -174,6 +174,47 @@ fn walk(
     walk(after, b, drag, panes, dividers);
 }
 
+/// Proposed resize requests that give each branch in a same-direction chain equal space.
+/// A perpendicular subtree occupies one slot; it is balanced independently. Only the returned
+/// ratios are sent to the server: the caller must not install the proposed layout locally.
+pub fn balanced(window: &Window) -> Vec<Divider> {
+    fn slots(node: &ViewLayoutNode, direction: rexrs::api::Direction) -> usize {
+        if node.block_id.is_none()
+            && let Some(split) = &node.split
+            && split.direction == direction
+            && let (Some(before), Some(after)) = (&split.before, &split.after)
+        {
+            slots(before, direction) + slots(after, direction)
+        } else {
+            1
+        }
+    }
+    fn balance(node: &mut ViewLayoutNode) {
+        if node.block_id.is_some() {
+            return;
+        }
+        let Some(split) = &mut node.split else {
+            return;
+        };
+        let (Some(before), Some(after)) = (&mut split.before, &mut split.after) else {
+            return;
+        };
+        let a = slots(before, split.direction);
+        let b = slots(after, split.direction);
+        split.ratio = a as f64 / (a + b) as f64;
+        balance(before);
+        balance(after);
+    }
+    let mut proposal = window.clone();
+    proposal.zoomed_block_id = None;
+    for layer in &mut proposal.layers {
+        if let Some(node) = &mut layer.layout {
+            balance(node);
+        }
+    }
+    placements(&proposal, None).1
+}
+
 /// A side of a pane: where its neighbour is, or which way one of its borders moves.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -369,6 +410,36 @@ mod tests {
         ]}))
         .unwrap()
     }
+    #[test]
+    fn balance_equalizes_three_pane_chains_without_mutating_server_geometry() {
+        for direction in ["horizontal", "vertical"] {
+            let window: Window = serde_json::from_value(json!({"layers":[{
+                "kind":"tiled", "bounds":[0,0,1,1],
+                "layout":{"split":{"direction":direction,"ratio":0.5,
+                    "before":{"block_id":"a"},
+                    "after":{"split":{"direction":direction,"ratio":0.7,
+                        "before":{"block_id":"b"},"after":{"block_id":"c"}}}}}
+            }]}))
+            .unwrap();
+            let borders = balanced(&window);
+            assert_eq!(borders.len(), 2);
+            assert_eq!((&*borders[0].before, &*borders[0].after), ("a", "b"));
+            assert_eq!(borders[0].ratio, 1. / 3.);
+            assert_eq!(borders[1].ratio, 0.5);
+            assert_eq!(borders[0].horizontal, direction == "horizontal");
+            let original = placements(&window, None).1;
+            assert_eq!(original[0].ratio, 0.5);
+            assert_eq!(original[1].ratio, 0.7);
+        }
+        let mut mixed = three_by_two();
+        mixed.zoomed_block_id = Some("a".into());
+        let borders = balanced(&mixed);
+        assert_eq!(borders.len(), 3);
+        assert!(borders.iter().all(|d| d.ratio == 0.5));
+        mixed.layers[0].state = Some("minimized".into());
+        assert!(balanced(&mixed).is_empty());
+    }
+
     #[test]
     fn a_neighbour_is_the_pane_against_that_side_sharing_the_most_edge() {
         let window = three_by_two();

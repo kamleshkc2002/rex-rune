@@ -132,7 +132,12 @@ impl Intent {
                 )
                 // Each asks or lists before anything happens.
                 | Intent::ClientAction(
-                    "client.close" | super::commands::CLOSE_SESSION | super::commands::CHOOSE_THEME,
+                    "client.close"
+                        | "client.host.switch"
+                        | "pane.move_to_tab"
+                        | "pane.close_others"
+                        | super::commands::CLOSE_SESSION
+                        | super::commands::CHOOSE_THEME,
                     _
                 )
                 | Intent::MovePaneTo(_)

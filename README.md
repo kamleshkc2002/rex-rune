@@ -357,8 +357,8 @@ Settings → Shortcuts lists supported actions even when **Unbound**, with their
 
 | Status | Actions / behavior |
 | --- | --- |
-| Supported | `client.config.reload` rereads local shortcut overrides and requests `server.config_reload` on the active host (its `init.lua`, not a server restart). `client.config.copy_path` copies that host's reported config path. |
-| Supported | `pane.resize` takes `direction` (`left/right/up/down`) and optional positive numeric `amount` (percentage points of the split, default 5). It moves the next border from server geometry, clamped like a divider drag. `pane.balance` resets visible split ratios to 50/50; `pane.move` swaps with the neighbour in `direction`. |
+| Supported | `client.config.reload` rereads local shortcut overrides and requests `server.config_reload` on the active host (its `init.lua`, not a server restart). Rex permits reload only over a local Unix socket or SSH-forwarded socket; HTTPS/Tailscale hosts return an error notice. `client.config.copy_path` copies that host's reported config path. |
+| Supported | `pane.resize` takes `direction` (`left/right/up/down`) and optional positive numeric `amount` (percentage points of the split, default 5). It moves the next border from server geometry, clamped like a divider drag. `pane.balance` evenly distributes branches along each same-direction split chain; `pane.move` swaps with the neighbour in `direction`. |
 | Supported | `pane.rename`, `pane.close_others` (confirmation), `pane.move_to_tab` (picker for another tab in the same session; optional `window_id`). No program is restarted by a move. |
 | Supported | `session.close/next/previous/refresh`; `client.host.switch/add/remove`; `client.tab.close_others` and `client.tab.move` (`direction`: `left/right` or `backward/forward`). |
 | Supported | `pane.select_all`, `pane.focus_next/focus_previous`, `client.font.increase/decrease/reset`, and `client.scroll.page_up/page_down` (one visible page). |

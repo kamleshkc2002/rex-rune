@@ -199,6 +199,67 @@ fn resize_uses_server_ratio_and_amount_and_balance_does_not_invent_a_layout() {
 }
 
 #[test]
+fn balance_sends_one_third_for_a_three_column_chain_and_keeps_the_server_view() {
+    let (mut ws, rx) = tabbed_workspace("split");
+    let layer = &mut ws.hosts[0].model.views.get_mut("s").unwrap().windows[1].layers[0];
+    layer.layout = Some(
+        serde_json::from_value(json!({"split":{
+            "direction":"horizontal", "ratio":0.5,
+            "before":{"block_id":"block:b"},
+            "after":{"split":{"direction":"horizontal", "ratio":0.5,
+                "before":{"block_id":"block:c"}, "after":{"block_id":"block:d"}}}
+        }}))
+        .unwrap(),
+    );
+    let original = serde_json::to_value(ws.model().window()).unwrap();
+    run(&mut ws, "pane.balance", Value::Null);
+    let calls = requests(&rx);
+    assert_eq!(calls.len(), 2);
+    assert!(calls.iter().all(|c| c.0 == "session.resize_pane"));
+    assert_eq!(
+        calls[0].2,
+        json!({"session_id":"s", "direction":"horizontal",
+        "before_block_id":"block:b", "after_block_id":"block:c", "ratio":1. / 3.})
+    );
+    assert_eq!(calls[1].2["ratio"], 0.5);
+    assert_eq!(serde_json::to_value(ws.model().window()).unwrap(), original);
+}
+
+#[test]
+fn move_to_tab_rejects_current_foreign_and_missing_windows() {
+    let (mut ws, rx) = tabbed_workspace("split");
+    let mut foreign = ws.hosts[0].model.views["s"].clone();
+    foreign.windows[0].window_id = Some("foreign".into());
+    ws.hosts[0]
+        .model
+        .views
+        .insert("other-session".into(), foreign);
+    for id in ["split", "foreign", "missing"] {
+        run(&mut ws, "pane.move_to_tab", json!({"window_id":id}));
+        assert!(requests(&rx).is_empty(), "{id}");
+    }
+    run(&mut ws, "pane.move_to_tab", json!({"window_id":"single"}));
+    let calls = requests(&rx);
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].0, "session.move_block");
+    assert_eq!(calls[0].2["session_id"], "s");
+}
+
+#[test]
+fn close_others_does_not_close_panes_added_after_confirmation_opened() {
+    let (mut ws, rx) = tabbed_workspace("split");
+    run(&mut ws, "pane.close_others", Value::Null);
+    let layer = &mut ws.hosts[0].model.views.get_mut("s").unwrap().windows[1].layers[0];
+    layer
+        .blocks
+        .push(serde_json::from_value(json!({"block_id":"block:d"})).unwrap());
+    ws.submit(&mut rune::Tx::default());
+    let calls = requests(&rx);
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].2["block_id"], "block:c");
+}
+
+#[test]
 fn rename_close_others_and_move_to_tab_use_existing_pane_and_confirmation_paths() {
     let (mut ws, rx) = tabbed_workspace("split");
     run(&mut ws, "pane.rename", Value::Null);
@@ -316,6 +377,39 @@ fn with_modes(ws: &mut Workspace, exclusive: bool) {
         reply,
     }));
     ws.hosts[0].model.connected = true;
+}
+
+#[test]
+fn mode_keys_stay_inert_outside_the_mode_and_explicit_escape_overrides_exit() {
+    let (mut ws, rx) = tabbed_workspace("split");
+    let (sender, sent) = flume::unbounded();
+    super::pane_verb_tests::framed_terminal(&mut ws, "block:b", &sender, b"prompt");
+    with_modes(&mut ws, false);
+    let snapshot = Arc::make_mut(ws.hosts[0].model.keymap.as_mut().unwrap());
+    snapshot.reply.bindings.push(
+        Binding::new(["escape"], "pane.resize")
+            .args(json!({"direction":"right","amount":1}))
+            .mode("resize"),
+    );
+    snapshot.resolved = Resolved::from_server(&snapshot.reply, &Overrides::default());
+    let mut rt = runtime(ws);
+    press(&mut rt, Key::Right);
+    assert!(requests(&rx).is_empty());
+    assert!(
+        !sent_keys(&sent).is_empty(),
+        "ordinary Right reaches the terminal"
+    );
+    rt.update(|s, tx| {
+        actions::run(s, "client.mode.enter", &json!({"name":"resize"}), tx);
+    });
+    press(&mut rt, Key::Escape);
+    assert_eq!(requests(&rx)[0].0, "session.resize_pane");
+    assert_eq!(
+        rt.state.bindings.modes.len(),
+        1,
+        "explicit Escape keeps the mode"
+    );
+    assert!(sent_keys(&sent).is_empty());
 }
 
 #[test]
