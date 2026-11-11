@@ -73,7 +73,8 @@ fn trim_end(name: &str) -> &str {
 /// extension and never splitting a character. The result is always one ordinary path component:
 /// no separator, no NUL.
 pub fn sanitize(raw: &str) -> String {
-    // `\` splits too, so a saved name has none: xdg-open under dash echoes `\c` as an escape.
+    // `\` splits too, so a saved name has no backslash: it separates paths elsewhere and is an
+    // escape in some shells.
     let last = raw
         .rsplit(['/', '\\'])
         .find(|part| !part.is_empty())

@@ -19,7 +19,6 @@ use std::{
 };
 
 pub mod name;
-pub mod open;
 pub mod store;
 pub mod stream;
 

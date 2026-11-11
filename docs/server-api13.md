@@ -533,5 +533,5 @@ bump.
 
 Still not observed with downloads: HTTPS, Tailscale and plain TCP endpoints (a
 Unix socket and an SSH forward were), and the real file-manager `ShowItems` call
-and `xdg-open` (the acceptance script puts a stub `xdg-open` on `PATH` and checks
-that it is never called).
+and `xdg-open` on the folder (the acceptance script puts a stub `xdg-open` on `PATH` and
+checks that it is never called).

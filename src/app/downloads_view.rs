@@ -228,7 +228,7 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
 }
 
 /// One row of the popover: name, host and state, and the buttons that state allows.
-fn download_row(s: &Workspace, r: &Row<'_>) -> El {
+fn download_row(r: &Row<'_>) -> El {
     let t = r.transfer;
     let name = t.display_name();
     let id = t.id;
@@ -246,7 +246,7 @@ fn download_row(s: &Workspace, r: &Row<'_>) -> El {
         None => format!("{}: {}", r.label, t.requested),
     };
     // Keyed by state: when a transfer ends, its Cancel is gone, and focus must not slide onto
-    // the Show in folder or Open that takes its place.
+    // the Show in folder that takes its place.
     let mut actions = row()
         .key(format!(
             "download-actions:{id}:{}",
@@ -277,18 +277,6 @@ fn download_row(s: &Workspace, r: &Row<'_>) -> El {
             )
             .label(format!("Show {name} in its folder")),
         );
-        if s.downloadable(host, id) {
-            actions = actions.child(
-                pill(
-                    &format!("download-open:{id}"),
-                    "Open",
-                    Pill::Neutral,
-                    24.,
-                    move |s, _| s.open_download(host, id),
-                )
-                .label(format!("Open {name}")),
-            );
-        }
     }
     let mut details = col()
         .grow(1.)
@@ -374,7 +362,7 @@ pub fn popover(s: &Workspace, viewport: [f32; 2]) -> El {
         );
     }
     for r in &rows {
-        list = list.child(download_row(s, r));
+        list = list.child(download_row(r));
     }
     let surface = glass(
         col()

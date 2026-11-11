@@ -4,7 +4,6 @@
 use super::*;
 use crate::app::{
     actions::{self, Remote},
-    downloads::Opened,
     panel::PaneAction,
 };
 use rex_linux::{
@@ -882,33 +881,25 @@ fn cancel_on_a_row_sends_download_cancel_for_that_transfer() {
 }
 
 #[test]
-fn open_is_offered_only_for_files_that_may_be_opened_and_nothing_opens_without_a_click() {
+fn a_finished_row_offers_only_show_in_folder_and_nothing_is_shown_without_a_click() {
     let (ws, _rx, dir) = workspace_13();
     let mut rt = runtime(ws);
-    let files: [(&str, &[u8], bool); 12] = [
-        ("notes.txt", b"plain text", true),
-        ("run.sh", b"echo hi\n", false),
-        ("prog", b"\x7fELF\x02\x01\x01", false),
-        ("page", b"<!doctype html><script>alert(1)</script>", false),
-        ("script-no-ext", b"#!/bin/sh\nid\n", false),
-        // Allow list: a plain type with a name of its own, Show in folder only for the rest.
-        ("Report.PDF", b"%PDF-1.7\n", true),
-        ("plain", b"no extension, plain words", false),
-        ("invoice.eps", b"%!PS-Adobe-3.0 EPSF-3.0\n", false),
-        ("logo.svg", b"plain words under a svg name", false),
-        (
-            "fake.pdf",
-            b"<!doctype html><script>alert(1)</script>",
-            false,
-        ),
-        ("fake.png", b"\x7fELF\x02\x01\x01", false),
-        ("shell.txt", b"#!/bin/sh\nid\n", false),
+    // Whatever the file is, a finished row has the one action: no Open for any name or content.
+    let files: [(&str, &[u8]); 8] = [
+        ("notes.txt", b"plain text"),
+        ("Report.PDF", b"%PDF-1.7\n"),
+        ("run.sh", b"echo hi\n"),
+        ("prog", b"\x7fELF\x02\x01\x01"),
+        ("page", b"<!doctype html><script>alert(1)</script>"),
+        ("logo.svg", b"plain words under a svg name"),
+        ("backup.tar.gz", b"\x1f\x8b\x08\0"),
+        ("plain", b"no extension, plain words"),
     ];
-    for (name, bytes, _) in &files {
+    for (name, bytes) in &files {
         std::fs::write(dir.join(name), bytes).unwrap();
     }
     feed(&mut rt, |list| {
-        for (i, (name, bytes, _)) in files.iter().enumerate() {
+        for (i, (name, bytes)) in files.iter().enumerate() {
             list.push(transfer(
                 i as u64 + 1,
                 name,
@@ -921,69 +912,29 @@ fn open_is_offered_only_for_files_that_may_be_opened_and_nothing_opens_without_a
             ));
         }
     });
-    // Finishing opened and showed nothing, not even with the popover on screen.
+    // Finishing showed nothing, not even with the popover on screen.
     rt.update(|s, tx| s.perform(Intent::Downloads, tx));
     rt.frame(1. / 60.);
     assert!(
-        rt.state.downloads.opened.is_empty(),
+        rt.state.downloads.shown.is_empty(),
         "nothing without a click"
     );
-    for (i, (name, _, may)) in files.iter().enumerate() {
+    for (i, (name, _)) in files.iter().enumerate() {
         let id = i + 1;
-        assert!(
-            has(&rt, &format!("download-show:{id}")),
-            "{name} can be shown"
+        assert!(has(&rt, &format!("download-show:{id}")), "{name}");
+        assert!(!has(&rt, &format!("download-open:{id}")), "{name}");
+        assert_eq!(
+            label_of(&rt, &format!("download-show:{id}")),
+            Some(("button", format!("Show {name} in its folder")))
         );
-        assert_eq!(has(&rt, &format!("download-open:{id}")), *may, "{name}");
     }
     assert!(
-        rt.state.downloads.opened.is_empty(),
-        "nothing is opened by drawing"
+        rt.state.downloads.shown.is_empty(),
+        "nothing is shown by drawing"
     );
 
-    click(&mut rt, "download-show:2");
-    click(&mut rt, "download-open:1");
-    assert_eq!(
-        rt.state.downloads.opened,
-        [
-            Opened::Folder(dir.join("run.sh")),
-            Opened::File(dir.join("notes.txt"))
-        ]
-    );
-    // Even a forced Open of a file that may not be opened is refused when pressed.
-    let id = rt.state.hosts[0].id;
-    rt.update(|s, _| s.open_download(id, 3));
-    assert_eq!(rt.state.downloads.opened.len(), 2);
-    assert!(
-        rt.state
-            .notices
-            .iter()
-            .any(|n| n.text.contains("doesn't open"))
-    );
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn a_file_changed_after_it_was_saved_is_looked_at_again_before_it_opens() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    std::fs::write(dir.join("later.txt"), b"plain").unwrap();
-    feed(&mut rt, |list| {
-        list.push(transfer(
-            1,
-            "later.txt",
-            &dir,
-            State::Saved {
-                path: dir.join("later.txt"),
-                bytes: 5,
-                short_of: None,
-            },
-        ))
-    });
-    std::fs::write(dir.join("later.txt"), b"#!/bin/sh\nrm -rf x\n").unwrap();
-    let id = rt.state.hosts[0].id;
-    rt.update(|s, _| s.open_download(id, 1));
-    assert!(rt.state.downloads.opened.is_empty());
+    click(&mut rt, "download-show:3");
+    assert_eq!(rt.state.downloads.shown, [dir.join("run.sh")]);
     std::fs::remove_dir_all(dir).ok();
 }
 
@@ -1028,7 +979,7 @@ fn the_chip_opens_the_popover_and_a_finishing_transfer_never_moves_focus() {
         "opens on the list, not on a button: {before:?}"
     );
     // Tab to the row's Cancel; when its transfer ends, focus must not slide onto the Show in
-    // folder or Open that replace it, or an Enter meant for Cancel would press one.
+    // folder that replaces it, or an Enter meant for Cancel would press it.
     press(&mut rt, Key::Tab);
     assert!(focused(&rt).is_some_and(|p| p.ends_with("download-cancel:1")));
     feed(&mut rt, |list| {
@@ -1046,12 +997,11 @@ fn the_chip_opens_the_popover_and_a_finishing_transfer_never_moves_focus() {
     assert!(has(&rt, "download-show:1"));
     let now = focused(&rt);
     assert!(
-        now.as_deref()
-            .is_none_or(|p| !p.contains("download-show") && !p.contains("download-open")),
+        now.as_deref().is_none_or(|p| !p.contains("download-show")),
         "focus is on {now:?}"
     );
     press(&mut rt, Key::Enter);
-    assert!(rt.state.downloads.opened.is_empty(), "Enter opened nothing");
+    assert!(rt.state.downloads.shown.is_empty(), "Enter showed nothing");
 
     // The same with a dialog open: Rename keeps its field and its text.
     press(&mut rt, Key::Escape);
@@ -1409,7 +1359,7 @@ fn the_popover_opens_under_the_chip_and_from_commands_at_the_bars_right_end() {
 }
 
 #[test]
-fn a_long_name_in_a_row_with_both_buttons_is_cut_by_width_inside_the_row() {
+fn a_long_name_in_a_finished_row_is_cut_by_width_inside_the_row() {
     // What is drawn (the middle cut that keeps the extension) is Rune's `truncate_middle`, which
     // the headless element list reports whole; the render shows the extension. Here: the name's
     // box never pushes the buttons out of the popover.
@@ -1438,16 +1388,16 @@ fn a_long_name_in_a_row_with_both_buttons_is_cut_by_width_inside_the_row() {
         for _ in 0..40 {
             rt.frame(1. / 60.);
         }
-        let open = rect_of(&rt, "download-open:1").expect("Open");
+        let show = rect_of(&rt, "download-show:1").expect("Show in folder");
         let popover = rect_of(&rt, "downloads-popover").unwrap();
-        let shown = rect_of(&rt, "download-name:1").unwrap();
+        let name_box = rect_of(&rt, "download-name:1").unwrap();
         assert!(
-            open[0] + open[2] <= popover[0] + popover[2],
-            "{open:?} {popover:?}"
+            show[0] + show[2] <= popover[0] + popover[2],
+            "{show:?} {popover:?}"
         );
         assert!(
-            shown[0] + shown[2] <= open[0],
-            "{shown:?} ends before {open:?}"
+            name_box[0] + name_box[2] <= show[0],
+            "{name_box:?} ends before {show:?}"
         );
         press(&mut rt, Key::Escape);
     }
@@ -1925,7 +1875,7 @@ fn rows_from_two_hosts_each_name_their_host_and_cancel_goes_to_that_host() {
 }
 
 #[test]
-fn the_opener_gets_the_absolute_saved_path_whole_and_the_file_manager_uri_is_encoded() {
+fn show_in_folder_gets_the_absolute_saved_path_and_the_file_manager_uri_is_encoded() {
     let (ws, _rx, dir) = workspace_13();
     let mut rt = runtime(ws);
     let names = [
@@ -1949,26 +1899,13 @@ fn the_opener_gets_the_absolute_saved_path_whole_and_the_file_manager_uri_is_enc
     rt.update(|s, tx| s.perform(Intent::Downloads, tx));
     rt.frame(1. / 60.);
     for (i, name) in names.iter().enumerate() {
-        click(&mut rt, &format!("download-open:{}", i + 1));
         click(&mut rt, &format!("download-show:{}", i + 1));
         let want = dir.join(name);
-        let opened = std::mem::take(&mut rt.state.downloads.opened);
-        assert_eq!(
-            opened,
-            [Opened::File(want.clone()), Opened::Folder(want.clone())],
-            "{name}"
-        );
-        // One argument: the absolute path itself, never relative and never split or quoted. This
-        // is the call the app makes (`Opened` only records that the click got that far); its
-        // own arguments are pinned in `rex_linux::download::open`'s tests too.
+        let shown = std::mem::take(&mut rt.state.downloads.shown);
+        assert_eq!(shown, std::slice::from_ref(&want), "{name}");
+        // The fallback opens the folder with one argument, the absolute path itself, never
+        // relative and never split or quoted (`shown` only records that the click got that far).
         assert!(want.is_absolute());
-        let command = rex_linux::download::open::xdg_open_command(&want).unwrap();
-        assert_eq!(command.get_program(), "xdg-open");
-        assert_eq!(
-            command.get_args().collect::<Vec<_>>(),
-            [want.as_os_str()],
-            "{name}"
-        );
         assert_eq!(want.file_name().unwrap(), std::ffi::OsStr::new(name));
         // What the real ShowItems call sends: a file: URI that names this path alone.
         let uri = url::Url::from_file_path(&want).unwrap().to_string();
@@ -1992,256 +1929,30 @@ fn the_opener_gets_the_absolute_saved_path_whole_and_the_file_manager_uri_is_enc
     std::fs::remove_dir_all(dir).ok();
 }
 
-fn desktop_says_html(_: &Path) -> Option<String> {
-    Some("text/html".into())
-}
-
-fn desktop_says_java(_: &Path) -> Option<String> {
-    Some("application/java-archive".into())
-}
-
-fn desktop_says_nothing(_: &Path) -> Option<String> {
-    None
-}
-
-fn desktop_says_zip_for_all(_: &Path) -> Option<String> {
-    Some("application/zip".into())
-}
-
-/// Save `bytes` as `name` in `dir` and feed it as transfer `id`, finished.
-fn saved(rt: &mut Runtime<Workspace>, dir: &Path, id: u64, name: &str, bytes: &[u8]) {
-    std::fs::write(dir.join(name), bytes).unwrap();
-    feed(rt, |list| {
-        list.push(transfer(
-            id,
-            name,
-            dir,
-            State::Saved {
-                path: dir.join(name),
-                bytes: bytes.len() as u64,
-                short_of: None,
-            },
-        ))
-    });
-}
-
-/// A zip whose first entry is META-INF/ with the 0xCAFE extra field: `file` calls it a Java
-/// archive, which the default handler runs with `java -jar`.
-fn jar_zip() -> Vec<u8> {
-    let name = b"META-INF/";
-    let extra = b"\xfe\xca\0\0";
-    let mut zip = [b"PK\x03\x04\x0a\0".as_slice(), &[0u8; 24]].concat();
-    zip[26] = name.len() as u8;
-    zip[28] = extra.len() as u8;
-    zip.extend_from_slice(name);
-    zip.extend_from_slice(extra);
-    zip
-}
-
 #[test]
-fn open_waits_for_the_desktops_file_type_and_is_refused_when_it_disagrees_or_is_missing() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    let answers: [(&str, rex_linux::download::open::TypeQuery, bool); 5] = [
-        ("agrees", crate::app::downloads::stand_in_type, true),
-        ("html", desktop_says_html, false),
-        ("java", desktop_says_java, false),
-        ("silent", desktop_says_nothing, false),
-        // A type that is another allowed extension's is not this one's.
-        ("zip-for-txt", desktop_says_zip_for_all, false),
-    ];
-    for (i, (what, query, _)) in answers.iter().enumerate() {
-        rt.state.downloads.type_of = *query;
-        saved(
-            &mut rt,
-            &dir,
-            i as u64 + 1,
-            &format!("{what}.txt"),
-            b"plain words",
-        );
-    }
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    for (i, (what, _, offered)) in answers.iter().enumerate() {
-        let id = i + 1;
-        assert!(has(&rt, &format!("download-show:{id}")), "{what}");
-        assert_eq!(has(&rt, &format!("download-open:{id}")), *offered, "{what}");
-    }
-    // A forced press on a row that was never offered Open opens nothing and says so.
-    let host = rt.state.hosts[0].id;
-    rt.state.downloads.type_of = crate::app::downloads::stand_in_type;
-    rt.update(|s, _| s.open_download(host, 2));
-    assert!(rt.state.downloads.opened.is_empty());
-    assert!(
-        rt.state
-            .notices
-            .iter()
-            .any(|n| n.text.contains("doesn't open"))
-    );
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn the_desktops_type_is_asked_again_when_open_is_pressed() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    saved(&mut rt, &dir, 1, "notes.txt", b"plain words");
-    saved(&mut rt, &dir, 2, "more.txt", b"plain words");
-    saved(&mut rt, &dir, 3, "third.txt", b"plain words");
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    assert!((1..=3).all(|id| has(&rt, &format!("download-open:{id}"))));
-    // The desktop's answer changed since the row was drawn (a different default, or the file
-    // typed as something else): the click is refused, nothing reaches xdg-open.
-    rt.state.downloads.type_of = desktop_says_html;
-    click(&mut rt, "download-open:1");
-    assert!(rt.state.downloads.opened.is_empty());
-    assert!(
-        rt.state
-            .notices
-            .iter()
-            .any(|n| n.text.contains("doesn't open"))
-    );
-    // The refusal also takes the button away.
-    rt.frame(1. / 60.);
-    assert!(!has(&rt, "download-open:1"));
-    // With no answer at all the same.
-    rt.state.downloads.type_of = desktop_says_nothing;
-    click(&mut rt, "download-open:2");
-    assert!(rt.state.downloads.opened.is_empty());
-    // And when it agrees, the click goes through, once.
-    rt.state.downloads.type_of = crate::app::downloads::stand_in_type;
-    click(&mut rt, "download-open:3");
-    assert_eq!(
-        rt.state.downloads.opened,
-        [Opened::File(dir.join("third.txt"))]
-    );
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn a_file_swapped_after_the_button_appeared_is_refused_by_the_same_checks() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    saved(&mut rt, &dir, 2, "notes.txt", b"plain words");
-    saved(&mut rt, &dir, 3, "page.md", b"plain words");
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    assert!(
-        !has(&rt, "download-open:1"),
-        "a truncated zip header is not trusted"
-    );
-    assert!(has(&rt, "download-open:2") && has(&rt, "download-open:3"));
-    // Swapped for a jar, and for a page that hides a script after the first bytes.
-    std::fs::write(dir.join("notes.txt"), jar_zip()).unwrap();
-    std::fs::write(
-        dir.join("page.md"),
-        [b"x".repeat(3000).as_slice(), b"<script>alert(1)</script>"].concat(),
-    )
-    .unwrap();
-    // Even if the desktop is satisfied, the first bytes are looked at again.
-    rt.state.downloads.type_of = desktop_says_zip_for_all;
-    click(&mut rt, "download-open:2");
-    click(&mut rt, "download-open:3");
-    assert!(rt.state.downloads.opened.is_empty());
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn a_jar_signature_zip_gets_no_open_under_any_name_the_list_allows() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    // The desktop is made to be satisfied (a name-based answer, as on GNOME or KDE): only the
-    // first bytes can stop these.
-    rt.state.downloads.type_of = desktop_says_zip_for_all;
-    let names = [
-        "report.zip",
-        "notes.txt",
-        "x.tar",
-        "x.tgz",
-        "x.ZIP",
-        "x.log",
-        "x.md",
-        "x.gz",
-    ];
-    for (i, name) in names.iter().enumerate() {
-        saved(&mut rt, &dir, i as u64 + 1, name, &jar_zip());
-    }
-    // A plain zip as a control.
-    saved(
-        &mut rt,
-        &dir,
-        100,
-        "plain.zip",
-        b"PK\x05\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-    );
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    for (i, name) in names.iter().enumerate() {
-        assert!(has(&rt, &format!("download-show:{}", i + 1)), "{name}");
-        assert!(!has(&rt, &format!("download-open:{}", i + 1)), "{name}");
-    }
-    assert!(has(&rt, "download-open:100"), "an ordinary zip still opens");
-    let host = rt.state.hosts[0].id;
-    for i in 0..names.len() as u64 {
-        rt.update(|s, _| s.open_download(host, i + 1));
-    }
-    assert!(rt.state.downloads.opened.is_empty());
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn names_the_desktop_would_type_differently_get_no_open_and_a_plain_text_one_does() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    let files: [(&str, &[u8], bool); 10] = [
-        ("x.ps.gz", b"\x1f\x8b\x08\0", false),
-        ("x.svg.gz", b"\x1f\x8b\x08\0", false),
-        ("x.img.xz", b"\xfd7zXZ\0\0\x04", false),
-        ("deb.text", b"!<arch>\ndebian-binary   ", false),
-        ("x.mar\u{212a}down", b"# Title\n", false),
-        ("page.md", b"<p>words</p>\n<script>x()</script>", false),
-        ("bin.txt", b"hello\0world", false),
-        ("latin.txt", b"caf\xe9", false),
-        ("backup.tar.gz", b"\x1f\x8b\x08\0", true),
-        ("notes.txt", b"plain words", true),
-    ];
-    for (i, (name, bytes, _)) in files.iter().enumerate() {
-        saved(&mut rt, &dir, i as u64 + 1, name, bytes);
-    }
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    for (i, (name, _, offered)) in files.iter().enumerate() {
+fn xdg_open_gets_one_argument_the_absolute_path() {
+    for target in [
+        "/home/u/Downloads",
+        "/home/u/Downloads/-rf %41 #x?",
+        "/home/u/Downloads/two  spaces & 100%",
+        "/home/u/Downloads/\u{fc}n\u{ef} \u{30d5}",
+        "/",
+    ] {
+        let command = crate::app::downloads::xdg_open_command(Path::new(target)).unwrap();
+        assert_eq!(command.get_program(), "xdg-open");
+        let args: Vec<_> = command.get_args().collect();
+        assert_eq!(args, [std::ffi::OsStr::new(target)], "{target}");
         assert_eq!(
-            has(&rt, &format!("download-open:{}", i + 1)),
-            *offered,
-            "{name}"
+            command.get_envs().count(),
+            0,
+            "the environment is inherited as is"
         );
     }
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn the_open_button_appears_only_after_the_desktops_answer_arrives() {
-    let (ws, _rx, dir) = workspace_13();
-    let mut rt = runtime(ws);
-    rt.state.downloads.defer = true;
-    saved(&mut rt, &dir, 1, "notes.txt", b"plain words");
-    saved(&mut rt, &dir, 2, "run.sh", b"echo hi\n");
-    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
-    rt.frame(1. / 60.);
-    // The worker has not answered: Show in folder, no Open, and a press on it opens nothing.
-    assert!(has(&rt, "download-show:1"));
-    assert!(!has(&rt, "download-open:1"));
-    let host = rt.state.hosts[0].id;
-    rt.update(|s, _| s.open_download(host, 1));
-    rt.update(|s, _| s.finish_pending());
-    assert!(rt.state.downloads.opened.is_empty());
-    rt.frame(1. / 60.);
-    assert!(has(&rt, "download-open:1"), "the answer arrived and agreed");
-    assert!(
-        !has(&rt, "download-open:2"),
-        "an unlisted name is never asked about"
-    );
-    std::fs::remove_dir_all(dir).ok();
+    // A relative path could be read as an option or an URL.
+    for target in ["notes", "-n", "--help", "./a", "file:///etc/passwd", ""] {
+        assert!(
+            crate::app::downloads::xdg_open_command(Path::new(target)).is_none(),
+            "{target}"
+        );
+    }
 }
