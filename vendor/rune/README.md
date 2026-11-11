@@ -1,15 +1,17 @@
 # Vendored Rune: window-chrome additions
 
-`crates/rune`, `crates/rune-motion`, `crates/rune-staging` and `crates/procwatch` are
-[anomalyco/rune](https://github.com/anomalyco/rune) at
-`100b7d93a442b7758f426dd0f63e2dd9cd72aff4` (MIT, see `LICENSE`), with the changes below.
-The only manifest change is replacing `edition.workspace`/`license.workspace` with their
-values, since these crates sit outside Rune's workspace. `procwatch` is an optional
-dependency of `rune` (the `frame-profile` feature).
+`crates/rune`, `crates/rune-motion`, `crates/rune-staging`, `crates/rune-taffy` and
+`crates/procwatch` are [anomalyco/rune](https://github.com/anomalyco/rune) at
+`d70929a4dae263d16d2e8088e7bfe53f58f619ad` (MIT, see `LICENSE`), with the changes below.
+The only manifest changes are replacing `edition.workspace`/`license.workspace` with their
+values and dropping `[lints] workspace = true`, since these crates sit outside Rune's
+workspace. `rune-taffy` (the layout store `rune` depends on) is an unpatched snapshot.
+`procwatch` is an optional dependency of `rune` (the `frame-profile` feature).
 
-`rune-kit` and `rune-theme-opencode` still come from the same git revision. The root
-`Cargo.toml` patches `rune`, `rune-motion` and `rune-staging` to these paths so the whole
-dependency graph sees a single `rune`.
+`rune-kit`, `rune-highlights` and `rune-theme-opencode` still come from the same git
+revision. The root `Cargo.toml` patches `rune`, `rune-motion` and `rune-staging` to these
+paths so the whole dependency graph sees a single `rune`. Nothing outside the vendored
+`rune` depends on `rune-taffy` or `procwatch`, so they need no `[patch]` entry.
 
 ## Changes
 
@@ -18,25 +20,28 @@ dependency graph sees a single `rune`.
   runtime access. No dispatch behavior changes. `src/app/physical_input_tests.rs` checks
   base/code/modifier delivery, repeat reporting and release routing through this API.
 
-Rex draws its own window controls in a borderless window. At this revision a borderless
-Linux window cannot minimize, maximize from a button, edge-resize or open the window
-manager's menu. The patch adds the following without changing existing behavior on macOS:
+Rex draws its own window controls in a borderless window. A borderless Linux window cannot
+minimize from a button, edge-resize or open the window manager's menu, and its view cannot
+tell whether it is maximized. The patch adds the following without changing existing
+behavior on macOS (maximizing from a button is `Tx::toggle_maximized`, which Rune has):
 
-- `Tx::toggle_maximize()` and `Cx::window_maximized()` (refreshed on every `Resized`).
-- `Tx::minimize()` on borderless windows off macOS.
+- `Cx::window_maximized()`, refreshed on every `Resized`; the view re-runs when it changes.
+- `Tx::minimize()` works on borderless windows off macOS.
 - `El::window_resize(WindowEdge)` (winit `drag_resize_window`, started inside the press, like
-  `window_drag`) and `Cursor::ResizeEdge(WindowEdge)`.
+  `window_drag`), `WindowEdge`, `TitlebarAction::Resize` and `Cursor::ResizeEdge(WindowEdge)`.
 - `Tx::show_window_menu(x, y)` (winit `show_window_menu`; Wayland and Windows only in winit).
 - Off macOS, a `window_drag` press waits for 3pt of travel before `drag_window`, so the
   region's double-click (maximize) still reaches Rune: an X11 move grab otherwise takes the
   second press.
-- `set_app_icon_png()` registers a native window icon before startup, using the existing
-  image dependency and unmodified RGBA. All top-level windows receive it through
-  `WindowOptions`. This supplies X11's `_NET_WM_ICON` for task lists that do not resolve
-  desktop-file icons; Wayland still uses the app ID and the installed desktop entry. Invalid
-  PNGs return `ImageError`.
+- `set_app_icon()` registers a native window icon on Linux, decoding any image the `image`
+  dependency reads into unmodified RGBA before startup. All top-level windows opened after
+  the call receive it through `WindowOptions`. This supplies X11's `_NET_WM_ICON` for task
+  lists that do not resolve desktop-file icons; Wayland still uses the app ID and the
+  installed desktop entry. Invalid images return `Err`. macOS and Windows keep Rune's own
+  `set_app_icon`.
 - `El::no_wrap()` for styled display text without ellipsis or fade. Rex owns terminal line
-  breaks, so fractional-DPI width rounding must not wrap a text run onto another row.
+  breaks, so fractional-DPI width rounding must not wrap a text run onto another row
+  (`rich()` turns wrapping on).
 - Native dead keys are retained as `Key::Dead` events instead of being dropped, so terminal
   clients can send their physical press and `composing` state before the completed text.
   A completed key carries winit's composed text, so a dead key followed by Space types its
@@ -44,12 +49,9 @@ manager's menu. The patch adds the following without changing existing behavior 
   `{"type":"key","dead":"~","code":"backquote"}` for this path.
 - `text::set_app_font_paths()` and `TextSystem::new_with_paths()` register native font files by
   path, so large system fonts stay memory-mapped instead of being copied into process-lifetime
-  byte buffers. Symbol and math fallbacks go through the same per-file cache, so a file the app
-  registered is not loaded twice. The embedded-font API is unchanged.
-- Linux system-font discovery includes `fc-list` results and deduplicates them with the
-  conventional directory scan. This lets Rune's existing CJK, symbol and script fallbacks
-  find fontconfig-managed files outside `/usr/share/fonts`, including Nix store fonts.
-  It does not change the configured primary family or the font-selection machinery.
+  byte buffers. Symbol and math fallbacks go through the same per-file cache as CJK and script
+  fallbacks, so a file the app registered is not loaded twice. The embedded-font API is
+  unchanged.
 
 Spike: `examples/chrome_spike.rs` and `scripts/chrome-spike-x11.py`.
 

@@ -21,9 +21,9 @@ gethostname = "1"
 log = "0.4"
 rexrs = { git = "https://github.com/a10y/rexrs", rev = "780be3f9f0455c758273e57199af30bdaa145cf1", default-features = false, features = ["tokio"] }
 # Rune is pre-1.0 and pinned to a `dev` revision.
-rune = { git = "https://github.com/anomalyco/rune.git", rev = "100b7d93a442b7758f426dd0f63e2dd9cd72aff4", optional = true }
-rune-kit = { git = "https://github.com/anomalyco/rune.git", rev = "100b7d93a442b7758f426dd0f63e2dd9cd72aff4", optional = true }
-rune-theme-opencode = { git = "https://github.com/anomalyco/rune.git", rev = "100b7d93a442b7758f426dd0f63e2dd9cd72aff4", optional = true }
+rune = { git = "https://github.com/anomalyco/rune.git", rev = "d70929a4dae263d16d2e8088e7bfe53f58f619ad", optional = true }
+rune-kit = { git = "https://github.com/anomalyco/rune.git", rev = "d70929a4dae263d16d2e8088e7bfe53f58f619ad", optional = true }
+rune-theme-opencode = { git = "https://github.com/anomalyco/rune.git", rev = "d70929a4dae263d16d2e8088e7bfe53f58f619ad", optional = true }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

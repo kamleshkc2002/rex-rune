@@ -23,7 +23,10 @@ pub(crate) struct Mip {
     pub pixels: Vec<u8>,
 }
 pub(crate) struct Decoded {
+    /// The image, or an animation's first frame.
     pub mips: Vec<Mip>,
+    /// An animation's other frames and timing.
+    pub motion: Option<Box<animated::Motion>>,
 }
 struct State {
     id: ImageId,
@@ -33,15 +36,22 @@ struct State {
 
 /// A cheap shared handle. Pending images paint nothing until their worker wakes the app.
 #[derive(Clone)]
-pub struct Image(Arc<State>);
+pub struct Image(Arc<State>, crate::Pixels);
 impl std::fmt::Debug for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Image").field("id", &self.id()).field("size", &self.size()).finish()
     }
 }
 impl Image {
-    /// The shared static pixel handle, ready to pass to `El::pixels` after decoding.
-    pub fn pixels(&self) -> &crate::Pixels { &self.0.pixels }
+    /// A handle on `state`, whose pixels keep it in the cache while drawn.
+    fn new(state: Arc<State>) -> Image {
+        let pixels = state.pixels.clone().keeping(state.clone());
+        Image(state, pixels)
+    }
+
+    /// The shared static pixel handle, ready to pass to `El::pixels` after decoding. While
+    /// any clone of it lives (an element drawing it), the cache hands back this image.
+    pub fn pixels(&self) -> &crate::Pixels { &self.1 }
     pub fn id(&self) -> ImageId { self.0.id }
     pub fn size(&self) -> Option<[u32; 2]> {
         let mip = self.decoded()?.ok()?.mips.first()?;
@@ -76,7 +86,10 @@ enum Input {
     Rgba(u32, u32, Arc<[u8]>),
     Icon(std::path::PathBuf, u32),
     Svg(Arc<[u8]>, u32),
+    #[cfg(not(target_arch = "wasm32"))]
     File(std::path::PathBuf, u32),
+    /// `ImageCache::url`, and `ImageCache::file` on web.
+    Url(String, u32),
     /// A decoder that panics, standing in for a codec bug.
     #[cfg(test)]
     Panic,
@@ -99,8 +112,13 @@ impl Input {
                     decode(&bytes)
                 }
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            Input::Url(url, px) => Input::File(from_url::file_path(&url)?, px).decode(),
             #[cfg(target_arch = "wasm32")]
-            Input::Icon(..) | Input::File(..) => Err(ImageError("filesystem images are unsupported on web".into())),
+            Input::Icon(..) => Err(ImageError("filesystem images are unsupported on web".into())),
+            // Fetched asynchronously by `ImageCache::request`.
+            #[cfg(target_arch = "wasm32")]
+            Input::Url(url, _) => Err(ImageError(format!("{url}: fetched, not decoded"))),
             #[cfg(test)]
             Input::Panic => panic!("decoder bug"),
         }
@@ -117,6 +135,9 @@ impl Input {
     }
 }
 struct Job { image: Image, input: Input }
+/// Decoder threads per cache, at most one per core.
+#[cfg(not(target_arch = "wasm32"))]
+const DECODERS: usize = 4;
 
 /// Construct once during app setup. The cache deduplicates by content, not a path or pointer;
 /// dropping all handles releases decoded pixels. Dropping the cache stops its worker after
@@ -136,19 +157,29 @@ impl ImageCache {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(waker: crate::Waker) -> Self {
         let (jobs, receive) = mpsc::channel::<Job>();
-        std::thread::Builder::new().name("rune-images".into()).spawn(move || {
-            for job in receive {
-                job.image.finish(job.input.decode_caught());
-                waker();
-            }
-        }).expect("image worker");
+        // A session opening on several screenshots decodes them side by side, not one by one.
+        let receive = Arc::new(Mutex::new(receive));
+        for _ in 0..DECODERS.min(std::thread::available_parallelism().map_or(1, |n| n.get())) {
+            let (receive, waker) = (receive.clone(), waker.clone());
+            std::thread::Builder::new().name("rune-images".into()).spawn(move || {
+                loop {
+                    let Ok(job) = receive.lock().unwrap_or_else(|e| e.into_inner()).recv() else { return };
+                    job.image.finish(job.input.decode_caught());
+                    waker();
+                }
+            }).expect("image worker");
+        }
         Self { entries: Mutex::new(HashMap::new()), jobs }
     }
 
-    /// PNG, JPEG, modern ICNS containing a PNG representation, or SVG (plain or gzipped SVGZ,
-    /// recognised by its content). An SVG rasterizes at twice its own size; use
+    /// PNG (APNG animates), JPEG, GIF and WebP (both animate), BMP, ICO, AVIF (with the `avif`
+    /// feature; its first frame), modern ICNS containing a PNG representation, or SVG (plain or
+    /// gzipped SVGZ, recognised by its content). An SVG rasterizes at twice its own size; use
     /// [`ImageCache::svg`] to rasterize it at the size it draws at. Legacy ICNS codecs return an
-    /// explicit error; callers can provide platform-decoded RGBA instead.
+    /// explicit error; callers can provide platform-decoded RGBA instead. An animation decodes
+    /// every frame on the worker, and plays only while an element draws it in a shown window.
+    /// On web the browser decodes everything but PNG, SVG and ICNS, so GIF and WebP show their
+    /// first frame there.
     pub fn load(&self, bytes: impl Into<Arc<[u8]>>) -> Image {
         let bytes = bytes.into();
         let mut hash = blake3::Hasher::new();
@@ -182,7 +213,8 @@ impl ImageCache {
     /// An image file, read and decoded on the worker. `.svg` and `.svgz` files (or SVG content)
     /// rasterize like [`ImageCache::svg`]; other formats decode like [`ImageCache::load`], ignoring
     /// the size. Handles are shared by path, size and scale, so an edited file needs a new handle
-    /// once the old ones drop. Unsupported on web, where the image resolves to an error.
+    /// once the old ones drop. On web the path is a URL relative to the page, fetched as
+    /// [`ImageCache::url`] does, so `cache.file("assets/logo.webp", ..)` works in both builds.
     pub fn file(&self, path: impl AsRef<std::path::Path>, size_pt: f32, scale: f32) -> Image {
         let path = path.as_ref().to_path_buf();
         let px = icon_pixels(size_pt, scale);
@@ -191,7 +223,11 @@ impl ImageCache {
         hash.update(path.as_os_str().as_encoded_bytes());
         hash.update(&[0]);
         hash.update(&px.to_le_bytes());
-        self.request(*hash.finalize().as_bytes(), Input::File(path, px))
+        #[cfg(target_arch = "wasm32")]
+        let input = Input::Url(path.to_string_lossy().into_owned(), px);
+        #[cfg(not(target_arch = "wasm32"))]
+        let input = Input::File(path, px);
+        self.request(*hash.finalize().as_bytes(), input)
     }
 
     /// Straight-alpha sRGB RGBA8. Validation, premultiplication and mips happen off-thread.
@@ -232,10 +268,20 @@ impl ImageCache {
     }
 
     fn request(&self, id: ImageId, input: Input) -> Image {
+        self.request_set(id, input, None)
+    }
+
+    fn request_set(&self, id: ImageId, input: Input, srcset: Option<Arc<str>>) -> Image {
         let mut entries = self.entries.lock().unwrap();
-        if let Some(state) = entries.get(&id).and_then(Weak::upgrade) { return Image(state); }
+        if let Some(state) = entries.get(&id).and_then(Weak::upgrade) { return Image::new(state); }
         entries.retain(|_, value| value.strong_count() > 0);
-        let image = Image(Arc::new(State { id, pixels: crate::Pixels::new(), decoded: OnceLock::new() }));
+        let url: Option<Arc<str>> = match &input {
+            Input::Url(url, _) => Some(url.as_str().into()),
+            #[cfg(not(target_arch = "wasm32"))]
+            Input::File(path, _) => Some(path.to_string_lossy().into()),
+            _ => None,
+        };
+        let image = Image::new(Arc::new(State { id, pixels: crate::Pixels::from_url(url, srcset), decoded: OnceLock::new() }));
         entries.insert(id, Arc::downgrade(&image.0));
         #[cfg(not(target_arch = "wasm32"))]
         if self.jobs.send(Job { image: image.clone(), input }).is_err() {
@@ -243,16 +289,45 @@ impl ImageCache {
         }
         #[cfg(target_arch = "wasm32")]
         {
-            let image = image.clone();
+            // The task holds the image weakly, so a request dropped before it runs (a view's
+            // guess, replaced in the same frame once layout knows the size) fetches nothing,
+            // and one dropped while its bytes download is never decoded.
+            let weak = Arc::downgrade(&image.0);
             let wake = self.wake.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                image.finish(input.decode());
+                let decoded = match input {
+                    Input::Url(url, px) => {
+                        if !wanted(&weak) { return; }
+                        let fetched = from_url::fetch(&url).await;
+                        if !wanted(&weak) { return; }
+                        match fetched { Ok(fetched) => from_url::land_in_slices(&url, fetched, px).await, Err(e) => Err(e) }
+                    }
+                    Input::Encoded(bytes) if browser_decodes(&bytes) => {
+                        let decoded = from_url::decode_in_browser(&bytes).await;
+                        if !wanted(&weak) { return; }
+                        match decoded { Ok(fetched) => from_url::land_in_slices("image", fetched, 0).await, Err(e) => Err(e) }
+                    }
+                    input => input.decode(),
+                };
+                let Some(state) = weak.upgrade() else { return };
+                Image::new(state).finish(decoded);
                 wake();
             });
         }
         image
     }
 }
+
+/// Encoded bytes a web build hands to the browser's codecs: everything but PNG (decoded exactly,
+/// alpha and all, by Rune), SVG and ICNS.
+#[cfg_attr(not(any(test, target_arch = "wasm32")), allow(dead_code))]
+fn browser_decodes(bytes: &[u8]) -> bool {
+    !bytes.starts_with(b"\x89PNG\r\n\x1a\n") && !bytes.starts_with(b"icns") && !is_svg(bytes)
+}
+
+/// Whether anything still holds the image a fetch is for.
+#[cfg_attr(not(any(test, target_arch = "wasm32")), allow(dead_code))]
+fn wanted(state: &std::sync::Weak<State>) -> bool { state.strong_count() > 0 }
 
 fn icon_pixels(size_pt: f32, scale: f32) -> u32 {
     let px = (size_pt * scale).ceil();
@@ -373,7 +448,7 @@ fn linux_icon(path: &std::path::Path, px: u32) -> Result<(u32, u32, Vec<u8>), Im
 /// An SVG scaled to fit `px` square, keeping its aspect ratio, as straight-alpha sRGB RGBA8.
 /// `px == 0` rasterizes at twice the drawing's own size, at most 4096 pixels per side.
 #[cfg(feature = "svg")]
-fn svg_rgba(bytes: &[u8], px: u32) -> Result<(u32, u32, Vec<u8>), ImageError> {
+pub(crate) fn svg_rgba(bytes: &[u8], px: u32) -> Result<(u32, u32, Vec<u8>), ImageError> {
     use resvg::{tiny_skia, usvg};
     if bytes.len() > 32 << 20 { return Err(ImageError("SVG is too large".into())); }
     let tree = usvg::Tree::from_data(bytes, &usvg::Options::default()).map_err(|e| ImageError(format!("SVG: {e}")))?;
@@ -390,7 +465,7 @@ fn svg_rgba(bytes: &[u8], px: u32) -> Result<(u32, u32, Vec<u8>), ImageError> {
 }
 
 #[cfg(not(feature = "svg"))]
-fn svg_rgba(_: &[u8], _: u32) -> Result<(u32, u32, Vec<u8>), ImageError> {
+pub(crate) fn svg_rgba(_: &[u8], _: u32) -> Result<(u32, u32, Vec<u8>), ImageError> {
     Err(ImageError("SVG images need rune's `svg` feature".into()))
 }
 
@@ -546,7 +621,12 @@ fn decode(bytes: &[u8]) -> Result<Decoded, ImageError> {
         let (w, h, rgba) = svg_rgba(bytes, 0)?;
         return mip_chain(w, h, &rgba);
     }
+    if avif::is_avif(bytes) {
+        let (w, h, rgba) = avif::rgba(bytes)?;
+        return mip_chain(w, h, &rgba);
+    }
     let bytes = if bytes.starts_with(b"icns") { icns_png(bytes)? } else { bytes };
+    if let Some(animation) = animated::decode(bytes) { return animation; }
     use image::ImageDecoder;
     let error = |e: image::ImageError| ImageError(e.to_string());
     let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
@@ -592,110 +672,18 @@ fn icns_png(bytes: &[u8]) -> Result<&[u8], ImageError> {
     best.ok_or_else(invalid)
 }
 
-fn mip_chain(width: u32, height: u32, bytes: &[u8]) -> Result<Decoded, ImageError> {
-    if width == 0 || height == 0 || width > 8192 || height > 8192
-        || bytes.len() != width as usize * height as usize * 4
-    { return Err(ImageError("RGBA image dimensions or byte length are invalid".into())); }
-    let srgb = &*SRGB;
-    // Mip 0 is the source with RGB premultiplied in linear light; an opaque pixel is unchanged.
-    let mut top = bytes.to_vec();
-    for p in top.as_chunks_mut::<4>().0 {
-        if p[3] == 255 { continue; }
-        let a = p[3] as f32 / 255.0;
-        for c in 0..3 { p[c] = srgb.encode(srgb.decode[p[c] as usize] * a, p[3]); }
-    }
-    let mut mips = vec![Mip { width, height, pixels: top }];
-    // Mip 1 filters the straight source, so a translucent edge is premultiplied once, not
-    // quantized first. Each later mip filters the bytes of the one above it.
-    if width > 1 || height > 1 {
-        mips.push(downsample(width, height, bytes, |p| {
-            let a = p[3] as f32 / 255.0;
-            [srgb.decode[p[0] as usize] * a, srgb.decode[p[1] as usize] * a, srgb.decode[p[2] as usize] * a, a]
-        }));
-    }
-    while let Some(last) = mips.last().filter(|m| m.width > 1 || m.height > 1) {
-        let next = downsample(last.width, last.height, &last.pixels, |p| {
-            [srgb.decode[p[0] as usize], srgb.decode[p[1] as usize], srgb.decode[p[2] as usize], p[3] as f32 / 255.0]
-        });
-        mips.push(next);
-    }
-    Ok(Decoded { mips })
-}
-
-/// Halves `w`×`h` RGBA8 `src` by area, summing `linear` (premultiplied linear RGBA) of each
-/// source pixel. Area resampling includes the last row/column of odd-sized sources.
-fn downsample(w: u32, h: u32, src: &[u8], linear: impl Fn(&[u8; 4]) -> [f32; 4]) -> Mip {
-    let src = src.as_chunks::<4>().0;
-    let (nw, nh) = ((w / 2).max(1), (h / 2).max(1));
-    let mut pixels = Vec::with_capacity(nw as usize * nh as usize * 4);
-    let mut emit = |sum: [f32; 4], area: f32| {
-        let [r, g, b, a] = sum.map(|v| v / area);
-        let a = byte(a);
-        pixels.extend_from_slice(&[SRGB.encode(r, a), SRGB.encode(g, a), SRGB.encode(b, a), a]);
-    };
-    if w % 2 == 0 && h % 2 == 0 {
-        // Each target pixel is exactly a 2×2 block.
-        let w = w as usize;
-        for y in 0..nh as usize { for x in 0..nw as usize {
-            let i = 2 * y * w + 2 * x;
-            let mut sum = [0.0; 4];
-            for p in [i, i + 1, i + w, i + w + 1].map(|i| linear(&src[i])) {
-                for c in 0..4 { sum[c] += p[c]; }
-            }
-            emit(sum, 4.0);
-        }}
-        return Mip { width: nw, height: nh, pixels };
-    }
-    for y in 0..nh { for x in 0..nw {
-        let (x0, x1) = (x as f32 * w as f32 / nw as f32, (x + 1) as f32 * w as f32 / nw as f32);
-        let (y0, y1) = (y as f32 * h as f32 / nh as f32, (y + 1) as f32 * h as f32 / nh as f32);
-        let mut sum = [0.0; 4];
-        for sy in y0.floor() as u32..(y1.ceil() as u32).min(h) {
-            for sx in x0.floor() as u32..(x1.ceil() as u32).min(w) {
-                let weight = ((sx + 1) as f32).min(x1) - (sx as f32).max(x0);
-                let weight = weight * (((sy + 1) as f32).min(y1) - (sy as f32).max(y0));
-                let p = linear(&src[(sy * w + sx) as usize]);
-                for c in 0..4 { sum[c] += p[c] * weight; }
-            }
-        }
-        emit(sum, (x1 - x0) * (y1 - y0));
-    }}
-    Mip { width: nw, height: nh, pixels }
-}
-fn byte(v: f32) -> u8 { (v.clamp(0.0, 1.0) * 255.0).round() as u8 }
-
-/// sRGB transfer tables, so mip generation runs no `powf` per pixel.
-struct Srgb {
-    /// Linear light of each sRGB byte.
-    decode: [f32; 256],
-    /// `up[k]`: the linear value at and above which the sRGB encoding rounds past byte `k`.
-    up: [f32; 256],
-    /// The byte at the low edge of each 1/`STEPS` of linear light. The curve's steepest
-    /// slope (12.92) crosses under one byte per step, so one `up` comparison finishes it.
-    coarse: [u8; STEPS + 1],
-}
-const STEPS: usize = 4096;
-static SRGB: std::sync::LazyLock<Srgb> = std::sync::LazyLock::new(|| {
-    let mut up: [f32; 256] = std::array::from_fn(|k| crate::color::srgb_decode((k as f32 + 0.5) / 255.0));
-    up[255] = f32::INFINITY;
-    Srgb {
-        decode: std::array::from_fn(|i| crate::color::srgb_decode(i as f32 / 255.0)),
-        coarse: std::array::from_fn(|i| up.partition_point(|&t| t <= i as f32 / STEPS as f32) as u8),
-        up,
-    }
-});
-impl Srgb {
-    /// The sRGB byte of premultiplied linear `v`, capped by its quantized alpha `a` so a pixel
-    /// whose alpha rounded to zero emits no light.
-    fn encode(&self, v: f32, a: u8) -> u8 {
-        let v = v.clamp(0.0, a as f32 / 255.0);
-        let b = self.coarse[(v * STEPS as f32) as usize];
-        b + u8::from(v >= self.up[b as usize])
-    }
-}
+pub(crate) mod animated;
+mod avif;
+mod from_url;
+mod mips;
+pub(crate) mod pixels;
+use mips::mip_chain;
+#[cfg(test)]
+use mips::byte;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use from_url::font_file;
 
 #[cfg(test)]
-#[path = "image_mip_tests.rs"]
 mod mip_tests;
 
 #[cfg(test)]
@@ -718,7 +706,7 @@ mod tests {
 
     #[test]
     fn decoded_pixels_wake_windows_only_once_the_image_reports_ready() {
-        let image = Image(Arc::new(State { id: [0; 32], pixels: crate::Pixels::new(), decoded: OnceLock::new() }));
+        let image = Image::new(Arc::new(State { id: [0; 32], pixels: crate::Pixels::new(), decoded: OnceLock::new() }));
         let seen = Arc::new(Mutex::new(Vec::new()));
         let (probe, record) = (image.clone(), seen.clone());
         let wake = crate::live::Wake::new(Arc::new(move || {
@@ -727,6 +715,19 @@ mod tests {
         let _subscription = image.pixels().source.subscribe(&wake);
         image.finish(mip_chain(2, 1, &[0, 0, 0, 255, 255, 255, 255, 255]));
         assert_eq!(*seen.lock().unwrap(), [(true, Some([2, 1]))]);
+    }
+
+    #[test]
+    fn a_small_image_queued_behind_a_large_one_decodes_without_waiting_for_it() {
+        if std::thread::available_parallelism().map_or(1, |n| n.get()) < 2 { return; }
+        let (tx, rx) = mpsc::channel();
+        let cache = ImageCache::new(Arc::new(move || { let _ = tx.send(()); }));
+        let large = cache.rgba(3000, 3000, vec![128; 3000 * 3000 * 4]);
+        let small = cache.rgba(1, 1, vec![20, 40, 60, 255]);
+        rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap();
+        assert!(small.is_ready() && !large.is_ready());
+        rx.recv_timeout(std::time::Duration::from_secs(20)).unwrap();
+        assert!(large.is_ready());
     }
 
     #[test]
@@ -745,12 +746,46 @@ mod tests {
     }
 
     #[test]
+    fn a_fetch_is_wanted_while_a_handle_or_its_drawn_pixels_live() {
+        let image = Image::new(Arc::new(State { id: [0; 32], pixels: crate::Pixels::new(), decoded: OnceLock::new() }));
+        let weak = Arc::downgrade(&image.0);
+        let drawn = image.pixels().clone();
+        drop(image);
+        assert!(wanted(&weak), "an element still draws it");
+        drop(drawn);
+        assert!(!wanted(&weak), "a guess replaced before its fetch runs fetches nothing");
+    }
+
+    #[test]
+    fn drawn_pixels_keep_their_image_cached_after_the_handle_drops() {
+        let (tx, rx) = mpsc::channel();
+        let cache = ImageCache::new(Arc::new(move || { tx.send(()).unwrap(); }));
+        let image = cache.rgba(1, 1, vec![20, 40, 60, 255]);
+        rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap();
+        // A view keeps only the pixels in its element, then asks again on the next build.
+        let drawn = image.pixels().clone();
+        let first = Arc::downgrade(&image.0);
+        drop(image);
+        let again = cache.rgba(1, 1, vec![20, 40, 60, 255]);
+        assert!(std::ptr::eq(first.as_ptr(), Arc::as_ptr(&again.0)), "the same entry, not a new request");
+        assert!(again.is_ready());
+        drop((again, drawn));
+        // The worker drops its own handle just after it wakes us.
+        for _ in 0..200 {
+            if first.upgrade().is_none() { break }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert!(first.upgrade().is_none(), "nothing left draws it, so it's released");
+    }
+
+    #[test]
     fn png_jpeg_and_icns_decode_and_malformed_containers_fail() {
         let source = image::RgbImage::from_pixel(8, 4, image::Rgb([20, 40, 60]));
         for format in [image::ImageFormat::Png, image::ImageFormat::Jpeg] {
             let mut encoded = std::io::Cursor::new(Vec::new());
             source.write_to(&mut encoded, format).unwrap();
             let bytes = encoded.into_inner();
+            assert_eq!(browser_decodes(&bytes), format == image::ImageFormat::Jpeg, "web decodes JPEG in the browser, PNG itself");
             let d = decode(&bytes).unwrap();
             assert_eq!((d.mips[0].width, d.mips[0].height), (8, 4));
             assert_eq!((d.mips.last().unwrap().width, d.mips.last().unwrap().height), (1, 1));
@@ -760,6 +795,7 @@ mod tests {
                 icns.extend_from_slice(b"icp4");
                 icns.extend_from_slice(&((bytes.len() + 8) as u32).to_be_bytes());
                 icns.extend_from_slice(&bytes);
+                assert!(!browser_decodes(&icns));
                 assert_eq!(decode(&icns).unwrap().mips[0].pixels, d.mips[0].pixels);
                 icns[12..16].copy_from_slice(&0u32.to_be_bytes());
                 assert!(decode(&icns).is_err());

@@ -69,6 +69,16 @@ pub struct Effect {
     /// ([`Transition::allow_small_scale`]).
     #[cfg_attr(feature = "serde", serde(default))]
     pub small_scale: bool,
+    /// How much of the node's own shape is drawn when absent (identity 1): its strokes trace on
+    /// along their length in order, and each fill fades in as the drawing reaches it
+    /// ([`Transition::draw`]). Under Reduce Motion it is drawn whole.
+    #[cfg_attr(feature = "serde", serde(default = "drawn_whole"))]
+    pub draw: f32,
+}
+
+#[cfg(feature = "serde")]
+fn drawn_whole() -> f32 {
+    1.0
 }
 
 /// The smallest scale a transition with [`Transition::allow_small_scale`] starts or ends at.
@@ -91,6 +101,7 @@ impl Effect {
         blur: 0.0,
         reveal: None,
         small_scale: false,
+        draw: 1.0,
     };
 
     pub fn opacity(opacity: f32) -> Effect {
@@ -117,6 +128,7 @@ impl Effect {
             blur: self.blur.max(o.blur),
             reveal: self.reveal.or(o.reveal),
             small_scale: self.small_scale || o.small_scale,
+            draw: self.draw * o.draw,
         }
     }
 
@@ -127,11 +139,18 @@ impl Effect {
     /// Kit's rules, enforced: scale in [0.9, 1.1] (never to or from 0; down to
     /// [`SMALL_SCALE_FLOOR`] with `small_scale`), blur sigma ≤ 4 pt, no blur on anything that
     /// travels (sliding content stays sharp), and nothing leaves at full opacity.
+    /// Whether the node looks the same absent as present: no fade, scale, offset, blur, reveal
+    /// or drawing (the anchor alone moves nothing).
+    pub fn shows_nothing(&self) -> bool {
+        Effect { anchor: Effect::IDENTITY.anchor, small_scale: false, ..*self } == Effect::IDENTITY
+    }
+
     pub fn kit_rules(mut self, removal: bool) -> Effect {
         let floor = if self.small_scale { SMALL_SCALE_FLOOR } else { 0.9 };
         self.scale = self.scale.clamp(floor, 1.1);
         self.blur = if self.travels() { 0.0 } else { self.blur.clamp(0.0, 4.0) };
         self.opacity = self.opacity.clamp(0.0, 1.0);
+        self.draw = self.draw.clamp(0.0, 1.0);
         if removal {
             self.opacity = 0.0;
         }
@@ -166,6 +185,14 @@ impl Transition {
     /// No visual change (presence still holds removal until its fade settles).
     pub fn identity() -> Transition {
         Transition::symmetric(Effect::IDENTITY)
+    }
+    /// No motion at all: a node shows whole the frame it mounts and is gone the frame it's
+    /// removed, through the usual presence lifecycle (it exits invisible and inert, then
+    /// unmounts, and focus returns as for any transition). Unlike `Tx::instant`, the rest of
+    /// the change still animates; unlike a very short spring, Reduce Motion doesn't stretch it
+    /// into a fade that keeps the node on screen.
+    pub fn none() -> Transition {
+        Transition::identity().springs(SpringPair::NONE)
     }
     /// `.opacity`.
     pub fn opacity() -> Transition {
@@ -207,6 +234,13 @@ impl Transition {
     /// Gaussian blur (sigma in points) and fade only.
     pub fn blur(sigma: f32) -> Transition {
         Transition::symmetric(Effect { opacity: 0.0, blur: sigma, ..Effect::IDENTITY })
+    }
+    /// A shape that draws itself on, as a connector draws from its source to its target: its
+    /// strokes trace from their first point to their last, one after another, and each fill (an
+    /// arrowhead) fades in as the line reaches it. Applies to the node's own shape (`canvas`)
+    /// only; children enter by their own transitions.
+    pub fn draw() -> Transition {
+        Transition::symmetric(Effect { draw: 0.0, ..Effect::IDENTITY })
     }
     /// A soft-edged wipe from `edge` (mask reveal), 24 pt feather.
     pub fn reveal(edge: Edge) -> Transition {

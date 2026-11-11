@@ -7,13 +7,17 @@
 //! the new rect something other than it gave the old one, so a size read doesn't re-run when
 //! the element only moves, and a "scrolled past the top" flag only when it flips.
 //!
-//! All of them see where layout puts an element (window points, after scrolling), never a frame of
-//! its spring, so they don't re-run through animations. A view reading something its own
+//! All of them see where layout puts an element, never a frame of its spring, so they don't
+//! re-run through animations. View reads see it unscrolled (window points with every viewport
+//! at its origin), so scrolling re-runs no view. None of them apply an ancestor's visual
+//! transform (`El::scale`): they're layout points. `Cx::window_layout` and
+//! `Cx::window_layout_with` read it after scrolling, under a key no element can have
+//! ([`window_key`]), and handlers hear it after scrolling. A view reading something its own
 //! output resizes (its own size, say) can feed back into itself; that settles instead of
 //! looping:
 //! - Inside a commit, the view re-runs while what it read moved, at most [`PASSES`] more times.
 //!   The values it is given next are then the final layout's, so nothing re-runs by itself.
-//! - Between commits, only scrolling moves a laid-out rect, which re-runs readers next frame.
+//! - Between commits, only scrolling moves a window read, which re-runs readers next frame.
 //! - Commits caused only by layout reads or `on_layout`, with no scroll moving, count up; past
 //!   [`ECHOES`] in a row, reads and `on_layout` stop causing commits until anything else
 //!   commits or a scroll moves. Reads get the current rects at the next commit.
@@ -25,15 +29,61 @@ use std::any::TypeId;
 use std::rc::Rc;
 
 use super::*;
+use super::key_index::{self, KeyIndex};
 
-#[path = "selection_rects.rs"]
+#[path = "selection/rects.rs"]
 mod selection_rects;
-pub(crate) use selection_rects::{SELECTION, boxes_moved};
+pub(crate) use selection_rects::{SELECTION, SelectedRange, boxes_moved};
 
 /// Extra measurements one commit may take while a read moves.
 const PASSES: usize = 2;
 /// Commits in a row that layout feedback alone may cause.
 const ECHOES: u32 = 4;
+
+/// Whether layout feedback may still cause a commit (see the module docs). Commits that only
+/// layout reads or `on_layout` caused count up; past [`ECHOES`] in a row they stop causing
+/// commits until anything else commits or a scroll moves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Feedback {
+    /// Feedback may still cause a commit; `run` commits in a row were its alone.
+    Open { run: u32 },
+    /// Too many in a row: reads and `on_layout` cause none until another cause reopens them.
+    Quiet,
+}
+
+impl Default for Feedback {
+    fn default() -> Self { Feedback::Open { run: 0 } }
+}
+
+/// What a frame's commits say about layout feedback.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum FeedbackEvent {
+    /// A commit: layout reads or `on_layout` caused it (`feedback`), and whether something else
+    /// did too.
+    Commit { feedback: bool, other: bool },
+    /// A scroll, or the window moving, reopened feedback.
+    Reopened,
+}
+
+impl Feedback {
+    /// The state after `event`.
+    fn step(self, event: FeedbackEvent) -> Feedback {
+        match (self, event) {
+            (_, FeedbackEvent::Reopened) => Feedback::Open { run: 0 },
+            (_, FeedbackEvent::Commit { other: true, .. }) => Feedback::Open { run: 0 },
+            (Feedback::Open { run }, FeedbackEvent::Commit { feedback: true, .. }) => {
+                match run + 1 {
+                    run if run < ECHOES => Feedback::Open { run },
+                    _ => Feedback::Quiet,
+                }
+            }
+            (state, FeedbackEvent::Commit { .. }) => state,
+        }
+    }
+
+    /// Whether feedback may still cause a commit.
+    fn open(self) -> bool { matches!(self, Feedback::Open { .. }) }
+}
 /// A rect counts as moved when an edge moves more than this (points).
 const MOVED: f32 = 0.5;
 
@@ -93,6 +143,8 @@ pub(crate) struct LayoutRead {
     pub(crate) key: String,
     /// The `layout_with` function's check, or `None` for the whole rect (`Cx::layout`).
     pub(crate) same: Option<Same>,
+    /// Where the view called the `Cx` read, for the debug scroll-commit warning.
+    pub(crate) at: Option<&'static std::panic::Location<'static>>,
 }
 
 impl LayoutRead {
@@ -111,12 +163,17 @@ pub(crate) type LayoutReads = Vec<LayoutRead>;
 /// `layout_with` function once. A whole-rect read doesn't cover a function's read, since it
 /// ignores changes a function may see (a 0.4 pt resize, say).
 pub(crate) fn note_read(reads: &mut LayoutReads, key: &str, same: Option<Same>) {
+    note_read_at(reads, key, same, None);
+}
+
+/// [`note_read`] of a read made at `at`.
+pub(crate) fn note_read_at(reads: &mut LayoutReads, key: &str, same: Option<Same>, at: Option<&'static std::panic::Location<'static>>) {
     let counted = reads.iter().any(|r| r.key == key && match (&r.same, &same) {
         (None, None) => true,
         (Some(a), Some(b)) => a.is(b),
         _ => false,
     });
-    if !counted { reads.push(LayoutRead { key: key.to_owned(), same }); }
+    if !counted { reads.push(LayoutRead { key: key.to_owned(), same, at }); }
 }
 
 /// What each key a view read resolved to, as last given to the view, and the selection's line
@@ -140,7 +197,7 @@ impl std::ops::DerefMut for LayoutRects {
 #[derive(Default)]
 pub(crate) struct LayoutSeen {
     pub(crate) rects: LayoutRects,
-    reads: LayoutReads,
+    pub(super) reads: LayoutReads,
 }
 
 impl LayoutSeen {
@@ -155,21 +212,32 @@ pub(crate) fn seen_rect(rects: &LayoutRects, key: &str) -> Option<[f32; 4]> {
 }
 
 impl<S> Cx<S> {
-    /// The laid-out rect `[x, y, w, h]` in window points, after scrolling, of the element keyed
-    /// `key` (or named by a key path such as `"msg-42/body"`, as `Tx::fly_text` takes), or
-    /// `None` when there is none. It is where layout puts the element, not a frame of its spring.
+    /// The laid-out rect `[x, y, w, h]` of the element keyed `key` (or named by a key path such
+    /// as `"msg-42/body"`, as `Tx::fly_text` takes), or `None` when there is none. It is where
+    /// layout puts the element, not a frame of its spring, in window points as if every scroll
+    /// viewport it sits in were scrolled to the top-left: scrolling doesn't move it, so a read
+    /// inside a scrolling list costs no view run per frame. Outside any scroll viewport that's
+    /// where the window shows it. A view that needs where the element is in the window now,
+    /// after scrolling (to float something outside the list over a row, say), reads
+    /// [`Self::window_layout`] instead.
     ///
-    /// A view that reads it re-runs when that rect moves or resizes past half a point: in the
-    /// same commit when the change comes from layout, the next frame when scrolling moved it.
-    /// Reading an element the view itself resizes (its own size, say) settles: the commit
-    /// re-runs the view at most twice more while the value moves, then keeps the last layout,
-    /// and layout reads alone can't keep causing commits. A view whose output never reaches a
-    /// fixed point gets a stale value rather than oscillating.
+    /// Window points here are layout points: a visual transform on an ancestor, such as
+    /// [`El::scale`](crate::El::scale), isn't applied, because layout keeps the unscaled size.
+    /// Under a scaled ancestor, map a rect through that ancestor's scale and origin yourself.
+    /// The same holds for every layout read, [`Self::selection_rects`], [`Self::caret`] and
+    /// [`El::on_layout`](crate::El::on_layout).
+    ///
+    /// A view that reads it re-runs when that rect moves or resizes past half a point, in the
+    /// commit that moved it. Reading an element the view itself resizes (its own size, say)
+    /// settles: the commit re-runs the view at most twice more while the value moves, then
+    /// keeps the last layout, and layout reads alone can't keep causing commits. A view whose
+    /// output never reaches a fixed point gets a stale value rather than oscillating.
     ///
     /// A view that uses only part of the rect should read that part with [`Self::layout_size`]
     /// or [`Self::layout_with`], which don't re-run it while the part it uses holds.
+    #[track_caller]
     pub fn layout(&self, key: &str) -> Option<[f32; 4]> {
-        note_read(&mut self.layout_reads.borrow_mut(), key, None);
+        note_read_at(&mut self.layout_reads.borrow_mut(), key, None, Some(std::panic::Location::caller()));
         let rect = seen_rect(&self.layout, key);
         crate::memo::read_layout(key, rect);
         rect
@@ -178,31 +246,64 @@ impl<S> Cx<S> {
     /// `f` of the rect [`Self::layout`] returns, re-running the view only when `f` of the new
     /// rect differs from `f` of the old one (or the element appears or goes). Prefer it to
     /// `layout` whenever the view needs something that changes less often than the rect:
-    /// `layout_with("feed", |r| r[1] < 0.0)` re-runs a header on the frames the feed scrolls
-    /// past the top, not on every frame of the scroll. It settles on the first layout like
-    /// `layout`, so the first frame already has the right value.
+    /// `layout_with("card", |r| r[2] >= 400.0)` re-runs on the resizes that cross the
+    /// breakpoint, not on every resize. It settles on the first layout like `layout`, so the
+    /// first frame already has the right value.
     ///
     /// `f` runs again on each later layout until the view re-runs, so keep it cheap and pure.
     /// A function item or a closure that captures nothing costs no more than `layout`, and
     /// reading it again in the same view counts once. A closure that captures something, or a
     /// `fn` pointer, isn't zero-sized: it costs an allocation per read, and each read counts
     /// (and is checked) separately, so keep those out of loops.
+    #[track_caller]
     pub fn layout_with<T: PartialEq + 'static>(&self, key: &str, f: impl Fn([f32; 4]) -> T + 'static) -> Option<T> {
         let rect = seen_rect(&self.layout, key);
         let value = rect.map(&f);
         let same = Same::new(f);
         crate::memo::read_layout_with(key, &same, rect);
-        note_read(&mut self.layout_reads.borrow_mut(), key, Some(same));
+        note_read_at(&mut self.layout_reads.borrow_mut(), key, Some(same), Some(std::panic::Location::caller()));
         value
     }
 
     /// `[w, h]` of the rect [`Self::layout`] returns: [`Self::layout_with`] the size. Prefer it
-    /// whenever the view uses only the size, so an element inside a scrolling viewport doesn't
-    /// re-run the view every frame of the scroll; it re-runs when the width or height changes.
+    /// whenever the view uses only the size: it re-runs when the width or height changes, not
+    /// when the element only moves.
+    #[track_caller]
     pub fn layout_size(&self, key: &str) -> Option<[f32; 2]> {
         self.layout_with(key, size)
     }
+
+    /// [`Self::layout`] where the window shows the element now, after its viewports' scrolling.
+    /// A view that reads it re-runs the next frame a scroll moves the element past half a
+    /// point, so every frame of a scroll: read it only for what has to follow the scroll, and
+    /// prefer [`Self::window_layout_with`] for a value that changes less often.
+    #[track_caller]
+    pub fn window_layout(&self, key: &str) -> Option<[f32; 4]> {
+        self.layout(&window_key(key))
+    }
+
+    /// [`Self::layout_with`] of the rect [`Self::window_layout`] returns:
+    /// `window_layout_with("r1", |r| r[1] < 0.0)` re-runs a header on the frames row 1 scrolls
+    /// past the top of the window, not on every frame of the scroll.
+    #[track_caller]
+    pub fn window_layout_with<T: PartialEq + 'static>(&self, key: &str, f: impl Fn([f32; 4]) -> T + 'static) -> Option<T> {
+        self.layout_with(&window_key(key), f)
+    }
 }
+
+/// The layout-read key a window-position read of `key` is noted under.
+pub(crate) fn window_key(key: &str) -> String {
+    format!("{WINDOW}{key}")
+}
+
+/// The element key a window-position read's key stands for, or `None` for an unscrolled read.
+#[cfg(debug_assertions)]
+pub(crate) fn window_read_key(key: &str) -> Option<&str> {
+    key.strip_prefix(WINDOW)
+}
+
+/// The prefix of a window-position read's key, which no element key starts with.
+const WINDOW: &str = "\u{1}window:";
 
 /// `[w, h]` of `rect`.
 pub(crate) fn size(rect: [f32; 4]) -> [f32; 2] {
@@ -222,24 +323,29 @@ pub(crate) fn moved(a: Option<[f32; 4]>, b: Option<[f32; 4]>) -> bool {
 impl<S: 'static> Runtime<S> {
     /// Node `i`'s laid-out rect `[x, y, w, h]` in window points, after its viewports' scrolling.
     fn laid_out(&self, nodes: &[Node], i: usize) -> [f32; 4] {
+        self.placed(nodes, i, true)
+    }
+
+    /// [`Self::laid_out`], or when not `scrolled`, where it would be with every viewport
+    /// scrolled to its origin, which only a commit moves.
+    fn placed(&self, nodes: &[Node], i: usize, scrolled: bool) -> [f32; 4] {
+        let unscrolled;
+        let scrolls = if scrolled { &self.scrolls } else { unscrolled = HashMap::default(); &unscrolled };
         let t = nodes[i].target;
         let (mut dx, mut dy) = (0.0, 0.0);
-        let mut up = nodes[i].parent.filter(|_| nodes[i].above.is_none());
+        let mut up = nodes[i].parent.filter(|_| nodes[i].above.is_none() && scrolled);
         while let Some(p) = up {
-            if let Some(st) = self.scrolls.get(&nodes[p].id) {
+            if let Some(st) = scrolls.get(&nodes[p].id) {
                 dy += st.offset as f32;
-                dx += st.x.offset as f32;
-            }
-            if let Some(v) = self.virtuals.get(&nodes[p].path) {
-                dy -= v.before;
+                dx += st.x.shift() as f32;
             }
             up = nodes[p].parent.filter(|_| nodes[p].above.is_none());
         }
         if let Some(anc) = std::iter::successors(Some(i), |&p| nodes[p].parent).find(|&p| nodes[p].above.is_some())
             && let Some(a) = &nodes[anc].above
-            && let Some(k) = nodes[..anc].iter().position(|n| n.key.as_ref() == Some(&a.key))
+            && let Some(k) = anchor_index(&nodes, anc, a)
         {
-            let at = sticky::anchored_target(nodes, &self.scrolls, k, self.viewport);
+            let at = sticky::anchored_target(nodes, scrolls, k, self.viewport);
             let (w, h) = (nodes[anc].target[2] - nodes[anc].target[0], nodes[anc].target[3] - nodes[anc].target[1]);
             let (ax, ay) = anchor_position(a, at, (w, h), self.viewport);
             dx -= ax - nodes[anc].target[0];
@@ -261,13 +367,18 @@ impl<S: 'static> Runtime<S> {
         [t[0] * k + turn, t[1] * k + turn, (t[2] - t[0]) * k, (t[3] - t[1]) * k]
     }
 
-    fn layout_of(&self, nodes: &[Node], keyed: &Keyed, key: &str) -> Option<[f32; 4]> {
+    fn layout_of(&self, nodes: &[Node], index: Option<&KeyIndex>, key: &str) -> Option<[f32; 4]> {
         if key == SELECTION { return None; }
-        if let Some(i) = keyed.first(nodes, key) {
-            return Some(self.laid_out(nodes, i));
+        let (key, scrolled) = key.strip_prefix(WINDOW).map_or((key, false), |key| (key, true));
+        let first = match index {
+            Some(index) => index.first(nodes, key),
+            None => key_index::scan_first(nodes, key),
+        };
+        if let Some(i) = first {
+            return Some(self.placed(nodes, i, scrolled));
         }
-        let (i, [x0, y0, x1, y1]) = self.highlight_target_in(nodes, None, key)?;
-        let node_rect = self.laid_out(nodes, i);
+        let (i, [x0, y0, x1, y1]) = self.highlight_target_with(nodes, index, None, key)?;
+        let node_rect = self.placed(nodes, i, scrolled);
         let t = nodes[i].target;
         Some([node_rect[0] + (x0 - t[0]), node_rect[1] + (y0 - t[1]), x1 - x0, y1 - y0])
     }
@@ -276,15 +387,33 @@ impl<S: 'static> Runtime<S> {
     /// `None`), by what each read depends on. When one moved, or when `force`, the next view
     /// gets the current rects; otherwise it keeps what the reads last saw, so drift below a
     /// read's threshold adds up. Returns whether one moved.
-    pub(super) fn layout_moved(&mut self, reads: Option<LayoutReads>, nodes: Option<&[Node]>, force: bool) -> bool {
+    pub(super) fn layout_moved(&mut self, reads: Option<LayoutReads>, pass: Option<(&[Node], &[SelectedRange])>, force: bool) -> bool {
         let reads = reads.unwrap_or_else(|| std::mem::take(&mut self.layout_seen.reads));
-        let nodes = nodes.unwrap_or(&self.nodes);
-        let keyed = Keyed::new(nodes);
-        let now: Vec<Option<[f32; 4]>> = reads.iter().map(|r| self.layout_of(nodes, &keyed, &r.key)).collect();
-        let boxes = reads.iter().any(|r| r.key == SELECTION).then(|| self.selection_boxes(nodes));
+        #[cfg(debug_assertions)]
+        let nodes_given = pass.is_some();
+        // A pass's own nodes are seen once; the current nodes are seen again every frame.
+        let own;
+        let (nodes, index) = match pass {
+            Some((nodes, _)) => {
+                own = (reads.len() > key_index::SCAN_READS).then(|| KeyIndex::of(nodes));
+                (nodes, own.as_ref())
+            }
+            None => {
+                self.key_index.prepare(&self.nodes, self.commit_gen, reads.len());
+                (&self.nodes[..], self.key_index.get(&self.nodes, self.commit_gen))
+            }
+        };
+        let now: Vec<Option<[f32; 4]>> = reads.iter().map(|r| self.layout_of(nodes, index, &r.key)).collect();
+        let boxes = reads.iter().any(|r| r.key == SELECTION).then(|| match pass {
+            Some((nodes, ranges)) => self.selection_boxes_in(nodes, ranges),
+            None => self.selection_boxes(),
+        });
         let rects = &mut self.layout_seen.rects;
-        let changed = reads.iter().zip(&now).any(|(r, rect)| rects.get(&r.key).is_none_or(|old| r.moved(*old, *rect)))
-            || boxes.as_ref().is_some_and(|b| boxes_moved(&rects.selection, b));
+        let moved = reads.iter().zip(&now).position(|(r, rect)| rects.get(&r.key).is_none_or(|old| r.moved(*old, *rect)));
+        let changed = moved.is_some() || boxes.as_ref().is_some_and(|b| boxes_moved(&rects.selection, b));
+        // The once-a-frame check names the read for the scroll warning.
+        #[cfg(debug_assertions)]
+        if !nodes_given && let Some(k) = moved { self.watch.meter.read(&reads[k].key, reads[k].at); }
         if changed || force {
             if let Some(b) = boxes { rects.selection = b.into(); }
             for (r, rect) in reads.iter().zip(now) {
@@ -302,17 +431,18 @@ impl<S: 'static> Runtime<S> {
     /// current rect, since it re-runs anyway.
     pub(super) fn refresh_layout_seen(&mut self) {
         if self.layout_seen.rects.is_empty() { return; }
-        let keyed = Keyed::new(&self.nodes);
-        let now: Vec<_> = self.layout_seen.rects.keys().map(|k| self.layout_of(&self.nodes, &keyed, k)).collect();
+        self.key_index.prepare(&self.nodes, self.commit_gen, self.layout_seen.rects.len());
+        let index = self.key_index.get(&self.nodes, self.commit_gen);
+        let now: Vec<_> = self.layout_seen.rects.keys().map(|k| self.layout_of(&self.nodes, index, k)).collect();
         for (seen, rect) in self.layout_seen.rects.values_mut().zip(now) { *seen = rect; }
-        if self.layout_seen.rects.contains_key(SELECTION) { self.layout_seen.rects.selection = self.selection_boxes(&self.nodes).into(); }
+        if self.layout_seen.rects.contains_key(SELECTION) { self.layout_seen.rects.selection = self.selection_boxes().into(); }
     }
 
     /// Once a frame: whether a layout read moved, so the view re-runs. Scrolling reopens
     /// feedback first, so the first scroll frame after feedback stopped still checks.
     pub(super) fn layout_reads_moved(&mut self) -> bool {
         if self.layout_seen.is_empty() { return false; }
-        if self.scrolling() { self.layout_echoes = 0; }
+        if self.scrolling() { self.feedback = self.feedback.step(FeedbackEvent::Reopened); }
         if self.selection_read_moved() { self.dirty = true; }
         self.layout_feedback_open() && self.layout_moved(None, None, false)
     }
@@ -328,14 +458,14 @@ impl<S: 'static> Runtime<S> {
         }
         let mut settled = false;
         for _ in 0..PASSES {
-            if !self.layout_moved(Some(std::mem::take(&mut measured.layout_reads)), Some(&measured.nodes), false) {
+            if !self.layout_moved(Some(std::mem::take(&mut measured.layout_reads)), Some((&measured.nodes, &measured.selection)), false) {
                 settled = true;
                 break;
             }
-            self.layout = measured.layout;
+            self.discard_measured(measured);
             measured = self.measure(tx);
         }
-        if !settled { self.layout_moved(Some(std::mem::take(&mut measured.layout_reads)), Some(&measured.nodes), true); }
+        if !settled { self.layout_moved(Some(std::mem::take(&mut measured.layout_reads)), Some((&measured.nodes, &measured.selection)), true); }
         let LayoutSeen { rects, reads } = &mut self.layout_seen;
         rects.retain(|k, _| reads.iter().any(|r| r.key == *k));
         if !rects.contains_key(SELECTION) { rects.selection = Rc::default(); }
@@ -344,21 +474,19 @@ impl<S: 'static> Runtime<S> {
 
     /// Whether layout feedback may still cause a commit (see the module docs).
     pub(super) fn layout_feedback_open(&self) -> bool {
-        self.layout_echoes < ECHOES
+        self.feedback.open()
     }
 
     /// Counts a frame's commit toward [`ECHOES`]: `feedback` when layout reads or `on_layout`
     /// caused it, `other` when anything else did.
     pub(super) fn count_layout_echo(&mut self, feedback: bool, other: bool) {
-        if other || self.scrolling() {
-            self.layout_echoes = 0;
-        } else if feedback {
-            self.layout_echoes += 1;
-        }
+        let event = if other || self.scrolling() { FeedbackEvent::Reopened } else { FeedbackEvent::Commit { feedback, other } };
+        self.feedback = self.feedback.step(event);
     }
 
-    fn scrolling(&self) -> bool {
-        self.scrolls.values().any(|st| st.scrolling || st.direct || st.glide.is_some() || st.x.glide.is_some())
+    /// A hand, momentum, an instant scroll or a glide moves a viewport.
+    pub(crate) fn scrolling(&self) -> bool {
+        self.scrolls.values().any(|st| st.direct || st.moving())
     }
 
     /// Queues `on_layout` and `on_screen_layout` for elements whose laid-out rect changed (or
@@ -376,7 +504,7 @@ impl<S: 'static> Runtime<S> {
     pub(crate) fn set_window_origin(&mut self, origin: (f32, f32)) -> bool {
         if self.window_origin == origin { return false; }
         self.window_origin = origin;
-        self.layout_echoes = 0;
+        self.feedback = self.feedback.step(FeedbackEvent::Reopened);
         self.report_rects(false, true)
     }
 
@@ -392,7 +520,7 @@ impl<S: 'static> Runtime<S> {
         let mut fired = HashMap::with_capacity_and_hasher(last.len(), Default::default());
         for i in 0..self.nodes.len() {
             let n = &self.nodes[i];
-            if n.on_drawn_layout.is_none() || self.subtree_exiting(i) { continue; }
+            if n.handlers.get().is_none_or(|h| h.on_drawn_layout.is_none()) || self.subtree_exiting(i) { continue; }
             let Some(&drawn) = self.drawn.get(i) else { continue };
             let id = n.id;
             if self.rect_springing(i) {
@@ -420,28 +548,32 @@ impl<S: 'static> Runtime<S> {
         queued
     }
 
+    /// Writes each element's drawn rect to its `El::drawn_rect_into` value, on every frame it
+    /// moves (scrolls, glides and springs included), with no handler and no commit. True when
+    /// one this window binds changed, so the next frame shows what follows it.
+    pub(super) fn write_drawn_rects(&mut self) -> bool {
+        if !self.has_drawn_layout { return false; }
+        let mut wrote = false;
+        for (i, n) in self.nodes.iter().enumerate() {
+            let Some(live) = n.handlers.get().and_then(|h| h.drawn_rect.as_ref()) else { continue };
+            if let Some(&drawn) = self.drawn.get(i) && !self.subtree_exiting(i) { wrote |= live.set(drawn); }
+        }
+        wrote && self.live_pending()
+    }
+
     /// Whether a spring is moving node `i`'s drawn rect: its own, its anchor's, or an ancestor's.
     pub(super) fn rect_springing(&self, i: usize) -> bool {
         let store = self.scene.store();
         let n = &self.nodes[i];
-        let step = |p: usize| {
-            if let Some(a) = &self.nodes[p].above
-                && let Some(j) = self.nodes[..p].iter().position(|n| n.key.as_ref() == Some(&a.key))
-            {
-                Some(j)
-            } else {
-                self.nodes[p].parent
-            }
-        };
         self.flights.iter().any(|f| f.lands(&n.path, n.key.as_deref()))
-            || std::iter::successors(Some(i), |&p| step(p)).any(|p| {
+            || std::iter::successors(Some(i), |&p| step_up(&self.nodes, p)).any(|p| {
                 let id = self.nodes[p].id;
                 store.is_animating(id, prop::FRAME) || store.is_animating(id, prop::TRAVEL) || store.is_animating(id, prop::PRESENCE)
                     || store.is_animating(id, prop::OFFSET) || store.is_animating(id, prop::SCALE) || store.is_animating(id, P_PRESS_SCALE)
                     || store.is_animating(id, P_SCALE) || store.is_animating(id, prop::ROTATION)
                     || self.grows.get(&id).is_some_and(|g| g.moving())
                     || self.stacks.get(&id).is_some_and(|s| s.moving)
-                    || self.scrolls.get(&id).is_some_and(|s| s.slack.height() > 0.0 || s.glide.is_some())
+                    || self.scrolls.get(&id).is_some_and(|s| s.slack.height() > 0.0 || s.glide().is_some())
             })
     }
 
@@ -449,15 +581,16 @@ impl<S: 'static> Runtime<S> {
     /// it queued any.
     fn report_rects(&mut self, quiet: bool, screen: bool) -> bool {
         let last = std::mem::take(if screen { &mut self.screen_fired } else { &mut self.layout_fired });
-        let (ox, oy) = if screen { self.window_origin } else { (0.0, 0.0) };
+        // On screen, the view's points are the window's over its zoom.
+        let ((ox, oy), k) = if screen { (self.window_origin, self.zoom()) } else { ((0.0, 0.0), 1.0) };
         let mut fired = HashMap::with_capacity_and_hasher(last.len(), Default::default());
         let mut queued = false;
         for i in 0..self.nodes.len() {
             let n = &self.nodes[i];
-            if (if screen { n.on_screen_layout.is_none() } else { n.on_layout.is_none() }) || self.subtree_exiting(i) { continue; }
+            if n.handlers.get().is_none_or(|h| if screen { h.on_screen_layout.is_none() } else { h.on_layout.is_none() }) || self.subtree_exiting(i) { continue; }
             let id = n.id;
             let [x, y, w, h] = self.laid_out(&self.nodes, i);
-            let r = [x + ox, y + oy, w, h];
+            let r = [x * k + ox, y * k + oy, w * k, h * k];
             if !quiet && moved(last.get(&id).copied(), Some(r)) {
                 let path = self.nodes[i].path.clone();
                 queued = true;
@@ -566,39 +699,5 @@ mod tests {
         frames(&mut rt, 2);
         assert!(!rt.set_window_origin((50.0, 50.0)));
         assert_eq!(rt.state.local.len(), 1);
-    }
-}
-
-/// Keyed nodes by key, so each read finds its node without scanning the whole tree.
-struct Keyed<'a> {
-    /// Each key's first node.
-    first: HashMap<&'a str, u32>,
-    /// The next node with the same key, or `u32::MAX`.
-    next: Vec<u32>,
-}
-
-impl<'a> Keyed<'a> {
-    fn new(nodes: &'a [Node]) -> Self {
-        let mut first = HashMap::default();
-        let mut next = vec![u32::MAX; nodes.len()];
-        for (i, n) in nodes.iter().enumerate().rev() {
-            if let Some(key) = &n.key { next[i] = first.insert(key.as_str(), i as u32).unwrap_or(u32::MAX); }
-        }
-        Keyed { first, next }
-    }
-
-    /// The first node `selector` picks (see [`crate::flight::selects`]): its key is the
-    /// selector or a tail of it after a `/`.
-    fn first(&self, nodes: &[Node], selector: &str) -> Option<usize> {
-        let tails = std::iter::once(selector).chain(selector.match_indices('/').map(|(at, _)| &selector[at + 1..]));
-        tails.filter_map(|key| {
-            let mut i = *self.first.get(key)?;
-            while i != u32::MAX {
-                let n = &nodes[i as usize];
-                if crate::flight::selects(selector, &n.path, n.key.as_deref()) { return Some(i as usize); }
-                i = self.next[i as usize];
-            }
-            None
-        }).min()
     }
 }

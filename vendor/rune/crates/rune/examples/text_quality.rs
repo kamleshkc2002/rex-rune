@@ -1,6 +1,6 @@
 //! Headless S5 raster oracle. Export the exact shaped glyph IDs/positions for CoreText.
 use parley::PositionedLayoutItem;
-use rune::color::{hex, srgb_encode};
+use rune::color::hex;
 use rune::render::{Gpu, Instance, NO_CLIP, OFFSCREEN_FORMAT, Offscreen, Renderer, write_png};
 use rune::text::{ATLAS_SIZE, TextSystem};
 use rune::{Family, TextStyle};
@@ -82,6 +82,8 @@ fn experimental(
                     ink: 0,
                     byte: 0,
                     color: 0,
+                    outline: None,
+                    lcd: false,
                 });
                 cursor[0] += p.width + 1;
                 cursor[2] = cursor[2].max(p.height);
@@ -176,11 +178,7 @@ fn main() {
             } else {
                 (hex("#181818").unwrap(), hex("#eeeeee").unwrap())
             };
-            let gamma = if args.get(6).is_some_and(|v| v == "legacy") {
-                0.78 + 0.22 * srgb_encode(fg.luminance())
-            } else {
-                rune::text::glyph_coverage_exponent(fg, scale)
-            };
+            let gamma = 1.0;
             let instances: Vec<_> = quads
                 .iter()
                 .map(|q| Instance {

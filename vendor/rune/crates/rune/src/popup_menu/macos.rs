@@ -15,6 +15,23 @@ use winit::window::Window;
 use super::{Entry, PopupMenu, Session, Show};
 use crate::runtime::Waker;
 
+pub(super) const SUPPORTED: bool = true;
+
+/// The menu while it tracks, to cancel it.
+pub(super) type Tracking = Retained<NSMenu>;
+
+/// Stops the menu's tracking.
+pub(super) fn stop(menu: Tracking) {
+    // SAFETY: the host's (main) thread. The tracking loop ends once this handler returns.
+    unsafe { menu.cancelTrackingWithoutAnimation() };
+}
+
+/// An `NSMenu` takes its appearance from the view it pops up in.
+pub(super) fn scheme(_dark: bool) {}
+
+/// winit's run-loop observers keep running while a menu tracks, so nothing asks for turns.
+pub(super) fn start(_turn: Waker) {}
+
 /// Every item's id, by tag, and the one picked.
 struct Picks { ids: Vec<String>, picked: RefCell<Option<String>> }
 
@@ -44,7 +61,7 @@ declare_class!(
 /// `None`.
 pub(super) fn show(window: &Arc<Window>, show: Show, session: Rc<Session>, wake: Option<Waker>) -> bool {
     let Some(mtm) = MainThreadMarker::new() else { return false };
-    let Some(view) = crate::macos::content_view(window) else { return false };
+    let Some(view) = crate::platform::macos::content_view(window) else { return false };
     let mut ids = Vec::new();
     collect_ids(&show.menu, &mut ids);
     // SAFETY: NSObject initialization follows set_ivars, on the main thread.
@@ -53,26 +70,33 @@ pub(super) fn show(window: &Arc<Window>, show: Show, session: Rc<Session>, wake:
     let menu = build(mtm, &show.menu, &target, &mut 0, show.positioned.as_deref(), &mut positioned);
     // SAFETY: a main-thread menu this function owns.
     unsafe { menu.setMinimumWidth(show.min_width.max(0.0) as f64) };
-    let at = NSPoint::new(show.at.0 as f64, show.at.1 as f64);
+    // AppKit puts the menu's (or its positioned item's) top left at the point. Right to left it
+    // opens leftward from a point and lines up with its anchor's right edge, as a right-to-left
+    // localization's menus do.
+    let x = match (crate::labels::rtl(), show.element) {
+        (false, _) => show.at.0 as f64,
+        // SAFETY: a main-thread menu this function owns, already built.
+        (true, Some([x, _, w, _])) => (x + w) as f64 - unsafe { menu.size() }.width,
+        (true, None) => show.at.0 as f64 - unsafe { menu.size() }.width,
+    };
+    let at = NSPoint::new(x, show.at.1 as f64);
     run_later(move || {
-        if session.cancelled.get() { return; }
+        if !session.begin() { return; }
         // A close or hide in the same turn as the request, after the host handed it over.
         let picked = if view.window().is_some_and(|w| w.isVisible()) {
-            *session.tracking.borrow_mut() = Some(menu.clone());
+            session.tracking(Some(menu.clone()));
             // SAFETY: main thread (a main run-loop block). winit's view is flipped, so `at` is
             // in window points from the top-left, the coordinates Rune lays out in; AppKit maps
             // them through the view to the screen at its backing scale.
             let chose = unsafe { menu.popUpMenuPositioningItem_atLocation_inView(positioned.as_deref(), at, Some(&view)) };
-            session.tracking.borrow_mut().take();
+            session.tracking(None);
             let picked = target.ivars().picked.borrow_mut().take();
             if chose && picked.is_none() { eprintln!("rune: pop-up menu reported a pick without its action"); }
             picked
         } else { None };
         clear_targets(&menu);
         drop((menu, target));
-        if session.cancelled.get() { return; }
-        *session.answer.borrow_mut() = Some(picked);
-        if let Some(wake) = wake { wake(); }
+        if session.resolve(picked, None) && let Some(wake) = wake { wake(); }
     });
     true
 }
@@ -81,7 +105,7 @@ fn collect_ids(menu: &PopupMenu, ids: &mut Vec<String>) {
     for entry in &menu.entries {
         match entry {
             Entry::Item(item) => ids.push(item.id.clone()),
-            Entry::Submenu(_, menu) => collect_ids(menu, ids),
+            Entry::Submenu(_, menu, _) => collect_ids(menu, ids),
             Entry::Separator => {}
         }
     }
@@ -96,6 +120,7 @@ fn build(mtm: MainThreadMarker, menu: &PopupMenu, target: &Target, tag: &mut isi
     // `show` keeps it alive until the menu closes and clears it then.
     unsafe {
         ns_menu.setAutoenablesItems(false);
+        crate::native_menu::set_layout_direction(&ns_menu);
         for entry in &menu.entries {
             match entry {
                 Entry::Item(item) => {
@@ -112,13 +137,14 @@ fn build(mtm: MainThreadMarker, menu: &PopupMenu, target: &Target, tag: &mut isi
                     ns_menu.addItem(&ns_item);
                 }
                 Entry::Separator => ns_menu.addItem(&NSMenuItem::separatorItem(mtm)),
-                Entry::Submenu(title, menu) => {
+                Entry::Submenu(title, menu, enabled) => {
                     let title = NSString::from_str(title);
                     let submenu = build(mtm, menu, target, tag, None, found);
                     submenu.setTitle(&title);
                     let ns_item = NSMenuItem::new(mtm);
                     ns_item.setTitle(&title);
                     ns_item.setSubmenu(Some(&submenu));
+                    ns_item.setEnabled(*enabled);
                     ns_menu.addItem(&ns_item);
                 }
             }

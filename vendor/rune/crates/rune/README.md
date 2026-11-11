@@ -55,7 +55,8 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
   - The animation clock has a time scale, which the Settings speed slider drives.
 - **Renderer** (`render.rs`, `shader.wgsl`): one instanced uber-quad pipeline and one draw call per
   frame.
-  - Kinds: rounded rects (per-corner radius, border), analytic Gaussian shadows (outer and inset),
+  - Kinds: rounded rects (per-corner radius, a border drawn over the fill as CSS draws one, per-side
+    widths), analytic Gaussian shadows (outer and inset),
     vertical and angled linear gradients, circular and elliptical radial gradients (`KIND_RADIAL`),
     dashed border rings (`KIND_DASHED`), RGBA images, and glyphs from the atlas.
   - **Gradients** (`.gradient(top, bottom)`, `.radial_gradient(center, radius, stops)`,
@@ -78,11 +79,10 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
     edges, so they have no seams. No atlas, so a shape can change every frame (`examples/shapes`).
     Translucent strokes blend twice where segments overlap at a joint; fills do not overlap.
   - Every instance has a soft-edge clip (`clip_soft`, `clip_fade`).
-  - Colour is premultiplied linear and drawn into an sRGB target by default (linear-light blending),
-    with a CoreText-calibrated luminance/scale glyph coverage exponent. Windows and overlays that want
-    CSS / Core Animation gamma-space compositing for faint glows, blurs, shadows, images and video over
-    dark canvases can opt into `.srgb_blend(true)` on `App`, `WindowSpec` or `ConfiguredOverlay`,
-    which encodes premultiplied colours in sRGB (`Color::premul_srgb`) and renders into a non-sRGB
+  - Windows blend in sRGB-encoded space by default, as Core Animation, CoreText and CSS do.
+    `.srgb_blend(false)` on `App`, `WindowSpec` or `ConfiguredOverlay` opts out into linear-light
+    blending (colour premultiplied in linear light, drawn into an sRGB target). sRGB blending
+    encodes premultiplied colours in sRGB (`Color::premul_srgb`) and renders into a non-sRGB
     target view (`format.remove_srgb_suffix()`). With a `Compositor`, `Frame::srgb_blend()` and `Frame::format` tell it which encoding and view its own passes must match.
     A runtime the app draws itself (`Runtime::with_text`, a headless snapshot) opts in with
     `Runtime::set_srgb_blend(true)`, then draws with `Renderer::set_srgb_blend(true)` into a
@@ -92,8 +92,60 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
     changes its view).
   - The Retina scale is applied throughout.
 - **Text** (`text.rs`): Parley 0.12 lays out embedded Inter 4.1 (OFL, `assets/`). swash 0.2
-  rasterises unhinted, centered, .1-point-emboldened outlines into a 2048² R8 shelf atlas with four
-  horizontal subpixel positions, a 1 px zeroed border per glyph, and pixel-snapped baselines. The
+  outlines are rasterised through a port of CoreGraphics' glyph pipeline into a 2048² R8 shelf
+  atlas, at CoreGraphics' subpixel pen steps, with a 1 px zeroed border per glyph and
+  pixel-snapped baselines.
+  **Font smoothing** (`FontSmoothing`, `text/coretext_match.rs`) picks how glyphs are rasterised
+  and placed, app-wide with `App::new(spec).font_smoothing(FontSmoothing::Off)` (or
+  `WindowSpec::font_smoothing`), or while running with `Tx::set_font_smoothing(mode)`, which
+  rasterises the new mode's glyphs on the next frame (each mode keeps its own atlas entries, so a
+  switch back is free). Modes:
+  - `On`, the default on macOS and in a Mac's browser: CoreText's text with font smoothing on.
+    Apple's pipeline (pens floored to CoreGraphics' subpixel step, which depends on the ppem:
+    fifths of a device pixel below 8⅓ ppem, quarters to 11.1, thirds to 16.7, halves to 33.3 and
+    whole pixels above; coverage drawn as is; sRGB blending; CoreGraphics' curve flattening and
+    its y autohinter at 7–18 ppem) plus font smoothing's outline dilation, a radius set by the
+    ink's luminance and the device ppem (`text/macos/smoothing.rs`, `ApplePipeline::SMOOTHED`).
+  - `Off`: what macOS browsers draw for `-webkit-font-smoothing: antialiased`, CoreText with font
+    smoothing off. Apple's pipeline without the dilation
+    (`ApplePipeline::UNSMOOTHED`); lighter than `On`. Coverage takes an exponent keyed to the
+    ink's luminance, the curve of Skia's grayscale text gamma.
+  - `DirectWrite`: Chromium's text on Windows. DirectWrite rasterises each
+    glyph as Skia's `SkScalerContext_DW` asks it to (the rendering mode the `gasp` table picks,
+    grid fitting on, grayscale antialiasing, the face at the run's variation coordinates, read in
+    place from Parley's bytes), pens sit on Skia's quarter pixels, and Skia's gamma tables
+    (sRGB, contrast 1, eight luminance buckets) weigh each mask by its ink
+    (`text/windows/`). Off Windows it draws as `Off`.
+  - `Windfoil`: Rune's own text with CoreText's weight, the same
+    on every OS. Each glyph's exact pixel coverage from its outline, Windfoil's closed-form box filter over
+    xy-monotone quadratics (DesLauriers 2026), with CoreText's dilation (times `TEXT_WEIGHT`,
+    0.93, which puts its ink within 1% of CoreText's) and y autohint applied per pixel, pens on
+    quarter pixels, coverage drawn as is (`text/outline/`, `text/windfoil.rs`, `outline.wgsl`).
+    Masks at rest are filled on the GPU by the shader that draws text whose scale moves (a zoom,
+    a presence scale, a text flight) straight from its outlines, at its resting pen and size
+    magnified, so it stays sharp and lands on the mask it rests as. A text's raster path
+    (`text/outline/path.rs`: still, moving, landing), each mask's residency (`text/atlas_fill.rs`:
+    uploaded, pending, filled) and the renderer's shader (`render/variant.rs`: Classic, Windfoil,
+    unavailable) are state machines. CJK faces up to 24 ppem draw their TrueType-hinted outlines
+    from whole-pixel pens, at half the dilation, so dense ideographs stay legible at 1x. Renderers
+    start with the Windfoil shader everywhere but macOS, where the Classic shader keeps drawing
+    until text asks for outlines; where it can't be built, the CPU fills the same masks
+    (`text/outline/cover.rs`) and moving text draws from them.
+  - `WindfoilChromium`, the default everywhere but macOS and a Mac's browser, then `Slug`,
+    `HintedGpu` and `Hinted`: the other ways to draw from the outline store. Each takes Chromium's weight (no dilation, Skia's text gamma):
+    Windfoil's box coverage of the design outline, Slug's two-ray winding (`outline_slug` in
+    `outline.wgsl`), the outline after skrifa's light autohint, and that autohinted outline on
+    whole-pixel pens, which is Chromium's text on Linux. `FontSmoothing::ALL` lists every mode and
+    `FontSmoothing::support` says whether this machine draws one as named (`text/support.rs`).
+  - `WindfoilRgb` and `ClearType` (Windows): subpixel text. Masks hold three coverages a pixel
+    (Windfoil's box about each subpixel, or DirectWrite's `CLEARTYPE_3x1`), and the window draws
+    them with a dual-source pipeline that blends each channel by its own (`render/variant.rs`,
+    `Lcd`). Layers draw them grayscale; without dual-source blending they draw as
+    `WindfoilChromium` and `DirectWrite`.
+  `On` and `Off` work on every OS, since they are arithmetic on outlines. Blending is separate
+  (`srgb_blend`).
+  `cargo run -p rune --example coretext_compare [-- --smoothing on|off]` measures
+  each mode against CoreText references (`tests/coretext/`, `scripts/coretext-reference.sh`). The
   atlas recycles a two-page steady ping-pong pool across frames without zeroing 4 MiB buffers,
   spills to overflow pages when a single frame exceeds one page, and never caches an allocation
   failure as an empty glyph. Colors share the same atlas masks.
@@ -107,8 +159,8 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
   [coordinate spaces](#canvas-handlers-live-only-events-and-coordinate-spaces)). Scripts accept
   `secondary-down`, `secondary-up`, and `secondary-click`.
 - **Naming elements**: `Cx::layout`, `Tx::fly_text` and the `Tx` scroll requests
-  (`scroll_into_view`, `scroll_to_bottom`, `scroll_page`, `scroll_to`, `scroll_to_instant`,
-  `scroll_to_x`, `scroll_to_y`) take a key, which
+  (`scroll_into_view`, `scroll_to_bottom`, `scroll_page`, `scroll_to`, `scroll_to_with`,
+  `scroll_to_instant`, `scroll_to_x`, `scroll_to_y`) take a key, which
   matches the first element with it in tree order, or a key path such as `"inspector/label"`
   whose leading keys are the element's nearest keyed ancestors. Keys are one namespace, and
   rune-kit keys its parts (`label`, `value`, `icon`, `control`, …), so scope an app's own keys
@@ -155,15 +207,17 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
   multiplies with `press_scale`, `live_scale` and scale transitions (`origin` applies to all of
   them; `offset` ignores it), and nested scales and turns compose. Under all of them, text, icons
   and images transform with their box (link hit boxes and a text field's caret follow). Text under
-  a still scale rasterizes at the scaled size, so it stays crisp. While a scale springs, text
-  samples its rest-size glyphs, filtered, and turns crisp when the spring settles. That way a
-  spring doesn't rasterize a glyph at every frame's size. Text under an actively moving
+  a still scale rasterizes at the scaled size, so it stays crisp. While a scale springs (or a
+  presence transition runs), text samples glyphs rasterized at its nearest still ancestor's
+  scale (1, or an app's zoom), filtered, and turns crisp when the spring settles. That way a
+  spring doesn't rasterize a glyph at every frame's size, and text that only fades or slides
+  inside a zoomed window draws exactly as it will at rest. Text under an actively moving
   `live_scale` rasterizes at logarithmic $2^{1/4}$ scale buckets and re-rasterizes crisp at the
   exact resting scale once it holds still for 0.1 s; a changing `scale` samples rest-size glyphs
   while moving and re-rasterizes crisp at the resting scale after 0.1 s. A matched flight's own
   label keeps its rest size so it doesn't pop when it lands.
 - **Cached subtrees** (`.cache()`, `.cache_key(u64)`): rasterizes a settled subtree once into an
-  offscreen `Rgba16Float` layer texture (reusing the isolated-layer compositor in `layers.rs`) and
+  offscreen `Rgba16Float` layer texture (reusing the isolated-layer compositor in `render/layers.rs`) and
   composites that single quad on subsequent frames without re-emitting or re-drawing its
   descendants, including while an ancestor's `live_offset` or `live_scale` moves or scales it.
   - **Invalidation:** derived automatically from the subtree's relative draw output (primitives,
@@ -238,6 +292,36 @@ Rune's core crate: views, layout, animation, rendering, text and the native shel
   (`Some('a')` for ⌥A, which types `å`), for bindings by letter that follow the layout, as
   macOS's key bindings do; `None` where winit can't say (the web, iOS) and with no physical
   origin.
+
+  `Mods::cmd` is the primary shortcut modifier, reported with its key: ⌘ on macOS (with
+  `logo`), Ctrl elsewhere (with `ctrl`). So Ctrl+W on Windows is `{ cmd, ctrl }`, and a test
+  such as `cmd && !ctrl` never passes there. Bind shortcuts with a `Chord` instead, which
+  resolves both sides to the keys held on the platform:
+
+  ```rust
+  let reopen = Chord::parse("mod+shift+t")?;          // ⇧⌘T on macOS, Ctrl+Shift+T elsewhere
+  let next = Chord::parse("ctrl+tab")?;               // ⌃⇥ on macOS (a literal Control), Ctrl+Tab elsewhere
+  let home = Keybind::new("mod+b").on(KeyPlatform::Windows, "alt+home");
+  if reopen.matches_tx(ev, tx) { /* … */ }
+  reopen.label();                                     // "⇧⌘T" or "Ctrl+Shift+T"
+  ```
+
+  `mod` is the primary modifier; `ctrl`, `alt`, `shift` and `super` (`cmd`, `win`) are keys.
+  Off macOS Ctrl is the primary, so "mod+b" and "ctrl+b" are the same chord there
+  (`Chord::same_keys` finds such clashes); give one of them another chord on that platform
+  with `Keybind::on`. A character chord names the key unshifted ("mod+shift+[") and
+  `matches_tx` follows the layout through `tx.key_base()`; on a layout whose keys type no
+  ASCII (Cyrillic, Greek) an ASCII chord falls back to `tx.physical_key()`. A chord on a
+  shifted character ("mod+plus") matches with or without the Shift that types it.
+  `matches_on` and `Shortcut::parse_on` take the platform explicitly, for tests and keymap
+  pickers. `Display` writes the canonical string back for settings files; `Keybind` parses
+  alternatives ("mod+t, mod+n") and `Keybind::spec_on(platform)` writes one platform's chords.
+
+  A text field's edit commands (copy, cut, paste, select all, undo, redo, and Ctrl+Y redo
+  off macOS) take only the plain chord: Ctrl+Alt+V, Ctrl+Shift+V or ⌃⌘C reach `on_key`.
+  On Windows, Left Ctrl + Left Alt is AltGr, so a character typed with both inserts, and
+  Home and End move to the line's edge in a multi-line field (Ctrl+Home and Ctrl+End to
+  the text's ends).
 - **Periodic motion**: `.looping(rune_motion::LoopSpec::opacity(..))` or `LoopSpec::rotation(period)`
   (icon quads). Tracks use animation time, preserve phase when retimed and only request frames
   while visible through ancestor clips. Removal uses the existing spring presence fade. Reduced
@@ -262,8 +346,10 @@ policy changes are applied in the same mutation phase.
 - **Icons** (`icon(&Icon, size)`): SVG icon bodies (as in `@opencode/ui`'s catalog) rasterised into
   the glyph atlas.
 - **Themes as data** (`theme.rs`): `Theme::from_json(src, dark)` reads named tokens (hex, rgba or
-  references, plus numbers). `"blend": {"mode": "srgb", "over": token}` re-solves translucent tokens so
-  linear-light blending matches a browser's sRGB blending (`srgb_equivalent`, `Theme::alpha`). An app's own theme lives
+  references, plus numbers). `"blend": {"mode": "srgb", "over": token}` says translucent tokens are
+  authored for a browser's sRGB blending: they resolve as authored in a window that blends in sRGB
+  (the default) and re-solved over `over` in one that blends in linear light, following the mode
+  of the window building the view (`theme::blends_srgb`, `theme::for_blend`, `Theme::alpha`). An app's own theme lives
   in the app; core ships only the format.
 - **Scrolling** (`.scroll(ScrollSpec { stick_bottom })`): a runtime-owned fractional offset, wheel 1:1,
   fling decay, and follow-the-end. A new viewport opens at its end on its first frame.
@@ -281,7 +367,7 @@ policy changes are applied in the same mutation phase.
   `.scroll_edge_fade(w)` fades a viewport's top and bottom only while content is hidden under
   them (strength = hidden extent / 15 pt), and `.scroll_margin(pts)` stops revealed rows clear of it.
 - **Sticky headers and bars** (`.sticky_top(inset)`, `.sticky_bottom(inset)`, `.stuck_shadow(shadow)`,
-  `tx.keep_on_screen(key)`, `sticky.rs`): an element inside a vertical scroll viewport pins to the
+  `tx.keep_on_screen(key)`, `runtime/scroll/sticky.rs`): an element inside a vertical scroll viewport pins to the
   nearest scroll viewport's top or bottom edge (offset inward by `inset`) while its parent stays in
   view, and is pushed out by its parent's content box (inside the parent's padding) as the parent
   scrolls away, as CSS `position: sticky` does. Sticky children draw and hit-test above later normal
@@ -314,13 +400,17 @@ policy changes are applied in the same mutation phase.
   then the plain wheel each scroll at once. Shift with a mouse wheel scrolls horizontally on
   Windows, Linux and the web; macOS turns the delta itself. `tx.scroll_into_view(key)` scrolls both
   axes, `.scroll_edge_fade(w)` fades the left and right edges, `tx.scroll_to(key, x, y)` glides a
-  viewport to an offset (clamped, rechecked as virtual rows measure, taken over by the wheel), and
-  `scroll_to_instant`, `scroll_to_x` and `scroll_to_y` jump there. Left and Right arrows don't scroll a viewport (text fields own them), and
+  viewport to an offset (clamped, rechecked as virtual rows measure, taken over by the wheel),
+  `tx.scroll_to_with(key, x, y, spring)` glides there on the app's spring, and
+  `scroll_to_instant`, `scroll_to_x` and `scroll_to_y` jump there. A request sent mid-glide keeps
+  its speed, so key repeat moving a selection a row at a time scrolls as one motion. A still
+  pointer's hover holds while an app steps its own glide with `scroll_to_instant` each frame,
+  and resolves once after. Left and Right arrows don't scroll a viewport (text fields own them), and
   Page Up and Page Down stay vertical; AppKit scrolls an `NSScrollView` with Left and Right only
   when nothing focused takes them. Virtual rows are vertical only. Platforms report wheels through
   `Runtime::wheel_xy` with `wheel_began` and `wheel_ended` around trackpad gestures, or
   `Runtime::wheel_event` with modifiers and phases; `Runtime::wheel` stays the vertical path.
-- **Canvas input** (`canvas_input.rs`): what an infinite canvas, map or image viewer needs.
+- **Canvas input** (`input/canvas_input.rs`): what an infinite canvas, map or image viewer needs.
   `.on_wheel(|s, e: WheelEvent, tx| -> bool)` hears wheel and trackpad deltas over the element
   before any scroll view does, innermost first up to the nearest scroll view, with `dx`, `dy`,
   the pointer in the element's own layout points (under any `live_scale`), `mods`, `phase`, `momentum` and `precise`.
@@ -405,7 +495,7 @@ values, hit tests against where they put elements, and reports `on_drawn_layout`
 else the handler asked of its `Tx` (a scroll, a copy, `wake_after`) still happens. It works in
 `on_wheel`, `on_magnify`, `on_rotate`, `on_smart_magnify`, `on_drag`, `on_pointer_move_local`,
 `on_key`, `on_key_up`, a field's key handler, `on_physical_input`, the press and hover handlers,
-and `on_drawn_layout_tx`, so a toolbar that floats over the selection by its own live offset
+`on_layout_tx` and `on_drawn_layout_tx`, so a toolbar that floats over the selection by its own live offset
 follows a pan with no view re-run either. A handler that declines its event (returns false)
 takes its `live_only` back, and an event several handlers take is live-only only if each says
 so. It's the handler form of `Runtime::update_if` returning false, and the same rule holds:
@@ -451,9 +541,11 @@ top-left, which is what popups and context menus anchor to.
 | `on_pointer_move_local`, `on_secondary_press_local` | `PointerEvent::x`, `y` | local |
 | | `PointerEvent::window_x`, `window_y`, `window()` | window |
 | `on_pointer_move`, `on_secondary_press` | `PointerPress::x`, `y` | window |
-| `on_layout` | `[x, y, w, h]`, as laid out, after scrolling (before live values) | window |
+| `on_layout`, `on_layout_tx` | `[x, y, w, h]`, as laid out, after scrolling (before live values) | window |
 | `on_drawn_layout`, `on_drawn_layout_tx` | `[x, y, w, h]`, as drawn | window |
 | `on_screen_layout` | `[x, y, w, h]` | primary display |
+| `Cx::layout`, `layout_with`, `layout_size`, `memo::layout` (view reads) | `[x, y, w, h]`, as laid out, every scroll viewport at its origin, so a scroll doesn't re-run the view | window |
+| `Cx::window_layout`, `window_layout_with`, `memo::window_layout` | `[x, y, w, h]`, as laid out, after scrolling | window |
 | `context_menu`, `PopupAnchor::from(PointerPress)` | the anchor they take | window |
 
 `on_press`, `on_double_press`, `on_hover`, `on_hover_change`, `on_drop_files` and
@@ -485,7 +577,7 @@ std::thread::spawn(move || {
     handle.update(|s, tx| ..); // change state on the UI thread; commits on the next frame
     handle.close();            // as the close button (on_close runs)
     handle.minimize();         // as the minimize button
-    handle.quit();             // run returns
+    handle.quit();             // run returns; on web, unmounts
 });
 app.run();
 ```
@@ -513,7 +605,7 @@ app.run();
 - Activation: the first window takes the launcher's `XDG_ACTIVATION_TOKEN`/`DESKTOP_STARTUP_ID`
   and clears them from the environment. A new window gets a forwarded token through winit's
   `with_activation_token`. An open Wayland window is activated with `xdg_activation_v1` bound on
-  winit's own display (`activation.rs`), since winit 0.30 can't. Without a token Wayland can only
+  winit's own display (`platform/activation.rs`), since winit 0.30 can't. Without a token Wayland can only
   request attention (most compositors mark it urgent); X11, macOS and Windows use `focus_window`.
 - Headless tooling runs ignore window requests and apply updates before each frame.
 - `AppHandle::is_visible()` reports whether the window is on screen; `AppHandle::window_error()`
@@ -577,9 +669,18 @@ app.run();
 
   Launch Services learns the scheme when the bundle is opened or registered (`lsregister -f
   MyApp.app`); then `open 'myapp://x'` launches or reaches the app. A bare `cargo run` binary has
-  no bundle and gets no links. iOS isn't wired yet (winit owns the scene delegate), and Windows
-  and Linux pass a link to a new process as a launch argument, so the hook never runs there;
-  read it from the arguments, with your own single-instance forwarding if you need one.
+  no bundle and gets no links. iOS isn't wired yet (winit owns the scene delegate), and Linux
+  passes a link to a new process as a launch argument, so the hook never runs there.
+- Links and relaunches on Windows: Windows starts a new process for each launch, passing a link
+  as an argument. The hook receives the links among the first process's arguments
+  (`scheme://…`) like the launching link on macOS. Call `rune::single_instance("com.example.myapp")`
+  first thing in `main` to keep one process: a later launch hands its arguments to the running
+  process over a per-user named pipe and lets it take the foreground, and `single_instance`
+  returns false so `main` returns without opening a window. Its links reach the hook; a launch
+  without links reopens the app (`App::on_reopen`, then the default, which also brings the front
+  window forward, restored). Register the scheme for the user, usually at install:
+  `HKEY_CURRENT_USER\Software\Classes\myapp` with an empty `URL Protocol` value and
+  `shell\open\command` set to `"C:\path\to\myapp.exe" "%1"`.
   `scripts/mac-app --scheme myapp` writes that entry and registers the bundle for you (see
   "Relaunching a Mac app" below).
 - Edge overlays (HUDs): see `App::overlay` below.
@@ -588,28 +689,47 @@ app.run();
 
 A small app puts its first window, with content, on screen about 300 ms after `open` on Apple silicon.
 The full page, with the measurement method, is "Launch fast" on the docs site (`site/src/pages.tsx`).
+Staying fast afterwards is "Fast apps" (`site/src/FastApps.tsx`) and "Smooth scrolling" below;
+`scripts/app-audit <repo>` greps an app for the patterns they list.
 
 - **`rune::prewarm_gpu()` first in `main`.** On macOS it makes the adapter, device and uber pipeline on a thread
   while AppKit starts; the first window or overlay opened at launch takes them, waiting if the thread is still
   working. A second call does nothing. With no window at launch the result is dropped; a window that needs features
   the prewarmed device lacks gets a new device. Elsewhere it does nothing. The run functions call it too, but only
-  once the event loop starts.
+  once the event loop starts. It starts on the backend the app draws with by default: on macOS, Rune's own Metal
+  backend (the `metal-backend` feature, on by default; an app built with `default-features = false` gets wgpu unless
+  it adds the feature). An app that opts out with `App::gpu_backend(GpuBackend::Wgpu)` calls
+  `rune::prewarm_gpu_on(GpuBackend::Wgpu)` instead, which chooses the backend and then starts the thread, so it
+  doesn't start on the native backend and start over when `App::gpu_backend` runs; that call afterwards changes
+  nothing. `RUNE_GPU_BACKEND=wgpu` or `=metal` overrides both without a rebuild. A compositor whose
+  `Compositor::features` asks for more than the native backend offers (`TIMESTAMP_QUERY` and `IMMEDIATES`) draws
+  with wgpu instead, every frame: log
+  `rune::describe_gpu(frame.device)` once to see which backend a window got and why, or set `RUNE_GPU_LOG=1`.
 - **Precompiled Metal uber shader.** `crates/rune/src/uber.metallib` is loaded through wgpu's passthrough shaders,
   skipping WGSL translation and Metal's compile (`Renderer::new` 232 ms to 85 ms on a cold shader cache). The WGSL
   path is the fallback when the adapter lacks passthrough support, when `RUNE_DISABLE_METALLIB=1`, when the
-  fingerprint doesn't match or when Metal rejects the library. After editing `clip.wgsl` or `shader.wgsl`, run
-  `cargo test -p rune --lib precompiled_uber_metallib_is_fresh` on a Mac. If it says the MSL is byte-identical, paste
-  the printed lines into `uber_metallib_hash.rs`. If it says the MSL, flags or library hash changed, run
-  `scripts/precompile-metal-shaders.sh` (needs Xcode's Metal toolchain) and commit `uber.metallib` and
-  `uber_metallib_hash.rs`. Effect, lighting and blur shaders and iOS aren't precompiled; binary archives would need
+  fingerprint doesn't match or when Metal rejects the library. Rune's own Metal backend (`metal-backend`) loads
+  `uber_native.metallib`, built from the MSL that backend emits (first `Renderer::new` 222 ms to 90 ms cold,
+  4.0 ms to 0.9 ms warm). After editing `clip.wgsl` or `shader.wgsl`, run
+  `cargo test -p rune --lib --features metal-backend precompiled_uber_metallib_is_fresh` on a Mac. If it says the MSL
+  is byte-identical, paste the printed lines into `uber/metallib_hash.rs`. If it says the MSL, flags or library hash
+  changed, run `scripts/precompile-metal-shaders.sh` (needs Xcode's Metal toolchain) and commit both libraries and
+  `uber/metallib_hash.rs`. Effect, lighting and blur shaders and iOS aren't precompiled; binary archives would need
   wgpu support.
 - **The first frame draws during window creation** on macOS for visible windows (not launcher windows or panels).
   The first view build and layout run inside creation, right after the window-created callbacks, so keep the initial
   state, `view` and `on_window` cheap.
 - **Defer the rest to `on_ready`.** It runs once per native creation after the first frame is ready (for a
-  launcher, while hidden). Capture `app.handle()` and call `handle.update(|s, tx| ..)` there to start status
+  launcher, while hidden). A window that isn't on screen (covered, occluded, hidden or on another Space) doesn't
+  wait to draw: it runs at the first frame skipped for that, or a second after the window opens. Capture `app.handle()` and call `handle.update(|s, tx| ..)` there to start status
   items, HUDs, secondary windows, network and indexing; updates run on the UI thread even with no window showing.
   There is no state-level first-frame hook yet.
+- **A launcher can wait for readiness.** With `RUNE_READY_DIR` set, the process writes
+  `$RUNE_READY_DIR/<bundle id>.<pid>` (the main bundle's identifier on macOS, else the executable's name) right
+  after its first `on_ready` returns, and removes it when it exits normally. It's one line of JSON,
+  `{"pid":123,"bundle_id":"com.example.app","ready_ms":412,"rune":"0.1.0"}`, with `ready_ms` counted from the
+  process's start; the directory is made 0700 if it's missing. A process killed outright leaves its file, so treat
+  one whose PID isn't running as stale. Without the variable nothing is written.
 - **Keep the first second still.** Rune animates nothing then, so every frame is the app's. Land state that
   arrives right after launch (a system setting, a first network answer) with `tx.instant()`, or don't animate it.
   One settings window's launch fade drew about 85 frames in its first second instead of 4 to 8, and drawing back to
@@ -640,6 +760,131 @@ The full page, with the measurement method, is "Launch fast" on the docs site (`
 | Cold shader cache, `Renderer::new` alone (10 rounds) | 232 | 85 |
 
 Absolute times were high because the machine was busy; the differences are what matter.
+
+### Smooth scrolling
+
+A scroll costs Rune no commit: it moves the content, mounts `virtual_rows` and paints `El::hover` styles without
+running `view`. A frame that commits while a viewport scrolls is the app's, and on a long page each one can cost
+more than the 8 ms a 120 Hz frame has. Before and after code is in "Smooth scrolling" on the docs site's
+Fast apps page (`site/src/FastApps.tsx`); `scripts/app-audit <repo>` greps for the patterns below.
+
+- **`poll` returns true only when visible state changed.** To act on where a scroll stops (loading the next page,
+  saving the position), wait until it has been still a moment with `Tx::wake_after`; follow it frame by frame with
+  `El::on_scroll_offset` and live values.
+- **Paint hover with `El::hover`, `hover_group` and `group_*` styles**, not state set from `on_hover_change`: a
+  hover handler on each row commits the view for every row the pointer crosses, and a scroll moves rows under a
+  still pointer.
+- **Layout handlers that follow a scroll say `Tx::live_only`.** `on_layout` and `on_drawn_layout` report every
+  frame of a scroll for an element inside it; their `_tx` forms can say `live_only` when the handler only moves
+  live values or bookkeeping.
+- **Read `Cx::layout_size` or `Cx::layout`, not `Cx::window_layout`,** unless the view needs where the window
+  shows the element; then read `window_layout_with` and only what it decides.
+- **Glide with `Tx::scroll_to_with(key, x, y, spring)`**, on Rune's clock, rather than an instant scroll stepped by a
+  `wake_after` loop, which commits every frame.
+- **Keep the reading position with `El::scroll_anchor()`.** On a scroll viewport it holds the row at the top of
+  the view when a commit changes the content above it (rows inserted, grown or reflowed by a new width), like CSS
+  `overflow-anchor`. It holds only while the viewport is still, off its top and not following its bottom.
+  `virtual_rows` lists already keep their first visible row. For one commit, `Tx::keep_on_screen(key)` holds a
+  chosen element instead.
+
+Debug builds name the source when one keeps committing through a scroll: `poll`, a handler with its element and
+where it was set, or the layout read that moved. Each warns once, on stderr, when it commits on 6 or more frames
+and a quarter of a scroll's frames; `RUNE_PERF_WARN=0` silences them. They also warn when an app steps a viewport
+with an instant scroll on 8 committing frames in a row, and when one hover handler commits for 8 different elements:
+
+```text
+rune: `on_layout_tx` on "#0/feed/rows/r3" (set at src/feed.rs:43:35) committed the view on 6 of 7 frames of a
+scroll: when the handler only moves live values or bookkeeping, say `Tx::live_only` [...]
+```
+
+`RUNE_COMMIT_BUDGET_MS=N` prints a line for each commit over `N` ms, in any build, with where its time went and
+what made the frame commit, at most once a second:
+
+```text
+rune: commit took 14.2 ms, over RUNE_COMMIT_BUDGET_MS=8: view 9.0, layout 3.0 (text 1.0), apply 1.5 ms; most in
+the view (63%); committed for poll
+```
+
+### Requests off the main thread (`rune::Latest`)
+
+A search box, a mention list or a path completer asks once per keystroke and wants only the newest
+answer. Doing it in the handler blocks the window for the whole round trip; debug builds warn when a
+handler or `poll` spends 8 ms waiting. `Latest<T>` runs the request on a worker and lands the newest
+answer:
+
+```rust
+// init: build it once, with its debounce.
+results: Latest::default().debounce(Duration::from_millis(60)),
+// setup: the waker runs `poll` when an answer lands. Pending state and debounce stay.
+s.results.set_waker(waker);
+// A handler, on every keystroke:
+s.results.request(query.clone(), |q| index.search(&q));
+// poll: true only when an answer landed.
+let Some(hits) = s.results.take() else { return false };
+s.hits = hits;
+true
+```
+
+- **Latest wins.** Each request supersedes the earlier ones. One that hasn't started never runs; one
+  already running finishes, and its answer is dropped, even if it finishes after the newer one.
+- **One wake per answer.** The waker fires once when an answer lands, and `take` returns it once, so
+  `poll` returns true once and an idle window stays idle. `is_pending` drives a spinner.
+- **Skip without waking.** `request_opt(input, |q| -> Option<T>)` lands nothing when the work
+  returns `None` and doesn't wake the window. It still supersedes older requests, so their
+  answers stay dropped.
+- **Call it from `poll`.** `request_if_changed(&key, |k| ..)` does nothing when `key == ` the last
+  such request's key (`K: Clone + PartialEq`), so work isn't restarted nor its debounce pushed
+  back. `request`, `request_opt` and `cancel` forget the key.
+- **Debounce** (optional) waits for that long without a newer request before starting one.
+- **No thread per request.** Up to four shared workers, started on demand, exit after ten idle
+  seconds. On the web the work runs on the main thread from `spawn_local`, after the debounce.
+- **Cancel** drops pending and running requests; dropping the `Latest` cancels it. State outlives a
+  closed window, so call `cancel` from `App::on_close` to stop requests on close.
+
+Only the closure runs on the worker; the answer reaches state in `poll`, on the UI thread.
+
+### State machines (`rune::machine`)
+
+Anything with modes (a hover delay, a drag, a request and its retries, a dialog flow) is one
+`enum State` whose variants carry only what is valid in them, and one transition that returns
+what should happen instead of doing it:
+
+```rust
+use rune::machine::{Attempt, Effects, Seq};
+
+enum Tip { Idle, Waiting { attempt: Attempt, due: f64 }, Open }
+enum Event { Enter { now: f64 }, Leave, Due { attempt: Attempt, now: f64 } }
+enum Effect { WakeAt(f64) }
+
+fn step(seq: &mut Seq, tip: &mut Tip, event: Event) -> Effects<Effect> {
+    match (&*tip, event) {
+        (Tip::Idle, Event::Enter { now }) => {
+            let (attempt, due) = (seq.next(), now + 0.4);
+            *tip = Tip::Waiting { attempt, due };
+            Effects::one(Effect::WakeAt(due))
+        }
+        (Tip::Waiting { attempt, due }, Event::Due { attempt: a, now }) if *attempt == a && now >= *due => {
+            *tip = Tip::Open;
+            Effects::none()
+        }
+        (_, Event::Leave) => { *tip = Tip::Idle; Effects::none() }
+        _ => Effects::none(),
+    }
+}
+// A handler steps with `tx.clock()` and carries the effects out:
+for e in step(&mut s.seq, &mut s.tip, Event::Enter { now: tx.clock() }) {
+    match e { Effect::WakeAt(due) => tx.wake_at(due) }
+}
+```
+
+- **Illegal states don't exist.** `Waiting` without a deadline, or `Open` with one, can't be
+  built, so no code has to clear a flag another forgot.
+- **Timers are events.** Deadlines are on `Tx::clock` (the clock `poll` gets, virtual in headless
+  runs); `Tx::wake_at(due)` wakes `poll`, which feeds `Due` back into `step`.
+- **Attempts fence answers.** `Seq::next` issues an `Attempt` per request, timer or dialog; an
+  answer carrying an attempt the state no longer holds falls through to `_` and changes nothing.
+- **Effects stay inline.** `Effects<E>` holds up to two effects without allocating; `push` and
+  `extend` add more, and it iterates in order.
 
 ### Relaunching a Mac app (`scripts/mac-app`, `rune-mac`)
 
@@ -788,6 +1033,20 @@ rune::App::new(spec).fit_content_height().run();
   `traffic_lights: Some((x, y))` places the close button's top-left at `x, y` points (Electron's
   `trafficLightPosition`). Rune places the buttons again after every resize, scale change, focus change
   and un-occlusion. On Windows and Linux both options do nothing; the system titlebar stays.
+- **`App::titlebar` / `WindowSpec::titlebar`** (`Titlebar::new(height)`): the app draws its own
+  titlebar `height` points tall and the window keeps its controls over it. macOS gets a full-size
+  content view with drag regions and the traffic lights centred in the band (unless
+  `Chrome::traffic_lights` places them). Windows loses its native title bar but keeps resize edges,
+  Aero Snap, the snap layouts flyout over maximize, the window menu (Alt+Space, or a right-click on a
+  `.window_drag()` region) and its animations; Rune draws the caption buttons over the trailing edge
+  (Electron's `titleBarOverlay`: 46 points wide, close turns red), as elements named Minimize,
+  Maximize or Restore, and Close for assistive technology, still in reach while the view holds a
+  modal. A window that isn't resizable never maximizes: its maximize button is dimmed, with no snap
+  layouts. `Cx::chrome_insets()` says what the controls take (`leading`, `trailing`, `height`; zero
+  where the native frame stays, as on Linux; memos rebuild when it changes), `Cx::caption_color(c)`
+  colours the caption symbols for an app theme, `Cx::titlebar_height(h)` changes the band's height
+  as the app runs (a UI zoom), and `Tx::toggle_maximized()` maximizes or restores.
+  `cargo run -p rune --example custom_titlebar` shows it.
 - **`AppSpec::new(title, size, init, view)`** fills every other field with its default; literals
   that set a few more end with `..AppSpec::new(..)`. Window chrome lives on the builders, keeping
   existing exhaustive `AppSpec` literals source-compatible.
@@ -935,6 +1194,14 @@ the same families as `Family::SystemMono`, and the rest of the list follows it, 
 `"ui-monospace, Menlo"` falls back to Menlo where none is installed. Inline code then
 matches a code block set in `Family::SystemMono`.
 
+`tx.set_font_families(sans, mono)` swaps what's behind the slots while the app runs, for a
+UI or code font picker; it takes the same lists as `AppSpec::families`. Every window and
+overlay follows on its next frame, and one opened later starts in them. Each drops the layouts it shaped in the old families,
+re-runs memoized subtrees, lays out again and draws one frame. `rune::text::measure` follows
+too. A cache of measured sizes outside Rune should key on `rune::text::font_epoch()`. A family
+that isn't installed falls back as it would at launch, and asking for the families the slots
+already hold costs nothing.
+
 Optical sizing defaults to each run's point size, including rich spans with a
 different size. An explicit `opsz` variation wins over the default; `.optical_size`
 wins over both. `.optical_sizing(OpticalSize::FontDefault)` restores Parley's old
@@ -975,7 +1242,9 @@ with `Runtime::window_focus(bool)`.
 `[f32; 4]`, `Color`). Call `set(value)` from a producer thread; Rune coalesces a
 wake for each visible subscribed window. Equal values and hidden windows do not
 wake. Bind with `.live_opacity(&level)`, `.live_offset(&cursor)`,
-`.live_scale(&scale)`, `.live_fill(&color)` or `.live_rect(&rect)`.
+`.live_scale(&scale)`, `.live_fill(&color)` or `.live_rect(&rect)`, and colours with
+`.live_text_color`, `.live_border`, `.live_shadow` (the first shadow's colour) and
+`.live_gradient(&top, &bottom)`. A rebuild keeps what a colour binding last set.
 `cursor.smooth(Spring::new(0.16, 0.0))` opts a binding into rune-motion smoothing.
 Views and layout do not rerun. Rects are presentation `[x,y,w,h]` in parent points,
 so text does not rewrap and siblings do not reflow. See
@@ -1377,7 +1646,9 @@ Once the system drag starts, Rune drops the pointer capture and hover, so nothin
 Files are offered as copies (`DragItem::allow_move` also offers a move), an app bundle can be
 dropped into System Settings' privacy lists, and the picture under the pointer is a snapshot of
 the element unless `DragItem::image` sets one. `on_drag_end` receives `DragOutcome::Copied`,
-`Moved`, `Linked` or `Cancelled`.
+`Moved`, `Linked` or `Cancelled`. The app's own windows take no drop from its drags unless
+`DragItem::within_app` offers it to them: their `on_drop_files` targets then receive the files
+as they would from Finder (an image dragged from a list into a composer).
 
 macOS only for now. Elsewhere `drag_out` is ignored and the element keeps its press and
 `on_drag` behaviour. Headless runs record `drag-out <path>` in `--trace` and mark the node
@@ -1476,9 +1747,17 @@ row().key("theme").child(text(theme_title(&s.theme)))
 - **Platforms**: macOS uses `NSMenu`'s `popUpMenuPositioningItem:atLocation:inView:` in windows
   and overlay panels. The menu tracks from a run-loop block outside winit's handler, so frames,
   springs, the display link and `AppHandle::update` keep running while it's open. The pointer's
-  press, capture and hover are released before it opens. Elsewhere `popup_menu_supported()` is
-  false and `on_pick` gets `None` on the next frame, so keep an in-app fallback for those
-  platforms. `cargo run -p rune --example popup_menu` shows both kinds.
+  press, capture and hover are released before it opens. Windows uses `TrackPopupMenuEx`, opened
+  from a message posted to the window after winit's handler returns, so Rune keeps drawing
+  there too: frames, wakes, `wake_after` timers and overlays. It follows Windows placement: the
+  menu drops down below an element anchor (flipping up clear of it near the screen's bottom
+  edge) whether or not an item is `selected`, opens with its top-left at a point, and sizes
+  itself to its items; `.symbol` doesn't show. Menus are dark or light as the window's content
+  is (Windows 10 1903 and later), whatever the system's appearance. Keyboard navigation and
+  dismissal by a click outside (answered `None`) are the system's, overlays included. A click
+  right after the menu closes lands where the pointer is, moved or not. Elsewhere
+  `popup_menu_supported()` is false and `on_pick` gets `None` on the next frame, so keep an
+  in-app fallback for those platforms. `cargo run -p rune --example popup_menu` shows both kinds.
 - **Headless**: `--tree` has a `popupMenu` object (items, anchor, `selected`, `queued`) while a
   menu is open, and `--trace` notes `popup-menu:open`, `popup-menu:pick:{id}` and
   `popup-menu:cancel`. Scripts answer it with `{"type": "menu-pick", "id": "dark"}` or
@@ -1589,11 +1868,15 @@ draws:
 let scale = env.scale; // the window's device pixels per point
 let mark = cache.svg(svg_bytes, 16.0, scale);               // fits 16 pt square, crisp at 2×
 let any = cache.load_mime(bytes, "image/svg+xml", 16.0, scale); // from a data URL's MIME type
-let file = cache.file("assets/logo.svg", 48.0, scale);      // read on the worker; not on web
+let file = cache.file("assets/logo.svg", 48.0, scale);      // read on the worker; fetched on web
+let photo = cache.url("https://example.com/p.avif", 96.0, scale); // web: the browser fetches and decodes
 ```
 
 `cache.file` treats `.svg` and `.svgz` paths (or SVG content) as vectors and decodes other
-files like `load`. `cache.load` recognises SVG by its content and rasterizes it at twice its
+files like `load`. On web, `cache.file` and `cache.url` fetch the URL (relative to the page) and
+let the browser decode it off the main thread, so WebP and AVIF work there; SVG still rasterizes
+through resvg. On native `cache.url` takes a path or `file:` URL only: Rune has no HTTP client,
+so fetch remote bytes yourself and call `load`. `cache.load` recognises SVG by its content and rasterizes it at twice its
 own size. SVG text needs fonts resvg isn't given, so convert text to paths. With the feature
 off, SVG images resolve to `Image::error`.
 
@@ -1735,8 +2018,8 @@ let clip = rune::Player::audio(note.path);
   writes `.wav`), so `to_file("note.m4a").format(RecordFormat::Wav)` writes `note.wav`;
   `Recording::path` is always the file written. Dropping the last handle mid-recording stops
   it and keeps the file.
-- **Levels**: `level()` is a `Level` with `peak_db()` and `rms_db()` in dBFS, and `meter()` /
-  `peak_meter()` mapped to 0..1 (-60 dB to 0 dB). RMS rises over 30 ms and falls over 300 ms;
+- **Levels**: `level()` is a `Level` with `peak_db()` and `rms_db()` in dBFS, and `meter()`
+  mapped to 0..1 (-60 dB to 0 dB). RMS rises over 30 ms and falls over 300 ms;
   the peak falls 20 dB a second. Reads take no lock and allocate nothing. `live_level()` is a
   `Live<f32>` of `meter()` for `live_scale`, `live_opacity` and the like, so a bound meter
   redraws on its own while recording; an idle or paused recorder draws no frames.
@@ -1771,7 +2054,7 @@ let clip = rune::Player::audio(note.path);
 - **Other platforms** (Linux, Windows, the web): `start` ends in `Failed("recording isn't
   supported on this platform")`.
 
-### Edge overlays (`App::overlay`, `overlay.rs`, `layer_shell.rs`)
+### Edge overlays (`App::overlay`, `overlay.rs`, `platform/layer_shell.rs`)
 
 `app.overlay(OverlaySpec { name, size, edge, margin, align, inset, interactive, view }, state)
 -> OverlayHandle<T>` adds a surface to that app's loop with its own state type: transparent,
@@ -1790,10 +2073,10 @@ of the primary display, centred or `inset` points from a side. Clicks pass throu
 - macOS: winit's view (and the Metal layer wgpu draws into) moves into a non-activating
   `NSPanel` (`NonactivatingPanel`, `becomesKeyOnlyIfNeeded`) at status level (25) on every
   Space incl. full-screen ones, ordered front with `orderFrontRegardless`; it ignores the mouse
-  unless interactive. Clicks still reach Rune through winit's view (`macos.rs`).
+  unless interactive. Clicks still reach Rune through winit's view (`platform/macos.rs`).
 - Windows: a topmost tool window with `WS_EX_NOACTIVATE` (plus `WS_EX_TRANSPARENT|WS_EX_LAYERED`
   unless interactive), shown with `SW_SHOWNOACTIVATE`; a bottom overlay sits above the taskbar
-  (`win32.rs`).
+  (`platform/win32.rs`).
 - Checked under headless sway (layer shell, and Xwayland for X11) and on macOS (panel level,
   bounds, hide and reshow). Windows builds are checked with `cargo xwin clippy` only.
 - `Tx::copy` works in overlays (a meeting capsule's Copy button).
@@ -1856,6 +2139,14 @@ and its goldens are unchanged. `examples/lab` uses it to composite `rune-light` 
   `srgb_blend`, and `backdrop`. The hook runs with the scissor on the slot's clip rectangle, and the
   viewport and scissor are reset to the full target after it.
   One compositor serves any number of formats: build pipelines per `EffectSite::format`.
+- **Per-slot identity and payload.** `EffectSite::mark` is the slot's `El::effect` tag and
+  `EffectSite::data` its `El::effect_data([f32; 4])` payload, both carried in the slot's record, so
+  a compositor needs neither `Runtime::marks` nor its own copy of app state. A removed element keeps
+  its last-built payload through its exit transition, so an outgoing slot keeps drawing its own
+  content while its replacement enters beside it. Keep resources per mark and drop a mark's once a
+  frame passes without it (the example on `compose::Compositor`). The slot's rect and `scale`
+  follow `El::scale`, `El::offset` and a transition's scale and offset; under `El::rotate` the slot
+  stays upright inside a turned isolated layer, and Rune turns what the hook painted.
 - `render::CLIP_WGSL` is Rune's own clip maths as WGSL (`clip_alpha(p, clip, fade)` with `p` in
   window pixels, plus `sd_rounded`). Prepend it to a compositor shader and pass the slot's `clip`
   and `fade` words (`rune-fx` does this via `FxSlot::clip(i.clip, i.fade)` in `prepare_with_slots`), so the effect is cut
@@ -1879,6 +2170,9 @@ For static disabled styling, `El::dim(alpha)` distributes a fixed alpha to each 
 paint in the built subtree, including fills, strokes, text, icons, images and native surfaces.
 Call it after adding children. It neither changes inherited/hit-test opacity nor introduces
 layers. Rune-kit uses this for disabled controls; normal container `opacity` still isolates.
+A dimmed box with a solid fill fades as CSS `opacity` fades it: its outer shadows stay outside
+it, and its fill and gradient fade as one. Content drawn over it (a label, an icon) still fades
+on its own, so it shows a little of the faded fill through it where a layer would not.
 
 The manual kit-gallery `disabled_controls_gpu_cost` benchmark measures the whole GPU frame
 for disabled controls: leaf dimming allocates no layer targets or passes and matches a flat
@@ -1960,7 +2254,8 @@ remain rectangular, including visually clipped corners. The 128-byte instance st
 in attribute 7 `fade[3]`.
 
 For a known opaque neutral backdrop, use `theme::srgb_equivalent(white.alpha(authored_alpha), bg)`
-to match AppKit's sRGB source-over in Rune's linear renderer. Recompute from the current authored
+to match AppKit's sRGB source-over in a window that blends in linear light (`srgb_blend(false)`);
+`theme::for_blend` applies it only in such a window. Recompute from the current authored
 alpha during animation. This changes only alpha and adds no GPU work. It is exact for neutral
 foreground/background pairs apart from quantization, but chromatic pairs are approximate;
 unknown/translucent backdrops, group opacity and overlapping paints require different math.
@@ -2053,6 +2348,48 @@ what that layer has drawn so far, as in CSS. A frame without a blurred element r
 passes as before and draws the same pixels. `examples/frosted-bar` scrolls a list under a
 frosted bottom bar.
 
+## Accessibility
+
+Every window and overlay exposes its elements to the OS accessibility API through
+[AccessKit](https://accesskit.dev): UI Automation on Windows (Narrator, NVDA, JAWS, Voice
+Access), NSAccessibility on macOS (VoiceOver, Voice Control), AT-SPI on Linux (Orca). The same
+tree is what automation and testing tools drive. It comes with the default `accessibility`
+feature (`crate::a11y`, `runtime/a11y`).
+
+- **Free until asked**: nothing is built until an assistive client asks for a surface's tree.
+  Then each turn that changed something the tree shows (a commit, a scroll, focus, the end of
+  an animation) rebuilds it from the last frame and sends the nodes that changed. A turn that
+  changed none of it costs one comparison.
+- **Defaults from what an element already is**: its role (`El::role`, ARIA's names), its label
+  (`El::label`, else its text; a button, list row, tab or tree row takes the text inside it),
+  its key as the automation id (UIA `AutomationId`, `AXIdentifier`), focus, `El::level`,
+  `El::expanded`, a selected item (`El::focus_selected`), a slider's steps, a text field's value,
+  caret, selection and each line's characters, inline links, scroll viewports with their
+  offsets, modal dialogs (the background leaves the tree), and secure text (never exposed).
+  Plain layout boxes with no key, label or role join their parent, so the tree reads like the
+  interface, not the layout.
+- **Builders for the rest**: `description`, `a11y_value`, `range_value` and `range_step`,
+  `checked` and `checked_mixed`, `disabled`, `read_only`, `invalid`, `sorted`, `a11y_hidden`,
+  `live_region(LiveRegion::Polite)`, `position_in_set`, `shortcut_hint` and
+  `active_descendant` (the highlighted row of a tree, table or suggestion list whose container
+  or field keeps focus). An icon-only button needs `.label("Close")`. An `El::help` tooltip
+  describes its element unless it repeats the name; `description("")` turns that off.
+- **Actions** run the handlers a pointer or keyboard user reaches: click presses
+  (`on_press`), focus focuses, increment and decrement step (`on_step`), set value and text
+  selection edit through the field's editor (so `on_input_change` runs), set value on a slider
+  with a `range_step` steps it that many times toward the number, expand and collapse
+  press a disclosure, show context menu calls `on_secondary_press`, and scroll requests move
+  the viewport. They skip hit testing, so a test that wants the pointer's path posts pointer
+  input instead.
+- **Virtual lists** expose their mounted rows only; the list reports how many rows it has and
+  each row its index.
+- **Tools**: `--tree` writes the tree under `"accessibility"` (role, key, name, value, states,
+  actions, bounds in window points), `Runtime::accessibility_json` returns it to tests, and
+  `Runtime::accessibility_tree` returns AccessKit's whole `TreeUpdate`, and
+  `Runtime::accessibility_action(key, action, data)` runs an assistive action in a test.
+  `RUNE_A11Y_LOG=1` logs when a client activates a surface's tree, each action, and each
+  update's size and cost.
+
 ## Run
 
 ```sh
@@ -2105,8 +2442,11 @@ $L --desktop examples/launcher/backdrop.png --script examples/launcher/scripts/d
 ```
 
 - **Scripts** are timestamped `move`, `down`, `up`, `tap` (`hold`), `double-click` (`hold`,
-  `gap`, default 0.15 s between presses) and `drag` (`dx`, `dy`, `dur`) events, at `x,y` in points or at an element by `key` (or a path suffix such as `slider/knob`).
+  `gap`, default 0.15 s between presses) and `drag` (`dx`, `dy`, `dur`) events, at `x,y` in points or at an element by `key` (or a path of keys such as `slider/knob`, where elements without keys
+  between them don't count).
   `{"reopen": true}` reopens the app, as a click on its Dock icon (see "App lifetime").
+  `{"open_url": "myapp://…"}` hands `App::on_open_url` a link, as the system does when a link
+  opens the app.
   `menu-pick` (with an `id`) and `menu-cancel` answer an open pop-up menu, `file-dialog` (with
   a `path`) and `file-dialog-cancel` an open file dialog (see "File dialogs"). `drag_files` and
   `drop_files` drag files in from another app (see "Dropping files in from other apps").
@@ -2135,8 +2475,8 @@ $L --desktop examples/launcher/backdrop.png --script examples/launcher/scripts/d
   resize delivers it (content at rest follows; unlike `Tx::resize_window`). The canvas keeps its
   size, so grow only after shrinking to see the whole window.
 - **Chords**: `{"type": "shortcut", "chord": "cmd+space"}` is the user pressing a chord
-  system-wide. Register it with `App::global_shortcut` or `register_shortcut`. Only its
-  shortcut handler runs, exactly as when the OS delivers it: it never reaches `on_key`,
+  system-wide (`mod+space` is ⌘ on macOS and Ctrl elsewhere, as in a `Chord`). Register it
+  with `App::global_shortcut` or `register_shortcut`. Only its shortcut handler runs, exactly as when the OS delivers it: it never reaches `on_key`,
   focused controls or physical-input handlers, even when the window is key. An unregistered
   chord fails the script. The older `{"shortcut": "cmd+k"}` has the same semantics. To send
   a window key instead, use `{"type": "key", "cmd": true, "name": " "}`.
@@ -2280,7 +2620,9 @@ App::new(spec).playground(
   a replay runs the same every time, headless included. `Play::clear()` drops every step still
   queued, a loop's next one included, so a trigger can take over from a running one:
   `play.clear(); play.after(0.2, ..)` runs only the new steps. It leaves the state and running
-  animations alone. J and K can't be trigger keys. `trigger_tx(key, label, |s, tx| ..)` takes a
+  animations alone. `play.press(Key::Down)` (or a `KeyEvent`, for modifiers) sends a real key on
+  the step's frame, as a person's with the stage holding the keyboard, so a replay that stands in
+  for a keypress counts as input to the motion gate. J and K can't be trigger keys. `trigger_tx(key, label, |s, tx| ..)` takes a
   step that needs only the `Tx`, such as a handler the app already has.
 - **Closures.** A story's `init`, `view`, `poll`, triggers, steps, variants and side view, and a
   scene's triggers, variants and side views, take closures as well as fns, so a story table can
@@ -2399,6 +2741,7 @@ grouped list, and a knobs column) maps onto `App::playground` like this:
 | `group()` and `name()`                      | one path, `"Group/Name"` or `"Group/Subgroup/Name"`; groups keep the order they first appear in, or `Playground::group_order` |
 | the story's keys (`Action`s)                | `Story::trigger(key, label, step)`, or `trigger_tx` for a `Fn(&mut S, &mut Tx)`; `'r'` runs after each replay |
 | timed steps after a key                     | `Play::after(secs, step)`, on the logical clock                        |
+| a step that presses a key                   | `Play::press(Key::Down)`: through focus and `on_key`, counted as input; a letter reaches the app, not the story's triggers |
 | the knobs column                            | `.side(view)`: `rune_knobs::inline` fills the column's width; `actions` fits it, up to 300 pt |
 | keys for the knobs                          | `.side_keys(view, rune_knobs::side_key(groups, lens))`: ↑↓ pick a knob, ←→ step it, Esc leaves |
 | a choice knob flipped with 1–9              | `Story::variant(name, apply)`; 1–9 pick, and picking remakes the state |

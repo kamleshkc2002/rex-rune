@@ -33,6 +33,10 @@ pub(crate) fn parse_script(list: Value) -> Vec<Ev> {
             out.push(Ev { t, kind: Kind::Reopen, pos: Pos::Rel(0.0, 0.0) });
             continue;
         }
+        if let Some(url) = e["open_url"].as_str() {
+            out.push(Ev { t, kind: Kind::OpenUrl(url.into()), pos: Pos::Rel(0.0, 0.0) });
+            continue;
+        }
         if let Some(chord) = e["physical"].as_str() {
             let chord: crate::Shortcut = chord.parse().unwrap_or_else(|e: crate::ShortcutError| die(&e.to_string()));
             let repeat = e["repeat"].as_bool().unwrap_or(false);
@@ -45,6 +49,23 @@ pub(crate) fn parse_script(list: Value) -> Vec<Ev> {
             if chord.modifiers() != Mods::default() {
                 out.push(Ev { t, kind: Kind::Physical(crate::PhysicalInput::Modifiers(Mods::default())), pos: Pos::Rel(0.0, 0.0) });
             }
+            continue;
+        }
+        // `{"hold": "alt"}` holds modifiers down until `{"hold": ""}` lets them go, as the window
+        // reports them (`App::on_modifiers`): an Alt-hold reveal.
+        if let Some(held) = e["hold"].as_str() {
+            let mut mods = Mods::default();
+            for part in held.split('+').filter(|p| !p.is_empty()) {
+                match part {
+                    "shift" => mods.shift = true,
+                    "ctrl" | "control" => mods.ctrl = true,
+                    "alt" | "option" => mods.alt = true,
+                    "super" | "logo" | "win" => mods.logo = true,
+                    "cmd" => mods.cmd = true,
+                    other => die(&format!("unknown modifier {other:?} in hold")),
+                }
+            }
+            out.push(Ev { t, kind: Kind::Physical(crate::PhysicalInput::Modifiers(mods)), pos: Pos::Rel(0.0, 0.0) });
             continue;
         }
         if let Some(shortcut) = e["shortcut"].as_str() {

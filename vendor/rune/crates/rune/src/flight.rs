@@ -28,6 +28,14 @@ impl Tx {
     pub fn launch(&mut self, source: impl Into<String>, destination: impl Into<String>) {
         self.launches.push((source.into(), destination.into()));
     }
+
+    /// The `El::matched` flights this change starts draw outside every clip until they land, as
+    /// a [`Tx::launch`] does, rather than inside their destinations' clips: for elements that
+    /// move between parts of the window that clip them, as tabs moving from a titlebar's strip
+    /// into a sidebar that opens as they land, where a clip would hide them for most of the way.
+    pub fn unclipped_flights(&mut self) {
+        self.unclipped_flights = true;
+    }
 }
 
 pub(crate) struct TextFlight {
@@ -101,12 +109,27 @@ pub(crate) fn selects(selector: &str, path: &str, key: Option<&str>) -> bool {
     scope.rsplit('/').all(|seg| keyed.next() == Some(seg))
 }
 
+/// Whether `selector` names a highlight keyed `key` in the text at `path`: [`selects`] for
+/// `{path}/{key}`, without building it.
+pub(crate) fn selects_under(selector: &str, path: &str, key: &str) -> bool {
+    if selector == key { return true; }
+    let Some(scope) = selector.strip_suffix(key).and_then(|s| s.strip_suffix('/')) else { return false };
+    let mut keyed = path.rsplit('/').filter(|seg| !seg.starts_with('#'));
+    scope.rsplit('/').all(|seg| keyed.next() == Some(seg))
+}
+
 /// Transform glyph geometry without changing its atlas footprint. Clip edges share the same
 /// transform; a soft inset handles lines that were only partly visible in the source editor.
 pub(crate) fn transformed(mut q: Instance, from: Rect, to: Rect, scale: f32, alpha: f32, clip: [f32; 4], fade: [f32; 4]) -> Instance {
     let zoom = to.w / from.w.max(0.01);
-    q.uv[2] = q.rect[2];
-    q.uv[3] = q.rect[3];
+    let map = |v: f32, from: f32, to: f32| (to + (v / scale - from) * zoom) * scale;
+    if q.params[1] == crate::render::KIND_GLYPH && q.radii[3] > 0.0 {
+        // An outline glyph (`text::Outline`) moves its pen and magnifies its pixel: crisp in flight.
+        q.radii = [map(q.radii[0], from.x, to.x), map(q.radii[1], from.y, to.y), q.radii[2], q.radii[3] * zoom];
+    } else {
+        q.uv[2] = q.rect[2];
+        q.uv[3] = q.rect[3];
+    }
     q.rect = [
         (to.x + (q.rect[0] / scale - from.x) * zoom) * scale,
         (to.y + (q.rect[1] / scale - from.y) * zoom) * scale,

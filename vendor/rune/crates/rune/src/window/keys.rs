@@ -23,6 +23,10 @@ pub(crate) fn map_key(key: &WKey, m: ModifiersState) -> Option<KeyEvent> {
             NamedKey::End => Key::End,
             NamedKey::PageUp => Key::PageUp,
             NamedKey::PageDown => Key::PageDown,
+            NamedKey::Insert => Key::Insert,
+            NamedKey::PrintScreen => Key::PrintScreen,
+            NamedKey::ScrollLock => Key::ScrollLock,
+            NamedKey::Pause => Key::Pause,
             NamedKey::Escape => Key::Escape,
             NamedKey::Tab => Key::Tab,
             NamedKey::Space => Key::Text(" ".into()),
@@ -53,30 +57,57 @@ pub(crate) fn map_key(key: &WKey, m: ModifiersState) -> Option<KeyEvent> {
             NamedKey::ContextMenu => Key::ContextMenu,
             _ => return None,
         },
-        WKey::Character(c) => {
-            if mods.cmd {
-                Key::Command(c.chars().next()?.to_ascii_lowercase())
-            } else {
-                Key::Text(c.to_string())
-            }
+        // Windows treats Left Ctrl + Left Alt as AltGr: a character typed with both is text
+        // ("@" on a German layout's Q), not a chord. A chord that types nothing comes through
+        // `map_key_event`'s fallback instead.
+        WKey::Character(c) if mods.cmd && !(cfg!(target_os = "windows") && mods.ctrl && mods.alt) => {
+            Key::Command(c.chars().next()?.to_ascii_lowercase())
         }
+        WKey::Character(c) => Key::Text(c.to_string()),
         WKey::Dead(accent) => Key::Dead(*accent),
         _ => return None,
     };
     Some(KeyEvent { key, mods })
 }
 
-/// `event`'s logical key, with the text a dead key composed on it. winit keeps a named key's
-/// name (Space after a dead tilde) and carries the composed `~` only in `text`.
-pub(crate) fn event_key(event: &winit::event::KeyEvent, m: ModifiersState) -> Option<KeyEvent> {
-    map_key(&event.logical_key, m).map(|ev| with_composed_text(ev, event.text.as_deref()))
+/// `map_key` for a window's key event. Windows names no logical key for a chord whose
+/// modifiers type nothing on the layout, such as Ctrl+Alt+B on US English (Ctrl+Alt is AltGr
+/// there); it still arrives as a chord on the character the key types unmodified. Off macOS, a
+/// chord on a key that types a non-ASCII character (Ctrl+М on a Russian layout, Ctrl+Ü on a
+/// German one) arrives as the US key in its place, `Command('v')`, as Windows' own shortcuts
+/// follow the key's Latin virtual key and macOS's switch to a Latin layout under ⌘: Ctrl+V
+/// pastes on every layout.
+pub(crate) fn map_key_event(event: &winit::event::KeyEvent, m: ModifiersState) -> Option<KeyEvent> {
+    let mut ev = map_key(&event.logical_key, m).or_else(|| unidentified(event, m))?;
+    // winit keeps a named key's name (Space after a dead tilde) and carries the composed `~`
+    // only in `text`.
+    ev = with_composed_text(ev, event.text.as_deref());
+    if !cfg!(target_os = "macos")
+        && let Key::Command(c) = ev.key
+        && !c.is_ascii()
+        && let winit::keyboard::PhysicalKey::Code(code) = event.physical_key
+        && let Some(us) = crate::shortcuts::us_char(code)
+    {
+        ev.key = Key::Command(us);
+    }
+    Some(ev)
 }
 
+/// `ev` with the text a dead key composed on it, when it typed text other than its own name.
 fn with_composed_text(mut ev: KeyEvent, text: Option<&str>) -> KeyEvent {
     if let (Key::Text(key), Some(text)) = (&mut ev.key, text) && !text.is_empty() && key != text {
         *key = text.to_owned();
     }
     ev
+}
+
+fn unidentified(event: &winit::event::KeyEvent, m: ModifiersState) -> Option<KeyEvent> {
+    let WKey::Unidentified(_) = event.logical_key else { return None };
+    let mods = map_mods(m);
+    if !(mods.cmd || mods.ctrl) { return None; }
+    let c = key_base(event).filter(|c| !c.is_control() && *c != ' ')?;
+    let key = if mods.cmd { Key::Command(c.to_ascii_lowercase()) } else { Key::Text(c.to_string()) };
+    Some(KeyEvent { key, mods })
 }
 
 /// The character `event`'s key types under the current layout with no modifiers, for
@@ -96,6 +127,10 @@ pub(crate) fn key_base(event: &winit::event::KeyEvent) -> Option<char> {
 }
 
 #[cfg(test)]
+#[path = "keys_tests.rs"]
+mod layout_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -112,5 +147,15 @@ mod tests {
         // A release carries no composed text, and a plain space types itself.
         assert_eq!(with_composed_text(space.clone(), None).key, Key::Text(" ".into()));
         assert_eq!(with_composed_text(space, Some(" ")).key, Key::Text(" ".into()));
+    }
+
+    #[test]
+    fn keys_that_type_nothing_reach_handlers() {
+        for (named, key) in [
+            (NamedKey::ScrollLock, Key::ScrollLock), (NamedKey::Pause, Key::Pause), (NamedKey::ContextMenu, Key::ContextMenu),
+            (NamedKey::PrintScreen, Key::PrintScreen), (NamedKey::Insert, Key::Insert),
+        ] {
+            assert_eq!(map_key(&WKey::Named(named), ModifiersState::empty()).map(|ev| ev.key.clone()), Some(key));
+        }
     }
 }

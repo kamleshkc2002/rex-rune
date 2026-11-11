@@ -28,6 +28,8 @@ fn disabled_trace_hooks_neither_format_nor_allocate() {
     let element = rune::el();
     let before = allocs();
     let _named = element.trace_name("chip:Area").trace_namespace("gpui", "pill");
+    assert!(allocs() - before <= 1, "trace labels share the element's cold storage");
+    let before = allocs();
     for _ in 0..100 {
         rt.update(|_, tx| {
             assert!(!tx.tracing());
@@ -141,6 +143,9 @@ fn scroll_edge_fades_allocate_nothing_per_frame() {
 
 #[test]
 fn a_cached_ink_probe_allocates_nothing() {
+    // Initialize fonts before ink records its cache epoch, and keep other test threads'
+    // text systems from invalidating that epoch while we measure cache hits.
+    let _families = rune::text::with_families("Inter", "IBM Plex Mono");
     let style = rune::TextStyle::new(12.0, 400.0);
     let first = rune::text::ink("⌘K", style);
     assert!(first.is_some());
