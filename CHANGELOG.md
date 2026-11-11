@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 - 2026-11-11
+
+Expanded Rex action compatibility for shared keybindings, a single installer summary, and a relay design document. Desktop notifications gain the Rex icon and the window remembers its size, both harvested from Matt Porter.
 
 ### Added
 
