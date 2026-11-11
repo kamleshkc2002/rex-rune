@@ -18,7 +18,7 @@ impl Workspace {
     }
 
     /// The tab `target` is in, as its session's view has it.
-    fn pane_window(&self, target: &PaneTarget) -> Option<&Window> {
+    pub(super) fn pane_window(&self, target: &PaneTarget) -> Option<&Window> {
         let view = self
             .hosts
             .get(target.host)?

@@ -256,7 +256,13 @@ fn settings_shows_effective_sequences_sources_and_pending_chip_cancels() {
     let words: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
     assert!(words.iter().any(|s| s == "then"));
     assert!(words.iter().any(|s| s == "shortcuts.json"));
-    assert!(!words.iter().any(|s| s == "Switch session"));
+    assert!(words.iter().any(|s| s == "Switch session"));
+    assert!(words.iter().any(|s| s == "Unbound"));
+    assert!(
+        rt.state
+            .shortcut_chords("session.switch", &Value::Null)
+            .is_empty()
+    );
     assert!(!has(&rt, "shortcut-problem-0"));
     std::fs::remove_file(path).unwrap();
 }

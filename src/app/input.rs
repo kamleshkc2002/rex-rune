@@ -54,6 +54,15 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
         connected: s.model().connected,
     };
     if s.bindings.context.as_ref() != Some(&context) {
+        if s.bindings.context.as_ref().is_some_and(|old| {
+            old.host != context.host
+                || old.session != context.session
+                || old.generation != context.generation
+                || old.server_revision != context.server_revision
+                || old.connected != context.connected
+        }) {
+            s.bindings.clear_modes();
+        }
         s.bindings.sequence.clear();
         s.bindings.context = Some(context);
     }
@@ -69,10 +78,38 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
         .filter(|k| model.connected && k.generation == s.keymap_generation)
         .map(|k| &k.resolved)
         .unwrap_or(&s.local_keymap);
+    let modes = snapshot.map(|k| k.reply.modes.as_slice()).unwrap_or(&[]);
+    let exclusive = s
+        .bindings
+        .modes
+        .iter()
+        .any(|(name, _)| modes.iter().any(|m| m.name == *name && m.exclusive));
+    let in_mode = !s.bindings.modes.is_empty();
+    s.bindings.mode_map = in_mode.then(|| super::bindings::mode_map(map, &s.bindings.modes, modes));
+    let map = s.bindings.mode_map.as_ref().unwrap_or(map);
+    let searching = s.panel.is_none() && s.active_terminal().is_some_and(|t| t.search.is_some());
     let step = s.bindings.sequence.advance(map, input, |i| {
         let binding = &map.bindings[i].binding;
+        if !in_mode && binding.mode.is_some() {
+            return false;
+        }
+        if binding.action == "linux.mode.block" {
+            return !global_only;
+        }
+        if binding
+            .args
+            .as_ref()
+            .is_some_and(|a| a["when"] == "searching")
+            && !searching
+        {
+            return false;
+        }
         match actions::classify(binding, server_actions) {
-            actions::Kind::Local(spec) => !global_only || spec.global(),
+            actions::Kind::Local(spec) => {
+                !global_only
+                    || spec.global()
+                    || searching && matches!(spec.name, "client.find.next" | "client.find.previous")
+            }
             actions::Kind::Forward | actions::Kind::Server { .. } => {
                 !global_only && model.connected
             }
@@ -80,18 +117,45 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
         }
     });
     match step {
-        Step::None => false,
+        Step::None => {
+            if exclusive && !global_only {
+                s.bindings.consumed.insert(identity, true);
+                true
+            } else {
+                false
+            }
+        }
         Step::Pending => {
             s.bindings.consumed.insert(identity, true);
             true
         }
         Step::Run { index, sequence } => {
             let binding = map.bindings[index].binding.clone();
+            if binding.action == "linux.mode.block" {
+                s.bindings.consumed.insert(identity, true);
+                return true;
+            }
+            let mut once = false;
+            if let Some(mode) = binding.mode.as_deref()
+                && !matches!(
+                    binding.action.as_str(),
+                    "client.mode.exit" | "client.mode.exit_all"
+                )
+                && let Some(index) = s
+                    .bindings
+                    .modes
+                    .iter()
+                    .rposition(|(name, _)| name == mode)
+                    .filter(|index| s.bindings.modes[*index].1)
+            {
+                s.bindings.modes.remove(index);
+                once = true;
+            }
             match actions::classify(&binding, server_actions) {
                 actions::Kind::Local(spec) => {
                     s.bindings
                         .consumed
-                        .insert(identity, sequence || !spec.repeats());
+                        .insert(identity, sequence || once || !spec.repeats());
                     actions::run(
                         s,
                         &binding.action,
@@ -100,7 +164,7 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
                     )
                 }
                 actions::Kind::Forward => {
-                    if sequence {
+                    if sequence || once {
                         // Suppress held-tail repeats after completing the sequence.
                         // forward() still records the press in forwarded, so its release
                         // reaches client.key even though this identity is consumed.
@@ -110,7 +174,9 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
                     forward(s, ev, tx, prefix)
                 }
                 actions::Kind::Server { repeats } => {
-                    s.bindings.consumed.insert(identity, sequence || !repeats);
+                    s.bindings
+                        .consumed
+                        .insert(identity, sequence || once || !repeats);
                     let mut request = rexrs::api::client::Action::new(binding.action).origin("key");
                     request.args = binding.args;
                     request.session_id = s.model().selected.clone();

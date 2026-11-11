@@ -386,7 +386,7 @@ pub fn toolbar(s: &Workspace) -> El {
         ))
         .child(identity(s))
         .child(if s.sidebar_tabs() { el() } else { tab_track(s) })
-        .child(match s.bindings.sequence.label(s.effective_keymap()) {
+        .child(match s.bindings.pending_label(s.effective_keymap()) {
             Some(label) => chip(
                 el().key("pending-sequence")
                     .h(28.)

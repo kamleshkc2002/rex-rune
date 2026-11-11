@@ -174,6 +174,147 @@ fn walk(
     walk(after, b, drag, panes, dividers);
 }
 
+/// A side of a pane: where its neighbour is, or which way one of its borders moves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Side {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+impl Side {
+    /// In the order menus list them.
+    pub const ALL: [Side; 4] = [Side::Left, Side::Right, Side::Up, Side::Down];
+
+    /// The `direction` argument of an action that names a side.
+    pub fn arg(self) -> &'static str {
+        match self {
+            Side::Left => "left",
+            Side::Right => "right",
+            Side::Up => "up",
+            Side::Down => "down",
+        }
+    }
+
+    pub fn parse(arg: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|side| side.arg() == arg)
+    }
+
+    fn sideways(self) -> bool {
+        matches!(self, Side::Left | Side::Right)
+    }
+}
+
+/// How far a keyboard resize moves a border: this fraction of its split.
+pub const RESIZE_STEP: f64 = 0.05;
+/// The ratios a border can be given, as a divider drag has them.
+pub const RATIO_RANGE: (f64, f64) = (0.1, 0.9);
+/// Rects are fractions of the window; two edges this close are the same edge.
+const SAME: f64 = 1e-6;
+
+/// The panes and borders of the layer `block` is in, as the server laid them out. None while
+/// a pane is zoomed, since no other pane is beside it then, or while its layer is minimized.
+fn beside(window: &Window, block: &str) -> Option<(Vec<Placement>, Vec<Divider>)> {
+    if window.zoomed_block_id.is_some() {
+        return None;
+    }
+    window.layers.iter().find_map(|layer| {
+        if layer.state.as_deref() == Some("minimized") {
+            return None;
+        }
+        let (mut panes, mut dividers) = (Vec::new(), Vec::new());
+        // Only how panes lie against each other matters here, so the layer's own bounds do not.
+        walk(
+            layer.layout.as_ref()?,
+            [0., 0., 1., 1.],
+            None,
+            &mut panes,
+            &mut dividers,
+        );
+        panes
+            .iter()
+            .any(|pane| pane.block == block)
+            .then_some((panes, dividers))
+    })
+}
+
+/// The pane that lies against `side` of `block` in the server's layout: of several, the one
+/// that shares the most of that edge, and of equals the first in layout order.
+pub fn neighbour(window: &Window, block: &str, side: Side) -> Option<String> {
+    let (panes, _) = beside(window, block)?;
+    let [x, y, w, h] = panes.iter().find(|pane| pane.block == block)?.rect;
+    let mut best: Option<(f64, &Placement)> = None;
+    for pane in panes.iter().filter(|pane| pane.block != block) {
+        let [px, py, pw, ph] = pane.rect;
+        let touches = match side {
+            Side::Left => (px + pw - x).abs() < SAME,
+            Side::Right => (px - (x + w)).abs() < SAME,
+            Side::Up => (py + ph - y).abs() < SAME,
+            Side::Down => (py - (y + h)).abs() < SAME,
+        };
+        let shared = if side.sideways() {
+            (py + ph).min(y + h) - py.max(y)
+        } else {
+            (px + pw).min(x + w) - px.max(x)
+        };
+        if touches && shared > SAME && best.is_none_or(|(most, _)| shared > most + SAME) {
+            best = Some((shared, pane));
+        }
+    }
+    best.map(|(_, pane)| pane.block.clone())
+}
+
+/// The border of `block` a keyboard resize toward `side` moves, with the ratio that moves it
+/// one step that way: the border on the pane's right (or under it), or the one on its left
+/// (or above it) for a pane that has none there. None when the pane has no such border, or
+/// the border is already as far that way as a ratio goes.
+pub fn resized(window: &Window, block: &str, side: Side) -> Option<Divider> {
+    resized_by(window, block, side, RESIZE_STEP)
+}
+
+/// Resize by a fraction of the containing split, from its last server-reported ratio.
+pub fn resized_by(window: &Window, block: &str, side: Side, amount: f64) -> Option<Divider> {
+    if !amount.is_finite() || amount <= 0. {
+        return None;
+    }
+    let (panes, dividers) = beside(window, block)?;
+    let [x, y, w, h] = panes.iter().find(|pane| pane.block == block)?.rect;
+    let sideways = side.sideways();
+    // A border of the pane: a split the right way round, as long as the pane or longer,
+    // whose dividing line is on the pane's edge at `at`.
+    let border = |at: f64| {
+        dividers.iter().find(|divider| {
+            let [dx, dy, dw, dh] = divider.rect;
+            let (line, from, to, start, end) = if sideways {
+                (dx + dw * divider.ratio, dy, dy + dh, y, y + h)
+            } else {
+                (dy + dh * divider.ratio, dx, dx + dw, x, x + w)
+            };
+            divider.horizontal == sideways
+                && (line - at).abs() < SAME
+                && from < start + SAME
+                && to > end - SAME
+        })
+    };
+    let (far, near) = if sideways { (x + w, x) } else { (y + h, y) };
+    let mut divider = border(far).or_else(|| border(near))?.clone();
+    let step = match side {
+        Side::Left | Side::Up => -amount,
+        Side::Right | Side::Down => amount,
+    };
+    // Whole steps, so a ratio does not gather rounding noise as it is stepped.
+    let ratio = ((divider.ratio + step) * 1e4).round() / 1e4;
+    let ratio = ratio.clamp(RATIO_RANGE.0, RATIO_RANGE.1);
+    // A ratio the server holds outside that range (any client may set one between 0 and 1)
+    // is left alone rather than pulled back in, which would move the border the other way.
+    if (ratio - divider.ratio) * step.signum() < SAME {
+        return None;
+    }
+    divider.ratio = ratio;
+    Some(divider)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,5 +354,95 @@ mod tests {
             panes.iter().map(|p| p.block.as_str()).collect::<Vec<_>>(),
             ["tiled", "later"]
         );
+    }
+    /// `a` on the left 60%; on the right `b` (the top 40%) over `c` beside `d`. A floating
+    /// pane lies over them.
+    fn three_by_two() -> Window {
+        serde_json::from_value(json!({"layers":[
+            {"kind":"tiled","bounds":[0,0,1,1],"layout":{"split":{"direction":"horizontal","ratio":0.6,
+                "before":{"block_id":"a"},
+                "after":{"split":{"direction":"vertical","ratio":0.4,
+                    "before":{"block_id":"b"},
+                    "after":{"split":{"direction":"horizontal","ratio":0.5,
+                        "before":{"block_id":"c"},"after":{"block_id":"d"}}}}}}}},
+            {"kind":"floating","bounds":[0.2,0.1,0.5,0.6],"layout":{"block_id":"float"}}
+        ]}))
+        .unwrap()
+    }
+    #[test]
+    fn a_neighbour_is_the_pane_against_that_side_sharing_the_most_edge() {
+        let window = three_by_two();
+        let beside = |block: &str, side| neighbour(&window, block, side);
+        assert_eq!(beside("a", Side::Left), None);
+        assert_eq!(beside("a", Side::Up), None);
+        // `a` meets `b` along 40% of its right edge and `c` along 60%.
+        assert_eq!(beside("a", Side::Right).as_deref(), Some("c"));
+        assert_eq!(beside("b", Side::Left).as_deref(), Some("a"));
+        // Equal shares: the first in layout order.
+        assert_eq!(beside("b", Side::Down).as_deref(), Some("c"));
+        assert_eq!(beside("c", Side::Up).as_deref(), Some("b"));
+        assert_eq!(beside("c", Side::Right).as_deref(), Some("d"));
+        assert_eq!(beside("d", Side::Left).as_deref(), Some("c"));
+        assert_eq!(beside("d", Side::Right), None);
+        assert_eq!(beside("d", Side::Down), None);
+        // A floating pane has no neighbour in the tiled layer, nor a tiled pane in it.
+        for side in Side::ALL {
+            assert_eq!(beside("float", side), None);
+            assert_ne!(beside("a", side).as_deref(), Some("float"));
+            assert_eq!(beside("missing", side), None);
+            assert_eq!(Side::parse(side.arg()), Some(side));
+        }
+        assert_eq!(Side::parse("sideways"), None);
+        let mut zoomed = window.clone();
+        zoomed.zoomed_block_id = Some("b".into());
+        assert_eq!(neighbour(&zoomed, "b", Side::Left), None);
+        assert!(resized(&zoomed, "b", Side::Left).is_none());
+    }
+    #[test]
+    fn a_resize_steps_the_border_after_the_pane_or_else_the_one_before_it() {
+        let window = three_by_two();
+        let step = |block: &str, side| {
+            resized(&window, block, side).map(|d| (d.before, d.after, d.horizontal, d.ratio))
+        };
+        let border = |before: &str, after: &str, horizontal, ratio| {
+            Some((before.to_owned(), after.to_owned(), horizontal, ratio))
+        };
+        // `a` has a border on its right only, and none above or below.
+        assert_eq!(step("a", Side::Left), border("a", "b", true, 0.55));
+        assert_eq!(step("a", Side::Right), border("a", "b", true, 0.65));
+        assert_eq!(step("a", Side::Up), None);
+        assert_eq!(step("a", Side::Down), None);
+        // `b` reaches the right edge: sideways it moves the border on its left.
+        assert_eq!(step("b", Side::Right), border("a", "b", true, 0.65));
+        assert_eq!(step("b", Side::Down), border("b", "c", false, 0.45));
+        assert_eq!(step("b", Side::Up), border("b", "c", false, 0.35));
+        // `c`: the border it shares with `d`, not the outer one on its left; `d` has that
+        // one alone. Up and down, both have only the border above them.
+        assert_eq!(step("c", Side::Left), border("c", "d", true, 0.45));
+        assert_eq!(step("d", Side::Left), border("c", "d", true, 0.45));
+        assert_eq!(step("d", Side::Up), border("b", "c", false, 0.35));
+        assert_eq!(step("float", Side::Left), None);
+    }
+    #[test]
+    fn a_resize_stops_at_the_ratios_a_drag_stops_at() {
+        let at = |ratio: f64| -> Window {
+            serde_json::from_value(json!({"layers":[{"kind":"tiled","bounds":[0,0,1,1],
+                "layout":{"split":{"direction":"horizontal","ratio":ratio,
+                    "before":{"block_id":"a"},"after":{"block_id":"b"}}}}]}))
+            .unwrap()
+        };
+        assert_eq!(resized(&at(0.12), "a", Side::Left).unwrap().ratio, 0.1);
+        assert!(resized(&at(0.1), "a", Side::Left).is_none());
+        assert_eq!(resized(&at(0.1), "a", Side::Right).unwrap().ratio, 0.15);
+        assert_eq!(resized(&at(0.88), "b", Side::Right).unwrap().ratio, 0.9);
+        assert!(resized(&at(0.9), "b", Side::Right).is_none());
+        // A ratio another client set past those stops never moves back against the key.
+        assert!(resized(&at(0.95), "a", Side::Right).is_none());
+        assert!(resized(&at(0.05), "a", Side::Left).is_none());
+        assert_eq!(resized(&at(0.95), "a", Side::Left).unwrap().ratio, 0.9);
+        assert_eq!(resized(&at(0.05), "a", Side::Right).unwrap().ratio, 0.1);
+        // Stepping there and back leaves no rounding noise in the ratio.
+        assert_eq!(resized(&at(0.3), "a", Side::Right).unwrap().ratio, 0.35);
+        assert_eq!(resized(&at(0.35), "a", Side::Left).unwrap().ratio, 0.3);
     }
 }

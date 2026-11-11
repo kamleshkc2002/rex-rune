@@ -614,7 +614,15 @@ fn shortcuts(s: &Workspace) -> El {
     let effective = s.effective_bindings();
     for name in SHORTCUT_CATEGORIES {
         let list = shortcut_rows(&effective, name);
-        if list.is_empty() {
+        let unbound: Vec<_> = super::actions::SPECS
+            .iter()
+            .filter(|spec| {
+                spec.category() == name
+                    && super::compatibility::unsupported(spec.name).is_none()
+                    && !effective.iter().any(|b| b.binding.action == spec.name)
+            })
+            .collect();
+        if list.is_empty() && unbound.is_empty() {
             continue;
         }
         // A row reads as a menu row does: what it runs on the left, in the name Commands and
@@ -639,7 +647,11 @@ fn shortcuts(s: &Workspace) -> El {
                 super::actions::binding_title(&binding.binding)
             };
             let numpad = display.also_numpad.then_some("Also on the numpad");
-            let detail: Vec<&str> = source.into_iter().chain(numpad).collect();
+            let detail: Vec<&str> = source
+                .into_iter()
+                .chain(numpad)
+                .chain(binding.binding.mode.as_deref())
+                .collect();
             let detail = detail.join(" · ");
             row_frame(!detail.is_empty())
                 .key(format!("shortcut-{name}-{index}"))
@@ -650,7 +662,15 @@ fn shortcuts(s: &Workspace) -> El {
                         .label(spell(&chords)),
                 )
         });
-        sections.push(section(name, [card(rows)]));
+        let unbound = unbound.into_iter().map(|spec| {
+            let title = if super::compatibility::alias(spec.name).is_some() {
+                format!("{} (alias)", spec.title())
+            } else {
+                spec.title().to_owned()
+            };
+            setting(&title, spec.name, value("Unbound"))
+        });
+        sections.push(section(name, [card(rows.chain(unbound))]));
     }
     // The pointer's buttons are not keys: plain words, as in Commands.
     sections.push(section(
