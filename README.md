@@ -492,23 +492,24 @@ send-key escape hatch and explicit remote-action refusal on its own disposable R
 `target/release/rex-linux` unless `REX_BIN` selects another build, and preserves
 logs/captures in the printed temporary directory.
 
-The `scripts/` directory holds integration checks; each script's docstring lists its requirements (Xvfb, xdotool, a `rex` binary, `wayland-info`, …). Some use the configured Rex server rather than starting their own: point them at a disposable server you control. Wayland checks use the running compositor; X11 checks use an isolated display.
+The `scripts/` directory holds integration checks; each script's docstring lists its requirements (Xvfb, xdotool, a `rex` binary, `wayland-info`, …). `x11-smoke.py`, `rune-acceptance-x11.py` and `wayland-seat-smoke.py` use a server you start: they require `REX_SERVER` to name a disposable one (autostart is off, and they exit rather than fall back to the default server); every other script starts its own private server. Every script that launches the client honours `REX_BIN`, and runs it with a `tailscale` that finds no tailnet and no update check. X11 checks use an isolated display, and those that select text by pointer pin the pane padding in their private `workspace.json`, so pointer positions come from the layout they set rather than the app's default. Of the Wayland scripts, `mouse-check.py`, `readme-screenshot.py` and `demo-record.py` start a private headless compositor; `wayland-seat-smoke.py` opens its window on the compositor `WAYLAND_DISPLAY` names, so point it at a disposable one.
 
 - `connection-only-smoke.py`: a missing or stale socket must never execute the Rex CLI.
 - `ssh-setup-smoke.py`: the real opt-in setup UI against a private localhost sshd and preview.14 executable, with isolated HOME/XDG state and SSH config. Checks attachment-only, Not now, confirmed native start, zero created sessions and subsequent `ssh -L` attachment; stops its server and sshd by PID. Requires explicit `REX_CLI` and `REX_BIN`; no installation or real host setup is performed.
 - `navigation-x11.py`: isolated single-host private-server checks for global tab shortcuts, reverse wrapping and mouse Back/Forward across sessions; also exercises named history Commands. Cross-host navigation and reconnect behavior are covered by headless/protocol tests, not this script.
 - `process-cwd-contract.py`: private-server process-directory and missing-directory fallback checks without OSC 7; set `REX_BIN` to also check keyboard/pane-menu splits and new tabs through the real client on X11. Keeps logs/captures under `~/.cache/agent-ws/`.
-- `x11-smoke.py`: real X11 events (forms, clipboard, exact pointer copy and raw Kitty key isolation). Requires `REX_SERVER` explicitly set to a disposable server (no autostart); `REX_BIN` selects a debug or release client.
+- `x11-smoke.py`: real X11 events (forms, clipboard, exact pointer copy and raw Kitty key isolation). Requires `REX_SERVER` explicitly set to a disposable server (no autostart); `REX_BIN` selects a debug or release client. Runs the client with its own HOME and the pane padding pinned.
 - `scroll-selection-x11.py`: private-server Unicode copy checks after scrolling, drag autoscroll, and Shift selection in a fullscreen mouse-tracking TUI without breaking ordinary mouse reports.
 - `kitty-graphics-x11.py`: private-server pixel checks for live RGBA, chunked PNG, image restoration after reattach and deletion.
 - `clipboard-x11.py`: isolated private-server acceptance check for this feature; see its docstring.
 - `alt-arrow-x11.py`: isolated private-server acceptance check for this feature; see its docstring.
 - `sidebar-x11.py`: private-server check that the sidebar's open state survives relaunch, with captures of both tab positions.
-- `rune-acceptance-x11.py`: window-corner, terminal-key and frame-CPU acceptance checks on X11.
+- `rune-acceptance-x11.py`: window-corner, terminal-key and frame-CPU acceptance checks on X11. Requires `REX_SERVER` (disposable); also the shared helpers (`Desktop`, `grid_origin`) the other X11 scripts import.
 - `chrome-spike-x11.py` (with the `chrome_spike` example): borderless window chrome on X11.
-- `wayland-seat-smoke.py`: Wayland seat/resource selection on a multi-seat compositor.
+- `wayland-seat-smoke.py`: Wayland seat/resource selection on a multi-seat compositor. Requires `REX_SERVER` (disposable) and uses `REX_BIN`.
 - `mouse-check.py`: terminal mouse reporting with real pointer input on a private headless Wayland display.
 - `readme-screenshot.py`: regenerates `docs/screenshot.png` from a private Rex server and headless compositor, with a throwaway home and prompt so no local details appear.
+- `docs-captures.py`: regenerates the documentation screenshots through Rune's `--script`/`--snap`/`--tree` tooling, headless, against two private servers; the sidebar is opened by the saved config, the Add host list sees no tailnet and the `cargo test -q` pane prints fixed text, so reruns are reproducible.
 - `demo-record.py`: records a demo video of the app on a private headless compositor (uses the `tools/vptr` virtual-pointer helper).
 
 See [AGENTS.md](AGENTS.md) for the code layout and contributor conventions, and [DESIGN.md](DESIGN.md) / [PRODUCT.md](PRODUCT.md) for the design system and product intent.
@@ -517,7 +518,7 @@ See [AGENTS.md](AGENTS.md) for the code layout and contributor conventions, and 
 
 Three dependencies are vendored with small, documented patches and wired in through `[patch]` in `Cargo.toml`:
 
-- [`vendor/rune/`](vendor/rune/README.md): the `rune`, `rune-motion`, `rune-staging`, `rune-taffy` and `procwatch` crates from `anomalyco/rune` at `d70929a` (MIT), with dead-key forwarding and window-chrome additions for a borderless Linux window (maximize/restore, minimize, edge resize, window menu, native window icon).
+- [`vendor/rune/`](vendor/rune/README.md): the `rune`, `rune-motion`, `rune-staging`, `rune-taffy` and `procwatch` crates from `anomalyco/rune` at `d70929a` (MIT), with dead-key forwarding and window-chrome additions for a borderless Linux window (maximized state, minimize, edge resize, window menu, native window icon).
 - [`vendor/rexrs/`](vendor/rexrs/REX-LINUX.md): `a10y/rexrs` at `780be3f` (MIT OR Apache-2.0), plus revision-13 generated types, explicit API-revision range negotiation and preservation of an empty `attach_session_ids`.
 - [`vendor/ghostty-vt/`](vendor/ghostty-vt/REX-LINUX.md): the crates.io `ghostty-vt` 0.8.0 source (Apache-2.0; Ghostty itself is MIT), plus a safe wrapper for Ghostty's render-state image iterator, image-aware snapshot decoding, a fixed temporary-file medium setting and grayscale PNG normalization.
 
@@ -527,7 +528,20 @@ Each patch is meant to be dropped once the corresponding upstream release has eq
 
 Still needing hands-on validation: physical Wayland pointer gestures (move, edge resize, double-click, window menu), multi-seat Wayland desktops, input methods beyond dead-key composition, and sustained daily use. On X11, winit has no window-menu request, so right-clicking the drag region does nothing there.
 
-Not implemented: animated Kitty graphics and accessibility (AT-SPI). Packaging includes the Nix flake, Linux tarballs and Debian/Ubuntu packages; RPM, Flatpak and AUR packages are not provided.
+Not implemented: animated Kitty graphics. Packaging includes the Nix flake, Linux tarballs and Debian/Ubuntu packages; RPM, Flatpak and AUR packages are not provided.
+
+### Accessibility
+
+Rune's AT-SPI tree is enabled (Rune's default `accessibility` feature). Rune builds it only while the desktop's accessibility bus has `org.a11y.Status IsEnabled` set. It was inspected with an AT-SPI client script on a private bus; **it has not been tried with Orca or any other screen reader, so what is spoken is unknown.**
+
+What a client sees:
+
+- **Chrome.** Toolbar, sidebar, Settings, dialog and notice buttons have accessible names (the resize handles do not). Toolbar tabs, Settings sections, switches (toggle buttons with a pressed state), segmented controls (radio buttons with a checked state) and text fields (with caret, selection and edit events, and `EditableText`) have roles and states. Dialogs have role dialog, are named by their title, move focus to a button or tab inside, drop the window behind them from the tree while open, and close on Escape. The switcher and Commands lists report the highlighted row as the focused item as you move through it (the search field then no longer reports focus itself). Notices (toasts and the update notice) are status regions and raise AT-SPI announcements when they appear while a client is attached. Rex has no password fields.
+- **Terminal panes.** A pane is a button named `Terminal <pane name>` holding one panel per visible row and one label per text segment. The labels carry the visible text and update as output arrives (about 0.1 to 0.2 s after a shell command's output was sent, in a test); nothing off screen, from another tab, session or host, or from scrollback is exposed. There is no text interface, caret, selection or terminal role, so a client reads node names rather than lines, words or characters, and each redraw replaces nodes. The pane is not focusable and keyboard focus is reported on the window, not the terminal.
+- **Keyboard.** Ordinary keys go to the terminal by design. Without a pointer you can reach the rest through Commands (Ctrl Shift P): it lists Settings, Add host, tabs, panes, sessions and the other chrome actions. Inside Settings and dialogs, Tab, arrow keys and Escape work. No item of the pane menu took focus when it opened and Down was pressed, and the toolbar and sidebar buttons are not focusable. Clients can still press every named button, tab, switch and radio button with the AT-SPI `click` action, and focus Settings controls with `grab_focus`.
+- **Cost.** With the bus enabled the tree is built and sent on every redraw, even when no screen reader is attached (about 215 nodes per update, 0.3 to 0.4 ms each, 95th percentile under 0.7 ms). While a full-screen program redrew 20 times a second, the app used about 0.71 CPU cores with the bus enabled and no client of mine attached, about 0.78 while a script walked the whole tree once a second, and about 0.59 with the bus disabled (the pre-bump build: 0.66); three interleaved rounds on a busy machine, so treat the differences as rough. Resident memory rose by about 5 MB. A client walking the tree during a redraw sometimes hit stale nodes (3 to 5 failed reads in 30 walks). The release binary is about 13 MB larger than before the bump; about 5 MB of that is the accessibility feature (51.2 MB without it, 56.1 MB with it).
+
+Known gaps: terminal text interface and terminal role; terminal pane focus; keyboard access to the pane menu and the toolbar and sidebar buttons; the sidebar's session rows (buttons whose names end in "(current)") have no selected state; group labels for segmented controls and setting titles are separate nodes, not associated with their controls; resize handles, the dialog scrim and the window-sized press targets are unnamed nodes; a notice raises four announcement events (its two nested status regions, text and Dismiss button), which a screen reader might read more than once.
 
 ## Third-party software and assets
 

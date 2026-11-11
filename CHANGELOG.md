@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- **AT-SPI accessibility tree**, from Rune's new default `accessibility` feature, which stays on. Checked with an AT-SPI client script on a private bus; not tried with Orca or another screen reader. Chrome buttons, tabs, switches, segmented controls, text fields (with caret, selection and edit events), dialogs and notices have roles, names and states, and notices raise announcements. The terminal pane exposes its visible rows as plain labels only: no text interface, caret, selection or focus. See the README's Accessibility section for what was observed and what is missing.
+- **Accessibility names and states from that check:** the active toolbar and sidebar tab reports selected; dialogs are named by their title; each terminal pane is named `Terminal <pane name>`; and the switcher and Commands report the highlighted row (as an active descendant), so an AT-SPI client is told which row is highlighted as you arrow through the list.
+
+### Changed
+
+- **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. Two patches are dropped because Rune now provides them: `Tx::toggle_maximize` (now `Tx::toggle_maximized`) and the `fc-list` system-font discovery. The Linux window icon moved into Rune's `rune::set_app_icon`, whose Linux support is still a Rex patch. Scrolling and redraw cost far less: on the acceptance machine, p95 frame CPU while scrolling btop fell from about 35 ms to about 8 ms.
+- **Rex now takes Rune's rendering as it is.** Translucent 1 pt rims on chips, popovers, pills and cards are slightly brighter, because borders draw over the fill; at 1.25× and 1.5× they are exactly one device pixel wide. Text line boxes are no longer rounded up to device pixels, so Settings rows are 1 pt tighter. Text uses Rune's new default rasteriser, which is heavier at 1× and unchanged at 2×. Terminal cell size and column positions are unchanged.
+- **Accessibility costs a little while the bus is enabled.** The release binary is about 13 MB larger after the bump, about 5 MB of it the accessibility feature. The tree is built on every redraw whenever `org.a11y.Status IsEnabled` is set, even with no screen reader attached: during a 20 Hz full-screen redraw the app used about 0.71 CPU cores with it enabled and 0.59 with it disabled (three rounds on a busy machine; the pre-bump build used 0.66).
+
 ### Fixed
 
 - **An unfocused Rex window no longer overwrites the system clipboard, and its cursor is hollow.** Rune delivers native window focus to the view's first element, but Rex registered its handler on a child of it, so the app never learned that its window lost focus: terminal OSC 52 copies were still applied (the window-focus gate for them never closed) and the focused pane kept a solid block cursor. Window focus now also drives other behavior that was dead before: a bell, Done or notification in the visible tab while the window is unfocused shows the tab's word and can fire a desktop notification, a drag selection ends, the key-sequence state resets and the input method is turned off on blur, and on refocus shortcut override files are reloaded (as the README has long said) and the window re-claims size ownership (with two Rex windows of different sizes on one session, the terminal reflows when you switch between them). Checked on X11 and on a private Wayland compositor; the 0.6.0 release behaves the same way, so this is not new in the Rune bump. Found while looking into a report that OSC 52 copy doesn't work in the Codex CLI (reported by akakabuto).
@@ -9,11 +20,6 @@
 ### Documentation
 
 - **README: Clipboard (OSC 52).** What copies reach the system clipboard and when, that reads are never answered and large payloads are dropped, and what to do for programs that only send OSC 52 when an `SSH_*` variable is set (the Codex CLI, Neovim 0.10.x, LazyVim) or prefer the server's own clipboard. Rex Linux cannot set environment variables in a remote terminal; the page gives the server-side workarounds that were checked. Reported by akakabuto. This does not change how Codex decides where to copy.
-
-### Changed
-
-- **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. Two patches are dropped because Rune now provides them: `Tx::toggle_maximize` (now `Tx::toggle_maximized`) and the `fc-list` system-font discovery. The Linux window icon moved into Rune's `rune::set_app_icon`, whose Linux support is still a Rex patch. Scrolling and redraw cost far less: on the acceptance machine, p95 frame CPU while scrolling btop fell from about 35 ms to about 8 ms.
-- **Rex now takes Rune's rendering as it is.** Translucent 1 pt rims on chips, popovers, pills and cards are slightly brighter, because borders draw over the fill; at 1.25× and 1.5× they are exactly one device pixel wide. Text line boxes are no longer rounded up to device pixels, so Settings rows are 1 pt tighter. Text uses Rune's new default rasteriser, which is heavier at 1× and unchanged at 2×. Terminal cell size and column positions are unchanged.
 
 ## 0.6.0 - 2026-11-10
 

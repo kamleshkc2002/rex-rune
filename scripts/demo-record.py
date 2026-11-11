@@ -4,7 +4,12 @@ GPU) at 1920x1080 and scale 1.25, a private Rex server with fixture sessions, th
 on Wayland driven by a virtual pointer and keyboard (`vptr`, a tiny wlroots client), and
 wf-recorder at 60 fps.
 
-Nothing touches the user's desktop or their Rex server. `DEMO_PROBE=1` skips the recording and
+Nothing touches the user's desktop or their Rex server: the server listens on a private socket
+and every `rex` call names it with autostart off. The fixture shells do run with your real
+environment (HOME, shell startup files and prompt, and your `~/.config/rex`), so the recording
+can show your user name, host name and paths: check the clip before publishing it. REX_BIN selects the client (default
+target/release/rex-linux), which runs with a `tailscale` that finds no tailnet and no update
+check. `DEMO_PROBE=1` skips the recording and
 writes screenshots at the interesting moments instead, for calibrating coordinates.
 
 Needs a `rex` server binary, labwc, wlr-randr, wf-recorder, grim, xkbcli, ffmpeg, the `vptr`
@@ -27,6 +32,7 @@ REPO = str(ROOT)
 SCALE = 1.25
 W, H = 1920, 1080
 PROBE = os.environ.get("DEMO_PROBE") == "1"
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
 
 # Evdev key codes on a US layout: (code, needs shift).
 KEYS = {"Enter": (28, False), "Escape": (1, False), "Tab": (15, False), "BackSpace": (14, False),
@@ -61,10 +67,10 @@ def main():
         return p
 
     def api(method, **payload):
-        return json.loads(subprocess.check_output(["rex", "-S", endpoint, "api", "call", method, json.dumps(payload)], text=True))
+        return json.loads(subprocess.check_output(["rex", "--autostart=false", "-S", endpoint, "api", "call", method, json.dumps(payload)], text=True))
 
     def send(block, text):
-        subprocess.check_call(["rex", "-S", endpoint, "send", "-b", block, text], stdout=subprocess.DEVNULL)
+        subprocess.check_call(["rex", "--autostart=false", "-S", endpoint, "send", "-b", block, text], stdout=subprocess.DEVNULL)
 
     try:
         spawn(["rex", "server", "run", "--listen", endpoint, "--restore=false", "--state-dir", str(WORK / "state")],
@@ -119,8 +125,13 @@ def main():
         config.write_text(json.dumps({
             "hosts": [{"label": "workstation", "endpoint": endpoint}],
             "last_host": endpoint, "sessions": {endpoint: main_sid}, "font_size": 14}))
-        spawn([str(ROOT / "target/release/rex-linux"), "--endpoint", endpoint, "--session", main_sid,
-               "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"], env=env)
+        stub = WORK / "bin"
+        stub.mkdir()
+        (stub / "tailscale").write_text("#!/bin/sh\nexit 1\n")
+        (stub / "tailscale").chmod(0o755)
+        spawn([str(APP), "--endpoint", endpoint, "--session", main_sid,
+               "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"],
+              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_LINUX_NO_UPDATE_CHECK="1"))
         keymap = WORK / "us.xkb"
         keymap.write_text(subprocess.check_output(["xkbcli", "compile-keymap", "--layout", "us"], text=True))
         driver = subprocess.Popen([os.environ.get("DEMO_VPTR", str(ROOT / "tools/vptr/target/release/vptr")),

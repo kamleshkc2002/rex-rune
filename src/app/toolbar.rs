@@ -95,6 +95,7 @@ fn tab_track(s: &Workspace) -> El {
             let mut tab_el = row()
                 .key(format!("tab:{id}"))
                 .role("tab")
+                .focus_selected(active)
                 .label(match &word {
                     Some((word, _)) => format!("{label} · {word}"),
                     None => label.clone(),

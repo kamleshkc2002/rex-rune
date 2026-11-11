@@ -1,6 +1,8 @@
 use super::*;
 #[path = "cwd_tests.rs"]
 mod cwd_tests;
+#[path = "download_tests.rs"]
+mod download_tests;
 #[path = "keymap_tests.rs"]
 mod keymap_tests;
 #[path = "navigation_tests.rs"]
