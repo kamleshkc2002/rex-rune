@@ -1,5 +1,7 @@
 //! Headless focus and key-routing checks on Rune's runtime (no server: the one host is a
 //! socket that does not exist).
+#[path = "about_tests.rs"]
+mod about_tests;
 #[path = "bindings_integration_tests.rs"]
 mod bindings_integration_tests;
 #[path = "navigation_tests.rs"]
@@ -1297,16 +1299,36 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     assert!(
         rt.elements()
             .iter()
-            .any(|e| e.text.as_deref() == Some(env!("CARGO_PKG_VERSION")))
+            .any(|e| e.text.as_deref() == Some(concat!("Version ", env!("CARGO_PKG_VERSION"))))
     );
     assert!(!has(&rt, "about-server"));
+    // The header's two copies come first, then the project links.
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
     press(&mut rt, Key::Tab); // Close
-    press(&mut rt, Key::Tab); // Repository
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy"));
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::version_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy-debug"));
+    press(&mut rt, Key::Text(" ".into()));
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::debug_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
     assert!(focused(&rt).unwrap().ends_with("about-repository"));
     press(&mut rt, Key::Enter);
     press(&mut rt, Key::Tab);
     press(&mut rt, Key::Text(" ".into()));
     press(&mut rt, Key::Tab);
+    press(&mut rt, Key::Enter);
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-issues"));
     press(&mut rt, Key::Enter);
     assert_eq!(
         rt.state.opened_links,
@@ -1318,16 +1340,8 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
                 super::about::REPOSITORY,
                 env!("CARGO_PKG_VERSION")
             ),
+            format!("{}/issues", super::about::REPOSITORY),
         ]
-    );
-    let clipboard = rune::clipboard::memory();
-    rt.use_clipboard(&clipboard);
-    press(&mut rt, Key::Tab);
-    assert!(focused(&rt).unwrap().ends_with("about-copy"));
-    press(&mut rt, Key::Enter);
-    assert_eq!(
-        clipboard.text().as_deref().map(String::as_str),
-        Some(super::about::version_info(&rt.state).as_str())
     );
 }
 

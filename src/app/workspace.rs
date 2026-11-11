@@ -328,6 +328,8 @@ impl Workspace {
         let _ = connection
             .commands
             .send(HostCommand::Keymap(Box::new(self.keymap_declaration())));
+        // About and the copied reports name the server; reading it changes nothing there.
+        let _ = connection.commands.send(HostCommand::Identify);
         let id = HostId(self.next_host);
         self.next_host += 1;
         let receiver = connection.wake.clone();
@@ -1323,6 +1325,12 @@ impl Workspace {
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
             }
             Intent::Updates => self.open_updates_settings(),
+            Intent::About => {
+                self.perform(Intent::Settings, tx);
+                self.open_section(SettingsSection::About);
+            }
+            Intent::CopyVersionInfo => self.copy_version_info(tx),
+            Intent::CopyDebugInfo => self.copy_debug_info(tx),
             Intent::CheckUpdates => self.check_updates_now(),
             Intent::EditHost(host) => {
                 let h = self.settings.hosts[host].clone();

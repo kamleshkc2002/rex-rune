@@ -60,6 +60,12 @@ pub enum Intent {
     Updates,
     /// Trigger an immediate release metadata check.
     CheckUpdates,
+    /// Open Settings → About.
+    About,
+    /// Copy the client's and the active server's versions.
+    CopyVersionInfo,
+    /// Copy the version info and each host's kind and state, without names or addresses.
+    CopyDebugInfo,
     /// Take this option of the open `Choice` list (a Settings `select_row`).
     Choose(usize),
 }
@@ -105,6 +111,7 @@ impl Intent {
                 | Intent::CloseWindow(_)
                 | Intent::Settings
                 | Intent::Updates
+                | Intent::About
                 | Intent::Fonts
                 | Intent::ClientLabel
                 | Intent::ChooseTheme
@@ -655,6 +662,9 @@ impl Workspace {
                 ("Default shell…", "", Intent::HostShell(self.active)),
                 ("Settings…", "", Intent::Settings),
                 ("Check for updates", "", Intent::CheckUpdates),
+                ("About Rex Linux", "", Intent::About),
+                ("Copy version info", "", Intent::CopyVersionInfo),
+                ("Copy debug info", "", Intent::CopyDebugInfo),
                 ("Add host…", "", Intent::AddHost),
                 ("Edit host…", "", Intent::EditHost(self.active)),
                 ("Reconnect host", "", Intent::Retry),
@@ -700,7 +710,10 @@ impl Workspace {
             }
             if let Some(avail) = self.updates.available() {
                 entries.push(Entry::new(
-                    format!("Update Rex Linux ({})…", avail.version),
+                    format!(
+                        "Update Rex Linux ({})…",
+                        rex_linux::format_version(&avail.version)
+                    ),
                     self.updates.channel.id(),
                     "Workspace",
                     Intent::Updates,

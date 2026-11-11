@@ -121,7 +121,7 @@ impl Updates {
 pub fn section(s: &Workspace) -> El {
     let k = kit();
     let u = &s.updates;
-    let current = &u.config.current_version;
+    let current = &rex_linux::format_version(&u.config.current_version);
     let channel_label = u.channel.label();
     let auto_allowed = u.channel.checks_by_default() && !u.env_opt_out;
     let switch_on = s.settings.updates.check && auto_allowed;
@@ -142,9 +142,12 @@ pub fn section(s: &Workspace) -> El {
         match &avail.unsupported_floor {
             Some(floor) => format!(
                 "Rex Linux {} is available (requires upgrading to {floor}+ first).",
-                avail.version
+                rex_linux::format_version(&avail.version)
             ),
-            None => format!("Rex Linux {} is available.", avail.version),
+            None => format!(
+                "Rex Linux {} is available.",
+                rex_linux::format_version(&avail.version)
+            ),
         }
     } else if u.state.last_checked.is_some() {
         format!("Rex Linux {current} is up to date.")
@@ -166,7 +169,7 @@ pub fn section(s: &Workspace) -> El {
             setting(
                 "Installed version",
                 &channel_label,
-                value(format!("v{current}")).key("updates-current-version"),
+                value(current.clone()).key("updates-current-version"),
             ),
             setting(
                 "Automatic update checks",
@@ -211,8 +214,12 @@ pub fn section(s: &Workspace) -> El {
             None => guidance.detail.clone(),
         };
         let mut rows = vec![
-            setting(&format!("Rex Linux {}", avail.version), &detail, actions)
-                .key("updates-available-row"),
+            setting(
+                &format!("Rex Linux {}", rex_linux::format_version(&avail.version)),
+                &detail,
+                actions,
+            )
+            .key("updates-available-row"),
         ];
         if let Some(cmd) = guidance.command {
             let cmd_copy = cmd.clone();
@@ -252,7 +259,7 @@ pub fn toast_card(s: &Workspace) -> Option<El> {
     let summary = match &avail.unsupported_floor {
         Some(floor) => format!(
             "Rex Linux {} is available (manual upgrade via {floor}+ required).",
-            avail.version
+            rex_linux::format_version(&avail.version)
         ),
         None => guidance.summary,
     };

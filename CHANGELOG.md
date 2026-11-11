@@ -2,7 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- **Server version in About:** each host connection now asks its Rex server for its version once with a read-only `server.version` request, and keeps the status the session list already carries (process, sessions, listeners, Tailscale state). Settings → About shows `Rex Server <version>` for the active host with the negotiated API revision and the range the server supports; a server that doesn't answer is shown as not reported and nothing else changes.
+- **Copy debug info**, next to **Copy version info** in Settings → About: the version info plus the install channel, display server, desktop, interface theme and zoom, terminal font, and each saved host's kind, connection state, API revision and server version. Neither copy contains a host name, address, session name, client id or credential. Commands gains **About Rex Linux**, **Copy version info** and **Copy debug info**, and About links to the issue tracker.
+
 ### Changed
+
+- **About page:** a centred header with the app icon, version, install channel and the active server's version replaces the version rows; commit and build date share one row. Versions are printed one way everywhere (`0.6.0`, no `v` on Settings → Updates).
 
 - **Settings layout:** Settings is a wider dialog (816×680, clamped to the window) whose pages are grouped into headed cards with a divider between every row, one-sentence helpers and controls aligned to one edge. The window palette, terminal theme and notice position are popup buttons whose lists open over Settings beside the control instead of replacing it; font family, client label and each host's default shell are rows that open their form; pane density and tab position are segmented controls with glyphs. Long pages fade at the scrolled edge and show a scroll thumb. Settings and saved preferences are unchanged.
 

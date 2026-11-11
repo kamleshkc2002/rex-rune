@@ -26,7 +26,7 @@ Some probes and Python scripts in `scripts/` connect to the configured Rex serve
 
 - Protocol and model library (`src/lib.rs`, no UI dependency):
   - `transport.rs`, `wire.rs`: Unix/HTTPS WebSockets, data tickets, snapshot framing.
-  - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition.
+  - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition. `connection/server_info.rs`: the server's version and status on `HostModel::server_info`, read-only and once per connection.
   - `terminal.rs`: Ghostty decoding and render frames. `terminal/search.rs`: searching the screen and scrollback with Ghostty's search. `links.rs`: OSC 8 hyperlinks and text URLs in a frame.
   - `layout.rs`: split placement. `settings.rs`: local configuration.
   - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream, `open.rs` the "never Open" list); driven by `HostCommand::Download` in `connection/downloads.rs`. No UI yet.
