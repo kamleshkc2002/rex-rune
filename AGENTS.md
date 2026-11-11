@@ -63,6 +63,7 @@ Some probes connect to the configured Rex server and create sessions there. Of t
 - UI changes should follow [DESIGN.md](DESIGN.md). Prefer verifying them in a rendered build (for example with Rune's `-- --snap out.png`) rather than by reading code.
 - Add tests for protocol and state-machine changes; headless UI tests in `src/app/tests.rs` cover focus and dialog behavior.
 - Keep the README's claims honest: don't document features that aren't implemented or checked.
+- Outside pull requests are not accepted. Never ask a contributor to open a PR or invite one in issue replies; welcome issues (including issues pointing at fork commits or branches), harvest changes from forks following [`docs/fork-harvest-2026-11.md`](docs/fork-harvest-2026-11.md)'s approach (cherry-pick or rewrite what fits), credit the author with a `Co-authored-by:` trailer, and mention the author in [CHANGELOG.md](CHANGELOG.md).
 
 ## Vendored patches
 
