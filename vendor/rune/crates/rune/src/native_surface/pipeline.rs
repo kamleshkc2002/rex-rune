@@ -77,6 +77,8 @@ pub struct SurfaceRenderer {
     staging: Option<rune_staging::Staging>,
     #[cfg(target_os = "macos")]
     importer: Option<macos::Importer>,
+    #[cfg(target_os = "windows")]
+    shared: Option<windows::Importer>,
 }
 impl SurfaceRenderer {
     #[cfg(target_arch = "wasm32")]
@@ -163,6 +165,8 @@ impl SurfaceRenderer {
             staging: None,
             #[cfg(target_os = "macos")]
             importer: None,
+            #[cfg(target_os = "windows")]
+            shared: None,
         }
     }
 
@@ -267,7 +271,7 @@ impl SurfaceRenderer {
             let imported = self.cache[&key].clone();
             let f = &imported.frame;
             let upright = f.orient.upright(f.size);
-            let image = image_rect(d.rect, upright, d.fit);
+            let image = super::place::image_rect(d.rect, upright, d.fit, d.surface.place());
             let exact = (image[2] - upright[0] as f32).abs() < 0.001
                 && (image[3] - upright[1] as f32).abs() < 0.001
                 && (image[0] - image[0].round()).abs() < 0.001
@@ -373,6 +377,13 @@ impl SurfaceRenderer {
                 objc2_video::rc::autoreleasepool(|_| {
                     self.importer.as_ref().unwrap().import(b, frame.format, frame.size)
                 })?
+            }
+            #[cfg(target_os = "windows")]
+            Source::Shared(t) => {
+                if self.shared.is_none() {
+                    self.shared = Some(windows::Importer::new(device)?);
+                }
+                self.shared.as_mut().unwrap().import(queue, t)?
             }
         };
         Ok(Imported { frame, textures })
@@ -590,18 +601,4 @@ fn texture_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
         },
         count: None,
     }
-}
-fn image_rect(node: [f32; 4], source: [u32; 2], fit: SurfaceFit) -> [f32; 4] {
-    let a = node[2] / source[0] as f32;
-    let b = node[3] / source[1] as f32;
-    let scale = match fit {
-        SurfaceFit::Fit => a.min(b),
-        SurfaceFit::Fill => a.max(b),
-    };
-    let w = source[0] as f32 * scale;
-    let h = source[1] as f32 * scale;
-    let x = node[0] + (node[2] - w) * 0.5;
-    let y = node[1] + (node[3] - h) * 0.5;
-    // At unit scale favour sharp shared text over a subpixel translation of its image.
-    if (scale - 1.0).abs() < 1e-6 { [x.round(), y.round(), w, h] } else { [x, y, w, h] }
 }

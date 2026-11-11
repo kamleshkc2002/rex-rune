@@ -24,6 +24,9 @@ pub struct StreamEdge {
     pub duration: f32,
     /// Clip the row at its presented height (else content overflows while it grows).
     pub clip: bool,
+    /// A streaming row, and its catch-up once the stream ends, draws past its presented height,
+    /// unclipped and unmasked, into space the app keeps below it; other rows still clip.
+    pub overflow: bool,
     /// Word fade-in duration in seconds (0 = words appear at once).
     pub word_fade: f32,
 }
@@ -38,6 +41,7 @@ pub mod edge {
         catch_up: 1.0,
         duration: 1.0,
         clip: true,
+        overflow: false,
         word_fade: 0.18,
     };
     pub const FAST_FEATHER: StreamEdge = StreamEdge {
@@ -48,6 +52,7 @@ pub mod edge {
         catch_up: 2.4,
         duration: 0.55,
         clip: true,
+        overflow: false,
         word_fade: 0.18,
     };
     pub const NO_MASK: StreamEdge = StreamEdge {
@@ -58,6 +63,7 @@ pub mod edge {
         catch_up: 1.0,
         duration: 1.0,
         clip: false,
+        overflow: false,
         word_fade: 0.0,
     };
     pub const WORD_FADE: StreamEdge = StreamEdge {
@@ -68,6 +74,7 @@ pub mod edge {
         catch_up: 1.0,
         duration: 1.0,
         clip: false,
+        overflow: false,
         word_fade: 0.36,
     };
     pub const ALL: [StreamEdge; 4] = [FEATHER, FAST_FEATHER, NO_MASK, WORD_FADE];
@@ -104,7 +111,42 @@ pub mod caps {
     pub const APPROACH_MIN: f32 = 3.0;
 }
 
+/// A streaming row's climb (`El::streaming`): one critically damped follower whose stiffness
+/// tracks how fast its target has been rising, so a slow stream creeps on steadily between
+/// words and lines, a fast one keeps up, and the speed never kicks up from rest per arrival.
+/// It trails by `2 × rate / ω` (`2 × TRAIL` once the rate sets ω), held back under the feather.
+pub mod pace {
+    /// Seconds the arrival rate is averaged over.
+    pub const WINDOW: f32 = 0.5;
+    /// Half the points a steady stream's climb trails its text by.
+    pub const TRAIL: f32 = 4.0;
+    /// Least stiffness (1/s) while the stream runs: a slow one creeps rather than stopping.
+    pub const MIN: f32 = 2.5;
+    /// Least stiffness once the stream has ended, reached over [`LAND_RAMP`] seconds, so the
+    /// last of it lands in under half a second.
+    pub const LAND: f32 = 18.0;
+    pub const LAND_RAMP: f32 = 0.15;
+    /// Least speed (points per second) once the stream has ended: it stops rather than creeps.
+    pub const LAND_MIN: f32 = 8.0;
+    /// Most stiffness, for the fastest stream.
+    pub const MAX: f32 = 40.0;
+    /// Hardest change of speed (points per second squared).
+    pub const ACCEL: f32 = 6000.0;
+}
+
 pub const SUBSTEP: f32 = 1.0 / 240.0;
+
+/// How fast a fold's feather deepens once its edge starts moving (points per second): 28 pt in
+/// under 50 ms, so the edge softens as the spring picks up rather than in its first frame.
+const FOLD_FEATHER_GROW: f32 = 600.0;
+
+/// `El::fold_glide` and `El::fold_feather`: a fold's own spring and the depth of its moving
+/// edge's feather (the stack's `StreamEdge::mask_max` when `None`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FoldGlide {
+    pub spring: Spring,
+    pub feather: Option<f32>,
+}
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct GrowTrack {
@@ -122,35 +164,174 @@ pub struct GrowTrack {
     pub(crate) duration: f32,
     /// Points between the presented height and the target when it was last set (see [`WHOLE_REACH`]).
     pub(crate) span: f32,
+    /// `El::fold_glide`: this row's own spring, in place of the stack's.
+    pub(crate) glide: Option<Spring>,
+    /// `El::fold_feather`: the glide's feather depth, in place of the stack edge's.
+    pub(crate) feather: Option<f32>,
+    /// A glide's height at which the row's bottom leaves the window: the part of a change
+    /// beyond it lands at once, out of sight.
+    pub(crate) limit: f32,
+    /// A glide opening past `limit`: where its spring stops before the row lands whole.
+    pub(crate) stage: Option<f32>,
+    /// A glide whose contents draw `a + b × h` points up from their layout (`lift`): riding its
+    /// bottom edge while it shuts under a held header (`hide_above`), and easing back as it
+    /// turns around.
+    pub(crate) slide: Option<(f32, f32)>,
+    /// Points of lifted contents put back above the row as its glide landed whole, for its
+    /// viewport's offset to take up (`Runtime::restore_above`).
+    pub(crate) restore: f32,
+    /// The share of each point it shuts by that a header held over it comes down, when the
+    /// viewport's end will stop its bottom short (`Runtime::give_way`).
+    pub(crate) give: Option<f32>,
+    /// Climbing on the stream's [`pace`]: from its first streaming frame until it rests.
+    pub(crate) paced: bool,
+    /// Points per second the target has been rising at, averaged over [`pace::WINDOW`].
+    pub(crate) rate: f32,
+    /// Seconds a paced climb has gone on since its stream ended.
+    pub(crate) ended: f32,
+    /// A glide last retargeted shut: landed, it still lifts and clips what it folded away until
+    /// that has gone (`Runtime::place_growth_rows`).
+    pub(crate) shut: bool,
 }
+
+/// A row within this many points of its height, moving slower than `SETTLE_V` points a second,
+/// lands there: its last creep moves it under a hundredth of a point a frame, which no pixel shows,
+/// and would keep the window drawing frames that change nothing.
+const SETTLE: f32 = 1.0 / 16.0;
+const SETTLE_V: f32 = 1.5;
 
 impl GrowTrack {
     pub fn settled(h: f32) -> GrowTrack {
-        GrowTrack { h, v: 0.0, target: h, age: 0.0, mask: 0.0, streaming: false, whole: false, duration: 0.0, span: 0.0 }
+        GrowTrack { h, v: 0.0, target: h, age: 0.0, mask: 0.0, streaming: false, whole: false, duration: 0.0, span: 0.0, glide: None, feather: None, limit: f32::INFINITY, stage: None, slide: None, restore: 0.0, give: None, paced: false, rate: 0.0, ended: 0.0, shut: false }
     }
 
     pub fn moving(&self) -> bool {
-        (self.h - self.target).abs() > 1.0 / 128.0 || self.v.abs() > 0.5 || self.mask > 0.01
+        !self.at_rest(self.target - self.h) || self.mask > 0.01
+    }
+
+    fn at_rest(&self, remaining: f32) -> bool {
+        // Closing slack under a pinned stack and rows on a reflow override position the
+        // viewport: their last step remains visible. A fold glide lands as other rows do:
+        // its spring's tail under a sixteenth of a point creeps in steps the pixel snap
+        // holds and lets go, which reads as the row stopping and setting off again.
+        let (distance, speed) = if self.duration > 0.0 || self.target == 0.0 {
+            (1.0 / 128.0, 0.5)
+        } else { (SETTLE, SETTLE_V) };
+        remaining.abs() <= distance && self.v.abs() <= speed
     }
 
     pub fn retarget(&mut self, target: f32) {
         if (target - self.target).abs() > 1e-4 {
+            let lift = self.lift();
             if !self.moving() {
                 self.age = 0.0;
             }
+            if self.streaming {
+                self.rate += (target - self.target).max(0.0) / pace::WINDOW;
+            }
             self.target = target;
             self.span = (target - self.h).abs();
+            self.stage = None;
+            self.give = None;
+            self.shut = self.glide.is_some() && target < self.h;
+            if self.glide.is_some() {
+                // Only what shows of a long fold moves: shutting, the part below the window goes
+                // first; opening, it lands once the spring has carried the row to the window's edge.
+                if target < self.h && self.h > self.limit {
+                    self.h = self.limit.max(target);
+                } else if target > self.h && target > self.limit {
+                    self.stage = Some(self.limit.max(self.h));
+                }
+                self.span = (target - self.h).abs();
+            }
+            // Lifted contents ease back to their layout over what's left of the glide.
+            let d = target - self.h;
+            self.slide = (lift > 1.0 / 64.0 && d.abs() > 1.0 / 64.0).then(|| (lift * target / d, -lift / d));
         }
+    }
+
+    /// How far up from their layout the row's contents draw.
+    pub(crate) fn lift(&self) -> f32 {
+        self.slide.map_or(0.0, |(a, b)| (a + b * self.h).max(0.0))
+    }
+
+    /// A fold shutting under a header held stuck to its viewport's top, with `above` points of
+    /// it hidden above that header: those go at once, out of sight, and its contents ride its
+    /// bottom edge from here, so what shows slides up under the header on the fold's spring
+    /// rather than racing past. Returns the points cut, which the viewport's offset drops by so
+    /// nothing on screen moves.
+    pub(crate) fn hide_above(&mut self, above: f32) -> f32 {
+        let pinned = self.lift() + self.h;
+        let cut = above.min(self.h - self.target).max(0.0);
+        self.h -= cut;
+        self.span = (self.target - self.h).abs();
+        self.slide = Some((pinned, -1.0));
+        cut
+    }
+
+    /// A fold opening again while its contents draw lifted, its viewport pinned to its end so
+    /// it grows from its bottom: its spring stops `rise` points on, where its header has risen
+    /// back to the top and what its contents hid below has shown, its contents easing up as
+    /// much on the way; the rest then lands at once, all of it lifted, which the end takes up.
+    pub(crate) fn ride_up(&mut self, rise: f32) {
+        let (from, h) = (self.lift(), self.h);
+        let stage = (h + rise.max(0.0)).min(self.target);
+        let (d, end) = (stage - h, self.target - stage);
+        let b = if d > 1.0 / 64.0 { (end - from) / d } else { 0.0 };
+        self.slide = Some((if d > 1.0 / 64.0 { from - b * h } else { end }, b));
+        self.stage = Some(stage);
+        self.span = d;
+    }
+
+    /// A fold shutting over what it held, which its clip folds away (`El::fold_glide`).
+    pub(crate) fn shutting_fold(&self) -> bool {
+        self.glide.is_some() && self.h > self.target + 0.01
+    }
+
+    /// The row's `El::streaming`, `El::arrives_whole` and `El::fold_glide` (which streaming
+    /// overrides) with the height at which its bottom leaves the window.
+    pub(crate) fn set_kind(&mut self, streaming: bool, whole: bool, glide: Option<(FoldGlide, f32)>) {
+        self.streaming = streaming;
+        self.paced |= streaming;
+        self.whole = whole;
+        let glide = glide.filter(|_| !streaming);
+        if glide.is_none() {
+            // A glide's stop at the window's edge goes with it: the row it hands over to carries
+            // on from where it is, rather than landing the rest at once.
+            self.stage = None;
+            self.shut = false;
+        }
+        self.glide = glide.map(|g| g.0.spring);
+        self.feather = glide.and_then(|g| g.0.feather);
+        self.limit = glide.map_or(f32::INFINITY, |g| g.1);
     }
 
     /// Advance one fixed substep.
     pub fn step(&mut self, spring: Spring, edge: &StreamEdge, carrying_tail: bool) {
         let dt = SUBSTEP;
         let spring = spring.with_duration(spring.duration.max(self.duration) * edge.duration.max(0.05));
-        let rem = self.target - self.h;
-        if rem.abs() <= 1.0 / 128.0 && self.v.abs() < 0.5 {
+        let aim = self.stage.unwrap_or(self.target);
+        let rem = aim - self.h;
+        if self.stage.is_some() && rem.abs() < 1.0 {
+            // The glide carried the row to the window's edge: the rest lands at once, out of view,
+            // and contents still lifted come back above it.
+            self.restore += self.lift();
+            self.slide = None;
             self.h = self.target;
             self.v = 0.0;
+            self.stage = None;
+        } else if self.at_rest(rem) {
+            self.h = self.target;
+            self.v = 0.0;
+        } else if self.paced && rem > 0.0 {
+            self.climb(rem, carrying_tail);
+        } else if let Some(own) = self.glide.filter(|_| !self.streaming) {
+            // A fold: its own spring for its own time, however far, from the velocity it has.
+            let (x, v) = own.sample(self.h, self.v, aim, dt);
+            let landed = (rem >= 0.0 && x >= aim) || (rem <= 0.0 && x <= aim);
+            self.h = if landed { aim } else { x };
+            self.v = if landed { 0.0 } else { v };
+            self.age += dt;
         } else if self.whole {
             // Content that arrived complete has nothing to read as it opens: one critically
             // damped glide on the spring, however far, which a pinned viewport follows.
@@ -197,11 +378,54 @@ impl GrowTrack {
         } else {
             0.0
         };
-        if aim > self.mask {
+        if self.glide.is_some() && !self.streaming {
+            // A fold's edge feathers both ways, opening and shutting: it softens as the spring
+            // picks up, holds through a reversal, and goes crisp as the glide lands.
+            // Contents riding the bottom edge (`hide_above`) aren't cut by it: nothing to soften.
+            let left = (self.target - self.h).abs();
+            let riding = self.slide.is_some_and(|(_, b)| b == -1.0);
+            let aim = if left > 0.25 && !riding { self.feather.unwrap_or(edge.mask_max).min(1.5 * left) } else { 0.0 };
+            self.mask = if aim > self.mask { (self.mask + FOLD_FEATHER_GROW * dt).min(aim) } else { aim };
+        } else if aim > self.mask {
             self.mask = (self.mask + caps::MASK_GROW * dt).min(aim);
         } else {
             self.mask = (self.mask - edge.shrink * dt).max(aim);
         }
+        self.rate *= (-dt / pace::WINDOW).exp();
+        if !self.moving() {
+            // A glide that shut keeps its contents lifted until what it folded away has left.
+            if !self.shut { self.slide = None; }
+            if !self.streaming {
+                self.paced = false;
+                self.rate = 0.0;
+                self.ended = 0.0;
+            }
+        }
+    }
+
+    /// One substep of a streaming row's climb `rem` points short of its target (see [`pace`]).
+    fn climb(&mut self, rem: f32, carrying_tail: bool) {
+        let dt = SUBSTEP;
+        self.ended = if self.streaming { 0.0 } else { self.ended + dt };
+        let landing = (self.ended / pace::LAND_RAMP).min(1.0);
+        let w = (self.rate / pace::TRAIL).clamp(pace::MIN + (pace::LAND - pace::MIN) * landing, pace::MAX);
+        let a = (w * w * rem - 2.0 * w * self.v).clamp(-pace::ACCEL, pace::ACCEL);
+        let mut cap = if rem > caps::LONG_DISTANCE { caps::MAX_LONG } else { caps::MAX };
+        if carrying_tail {
+            cap = cap.min(caps::CARRYING_TAIL);
+        }
+        // No faster than braking at ACCEL still stops on the target. Once the stream has ended,
+        // no slower than LAND_MIN, so the last of it lands rather than crawling; while it runs,
+        // no floor, which would outrun a reveal rising a fraction of a point a word.
+        let v = (self.v + a * dt).max(pace::LAND_MIN * landing).min(cap.min((2.0 * pace::ACCEL * rem).sqrt()));
+        if v * dt >= rem {
+            self.h = self.target;
+            self.v = 0.0;
+        } else {
+            self.h += v * dt;
+            self.v = v;
+        }
+        self.age += dt;
     }
 }
 
@@ -267,8 +491,8 @@ mod tests {
         // One glide: speed rises, then falls, once.
         let peak = speeds.iter().enumerate().fold((0, 0.0), |m, (i, &v)| if v > m.1 { (i, v) } else { m }).0;
         assert!(speeds[..=peak].windows(2).all(|w| w[1] >= w[0] - 1e-3), "{speeds:?}");
-        // (The settle snap closes the last 1/128 pt.)
-        assert!(speeds[peak..].windows(2).all(|w| w[1] <= w[0] + 1.0 / 128.0), "{speeds:?}");
+        // (The settle snap closes the last SETTLE pt.)
+        assert!(speeds[peak..].windows(2).all(|w| w[1] <= w[0] + SETTLE), "{speeds:?}");
     }
 
     #[test]
@@ -316,6 +540,135 @@ mod tests {
                 assert!(!(w[0] >= 0.5 && w[1] <= 0.15 * w[0]), "{streaming}: {speeds:?}");
             }
         }
+    }
+
+    const FOLD: Spring = Spring::new(0.18, 0.0);
+
+    /// A `fold_glide` row whose bottom leaves the window at 900 pt, stepped at 120 Hz on a slow stack spring and a
+    /// slow commit floor, neither of which may slow it: (seconds, height) per frame.
+    fn fold(from: f32, to: f32, secs: f32) -> (GrowTrack, Vec<(f32, f32)>) {
+        let mut t = GrowTrack { whole: true, duration: 1.0, ..GrowTrack::settled(from) };
+        t.set_kind(false, true, Some((FoldGlide { spring: FOLD, feather: None }, 900.0)));
+        t.retarget(to);
+        let mut out = vec![(0.0, t.h)];
+        for k in 1..=(secs * 120.0) as usize {
+            t.step(GROWTH, &edge::FEATHER, false);
+            t.step(GROWTH, &edge::FEATHER, false);
+            out.push((k as f32 / 120.0, t.h));
+        }
+        (t, out)
+    }
+
+    /// The height `secs` into a fold.
+    fn at(hs: &[(f32, f32)], secs: f32) -> f32 {
+        hs[(secs * 120.0).round() as usize].1
+    }
+
+    #[test]
+    fn a_fold_glides_on_its_own_spring_however_far() {
+        for (from, to) in [(40.0, 640.0), (640.0, 40.0), (40.0, 900.0)] {
+            let (t, hs) = fold(from, to, 0.5);
+            // A critically damped spring's duration is when it looks done: under 2% to go.
+            let left = (at(&hs, FOLD.duration) - to).abs();
+            assert!(left < 0.02 * (to - from).abs(), "{from} -> {to}: {left} pt left at 0.18 s");
+            assert!(!t.moving(), "{from} -> {to} settles within 0.5 s: {hs:?}");
+            assert!(hs.windows(2).all(|w| (w[1].1 - w[0].1) * (to - from) >= -1e-3), "monotone: {hs:?}");
+            assert!(hs.iter().all(|&(_, h)| h >= from.min(to) - 1e-3 && h <= from.max(to) + 1e-3), "no overshoot");
+        }
+    }
+
+    #[test]
+    fn a_fold_lands_rather_than_creeping_its_last_sixteenth() {
+        // The spring's tail under a sixteenth of a point moves in steps the pixel snap holds and
+        // lets go, which reads as the row stopping and setting off again.
+        for (from, to) in [(640.0, 40.0), (40.0, 640.0), (3040.0, 40.0), (41.0, 40.0), (40.0, 60.0)] {
+            let mut t = GrowTrack { whole: true, ..GrowTrack::settled(from) };
+            t.set_kind(false, true, Some((FoldGlide { spring: FOLD, feather: None }, 900.0)));
+            t.retarget(to);
+            let hs: Vec<f32> = (0..60).map(|_| { t.step(GROWTH, &edge::FEATHER, false); t.step(GROWTH, &edge::FEATHER, false); t.h }).collect();
+            let creeping = hs.iter().filter(|&&h| h != to && (h - to).abs() < SETTLE).count();
+            assert!(creeping <= 2, "{from} -> {to}: {creeping} frames within a sixteenth of a point: {hs:?}");
+            assert!(!t.moving() && t.h == to);
+        }
+    }
+
+    #[test]
+    fn a_fold_past_the_window_moves_only_what_shows() {
+        // Shutting: the part below the window goes first, then what shows glides.
+        let (t, hs) = fold(3040.0, 40.0, 0.5);
+        assert_eq!(hs[0].1, 900.0);
+        assert!(at(&hs, FOLD.duration) < 40.0 + 18.0, "{}", at(&hs, FOLD.duration));
+        assert!(!t.moving() && t.h == 40.0);
+        // Opening: the spring carries the row to the window's edge, then the rest lands at once.
+        let (t, hs) = fold(40.0, 3040.0, 0.5);
+        assert!(!t.moving() && t.h == 3040.0);
+        let jump = hs.iter().position(|&(_, h)| h > 900.0).unwrap();
+        assert!(hs[jump - 1].1 > 898.0 && hs[jump].1 == 3040.0, "{:?}", &hs[jump - 2..=jump]);
+        assert!(at(&hs, FOLD.duration) > 900.0 - 18.0, "{}", at(&hs, FOLD.duration));
+        assert!(hs[jump].0 < 0.3, "lands in the spring's own time: {}", hs[jump].0);
+    }
+
+    #[test]
+    fn a_glide_handed_to_a_whole_row_mid_way_carries_on() {
+        let mut t = GrowTrack { whole: true, ..GrowTrack::settled(40.0) };
+        t.set_kind(false, true, Some((FoldGlide { spring: FOLD, feather: None }, 200.0)));
+        t.retarget(640.0);
+        for _ in 0..10 {
+            t.step(GROWTH, &edge::FEATHER, false);
+        }
+        t.set_kind(false, true, None);
+        let mut prev = t.h;
+        while t.moving() {
+            t.step(GROWTH, &edge::FEATHER, false);
+            assert!(t.h - prev < 20.0, "a step of {} pt at {}", t.h - prev, t.h);
+            prev = t.h;
+        }
+        assert!((t.h - 640.0).abs() < 0.01, "{}", t.h);
+    }
+
+    #[test]
+    fn a_fold_feathers_its_moving_edge_both_ways() {
+        for (from, to) in [(40.0, 640.0), (640.0, 40.0)] {
+            let mut t = GrowTrack { whole: true, ..GrowTrack::settled(from) };
+            t.set_kind(false, true, Some((FoldGlide { spring: FOLD, feather: Some(20.0) }, f32::INFINITY)));
+            t.retarget(to);
+            let mut masks = Vec::new();
+            for _ in 0..120 {
+                t.step(GROWTH, &edge::FEATHER, false);
+                t.step(GROWTH, &edge::FEATHER, false);
+                masks.push(t.mask);
+            }
+            let peak = masks.iter().copied().fold(0.0, f32::max);
+            assert!((peak - 20.0).abs() < 1e-3, "{from} -> {to}: feathers to its own depth: {masks:?}");
+            assert!(masks[0] < 6.0, "{from} -> {to}: softens as the spring picks up: {masks:?}");
+            assert!(masks.windows(2).all(|w| (w[1] - w[0]).abs() < 6.0), "{from} -> {to}: no jump in depth: {masks:?}");
+            assert_eq!(*masks.last().unwrap(), 0.0, "{from} -> {to}: crisp at rest");
+        }
+    }
+
+    #[test]
+    fn a_fold_reversed_mid_glide_keeps_its_velocity() {
+        let mut t = GrowTrack { whole: true, ..GrowTrack::settled(640.0) };
+        t.set_kind(false, true, Some((FoldGlide { spring: FOLD, feather: None }, 900.0)));
+        t.retarget(40.0);
+        for _ in 0..12 {
+            t.step(GROWTH, &edge::FEATHER, false);
+        }
+        let (h, v) = (t.h, t.v);
+        assert!(v < 0.0 && h < 640.0 && h > 40.0);
+        t.retarget(640.0);
+        assert_eq!(t.h, h, "no jump");
+        t.step(GROWTH, &edge::FEATHER, false);
+        assert!(t.h < h, "carries on shutting for a moment: {h} -> {}", t.h);
+        let mut masks = vec![t.mask];
+        for _ in 0..120 {
+            t.step(GROWTH, &edge::FEATHER, false);
+            masks.push(t.mask);
+        }
+        // The feather holds through the turn and thins as the glide lands.
+        assert!(masks.windows(2).all(|w| (w[1] - w[0]).abs() < 3.0), "{masks:?}");
+        assert_eq!(*masks.last().unwrap(), 0.0);
+        assert!(!t.moving() && t.h == 640.0, "settles within 0.5 s: {} at {} pt/s", t.h, t.v);
     }
 
     #[test]

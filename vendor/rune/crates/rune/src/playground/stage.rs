@@ -32,11 +32,12 @@ pub(super) type Queued<X> = Box<dyn FnOnce(&mut X, &mut Play<'_, X>)>;
 /// A story's view, or a scene's side view, of state `X`.
 pub(super) type View<X> = Box<dyn Fn(&X, &mut Cx<X>) -> El>;
 
-/// What a trigger's steps get beside their state: the frame's [`Tx`] (`Play` derefs to it) and
-/// [`Play::after`] for the steps that follow.
+/// What a trigger's steps get beside their state: the frame's [`Tx`] (`Play` derefs to it),
+/// [`Play::after`] for the steps that follow and [`Play::press`] for keys.
 pub struct Play<'a, X> {
     tx: &'a mut Tx,
     script: &'a mut Vec<(f64, Queued<X>)>,
+    pressed: &'a mut Vec<KeyEvent>,
     now: f64,
 }
 
@@ -58,6 +59,17 @@ impl<X> Play<'_, X> {
     /// When this step was due, on the runtime's clock.
     pub fn now(&self) -> f64 {
         self.now
+    }
+
+    /// Presses `key` on the stage, as a person would with the stage holding the keyboard: it
+    /// goes the way a real key does, through focus, `on_key` handlers and shortcuts, on the
+    /// frame this step runs, after the step's own changes. That frame counts as input, so a
+    /// scroll the key asks for moves as one under a hand does. Pass a [`Key`] for a plain key,
+    /// or a [`KeyEvent`] for one with modifiers. It stands in for a person's key in the app, so
+    /// a letter reaches the app and not the story's triggers: a step that wants another
+    /// trigger's behaviour calls that code directly.
+    pub fn press(&mut self, key: impl Into<KeyEvent>) {
+        self.pressed.push(key.into());
     }
 }
 
@@ -144,9 +156,9 @@ impl<X> Staged<X> {
         Staged { state, script: Vec::new() }
     }
 
-    /// Runs the steps due by `t`, earliest first, each seeing the time it was due. Asks for a
-    /// frame when the next one is due.
-    pub(super) fn run(&mut self, t: f64, tx: &mut Tx) -> bool {
+    /// Runs the steps due by `t`, earliest first, each seeing the time it was due, adding the
+    /// keys they press to `pressed`. Asks for a frame when the next one is due.
+    pub(super) fn run(&mut self, t: f64, tx: &mut Tx, pressed: &mut Vec<KeyEvent>) -> bool {
         // The clock is a running sum of frame times, so a step due on a frame can sit a rounding
         // error past it; without the slack a replay later in the clock lands a frame late.
         let t = t + DUE_SLACK;
@@ -156,7 +168,7 @@ impl<X> Staged<X> {
             let due = self.script.iter().enumerate().filter(|(_, (at, _))| *at <= t).min_by(|a, b| a.1.0.total_cmp(&b.1.0)).map(|(i, _)| i);
             let Some(i) = due else { break };
             let (at, step) = self.script.remove(i);
-            step(&mut self.state, &mut Play { tx: &mut *tx, script: &mut self.script, now: at });
+            step(&mut self.state, &mut Play { tx: &mut *tx, script: &mut self.script, pressed: &mut *pressed, now: at });
             ran = true;
         }
         if let Some(next) = self.script.iter().map(|(at, _)| *at).min_by(f64::total_cmp) {
@@ -171,8 +183,8 @@ impl<S: 'static> Live<S> {
     /// live page), and the playground's controls.
     pub(crate) fn states<'a>(&'a mut self, app: &'a mut S) -> States<'a> {
         let app = crate::runtime::handler_state(app);
-        if !self.open { return States::two(app, &mut self.controls); }
-        if let Some(scene) = &mut self.scene { return States::two(&mut scene.state, &mut self.controls); }
+        if !self.is_open() { return States::two(app, &mut self.controls); }
+        if let Showing::Scene(scene) = &mut self.showing { return States::two(&mut scene.state, &mut self.controls); }
         let Some(i) = self.selected.checked_sub(self.scenes.len()) else { return States::two(app, &mut self.controls) };
         match (self.pages.get(i), self.owned.get_mut(i)) {
             (Some(Page { kind: Kind::Own(own), .. }), Some(Some(stage))) => States::two(own.state(stage.as_mut()), &mut self.controls),
@@ -182,8 +194,8 @@ impl<S: 'static> Live<S> {
 
     pub(crate) fn states_ref<'a>(&'a self, app: &'a S) -> StatesRef<'a> {
         let app = crate::runtime::handler_state_ref(app);
-        if !self.open { return StatesRef::two(app, &self.controls); }
-        if let Some(scene) = &self.scene { return StatesRef::two(&scene.state, &self.controls); }
+        if !self.is_open() { return StatesRef::two(app, &self.controls); }
+        if let Some(scene) = self.scene() { return StatesRef::two(&scene.state, &self.controls); }
         match self.own() {
             Some((own, stage)) => StatesRef::two(own.state_ref(stage), &self.controls),
             None => StatesRef::two(app, &self.controls),
@@ -194,33 +206,39 @@ impl<S: 'static> Live<S> {
     /// the keyboard, unless [`Playground::typing`] asks for every key: in the list, a letter may
     /// be J, K or a trigger's.
     pub(crate) fn stage_hears(&self, app: &S) -> bool {
-        !self.open || self.region == Region::Stage || self.typing(app)
+        !self.is_open() || self.region() == Region::Stage || self.typing(app)
     }
 
     /// The state `AppSpec::on_key` gets: the stage's when it's an app state, none on a story
     /// with its own.
     pub(crate) fn key_state<'a>(&'a mut self, app: &'a mut S) -> Option<&'a mut S> {
-        if !self.open { return Some(app); }
+        if !self.is_open() { return Some(app); }
         if matches!(self.page(), Some((_, Page { kind: Kind::Own(_), .. }))) { return None; }
-        match &mut self.scene {
-            Some(scene) => Some(&mut scene.state),
-            None => Some(app),
+        match &mut self.showing {
+            Showing::Scene(scene) => Some(&mut scene.state),
+            _ => Some(app),
         }
     }
 
     /// Whether [`Playground::typing`] gives the stage's `on_key` every key first.
     pub(crate) fn typing(&self, app: &S) -> bool {
-        let Some(typing) = self.typing.filter(|_| self.open) else { return false };
-        match (&self.scene, self.page()) {
+        let Some(typing) = self.typing.filter(|_| self.is_open()) else { return false };
+        match (self.scene(), self.page()) {
             (Some(scene), _) => typing(&scene.state),
             (None, Some((_, Page { kind: Kind::Own(_), .. }))) => false,
             (None, _) => typing(app),
         }
     }
 
+    /// The keys this frame's steps pressed, to route to the stage, counting them in `played`.
+    pub(crate) fn take_pressed(&mut self) -> Vec<KeyEvent> {
+        self.played += self.pressed.len() as u64;
+        std::mem::take(&mut self.pressed)
+    }
+
     pub(crate) fn polls(&self) -> bool {
-        if !self.open { return false; }
-        match (&self.scene, self.own()) {
+        if !self.is_open() { return false; }
+        match (self.scene(), self.own()) {
             (Some(scene), _) => self.poll.is_some() || !scene.script.is_empty(),
             (None, Some((own, stage))) => own.polls(stage),
             (None, None) => false,
@@ -228,17 +246,17 @@ impl<S: 'static> Live<S> {
     }
 
     /// Polls the stage's state after the app's own poll: its due steps, then `AppSpec::poll`
-    /// for a scene or the story's own.
+    /// for a scene or the story's own. The keys the steps press wait in [`Live::take_pressed`].
     pub(crate) fn poll_stage(&mut self, t: f64, tx: &mut Tx) -> bool {
         self.now = t;
-        if !self.open { return false; }
-        if let Some(scene) = &mut self.scene {
-            let ran = scene.run(t, tx);
+        if !self.is_open() { return false; }
+        if let Showing::Scene(scene) = &mut self.showing {
+            let ran = scene.run(t, tx, &mut self.pressed);
             return self.poll.is_some_and(|poll| poll(&mut scene.state, t, tx)) || ran;
         }
         let Some(i) = self.selected.checked_sub(self.scenes.len()) else { return false };
         match (self.pages.get(i).map(|p| &p.kind), self.owned.get_mut(i).and_then(Option::as_mut)) {
-            (Some(Kind::Own(own)), Some(stage)) => own.poll(stage.as_mut(), t, tx),
+            (Some(Kind::Own(own)), Some(stage)) => own.poll(stage.as_mut(), t, tx, &mut self.pressed),
             _ => false,
         }
     }

@@ -12,13 +12,18 @@
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
 
+use crate::carry::Carry;
 use crate::curve::{Anim, Blend, Curve, Decay, Velocity};
 use crate::layer::{Eps, Kind, Layer};
 use crate::props::{NodeId, Prop, PropClass, PropId};
 use crate::spring::Spring;
 use crate::value::{Animatable, MAX_LANES, lanes};
 
+mod started;
 mod tracks;
+mod typed;
+
+use self::tracks::Mode;
 
 const NONE: u32 = u32::MAX;
 /// Most additive layers a lane keeps before it collapses them into one merged segment.
@@ -162,7 +167,9 @@ pub struct AnimationStore {
     t_meta: Vec<Meta>,
     /// The track's clock: 0 is the store's own, otherwise an index into `clocks`.
     t_clock: Vec<u32>,
-    /// On a stopped clock and already sampled where it holds, so `tick` skips it.
+    /// Sampled at its held pose by the last tick (in whichever [`Mode`] it holds), so `tick`
+    /// can skip it until [`mode`](Self::mode) says it moves. [`resample`](Self::resample)
+    /// clears it wherever a track's timing or pose changes.
     t_held: Vec<bool>,
     track_free: Vec<u32>,
 
@@ -176,6 +183,9 @@ pub struct AnimationStore {
     /// where these are read, and freeing a track never scans them.
     touched: Vec<TrackId>,
     set_touched: Vec<TrackId>,
+    /// Tracks started or retargeted since the last tick, and between the two before (`started`).
+    starts: Vec<TrackId>,
+    ticked_starts: Vec<TrackId>,
 
     extra: Vec<Extra>,
     extra_free: u32,
@@ -185,8 +195,7 @@ pub struct AnimationStore {
     index: FxMap<(u64, u16), u32>,
     node_head: FxMap<u64, u32>,
 
-    events: Vec<MotionEvent>,
-    events_seen: usize,
+    events: Carry<MotionEvent>,
     retarget_audit: Option<RetargetAudit>,
 }
 
@@ -225,14 +234,15 @@ impl AnimationStore {
             active: Vec::new(),
             touched: Vec::new(),
             set_touched: Vec::new(),
+            starts: Vec::new(),
+            ticked_starts: Vec::new(),
             extra: Vec::new(),
             extra_free: NONE,
             pending: Vec::new(),
             pending_free: NONE,
             index: FxMap::default(),
             node_head: FxMap::default(),
-            events: Vec::new(),
-            events_seen: 0,
+            events: Carry::new(),
             retarget_audit: None,
         }
     }
@@ -323,7 +333,6 @@ impl AnimationStore {
         while t != NONE {
             self.rebase(t as usize, delta);
             self.t_clock[t as usize] = new;
-            self.t_held[t as usize] = false;
             t = self.t_meta[t as usize].node_next;
         }
         self.release_clock(old);
@@ -398,6 +407,7 @@ impl AnimationStore {
 
     /// Shifts every absolute time of track `t` by `delta`.
     fn rebase(&mut self, t: usize, delta: f64) {
+        self.resample(t);
         if delta == 0.0 {
             return;
         }
@@ -442,306 +452,36 @@ impl AnimationStore {
     }
 
     // ------------------------------------------------------------------------------------------
-    // Typed API
-
-    /// Sets a value immediately: direct manipulation, no animation, cancels anything running.
-    /// The first `set` or `animate` of a property creates its track.
-    pub fn set<T: Animatable>(&mut self, node: NodeId, prop: Prop<T>, value: T) -> TrackId {
-        let v = lanes(&value);
-        let t = self.ensure(node, prop.id, prop.class, &v[..T::LANES]);
-        self.set_raw(t, &v[..T::LANES]);
-        self.id_of(t as usize)
-    }
-
-    /// Animates a property to `target`. Retargets from the exact current position and velocity.
-    /// The first time a property is seen it is *set* instead: nothing animates on first mount.
-    /// An unchanged target is a no-op (the running trajectory is kept).
-    pub fn animate<T: Animatable>(
-        &mut self,
-        node: NodeId,
-        prop: Prop<T>,
-        target: T,
-        anim: impl Into<Anim>,
-    ) -> TrackId {
-        let v = lanes(&target);
-        let anim = anim.into();
-        match self.index.get(&(node.0, prop.id.0)).copied() {
-            None => self.set(node, prop, target),
-            Some(t) => {
-                self.check_lanes(t as usize, T::LANES);
-                self.animate_raw(t as usize, &v[..T::LANES], anim, None);
-                self.id_of(t as usize)
-            }
-        }
-    }
-
-    /// Sets `from` immediately, then animates to `to` (an explicit entrance).
-    pub fn animate_from<T: Animatable>(
-        &mut self,
-        node: NodeId,
-        prop: Prop<T>,
-        from: T,
-        to: T,
-        anim: impl Into<Anim>,
-    ) -> TrackId {
-        self.set(node, prop, from);
-        self.animate(node, prop, to, anim)
-    }
-
-    /// Animates with an explicit per-lane starting velocity (gesture handoff).
-    pub fn animate_with_velocity<T: Animatable>(
-        &mut self,
-        node: NodeId,
-        prop: Prop<T>,
-        target: T,
-        velocity: T,
-        anim: impl Into<Anim>,
-    ) -> TrackId {
-        let v = lanes(&target);
-        let vel = lanes(&velocity);
-        let t = self.ensure(node, prop.id, prop.class, &v[..T::LANES]) as usize;
-        self.animate_raw(t, &v[..T::LANES], anim.into(), Some(&vel[..T::LANES]));
-        self.id_of(t)
-    }
-
-    /// Hands a released gesture to physics, from its current value and the given velocity.
-    pub fn release<T: Animatable>(&mut self, node: NodeId, prop: Prop<T>, velocity: T, how: Release<T>) -> TrackId {
-        let vel = lanes(&velocity);
-        let cur = lanes(&self.sample(node, prop).expect("release: set the value before releasing it"));
-        let t = self.index[&(node.0, prop.id.0)] as usize;
-        let n = T::LANES;
-        match how {
-            Release::Spring { target, spring } => {
-                let tg = lanes(&target);
-                self.animate_raw(t, &tg[..n], Anim::new(Curve::Spring(spring)), Some(&vel[..n]));
-            }
-            Release::Decay(d) => {
-                // The decay's target is computed per lane from (x, v); pass the current values.
-                self.animate_raw(t, &cur[..n], Anim::new(Curve::Decay(d)), Some(&vel[..n]));
-            }
-            Release::DecayClamped { decay, min, max, spring } => {
-                let (lo, hi) = (lanes(&min), lanes(&max));
-                let k = decay.k();
-                let l0 = self.t_lane0[t] as usize;
-                let now = self.time_of(t);
-                let eps = self.t_meta[t].class.eps(self.pixel_scale);
-                for i in 0..n {
-                    let l = l0 + i;
-                    let (x, v) = (cur[i], vel[i]);
-                    self.cancel_pending(l);
-                    if x < lo[i] || x > hi[i] {
-                        let bound = x.clamp(lo[i], hi[i]);
-                        self.start_lane(l, now, bound, Curve::Spring(spring), Blend::Merge, Some(v), eps);
-                        continue;
-                    }
-                    let proj = x + v / k;
-                    self.start_lane(l, now, x, Curve::Decay(decay), Blend::Merge, Some(v), eps);
-                    let bound = if proj > hi[i] { Some(hi[i]) } else if proj < lo[i] { Some(lo[i]) } else { None };
-                    if let Some(b) = bound {
-                        // x + (v/k)(1 − e^{−kτ}) = b  →  τ = −ln(1 − (b − x)k/v) / k
-                        let tau = -((1.0 - (b - x) * k / v) as f64).ln() / k as f64;
-                        self.push_pending(l, Pending {
-                            at: now + tau.max(0.0),
-                            target: b,
-                            velocity: f32::NAN,
-                            curve: Curve::Spring(spring),
-                            blend: Blend::Merge,
-                            next: NONE,
-                        });
-                    }
-                }
-                self.commit_scheduled(t, now, 0);
-            }
-        }
-        self.id_of(t)
-    }
-
-    /// The value presented at the last `tick` (what's on screen).
-    pub fn get<T: Animatable>(&self, node: NodeId, prop: Prop<T>) -> Option<T> {
-        let t = *self.index.get(&(node.0, prop.id.0))? as usize;
-        let l0 = self.t_lane0[t] as usize;
-        Some(T::read_lanes(&self.l_value[l0..l0 + T::LANES]))
-    }
-
-    /// The velocity at the last `tick`, in units per second.
-    pub fn velocity<T: Animatable>(&self, node: NodeId, prop: Prop<T>) -> Option<T> {
-        let t = *self.index.get(&(node.0, prop.id.0))? as usize;
-        let l0 = self.t_lane0[t] as usize;
-        Some(T::read_lanes(&self.l_vel[l0..l0 + T::LANES]))
-    }
-
-    /// The exact value at the current `now()` (may be between ticks).
-    pub fn sample<T: Animatable>(&self, node: NodeId, prop: Prop<T>) -> Option<T> {
-        let t = *self.index.get(&(node.0, prop.id.0))? as usize;
-        let mut out = [0.0; MAX_LANES];
-        let l0 = self.t_lane0[t] as usize;
-        let now = self.time_of(t);
-        for (i, slot) in out.iter_mut().enumerate().take(T::LANES) {
-            *slot = self.sample_lane(l0 + i, now).0;
-        }
-        Some(T::read_lanes(&out[..T::LANES]))
-    }
-
-    /// The exact velocity at the current `now()`.
-    pub fn sample_velocity<T: Animatable>(&self, node: NodeId, prop: Prop<T>) -> Option<T> {
-        let t = *self.index.get(&(node.0, prop.id.0))? as usize;
-        let mut out = [0.0; MAX_LANES];
-        let l0 = self.t_lane0[t] as usize;
-        let now = self.time_of(t);
-        for (i, slot) in out.iter_mut().enumerate().take(T::LANES) {
-            *slot = self.sample_lane(l0 + i, now).1;
-        }
-        Some(T::read_lanes(&out[..T::LANES]))
-    }
-
-    /// Where the property is going (the latest target, including delayed ones).
-    pub fn target<T: Animatable>(&self, node: NodeId, prop: Prop<T>) -> Option<T> {
-        let t = *self.index.get(&(node.0, prop.id.0))? as usize;
-        let l0 = self.t_lane0[t] as usize;
-        let mut out = [0.0; MAX_LANES];
-        for (i, slot) in out.iter_mut().enumerate().take(T::LANES) {
-            *slot = self.final_target(l0 + i);
-        }
-        Some(T::read_lanes(&out[..T::LANES]))
-    }
-
-    pub fn has<T>(&self, node: NodeId, prop: Prop<T>) -> bool {
-        self.index.contains_key(&(node.0, prop.id.0))
-    }
-
-    pub fn is_animating<T>(&self, node: NodeId, prop: Prop<T>) -> bool {
-        self.index.get(&(node.0, prop.id.0)).is_some_and(|&t| self.t_slot[t as usize] != NONE)
-    }
-
-    /// True when any property track on `node` is currently active.
-    pub fn is_node_animating(&self, node: NodeId) -> bool {
-        let mut t = self.node_head.get(&node.0).copied().unwrap_or(NONE);
-        while t != NONE {
-            if self.t_slot[t as usize] != NONE {
-                return true;
-            }
-            t = self.t_meta[t as usize].node_next;
-        }
-        false
-    }
-
-    pub fn track_id<T>(&self, node: NodeId, prop: Prop<T>) -> Option<TrackId> {
-        self.index.get(&(node.0, prop.id.0)).map(|&t| self.id_of(t as usize))
-    }
-
-    /// Is this exact track (not a reused slot) alive?
-    pub fn contains(&self, id: TrackId) -> bool {
-        self.t_meta.get(id.index as usize).is_some_and(|m| m.alive && m.generation == id.generation)
-    }
-
-    /// True once the track is at rest (or gone).
-    pub fn is_settled(&self, id: TrackId) -> bool {
-        !self.contains(id) || self.t_slot[id.index as usize] == NONE
-    }
-
-    /// Bumps every time the track gets a new animation; choreography uses it to tell whether a
-    /// track it started was taken over by something else.
-    pub fn epoch(&self, id: TrackId) -> Option<u32> {
-        self.contains(id).then(|| self.t_meta[id.index as usize].epoch)
-    }
-
-    /// When the track's latest animation logically completes (SwiftUI `.logicallyComplete`), in
-    /// the store's time. On a scaled clock it's projected at the clock's current scale; a stopped
-    /// clock never gets there.
-    pub fn logical_end(&self, id: TrackId) -> Option<f64> {
-        let t = id.index as usize;
-        self.contains(id).then(|| {
-            let at = self.t_meta[t].logical_at;
-            if self.t_clock[t] == 0 {
-                return at;
-            }
-            let rem = at - self.time_of(t);
-            let scale = self.clocks[self.t_clock[t] as usize].scale as f64;
-            if rem <= 0.0 { self.now + rem } else if scale == 0.0 { f64::INFINITY } else { self.now + rem / scale }
-        })
-    }
-
-    /// The node and property a track belongs to.
-    pub fn owner(&self, id: TrackId) -> Option<(NodeId, PropId)> {
-        self.contains(id).then(|| {
-            let m = &self.t_meta[id.index as usize];
-            (m.node, m.prop)
-        })
-    }
-
-    /// Removes one property's track.
-    pub fn remove<T>(&mut self, node: NodeId, prop: Prop<T>) {
-        if let Some(t) = self.index.get(&(node.0, prop.id.0)).copied() {
-            self.unlink_node(node, t);
-            self.free_track(t as usize);
-        }
-    }
-
-    /// Removes every track of a node.
-    pub fn remove_node(&mut self, node: NodeId) {
-        if let Some(c) = self.node_clock.remove(&node.0) {
-            self.release_clock(c);
-        }
-        let mut t = self.node_head.remove(&node.0).unwrap_or(NONE);
-        while t != NONE {
-            let next = self.t_meta[t as usize].node_next;
-            self.free_track(t as usize);
-            t = next;
-        }
-    }
-
-    /// Live tuning: every lane currently springing on `old` re-springs on `new` from where it is,
-    /// at the same target (research 06 §2.6). Smooth because the swap keeps `(x, v)`.
-    pub fn retune(&mut self, old: Spring, new: Spring) {
-        for i in 0..self.active.len() {
-            let t = self.active[i] as usize;
-            let now = self.time_of(t);
-            let (l0, n) = (self.t_lane0[t] as usize, self.t_n[t] as usize);
-            let eps = self.t_meta[t].class.eps(self.pixel_scale);
-            let mut hit = false;
-            for l in l0..l0 + n {
-                if self.l_curve[l] == Curve::Spring(old) {
-                    let target = self.l_target[l];
-                    self.start_lane(l, now, target, Curve::Spring(new), Blend::Merge, None, eps);
-                    hit = true;
-                }
-            }
-            if hit {
-                self.recompute(t);
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------------------------------
     // The frame
 
     /// Samples every active track at `now()`, applies due delayed animations, settles finished
     /// tracks. Allocation-free once buffers have grown to the working-set size.
     pub fn tick(&mut self) {
-        self.events.drain(..self.events_seen);
+        self.events.begin();
         self.touched.clear();
         let meta = &self.t_meta;
         let live = |id: &&TrackId| meta[id.index as usize].alive && meta[id.index as usize].generation == id.generation;
         self.touched.extend(self.set_touched.iter().filter(live));
         self.set_touched.clear();
+        std::mem::swap(&mut self.starts, &mut self.ticked_starts);
+        self.starts.clear();
         let clocked = !self.node_clock.is_empty();
         let mut i = 0;
         while i < self.active.len() {
             let t = self.active[i] as usize;
             let now = if clocked { self.time_of(t) } else { self.now };
-            if clocked {
-                let frozen = self.frozen(t);
-                if frozen && self.t_held[t] {
-                    // Nothing moves on a stopped clock, and it was already sampled where it holds.
-                    i += 1;
-                    continue;
-                }
-                self.t_held[t] = frozen;
+            // Nothing moves on a stopped clock, or on a track that only waits for a delayed
+            // start: once sampled where it holds, it isn't touched again until it moves.
+            let mode = self.mode(t);
+            if mode.holds() && self.t_held[t] {
+                i += 1;
+                continue;
             }
             self.touched.push(TrackId { index: t as u32, generation: self.t_meta[t].generation });
             if self.t_next_due[t] <= now {
                 self.apply_due(t, now);
             }
+            self.t_held[t] = mode.holds();
             let l0 = self.t_lane0[t] as usize;
             let n = self.t_n[t] as usize;
             let range = l0..l0 + n;
@@ -776,12 +516,12 @@ impl AnimationStore {
             }
             i += 1;
         }
-        self.events_seen = self.events.len();
+        self.events.end();
     }
 
     /// Events since the previous tick (settles, completions).
     pub fn events(&self) -> &[MotionEvent] {
-        &self.events
+        self.events.as_slice()
     }
 
     /// The values presented at the last tick for a track, as raw lanes.
@@ -801,11 +541,6 @@ impl AnimationStore {
             *slot = self.final_target(l0 + k);
         }
         true
-    }
-
-    /// The velocities at the last tick for a track, as raw lanes.
-    pub fn velocities_of(&self, id: TrackId) -> Option<&[f32]> {
-        self.contains(id).then(|| self.lane_velocities(id.index as usize))
     }
 
     /// Is the track currently animating?
@@ -838,7 +573,7 @@ impl AnimationStore {
         if self.node_clock.is_empty() {
             return !self.active.is_empty();
         }
-        self.active.iter().any(|&t| !self.frozen(t as usize))
+        self.active.iter().any(|&t| !matches!(self.mode(t as usize), Mode::Frozen))
     }
 
     pub fn track_len(&self) -> usize {
@@ -890,7 +625,7 @@ impl AnimationStore {
                 self.t_next_due[t] = f64::INFINITY;
                 self.t_slot[t] = NONE;
                 self.t_clock[t] = clock;
-                self.t_held[t] = false;
+                self.resample(t);
                 t as u32
             }
             None => {
@@ -927,14 +662,9 @@ impl AnimationStore {
         core::array::from_fn(|i| self.final_target(l0 + i))
     }
 
-    pub(crate) fn lane_values(&self, t: usize) -> &[f32] {
+    fn lane_values(&self, t: usize) -> &[f32] {
         let l0 = self.t_lane0[t] as usize;
         &self.l_value[l0..l0 + self.t_n[t] as usize]
-    }
-
-    pub(crate) fn lane_velocities(&self, t: usize) -> &[f32] {
-        let l0 = self.t_lane0[t] as usize;
-        &self.l_vel[l0..l0 + self.t_n[t] as usize]
     }
 
     pub(crate) fn set_raw(&mut self, t: u32, values: &[f32]) {
@@ -962,7 +692,8 @@ impl AnimationStore {
     }
 
     /// Animates lanes of track `t` toward `targets`. `lane_vel` overrides per-lane start velocity.
-    pub(crate) fn animate_raw(&mut self, t: usize, targets: &[f32], mut anim: Anim, lane_vel: Option<&[f32]>) {
+    /// False when no lane's target changed, so nothing moves.
+    pub(crate) fn animate_raw(&mut self, t: usize, targets: &[f32], mut anim: Anim, lane_vel: Option<&[f32]>) -> bool {
         let now = self.time_of(t);
         if self.t_next_due[t] <= now {
             self.apply_due(t, now);
@@ -1023,6 +754,7 @@ impl AnimationStore {
                 self.t_meta[t].token = anim.token;
             }
         }
+        changed
     }
 
     /// Starts a new segment on lane `l` at time `at` from its exact state there.
@@ -1180,6 +912,7 @@ impl AnimationStore {
         }
         self.t_next_due[t] = due;
         self.t_settle_at[t] = settle;
+        self.resample(t);
     }
 
     fn settle(&mut self, t: usize) {
@@ -1266,9 +999,9 @@ impl AnimationStore {
         m.token = token;
         m.logical_at = logical_at;
         m.epoch = m.epoch.wrapping_add(1);
-        self.t_held[t] = false;
         self.recompute(t);
         self.activate(t);
+        self.starts.push(self.id_of(t));
     }
 
     fn cancel_pending(&mut self, l: usize) {

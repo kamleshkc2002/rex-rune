@@ -87,7 +87,7 @@ fn view(s: &Spike, cx: &mut Cx<Spike>) -> El {
             } else {
                 "Maximize".into()
             },
-            |_, tx| tx.toggle_maximize(),
+            |_, tx| tx.toggle_maximized(),
         ))
         .child(button("close", "Close".into(), |_, tx| tx.close_window()));
     let body = col()
@@ -207,7 +207,7 @@ fn poll(s: &mut Spike, _: f64, tx: &mut Tx) -> bool {
         0 => {}
         1 => {
             eprintln!("spike: toggle_maximize");
-            tx.toggle_maximize();
+            tx.toggle_maximized();
         }
         2 | 3 => eprintln!(
             "spike: after maximize body {}x{} maximized {}",
@@ -215,7 +215,7 @@ fn poll(s: &mut Spike, _: f64, tx: &mut Tx) -> bool {
         ),
         4 => {
             eprintln!("spike: toggle_maximize (restore)");
-            tx.toggle_maximize();
+            tx.toggle_maximized();
         }
         5 | 6 => eprintln!(
             "spike: after restore body {}x{} maximized {}",

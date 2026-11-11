@@ -11,8 +11,22 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::sync::Arc;
 
 use crate::ElementInfo;
+
+mod commits;
+mod evidence;
+mod kicks;
+mod loops;
+pub mod paint;
+mod painted;
+pub mod raster;
+mod regions;
+mod series;
+
+pub use evidence::{dump, sheet};
+use paint::Paint;
 
 /// One finding kind, its threshold and what it means. The checker reads its numbers from here.
 pub struct Rule {
@@ -25,10 +39,11 @@ pub const RULES: &[Rule] = &[
     Rule { kind: "pop-in", threshold: 0.5, means: "mounts at or above this opacity, at full size, with no fade, growth or scale (and no ancestor transitioning)" },
     Rule { kind: "pop-out", threshold: 0.5, means: "unmounts at or above this opacity: it vanished instead of leaving" },
     Rule { kind: "cut-exit", threshold: 0.05, means: "unmounts above this opacity, below pop-out's: a fade cut short" },
-    Rule { kind: "jump", threshold: 2.0, means: "an edge moves at least this many pt in one frame between still frames" },
+    Rule { kind: "jump", threshold: 2.0, means: "an edge moves at least this many pt in one frame between still frames, where it shows (its visible part, or what it holds that shows, moves with it, or it brings what it holds into view with no input)" },
     Rule { kind: "offset-jump", threshold: 2.0, means: "a jump of a scroll's content: every row in it moved by the same delta in one frame" },
     Rule { kind: "appear-then-jump", threshold: 2.0, means: "mounts, then moves at least this many pt on its next frame" },
     Rule { kind: "jerk", threshold: 10.0, means: "a moving edge's per-frame step changes by more than this many pt from one frame to the next" },
+    Rule { kind: "stop-start", threshold: 3.0, means: "a travelling edge rests (under 0.5 s) and sets off again the same way this many times in 2 s, with no input but data arriving: it moves in kicks, not one glide" },
     Rule { kind: "reversal", threshold: 1.0, means: "a travelling edge heads this many pt the wrong way and turns back, with no input mid-flight (one monotonic path)" },
     Rule { kind: "overshoot", threshold: 1.0, means: "passes where it comes to rest by this many pt (bounce 0)" },
     Rule { kind: "jiggle", threshold: 1.0, means: "an edge reverses twice or more within one motion, over at least this many pt" },
@@ -43,6 +58,10 @@ pub const RULES: &[Rule] = &[
     Rule { kind: "lands-unseen", threshold: 40.0, means: "travels at least this many pt in plain view, then its clip cuts it from view in one frame where it rests: it flew somewhere you can't see" },
     Rule { kind: "remount", threshold: 2.0, means: "words start leaving while the same words mount elsewhere within this many frames: one thing fades out at its old place as its copy fades in (its row lost its key)" },
     Rule { kind: "unpinned", threshold: 2.0, means: "a scroll pinned to its end has its content's bottom this many pt below the viewport with no input since: it stopped following" },
+    Rule { kind: "scroll-commit", threshold: 0.25, means: "the app ran its view (its `poll`, a handler or a layout read) on 6 or more of a scroll's frames and at least this share of them: a scroll needs no commit, so each one is a frame's whole view rebuilt mid-gesture" },
+    Rule { kind: "snap", threshold: 1.0, means: "a painted property steps by at least this in one frame between frames that hold still, with no input, `Tx::instant` commit or mark asking for it: a colour by OKLab ΔE 0.08 (weighted by the area that shows and its opacity), a corner by 3 pt, a blur by 2 pt, a border by 1 pt, a new image, or two surfaces trading places (z-order). `(pixels)`: a region of the composited window, where no element changed" },
+    Rule { kind: "flash", threshold: 0.5, means: "a painted property (or a region of the window) steps out by at least this and comes at least halfway back within 0.4 s, or drifts out and snaps back: a surface that drops out for a frame, or blinks before what replaces it fades in" },
+    Rule { kind: "changes-twice", threshold: 0.25, means: "a painted property (or region) changes, rests from 2 frames to this many seconds, then carries on the same way with no input between: one change landed as two" },
     Rule { kind: "twice", threshold: 0.0, means: "two siblings share one key (Rune's `#dup`), so one thing shows twice, as an optimistic copy beside the server's" },
 ];
 
@@ -72,7 +91,6 @@ const GROWING: u8 = 4;
 const LIVE: u8 = 8;
 const VIRTUAL: u8 = 16;
 const TEXT: u8 = 32;
-const LOOP: u8 = 64;
 /// It or something inside it paints (a fill, words, or a leaf such as an icon) at an opacity
 /// that shows. Without it an opacity change draws nothing.
 const INK: u8 = 128;
@@ -86,6 +104,8 @@ pub struct Snap {
     pub flags: u8,
     /// A loop's phase (0 to 1); NaN without one.
     pub phase: f32,
+    /// How far scrolling carries it, x and y ([`ElementInfo::scrolled`]).
+    pub scrolled: [f32; 2],
 }
 
 pub struct Track {
@@ -96,11 +116,22 @@ pub struct Track {
     pub text: Option<String>,
     /// Its words each time they changed, from the frame they showed.
     pub words: Vec<(usize, String)>,
+    /// A field's own words each time they changed (typed, pasted, set or cleared), which
+    /// `words` leaves out.
+    pub edits: Vec<(usize, String)>,
+    /// What it painted on each of `frames` (empty when the recording has no paint).
+    pub paint: Vec<Option<Paint>>,
 }
 
 impl Track {
     fn at(&self, k: usize) -> Option<&Snap> {
         self.frames.binary_search_by_key(&k, |f| f.0).ok().map(|i| &self.frames[i].1)
+    }
+
+    /// What it painted on frame `k`.
+    pub fn paint_at(&self, k: usize) -> Option<&Paint> {
+        let i = self.frames.binary_search_by_key(&k, |f| f.0).ok()?;
+        self.paint.get(i)?.as_ref()
     }
 }
 
@@ -126,6 +157,16 @@ pub struct Recording {
     /// The app rolls its live numbers, so a count or a clock ticking in place ("9s" → "10s") is
     /// a `text-swap` too. By default a tick passes.
     pub counts_roll: bool,
+    /// Per frame [`super::Run`] stepped: whether a viewport scrolled, and the app's reasons
+    /// for the view to run again (`CommitWhy` bits: its `poll`, a handler, a layout read).
+    scrolled: Vec<(bool, u16)>,
+    /// Per frame: a commit landed at once (`Tx::instant`), so what it changed steps by design.
+    pub instant: Vec<bool>,
+    /// Per frame: the composited window in cells ([`raster`]), shared while it's unchanged.
+    pub grids: Vec<Option<Arc<raster::Grid>>>,
+    /// Per frame: the box (x y w h, points) of the tooltip Rune drew for `El::help`, which
+    /// shows and hides at once after a rest, as AppKit's does.
+    pub tips: Vec<Option<[f32; 4]>>,
 }
 
 impl Recording {
@@ -133,12 +174,25 @@ impl Recording {
         Recording { size, hz, ..Default::default() }
     }
 
+    /// The frame just run: `scrolling` while a viewport moved, `why` its commits' reasons.
+    pub(crate) fn commits(&mut self, scrolling: bool, why: u16) {
+        use crate::runtime::CommitWhy as W;
+        self.scrolled.push((scrolling, why & (W::POLL | W::INPUT | W::LAYOUT | W::READ)));
+        self.instant.push(why & W::INSTANT != 0);
+    }
+
+    /// The frame just sampled's composited window.
+    pub fn grid(&mut self, grid: Option<Arc<raster::Grid>>) {
+        self.grids.resize(self.frames.saturating_sub(1), None);
+        self.grids.push(grid);
+    }
+
     fn track(&mut self, path: &str, parent: Option<usize>) -> usize {
         if let Some(&i) = self.index.get(path) {
             return i;
         }
         let i = self.tracks.len();
-        self.tracks.push(Track { path: path.to_owned(), parent, frames: Vec::new(), text: None, words: Vec::new() });
+        self.tracks.push(Track { path: path.to_owned(), parent, frames: Vec::new(), text: None, words: Vec::new(), edits: Vec::new(), paint: Vec::new() });
         self.index.insert(path.to_owned(), i);
         i
     }
@@ -149,6 +203,12 @@ impl Recording {
 
     /// Takes one frame of the element tree.
     pub fn sample(&mut self, els: &[ElementInfo]) {
+        self.sample_with(els, None);
+    }
+
+    /// Takes one frame of the element tree and what each element painted, by path and whether
+    /// it's leaving (`Runtime::paints`).
+    pub(crate) fn sample_with(&mut self, els: &[ElementInfo], paints: Option<&crate::runtime::HashMap<(String, bool), Paint>>) {
         let k = self.frames;
         self.frames += 1;
         // An element exiting beside a live one at the same path (a key re-added mid-exit) is
@@ -178,7 +238,6 @@ impl Recording {
             if e.live_intent != 0 { flags |= LIVE }
             if e.virtual_extent { flags |= VIRTUAL }
             if e.role == "text" { flags |= TEXT }
-            if e.loop_phase.is_some() { flags |= LOOP }
             if ink[i] { flags |= INK }
             let track = &mut self.tracks[t];
             if track.frames.last().is_some_and(|f| f.0 == k) {
@@ -186,13 +245,21 @@ impl Recording {
             }
             track.parent = parent.or(track.parent);
             if track.text.is_none() { track.text = e.text.clone().filter(|t| !t.is_empty()); }
-            // A field's words change as they're typed.
-            if let Some(words) = e.text.as_deref().filter(|t| !t.is_empty() && !e.focusable)
+            // A field's words change as they're typed (a link's words are its own).
+            if let Some(words) = e.text.as_deref().filter(|t| !t.is_empty() && (!e.focusable || e.role == "link"))
                 && track.words.last().is_none_or(|w| w.1 != words)
             {
                 track.words.push((k, words.to_owned()));
             }
-            track.frames.push((k, Snap { rect: e.rect, vis: e.visible, op: e.opacity, scale: e.scale, flags, phase: e.loop_phase.map_or(f32::NAN, |p| p as f32) }));
+            if e.focusable && e.role != "link" {
+                let words = e.text.as_deref().unwrap_or("");
+                if track.edits.last().map_or(!words.is_empty(), |w| w.1 != words) { track.edits.push((k, words.to_owned())); }
+            }
+            track.frames.push((k, Snap { rect: e.rect, vis: e.visible, op: e.opacity, scale: e.scale, flags, phase: e.loop_phase.map_or(f32::NAN, |p| p as f32), scrolled: e.scrolled }));
+            if let Some(paints) = paints {
+                track.paint.resize(track.frames.len() - 1, None);
+                track.paint.push(paints.get(&(e.path.clone(), e.exiting)).cloned());
+            }
         }
     }
 }
@@ -238,6 +305,19 @@ fn edge(s: &Snap, axis: usize) -> f32 {
     s.rect[axis]
 }
 
+/// An edge of what shows: the visible part, in the window, where one wholly past the window's
+/// edge would come in. An edge its clips hide on both frames moves nobody can see.
+fn shown_edge(s: &Snap, axis: usize, size: (f32, f32)) -> f32 {
+    let r = on_window(&s.vis, size);
+    [r[0].min(size.0), r[1].min(size.1), r[2], r[3]][axis]
+}
+
+/// An edge against the content it scrolls with: a node gliding inside a list that follows its
+/// end makes one motion there, however the scroll adds to it on screen.
+fn own_edge(s: &Snap, axis: usize) -> f32 {
+    s.rect[axis] + s.scrolled.get(axis).copied().unwrap_or(0.0)
+}
+
 const AXES: [&str; 4] = ["x", "y", "w", "h"];
 
 pub fn check(rec: &Recording) -> Vec<Finding> {
@@ -271,46 +351,7 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
 
     // Loops (a spinner's dots, a busy ring, a blinking caret) change on most frames they're
     // mounted, as one element or as siblings taking turns; their wraps are their design.
-    let changed = |a: &Snap, b: &Snap| (0..4).any(|i| (a.rect[i] - b.rect[i]).abs() > 0.01) || (a.op - b.op).abs() > 0.002;
-    let mut busy = vec![0usize; tr.len()];
-    let mut group_busy: HashMap<usize, HashSet<usize>> = HashMap::new();
-    for (i, t) in tr.iter().enumerate() {
-        for w in t.frames.windows(2) {
-            if w[1].0 == w[0].0 + 1 && changed(&w[0].1, &w[1].1) {
-                busy[i] += 1;
-                if let Some(p) = t.parent { group_busy.entry(p).or_default().insert(w[1].0); }
-            }
-        }
-    }
-    // Busy alone would take a long stream or a slow spring for a loop; a loop also comes back.
-    let periodic = |t: &Track| {
-        let turns = |v: &dyn Fn(&Snap) -> f32, eps: f32| {
-            let (mut n, mut last, mut dir) = (0, v(&t.frames[0].1), 0.0f32);
-            for f in &t.frames[1..] {
-                let x = v(&f.1);
-                if (x - last).abs() > eps {
-                    let s = (x - last).signum();
-                    if dir != 0.0 && s != dir { n += 1; }
-                    dir = s;
-                    last = x;
-                }
-            }
-            n
-        };
-        turns(&|s| s.op, 0.01) >= 4 || (0..4).any(|a| turns(&|s| s.rect[a], 0.25) >= 4)
-    };
-    let mut loops: HashSet<usize> = (0..tr.len()).filter(|&i| tr[i].frames.iter().any(|f| f.1.flags & LOOP != 0)
-        || tr[i].frames.len() >= 60 && busy[i] * 10 >= tr[i].frames.len() * 6 && periodic(&tr[i])).collect();
-    let groups: HashSet<usize> = group_busy.iter().filter(|(p, ks)| tr[**p].frames.len() >= 60 && ks.len() * 10 >= tr[**p].frames.len() * 6
-        && tr.iter().filter(|c| c.parent == Some(**p)).any(|c| c.frames.len() >= 2 && periodic(c))).map(|(p, _)| *p).collect();
-    for (i, t) in tr.iter().enumerate() {
-        if t.parent.is_some_and(|p| groups.contains(&p)) { loops.insert(i); }
-    }
-    loop {
-        let more: Vec<usize> = (0..tr.len()).filter(|i| !loops.contains(i) && tr[*i].parent.is_some_and(|p| loops.contains(&p))).collect();
-        if more.is_empty() { break; }
-        loops.extend(more);
-    }
+    let loops = loops::loops(rec);
 
     // Pops: births and deaths after the settled start, reported at the outermost element.
     let births: HashMap<usize, Vec<usize>> = tr.iter().enumerate().fold(HashMap::new(), |mut m, (i, t)| {
@@ -376,7 +417,9 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
             let next: Vec<Snap> = (k + 1..=k + 2).filter_map(|j| t.at(j).copied()).collect();
             let grows = next.iter().any(|s| (s.op - first.op).abs() > 0.01 || (s.scale - first.scale).abs() > 0.002
                 || (s.rect[2] - first.rect[2]).abs() > 0.5 || (s.rect[3] - first.rect[3]).abs() > 0.5
-                || (s.vis[2] - first.vis[2]).abs() > 0.5 || (s.vis[3] - first.vis[3]).abs() > 0.5);
+                || (s.vis[2] - first.vis[2]).abs() > 0.5 || (s.vis[3] - first.vis[3]).abs() > 0.5)
+                // A row mounting under a point tall that grows open, however gently it starts.
+                || first.rect[3] < 1.0 && (k + 1..=k + (0.25 * rec.hz) as usize).filter_map(|j| t.at(j)).any(|s| s.rect[3] >= 1.0);
             if grows || transitioning(i, k, k + 2) {
                 continue;
             }
@@ -420,39 +463,69 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
             above || below
         })
     };
-    let mut geo: Vec<(usize, Finding)> = Vec::new();
+    // How many of what `i` holds show on frames k - 1 and k and move there by `d` with it, as a
+    // scroll's rows do when its content jumps though the content's visible part stays put.
+    // With `entering`, also those it brings into view from just off it with no input on the
+    // way: content that teleports pops in a row that didn't show the frame before.
+    let carried = |i: usize, k: usize, axis: usize, d: f32, entering: bool| -> usize {
+        if axis >= 2 { return 0; }
+        let entering = entering && !input_between(k - 1, k);
+        tr.iter().filter(|c| inside(&c.path, &tr[i].path)).filter(|c| {
+            let (Some(a), Some(b)) = (c.at(k - 1), c.at(k)) else { return false };
+            if !seen(b, size) || (edge(b, axis) - edge(a, axis) - d).abs() >= 0.25 { return false; }
+            if seen(a, size) { return (shown_edge(b, axis, size) - shown_edge(a, axis, size) - d).abs() < 0.25 }
+            entering && b.op >= rule("faint") && b.flags & INK != 0 && b.flags & (GROWING | EXITING) == 0
+        }).count()
+    };
+    let mut geo: Vec<(usize, Finding)> = painted::painted(rec, &loops);
     for (i, t) in tr.iter().enumerate() {
         if loops.contains(&i) || t.frames.len() < 3 { continue; }
         for axis in 0..4 {
             // Deltas between consecutive frames, None across a gap.
             let fs = &t.frames;
             let d: Vec<Option<f32>> = (1..fs.len()).map(|j| (fs[j].0 == fs[j - 1].0 + 1).then(|| edge(&fs[j].1, axis) - edge(&fs[j - 1].1, axis))).collect();
-            let quiet = |j: usize| fs[j].1.flags & (SCROLLING | LIVE | VIRTUAL) != 0 || !seen(&fs[j].1, size) || fs[j].1.op < rule("faint");
+            // A jump or jerk is judged on what shows: the visible part moves with it, or what it
+            // holds that shows does. A fold dropping its rows above the window steps its top and
+            // height with the scroll offset, and nothing that shows moves.
+            let vd = |j: usize| if fs[j].0 == fs[j - 1].0 + 1 { shown_edge(&fs[j].1, axis, size) - shown_edge(&fs[j - 1].1, axis, size) } else { 0.0 };
+            let clipped = |j: usize| area(&on_window(&fs[j].1.vis, size)) + 1.0 < area(&fs[j].1.rect);
+            let quiet = |j: usize| fs[j].1.flags & (LIVE | VIRTUAL) != 0 || !seen(&fs[j].1, size) || fs[j].1.op < rule("faint");
+            // The box of words still arriving (a streaming link's) takes each new word at once.
+            let grew = |k: usize| t.words.iter().position(|w| w.0 == k).is_some_and(|p| p > 0 && t.words[p].1.starts_with(t.words[p - 1].1.as_str()));
             for j in 1..fs.len() {
                 let Some(step) = d[j - 1] else { continue };
                 let k = fs[j].0;
                 if k <= rec.start || quiet(j) || quiet(j - 1) || fs[j].1.flags & GROWING != 0 && axis == 3 { continue; }
+                // A scroll under a hand, or one gliding over frames, moves as it should. One that
+                // lands in a single frame with nothing asking for it is a teleport.
+                let scrolling = (fs[j].1.flags | fs[j - 1].1.flags) & SCROLLING != 0;
                 let before = if j >= 2 { d[j - 2].unwrap_or(0.0) } else { 0.0 };
                 let after = d.get(j).copied().flatten().unwrap_or(0.0);
                 let name = short(&t.path);
+                let riders = |entering| if clipped(j) || clipped(j - 1) { carried(i, k, axis, step, entering) } else { 0 };
                 if step.abs() >= rule("jump") && before.abs() < 0.5 && after.abs() < 0.5 {
-                    if riding(i, k, axis, step) || pushed(i, k, axis, step) { continue; }
+                    // An input's scroll cut moves a row with the content it scrolls in. A virtual
+                    // list's stack can move by less, as rows above it unmount into its space.
+                    let cut = axis < 2 && input_between(k - 1, k) && (own_edge(&fs[j].1, axis) - own_edge(&fs[j - 1].1, axis)).abs() < 0.25;
+                    if scrolling && input_between(k - 1, k) || cut || riding(i, k, axis, step) || pushed(i, k, axis, step) || grew(k) { continue; }
+                    let riders = riders(true);
+                    if vd(j).abs() < rule("jump") && riders == 0 { continue; }
                     let appeared = born(t) == Some(fs[j - 1].0) && fs[j - 1].0 > rec.start;
-                    let riders = tr.iter().filter(|c| c.path.starts_with(&t.path) && c.path.len() > t.path.len() && c.path.as_bytes()[t.path.len()] == b'/'
-                        && c.at(k).is_some_and(|s| seen(s, size))).count();
                     let scroll_content = axis == 1 && fs[j].1.rect[3] > fs[j].1.vis[3] + 1.0 && riders >= 3;
                     let kind = if appeared { "appear-then-jump" } else if scroll_content { "offset-jump" } else { "jump" };
                     geo.push((i, Finding { kind, element: name, frame: k,
                         detail: format!("{} {:.1} → {:.1} ({:+.1} pt) in one frame{}", AXES[axis], edge(&fs[j - 1].1, axis), edge(&fs[j].1, axis), step,
                             if scroll_content { format!(", carrying {riders} elements") } else { String::new() }) }));
-                } else if (step - before).abs() > rule("jerk") && before.abs() >= 0.5 && step.abs() >= 0.5 {
+                } else if !scrolling && (step - before).abs() > rule("jerk") && before.abs() >= 0.5 && step.abs() >= 0.5 {
                     if riding(i, k, axis, step) { continue; }
+                    if j >= 2 && (vd(j) - vd(j - 1)).abs() <= rule("jerk") && riders(false) == 0 { continue; }
                     geo.push((i, Finding { kind: "jerk", element: name, frame: k,
                         detail: format!("{} step {:+.1} → {:+.1} pt/frame ({:.0} → {:.0} pt/s)", AXES[axis], before, step, before as f64 * rec.hz, step as f64 * rec.hz) }));
                 }
             }
-            // Motion segments: frames that move this edge, through the odd still frame at a
-            // turn (a spring's peak), until it rests three frames.
+            // Motion segments: frames that move this edge against its scroll, through the odd
+            // still frame at a turn (a spring's peak), until it rests three frames.
+            let d: Vec<Option<f32>> = (1..fs.len()).map(|j| (fs[j].0 == fs[j - 1].0 + 1).then(|| own_edge(&fs[j].1, axis) - own_edge(&fs[j - 1].1, axis))).collect();
             let moving = |j: usize| d[j - 1].is_some_and(|x| x.abs() > 0.01);
             let mut j = 1;
             while j < fs.len() {
@@ -467,9 +540,9 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
                 if b - a + 1 < 3 { continue; }
                 let seg = &fs[a - 1..=b];
                 let (k0, k1) = (seg[0].0, seg[seg.len() - 1].0);
-                if k1 <= rec.start || seg.iter().all(|f| !seen(&f.1, size) || f.1.op < rule("faint")) || seg.iter().any(|f| f.1.flags & (SCROLLING | LIVE | VIRTUAL) != 0) { continue; }
+                if k1 <= rec.start || seg.iter().all(|f| !seen(&f.1, size) || f.1.op < rule("faint")) || seg.iter().any(|f| f.1.flags & (LIVE | VIRTUAL) != 0) { continue; }
                 if input_between(k0 + 1, k1) { continue; } // retargeted mid-flight
-                let vals: Vec<f32> = seg.iter().map(|f| edge(&f.1, axis)).collect();
+                let vals: Vec<f32> = seg.iter().map(|f| own_edge(&f.1, axis)).collect();
                 let (start, rest) = (vals[0], vals[vals.len() - 1]);
                 let travel = rest - start;
                 let mut signs = Vec::new();
@@ -517,7 +590,12 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
                 if low <= s.op - rule("flicker") && fs[m].1.op >= s.op - 0.1 { back = Some(m); break; }
                 m += 1;
             }
-            if let Some(m) = back {
+            // One input taking it away and another bringing it back (a toggle pressed twice
+            // quickly) is them answered, not a flicker.
+            let answered = |m: usize| rec.inputs.iter().filter(|x| x.0 > fs[j].0 && x.0 <= fs[m].0).count() >= 2;
+            if let Some(m) = back.filter(|&m| answered(m)) {
+                j = m + 1;
+            } else if let Some(m) = back {
                 geo.push((i, Finding { kind: "flicker", element: short(&t.path), frame: fs[low_at].0,
                     detail: format!("opacity {:.2} → {:.2} → {:.2} over frames {}–{}", s.op, low, fs[m].1.op, fs[j].0, fs[m].0) }));
                 spans.push((fs[j].0, fs[m].0));
@@ -533,7 +611,7 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
             let ((_, old), (k, new)) = (&w[0], &w[1]);
             let (Some(a), Some(b)) = (t.at(k.wrapping_sub(1)), t.at(*k)) else { continue };
             if *k <= rec.start || parents.contains(&i) || new.starts_with(old.as_str()) || old.starts_with(new.as_str()) || !rec.counts_roll && ticks(old, new) { continue; }
-            if (a.flags | b.flags) & (LIVE | LOOP | EXITING | VIRTUAL) != 0 || a.op.min(b.op) < rule("text-swap") || !seen(b, size) { continue; }
+            if (a.flags | b.flags) & (LIVE | EXITING | VIRTUAL) != 0 || a.op.min(b.op) < rule("text-swap") || !seen(b, size) { continue; }
             geo.push((i, Finding { kind: "text-swap", element: short(&t.path), frame: *k, detail: format!("\"{old}\" → \"{new}\" in one frame") }));
         }
         // Opacity that steps instead of fading.
@@ -553,7 +631,7 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
         let mut p = tr[*i].parent;
         let mut dup = false;
         while let Some(j) = p {
-            if ["reversal", "overshoot", "jiggle", "flicker", "jerk", "fade-snap"].contains(&f.kind) && (0..=2).any(|o| reported.contains(&(j, f.kind, f.frame.saturating_sub(o))) || reported.contains(&(j, f.kind, f.frame + o))) {
+            if ["reversal", "overshoot", "jiggle", "flicker", "jerk", "fade-snap", "snap", "flash", "changes-twice"].contains(&f.kind) && (0..=2).any(|o| reported.contains(&(j, f.kind, f.frame.saturating_sub(o))) || reported.contains(&(j, f.kind, f.frame + o))) {
                 dup = true;
                 break;
             }
@@ -604,20 +682,9 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
             out.push(Finding { kind: "never-settles", element: short(&tr[i].path), frame: n - tail, detail: format!("still moving {moved:.2} pt/frame in the last 0.5 s") });
         }
     }
-    // A loop keeps its rhythm: each frame steps its phase as the last did, through a new label.
-    for t in tr {
-        let steps: Vec<(usize, f32)> = t.frames.windows(2)
-            .filter(|w| w[1].0 == w[0].0 + 1 && !w[0].1.phase.is_nan() && !w[1].1.phase.is_nan())
-            .map(|w| (w[1].0, (w[1].1.phase - w[0].1.phase).rem_euclid(1.0)))
-            .collect();
-        if steps.len() < 4 { continue; }
-        let mut sorted: Vec<f32> = steps.iter().map(|s| s.1).collect();
-        sorted.sort_by(f32::total_cmp);
-        let usual = sorted[sorted.len() / 2];
-        if let Some(&(k, d)) = steps.iter().find(|s| (s.1 - usual).abs() > rule("loop-jump")) {
-            out.push(Finding { kind: "loop-jump", element: short(&t.path), frame: k, detail: format!("phase stepped {d:.3} where it steps {usual:.3} a frame") });
-        }
-    }
+    loops::jumps(rec, &mut out);
+    commits::scroll_commits(rec, &mut out);
+    kicks::kicks(rec, &loops, &mut out);
     // Words that leave as the same words mount: a row remounted under a new key.
     let window = rule("remount") as usize;
     let leaving = |i: usize, k: usize| {
@@ -704,55 +771,11 @@ pub fn check(rec: &Recording) -> Vec<Finding> {
     // A load swaps the page in on its frame: what mounts, unmounts or moves then is the swap.
     out.retain(|f| !(["pop-in", "pop-out", "jump", "offset-jump", "appear-then-jump", "fade-snap"].contains(&f.kind)
         && rec.loads.iter().any(|&l| f.frame >= l && f.frame <= l + 2)));
+    painted::intended(rec, &mut out);
+    let pixels = regions::regions(rec, &loops, &out);
+    out.extend(pixels);
     out.sort_by_key(|f| (f.frame, f.kind));
     out
-}
-
-/// Frames `from..to` of every track whose path contains `filter`, one line per frame:
-/// `frame rect visible opacity flags`. For reading a finding's neighbourhood.
-pub fn dump(rec: &Recording, filter: &str, from: usize, to: usize) -> String {
-    let mut out = String::new();
-    for t in rec.tracks.iter().filter(|t| t.path.contains(filter)) {
-        out += &format!("{}\n", t.path);
-        for (k, s) in t.frames.iter().filter(|f| f.0 >= from && f.0 < to) {
-            out += &format!("  {k:4} [{:7.1} {:7.1} {:6.1} {:6.1}] vis [{:6.1} {:6.1} {:6.1} {:6.1}] op {:.3} sc {:.3} {:02b}\n",
-                s.rect[0], s.rect[1], s.rect[2], s.rect[3], s.vis[0], s.vis[1], s.vis[2], s.vis[3], s.op, s.scale, s.flags);
-        }
-    }
-    out
-}
-
-/// A contact strip of frames `at-4..=at+4`: every element's visible rect as an outline, as
-/// strong as its opacity, `focus`'s in red. Secondary evidence: the findings are the gate.
-pub fn sheet(rec: &Recording, at: usize, focus: &str) -> ::image::RgbImage {
-    const Z: f32 = 0.25;
-    let (w, h) = ((rec.size.0 * Z) as u32, (rec.size.1 * Z) as u32);
-    let frames: Vec<usize> = (at.saturating_sub(4)..=at + 4).filter(|&k| k < rec.frames).collect();
-    let gap = 6;
-    let mut img = ::image::RgbImage::from_pixel((w + gap) * frames.len() as u32, h, ::image::Rgb([16, 18, 22]));
-    for (col, &k) in frames.iter().enumerate() {
-        let x0 = col as u32 * (w + gap);
-        if k == at {
-            for x in x0..x0 + w { img.put_pixel(x, 0, ::image::Rgb([255, 210, 80])); }
-        }
-        for t in &rec.tracks {
-            let Some(s) = t.at(k) else { continue };
-            let hot = !focus.is_empty() && t.path.contains(focus);
-            let a = s.op.clamp(0.0, 1.0) * if hot { 1.0 } else { 0.5 };
-            let ink = if hot { [255.0, 70.0, 70.0] } else { [200.0, 205.0, 215.0] };
-            let [x, y, rw, rh] = s.vis.map(|v| v * Z);
-            if rw < 1.0 || rh < 1.0 { continue; }
-            let mut plot = |px: f32, py: f32| {
-                let (px, py) = (px as u32, py as u32);
-                if px >= w || py >= h { return; }
-                let p = img.get_pixel_mut(x0 + px, py);
-                for c in 0..3 { p.0[c] = (p.0[c] as f32 * (1.0 - a) + ink[c] * a) as u8; }
-            };
-            for i in 0..rw as u32 { plot(x + i as f32, y); plot(x + i as f32, y + rh - 1.0); }
-            for i in 0..rh as u32 { plot(x, y + i as f32); plot(x + rw - 1.0, y + i as f32); }
-        }
-    }
-    img
 }
 
 fn last_seg(path: &str) -> &str {

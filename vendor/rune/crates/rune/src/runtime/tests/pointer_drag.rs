@@ -38,6 +38,95 @@ fn taking_the_pointer_away_ends_a_held_drag_cancelled() {
     assert_eq!(rt.state.iter().filter(|d| d.0 == Phase::Up).count(), 1, "the release after it does nothing");
 }
 
+#[derive(Default)]
+struct LostRelease { drags: Vec<(Phase, bool, f32)>, presses: u32 }
+
+fn lost_release_view(_: &LostRelease, _: &mut Cx<LostRelease>) -> El {
+    el().key("pill").size(100.0, 40.0)
+        .on_drag(|s: &mut LostRelease, d, _| s.drags.push((d.phase, d.cancelled(), d.x)))
+        .on_press(|s: &mut LostRelease| s.presses += 1)
+}
+
+#[test]
+fn a_lost_release_cancels_a_held_drag_where_the_button_rose() {
+    let mut rt = Runtime::new(LostRelease::default(), lost_release_view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt.pointer_down(10.0, 10.0);
+    rt.pointer_move(40.0, 10.0);
+    rt.pointer_release_lost(60.0, 10.0);
+    rt.frame(0.0);
+    assert!(!rt.pointer_captured());
+    assert_eq!(rt.pointer(), Some((60.0, 10.0)));
+    assert_eq!(rt.state.drags.last(), Some(&(Phase::Up, true, 60.0)));
+    assert_eq!(rt.state.presses, 0, "a press whose release was lost clicks nothing when it dragged");
+    rt.pointer_up(60.0, 10.0);
+    rt.frame(0.0);
+    assert_eq!(rt.state.drags.iter().filter(|d| d.0 == Phase::Up).count(), 1, "a late Up does nothing");
+}
+
+#[test]
+fn a_lost_release_before_the_next_press_leaves_that_press_alone() {
+    let mut rt = Runtime::new(LostRelease::default(), lost_release_view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt.pointer_down(10.0, 10.0);
+    rt.pointer_release_lost(10.0, 10.0);
+    rt.pointer_down(20.0, 10.0);
+    assert!(rt.pointer_captured(), "the new press holds");
+    rt.pointer_up(20.0, 10.0);
+    rt.frame(0.0);
+    let ups: Vec<_> = rt.state.drags.iter().filter(|d| d.0 == Phase::Up).map(|d| d.1).collect();
+    assert_eq!(ups, [true, false], "the old drag is cancelled, the new one ends normally");
+}
+
+type ClickRun = Vec<(Phase, u32)>;
+
+fn click_run_runtime() -> Runtime<ClickRun> {
+    fn view(_: &ClickRun, _: &mut Cx<ClickRun>) -> El {
+        el().size(100.0, 40.0).on_drag(|s: &mut ClickRun, d, _| s.push((d.phase, d.clicks)))
+    }
+    let mut rt = Runtime::new(Vec::new(), view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt
+}
+
+#[test]
+fn a_lost_release_that_moved_ends_the_run_of_clicks() {
+    // (seen moving to, released at, the next press's count)
+    for (seen, released, clicks) in [(Some(40.0), 40.0, 1), (Some(40.0), 10.0, 1), (None, 40.0, 1), (None, 12.0, 2), (None, 10.0, 2)] {
+        let mut rt = click_run_runtime();
+        rt.pointer_down(10.0, 10.0);
+        if let Some(x) = seen { rt.pointer_move(x, 10.0); }
+        rt.pointer_release_lost(released, 10.0);
+        rt.pointer_down(10.0, 10.0);
+        rt.frame(0.0);
+        assert_eq!(rt.state.last(), Some(&(Phase::Down, clicks)), "moved to {seen:?}, released at {released}");
+    }
+}
+
+#[test]
+fn a_stationary_escape_keeps_the_run_of_clicks() {
+    let mut rt = click_run_runtime();
+    rt.pointer_down(10.0, 10.0);
+    rt.physical_key_input(crate::PhysicalInput::Key { key: crate::PhysicalKeyCode::Escape,
+        mods: crate::Mods::default(), pressed: true, repeat: false }, KeyEvent { key: crate::Key::Escape, mods: crate::Mods::default() }, None);
+    rt.pointer_up(10.0, 10.0);
+    rt.pointer_down(10.0, 10.0);
+    rt.frame(0.0);
+    assert_eq!(rt.state.last(), Some(&(Phase::Down, 2)));
+}
+
+#[test]
+fn a_lost_release_without_a_drag_still_releases_the_press() {
+    fn view(_: &u32, _: &mut Cx<u32>) -> El { el().size(100.0, 40.0).on_press(|n: &mut u32| *n += 1) }
+    let mut rt = Runtime::new(0, view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt.pointer_down(10.0, 10.0);
+    rt.pointer_release_lost(10.0, 10.0);
+    rt.frame(0.0);
+    assert!(!rt.pointer_captured());
+    assert_eq!(rt.state, 1);
+}
+
 #[test]
 fn native_escape_with_a_logical_fallback_cancels_the_drag() {
     fn view(_: &Vec<bool>, _: &mut Cx<Vec<bool>>) -> El {
@@ -152,10 +241,10 @@ fn a_drag_out_that_offers_nothing_stays_a_press() {
 #[test]
 fn a_drag_out_that_offers_nothing_tracks_leaving_the_element() {
     let mut rt = drag_out_rt(false);
-    assert!(rt.capture_inside);
+    assert!(rt.press.inside());
     rt.pointer_move(150.0, 10.0);
     assert!(rt.pointer_captured(), "the press holds on");
-    assert!(!rt.capture_inside, "the move that declined the drag left the element, so it no longer shows pressed");
+    assert!(!rt.press.inside(), "the move that declined the drag left the element, so it no longer shows pressed");
 }
 
 #[test]
@@ -475,4 +564,44 @@ fn a_drag_counts_its_run_of_clicks() {
     rt.pointer_up(10.0, 10.0);
     rt.frame(0.1);
     assert!(rt.state.contains(&(Phase::Up, 0)), "on_double_press still runs: {:?}", rt.state);
+}
+
+#[test]
+fn a_held_press_hears_its_drag_again_until_released() {
+    type State = Vec<(Phase, bool, f32)>;
+    fn view(_: &State, _: &mut Cx<State>) -> El {
+        el().key("pill").size(100.0, 40.0).on_drag(|s: &mut State, d, tx| {
+            s.push((d.phase, tx.drag_repeat(), d.x));
+            if d.phase == Phase::Down || tx.drag_repeat() {
+                tx.drag_repeat_after(std::time::Duration::from_millis(if tx.drag_repeat() { 50 } else { 300 }));
+            }
+        })
+    }
+    let repeats = |rt: &Runtime<State>| rt.state.iter().filter(|e| e.1).count();
+    let mut rt = Runtime::new(Vec::new(), view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt.pointer_move(10.0, 10.0);
+    rt.pointer_down(10.0, 10.0);
+    rt.frame(1.0 / 60.0);
+    assert_eq!(rt.state, vec![(Phase::Down, false, 10.0)]);
+    assert!(rt.wake_deadline().is_some(), "a still window wakes for the repeat");
+    for _ in 0..15 { rt.frame(1.0 / 60.0); }
+    assert_eq!(repeats(&rt), 0, "not before the delay");
+    for _ in 0..4 { rt.frame(1.0 / 60.0); }
+    assert_eq!(repeats(&rt), 1);
+    assert_eq!(rt.state.last(), Some(&(Phase::Move, true, 10.0)), "a still pointer is heard again");
+
+    rt.pointer_move(30.0, 10.0);
+    rt.frame(1.0 / 60.0);
+    assert!(rt.state.contains(&(Phase::Move, false, 30.0)), "the hand's move isn't a repeat");
+    for _ in 0..12 { rt.frame(1.0 / 60.0); }
+    assert!(repeats(&rt) >= 4, "then every interval: {:?}", rt.state);
+    assert_eq!(rt.state.last().map(|e| (e.1, e.2)), Some((true, 30.0)), "where the pointer is now");
+
+    rt.pointer_up(30.0, 10.0);
+    rt.frame(1.0 / 60.0);
+    let heard = rt.state.len();
+    for _ in 0..30 { rt.frame(1.0 / 60.0); }
+    assert_eq!(rt.state.len(), heard, "the release ends it");
+    assert_eq!(rt.state.last().map(|e| e.0), Some(Phase::Up));
 }

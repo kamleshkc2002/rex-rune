@@ -333,7 +333,7 @@ fn secure_multiline_conceal_snaps_geometry_scroll_and_bypasses_caches() {
     rt.frame(0.0);
     let st = &rt.scrolls[&scroll_id];
     assert_eq!((st.offset, st.max), (0.0, 0.0));
-    assert!(st.glide.is_none());
+    assert!(st.glide().is_none());
     let elements = rt.elements();
     for e in &elements {
         assert_eq!(e.rect[3], e.target[3], "concealed height must not spring: {}", e.path);
@@ -362,9 +362,9 @@ fn wrap_anywhere_wraps_unbroken_tokens_keeps_word_breaks_and_lowers_min_content_
     const WORDS: &str = "alpha beta gamma delta epsilon zeta eta theta";
 
     let mut explicit = text("token");
-    explicit.style.flex_shrink = 0.25;
-    assert_eq!(explicit.wrap_anywhere().style.flex_shrink, 0.25);
-    assert_eq!(text("token").wrap_anywhere().style.flex_shrink, 0.0);
+    explicit.style.set_flex_shrink(0.25);
+    assert_eq!(explicit.wrap_anywhere().style.flex_shrink(), 0.25);
+    assert_eq!(text("token").wrap_anywhere().style.flex_shrink(), 0.0);
 
     fn view(_: &(), _: &mut Cx<()>) -> El {
         col()
@@ -677,8 +677,8 @@ fn secure_rich_labels_have_no_links_flights_or_retained_measure_hashes() {
     let mut rt = Runtime::new(true, view, (300.0, 100.0), Env::new(true, 1.0));
     rt.frame(0.0);
     let n = rt.nodes.iter().find(|n| n.key.as_deref() == Some("secret")).unwrap();
-    assert!(n.text.as_ref().unwrap().links.is_empty());
-    assert_eq!(rt.layout_entries[&n.path].measure, Some(0));
+    assert!(n.text.as_ref().unwrap().cold.links.is_empty());
+    assert_eq!(rt.layout.measure_hash(n.id.0), Some(Some(0)));
     assert!(rt.element_is_secure(&n.path));
     assert!(!rt.element_is_secure("missing"));
     assert!(!crate::tooling::tree_json(&rt, 0.0).to_string().contains("fictional-"));

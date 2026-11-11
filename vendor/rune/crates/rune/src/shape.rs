@@ -6,7 +6,8 @@
 //! per segment (`KIND_SEGMENT`), a fill is ear-clipped into triangles (`KIND_TRIANGLE`) whose
 //! polygon-boundary edges are antialiased and whose interior edges are hard, so fills have no
 //! seams. Translucent strokes blend twice where neighbouring segments overlap at a joint; draw
-//! translucent areas as fills.
+//! translucent areas as fills. An element's opacity doesn't: while it is between 0 and 1, a
+//! shape of more than one piece paints through a layer that takes it once.
 
 use crate::color::Color;
 
@@ -125,6 +126,110 @@ impl Shape {
     pub fn is_empty(&self) -> bool {
         self.ops.is_empty()
     }
+
+    /// Whether it draws more than one piece, so two can overlap: a stroke of two or more
+    /// segments (they meet at a joint), or more than one stroke or fill. Faded, overlapping
+    /// pieces blend twice where they meet, so a fade paints such a shape through a layer.
+    pub(crate) fn overlaps(&self) -> bool {
+        let pieces = |op: &Op| match op {
+            Op::Stroke { points, closed, .. } => if *closed { points.len() } else { points.len() - 1 },
+            Op::Fill { .. } => 1,
+        };
+        self.ops.iter().map(pieces).sum::<usize>() > 1
+    }
+
+    /// This shape drawn on to `t` (0 to 1), as SVG's `pathLength` trim draws a line: its strokes
+    /// trace in order along their combined length, the one in progress cut where the drawing has
+    /// got to, and each fill fades in over the last [`DRAW_RAMP`] points of line before it (an
+    /// arrowhead lands as its line arrives). With no strokes, the fills fade in together.
+    /// [`Transition::draw`](crate::Transition::draw) animates it.
+    pub fn drawn(&self, t: f32) -> Shape {
+        self.trimmed(0.0, if t.is_nan() { 1.0 } else { t })
+    }
+
+    /// The part of this shape from `start` to `end` (0 to 1) of its strokes' combined length, as
+    /// Core Animation's `strokeStart` and `strokeEnd` trim a path: each stroke keeps the stretch
+    /// of it inside that span, with its own caps at both cut ends, and each fill fades in as `end`
+    /// reaches it, as under [`Self::drawn`]. Nothing of the strokes draws when `end` is at or
+    /// before `start`. [`El::live_trim`](crate::El::live_trim) moves it every frame.
+    pub fn trimmed(&self, start: f32, end: f32) -> Shape {
+        let unit = |v: f32, nan: f32| if v.is_nan() { nan } else { v.clamp(0.0, 1.0) };
+        let (start, t) = (unit(start, 0.0), unit(end, 1.0));
+        if start <= 0.0 && t >= 1.0 {
+            return self.clone();
+        }
+        let len = |points: &[[f32; 2]], closed: bool| {
+            let open: f32 = points.windows(2).map(|w| dist(w[0], w[1])).sum();
+            open + if closed && points.len() > 2 { dist(points[points.len() - 1], points[0]) } else { 0.0 }
+        };
+        let total: f32 = self.ops.iter().map(|op| if let Op::Stroke { points, closed, .. } = op { len(points, *closed) } else { 0.0 }).sum();
+        let (from, at) = (start * total, t * total);
+        let mut done = 0.0;
+        let mut ops = Vec::new();
+        for op in &self.ops {
+            match op {
+                Op::Stroke { points, closed, width, cap, color } => {
+                    let l = len(points, *closed);
+                    let (lo, hi) = (from.max(done), at.min(done + l));
+                    if lo <= done && hi >= done + l {
+                        ops.push(op.clone());
+                    } else if hi > lo {
+                        let mut ring = points.clone();
+                        if *closed {
+                            ring.push(points[0]);
+                        }
+                        let cut = slice(&ring, lo - done, hi - done);
+                        if cut.len() >= 2 {
+                            ops.push(Op::Stroke { points: cut, closed: false, width: *width, cap: *cap, color: *color });
+                        }
+                    }
+                    done += l;
+                }
+                Op::Fill { points, color } => {
+                    let a = if total <= 0.0 {
+                        t
+                    } else if done <= 0.0 {
+                        1.0
+                    } else {
+                        let ramp = DRAW_RAMP.min(done);
+                        ((at - (done - ramp)) / ramp).clamp(0.0, 1.0)
+                    };
+                    if a > 0.0 {
+                        ops.push(Op::Fill { points: points.clone(), color: Color { a: color.a * a, ..*color } });
+                    }
+                }
+            }
+        }
+        Shape { ops, view_box: self.view_box }
+    }
+}
+
+/// How many points of line a fill fades in over as [`Shape::drawn`] reaches it.
+pub const DRAW_RAMP: f32 = 8.0;
+
+/// The polyline `points` from `from` to `to` along its length (`from` < `to`).
+fn slice(points: &[[f32; 2]], from: f32, to: f32) -> Vec<[f32; 2]> {
+    let lerp = |a: [f32; 2], b: [f32; 2], at: f32, d: f32| {
+        let k = if d > 0.0 { (at / d).clamp(0.0, 1.0) } else { 0.0 };
+        [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
+    };
+    let mut out = Vec::new();
+    let mut done = 0.0;
+    for w in points.windows(2) {
+        let d = dist(w[0], w[1]);
+        if out.is_empty() && from < done + d {
+            out.push(lerp(w[0], w[1], from - done, d));
+        }
+        if !out.is_empty() {
+            if to <= done + d {
+                out.push(lerp(w[0], w[1], to - done, d));
+                return out;
+            }
+            out.push(w[1]);
+        }
+        done += d;
+    }
+    out
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -359,6 +464,70 @@ mod tests {
         assert_eq!(*s.points.last().unwrap(), [100.0, 0.0]);
         let mid = s.points[s.points.len() / 2];
         assert!((mid[1] - 37.5).abs() < 1.0, "{mid:?}");
+    }
+
+    fn strokes(s: &Shape) -> Vec<Vec<[f32; 2]>> {
+        s.ops.iter().filter_map(|op| if let Op::Stroke { points, .. } = op { Some(points.clone()) } else { None }).collect()
+    }
+
+    fn fill_alpha(s: &Shape) -> Option<f32> {
+        s.ops.iter().find_map(|op| if let Op::Fill { color, .. } = op { Some(color.a) } else { None })
+    }
+
+    #[test]
+    fn a_drawn_shape_traces_its_strokes_in_order_and_lands_its_head_last() {
+        // A connector: an L-shaped line 100 points long, a second 20-point run, then its head.
+        let s = Shape::new()
+            .stroke(vec![[0.0, 0.0], [0.0, 60.0], [40.0, 60.0]], 1.0, Color::WHITE)
+            .stroke(vec![[40.0, 70.0], [40.0, 90.0]], 1.0, Color::WHITE)
+            .fill(vec![[36.0, 90.0], [44.0, 90.0], [40.0, 96.0]], Color::WHITE);
+        assert_eq!(strokes(&s.drawn(0.0)), Vec::<Vec<[f32; 2]>>::new(), "nothing drawn yet");
+        assert_eq!(fill_alpha(&s.drawn(0.0)), None);
+        // 60 of 120 points: down the first leg, not yet round the corner.
+        assert_eq!(strokes(&s.drawn(0.5)), vec![vec![[0.0, 0.0], [0.0, 60.0]]]);
+        // 80 points: round the corner, halfway along the second leg.
+        assert_eq!(strokes(&s.drawn(80.0 / 120.0)), vec![vec![[0.0, 0.0], [0.0, 60.0], [20.0, 60.0]]]);
+        // The head fades in over the last 8 points of line.
+        assert_eq!(fill_alpha(&s.drawn(108.0 / 120.0)), None);
+        let a = fill_alpha(&s.drawn(116.0 / 120.0)).unwrap();
+        assert!((a - 0.5).abs() < 1e-4, "{a}");
+        assert_eq!(s.drawn(1.0), s, "drawn whole");
+        assert_eq!(s.drawn(f32::NAN), s);
+    }
+
+    #[test]
+    fn a_closed_stroke_draws_on_round_to_its_start_and_fills_alone_fade() {
+        let square = vec![[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]];
+        let s = Shape::new().stroke_with(square, true, 1.0, LineCap::Round, Color::WHITE);
+        assert_eq!(strokes(&s.drawn(0.875)), vec![vec![[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0], [0.0, 5.0]]]);
+        let dot = Shape::new().fill(vec![[0.0, 0.0], [4.0, 0.0], [2.0, 4.0]], Color::WHITE);
+        assert_eq!(fill_alpha(&dot.drawn(0.25)), Some(0.25));
+    }
+
+    #[test]
+    fn a_trimmed_shape_keeps_the_stretch_between_start_and_end() {
+        let s = Shape::new()
+            .stroke(vec![[0.0, 0.0], [0.0, 60.0], [40.0, 60.0]], 1.0, Color::WHITE)
+            .stroke(vec![[40.0, 70.0], [40.0, 90.0]], 1.0, Color::WHITE);
+        // 30 to 105 of 120 points: round the corner, then 5 points down the second stroke.
+        assert_eq!(
+            strokes(&s.trimmed(0.25, 0.875)),
+            vec![vec![[0.0, 30.0], [0.0, 60.0], [40.0, 60.0]], vec![[40.0, 70.0], [40.0, 75.0]]]
+        );
+        // A cut on a vertex keeps no zero-length piece there.
+        assert_eq!(strokes(&s.trimmed(0.5, 0.875)), vec![vec![[0.0, 60.0], [40.0, 60.0]], vec![[40.0, 70.0], [40.0, 75.0]]]);
+        assert!(strokes(&s.trimmed(0.6, 0.6)).is_empty(), "nothing between equal ends");
+        assert!(strokes(&s.trimmed(0.7, 0.2)).is_empty());
+        assert_eq!(s.trimmed(0.0, 1.0), s);
+        assert_eq!(s.trimmed(f32::NAN, f32::NAN), s);
+        assert_eq!(s.trimmed(0.0, 0.5), s.drawn(0.5));
+    }
+
+    #[test]
+    fn a_closed_stroke_trims_across_its_closing_edge() {
+        let square = vec![[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]];
+        let s = Shape::new().stroke_with(square, true, 1.0, LineCap::Round, Color::WHITE);
+        assert_eq!(strokes(&s.trimmed(0.625, 1.0)), vec![vec![[5.0, 10.0], [0.0, 10.0], [0.0, 0.0]]]);
     }
 
     #[test]

@@ -27,7 +27,9 @@ pub enum Family {
     #[default]
     Sans,
     Mono,
-    /// A literal font family name, not a CSS list. Falls back to the sans slot if missing.
+    /// A font family by name, registered or installed (an installed one loads on first use),
+    /// falling back to the sans slot if missing. With a comma it is a CSS family list, its
+    /// families tried in order before the sans slot: `"Iosevka", JetBrains Mono`.
     Named(&'static str),
     /// The platform's monospaced UI font, loaded from the system on first use, never bundled:
     /// SF Mono on macOS (AppKit's `monospacedSystemFont`, Menlo before it existed), Cascadia
@@ -115,7 +117,10 @@ impl TextStyle {
     /// Fixes `opsz` at `size` points and picks the `trak` tracking with it: text is tracked as
     /// Core Text tracks `size`-point text scaled to the set size, so
     /// `TextStyle::new(size * k, w).optical_size(size)` matches a SwiftUI view at `size` with
-    /// `scaleEffect(k)`. Auto optical size tracks at the point size.
+    /// `scaleEffect(k)`. Auto optical size tracks at the point size. To change only the outlines
+    /// and keep the set size's tracking, as CoreText does for a font given an `opsz` variation,
+    /// use `.variations("'opsz' 17")`: on SF at 16 pt, `.optical_size(17.0)` is 0.094 pt a glyph
+    /// tighter (17-pt tracking scaled to 16), and both match CoreText's widths exactly.
     pub const fn optical_size(self, size: f32) -> TextStyle {
         TextStyle { optical_size: OpticalSize::Fixed(size), ..self }
     }

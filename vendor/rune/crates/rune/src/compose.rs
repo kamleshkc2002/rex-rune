@@ -6,14 +6,46 @@
 use crate::render::{Instance, KIND_GLYPH, Renderer};
 use crate::runtime::Runtime;
 
+/// Draws a frame in place of Rune's default.
+///
+/// To paint custom content at `El::effect` slots, draw the frame with `Renderer::draw_with` and
+/// paint in its hook: it runs at each slot in painter order, inside the slot's isolated layers,
+/// so the slot's opacity (an exit fade included), clip and transform already apply. Keep
+/// resources per `EffectSite::mark`, read the slot's `EffectSite::data`, and drop a mark's
+/// resources once a frame passes without it:
+///
+/// ```ignore
+/// struct Hud { waves: HashMap<u32, Wave>, seen: HashSet<u32> }
+///
+/// impl Compositor<App> for Hud {
+///     fn render(&mut self, f: &mut Frame<'_, App>) {
+///         let (device, queue, clear) = (f.device, f.queue, f.rt.clear_color());
+///         f.ui.prepare(device, queue, &mut f.rt.text.atlas, &f.rt.instances, f.size);
+///         self.seen.clear();
+///         f.ui.draw_with(f.encoder, f.target, clear, &mut |pass, site| {
+///             self.seen.insert(site.mark);
+///             let wave = self.waves.entry(site.mark).or_insert_with(|| Wave::new(device));
+///             wave.draw(device, queue, pass, site, site.data);
+///         });
+///         self.waves.retain(|mark, _| self.seen.contains(mark));
+///     }
+/// }
+/// ```
 pub trait Compositor<S: 'static>: 'static {
     /// Device features to request when the adapter has them (e.g. `TIMESTAMP_QUERY`).
+    /// `IMMEDIATES` also raises `max_immediate_size` to the adapter's (4 KB on Metal): per-draw
+    /// values set with `RenderPass::set_immediates` travel inside the pass, where a uniform
+    /// written through the queue or `Frame::write_buffer` costs the frame another command buffer.
     fn features(&self) -> wgpu::Features {
         wgpu::Features::empty()
     }
 
     /// Draws the frame into `f.target`. Runs after `Runtime::frame` built the instances, in the
     /// window and headless alike. Nothing has been recorded yet; `El::pixels` images are uploaded.
+    /// `f.device` can change between frames (an overlay shown again on another GPU): keep
+    /// resources made on it with `f.device_key()`, and make them again when it changes. Never
+    /// compare `wgpu::Device`s for this: wgpu compares them by id, and every Rune GPU has its
+    /// own instance, whose first device has the same id as the last one's (hex#982).
     fn render(&mut self, f: &mut Frame<'_, S>);
 
     /// True while something the compositor draws moves on its own: the window keeps its display
@@ -51,7 +83,25 @@ pub struct Frame<'a, S: 'static> {
     pub ui: &'a mut Renderer,
 }
 
+/// Which device a frame draws on, unique for the process: a new device never has an earlier
+/// key, as a `wgpu::Device` can have an earlier id. Keep it beside resources made with
+/// `Frame::device`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct DeviceKey(u64);
+
+impl DeviceKey {
+    pub(crate) fn next() -> DeviceKey {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        DeviceKey(NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+    }
+}
+
 impl<S: 'static> Frame<'_, S> {
+    /// The device `device` is, as a key that changes whenever the frame moves to another one.
+    pub fn device_key(&self) -> DeviceKey {
+        self.ui.device_key()
+    }
+
     /// True when the frame is sRGB-blended (`App::srgb_blend`): `target` is a non-sRGB view and
     /// premultiplied colours, in `ui` passes and in layers, are sRGB-encoded. False: linear
     /// premultiplied values, encoded by the `*Srgb` target on write. Build effect pipelines and

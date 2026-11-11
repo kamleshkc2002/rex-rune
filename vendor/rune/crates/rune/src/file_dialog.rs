@@ -167,8 +167,52 @@ pub(crate) struct Pending {
     pub id: u64,
     pub kind: FileDialogKind,
     pub options: FileDialogOptions,
+}
+
+/// The runtime's one file dialog. Its answer carries its `id`, so an answer to a dialog that
+/// has since closed changes nothing (OpenCode Desktop's
+/// `packages/desktop/src/main/files/attachment-picker-machine.ts` fences picks the same way).
+#[derive(Default)]
+pub(crate) enum DialogState {
+    /// None asked for, or the last one's answer is queued.
+    #[default]
+    Closed,
+    /// Asked for; a host shows it next.
+    Requested(Pending),
     /// A host has it on screen.
-    pub shown: bool,
+    Showing(Pending),
+}
+
+impl DialogState {
+    pub(crate) fn pending(&self) -> Option<&Pending> {
+        match self {
+            DialogState::Closed => None,
+            DialogState::Requested(p) | DialogState::Showing(p) => Some(p),
+        }
+    }
+
+    pub(crate) fn is_open(&self) -> bool { !matches!(self, DialogState::Closed) }
+
+    /// The host takes a requested dialog to show; nothing while one shows.
+    pub(crate) fn show(&mut self) -> Option<&Pending> {
+        let DialogState::Requested(_) = self else { return None };
+        let DialogState::Requested(p) = std::mem::take(self) else { unreachable!() };
+        *self = DialogState::Showing(p);
+        self.pending()
+    }
+
+    /// Dialog `id` was answered: it closes, if it's the one open.
+    pub(crate) fn answered(&mut self, id: u64) {
+        if self.pending().is_some_and(|p| p.id == id) { *self = DialogState::Closed; }
+    }
+
+    /// Closes whatever is open, for its `None` answer.
+    pub(crate) fn take(&mut self) -> Option<Pending> {
+        match std::mem::take(self) {
+            DialogState::Closed => None,
+            DialogState::Requested(p) | DialogState::Showing(p) => Some(p),
+        }
+    }
 }
 
 impl Pending {
@@ -275,7 +319,7 @@ impl Presenter {
         let Some((id, kind, options)) = rt.take_file_dialog() else { return false };
         #[cfg(all(feature = "native-file-dialog", target_os = "macos"))]
         {
-            self.sheet_parent = crate::macos::ns_window(window);
+            self.sheet_parent = crate::platform::macos::ns_window(window);
         }
         self.showing = Some((id, show_over(kind, options, window)));
         self.answer(rt)
