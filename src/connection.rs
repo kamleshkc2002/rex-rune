@@ -17,6 +17,7 @@ use std::{
 
 pub mod activity;
 pub mod clipboard;
+pub mod downloads;
 mod prefetch;
 
 /// The label new tabs get. A tab that still has it shows its program's terminal title.
@@ -193,6 +194,8 @@ pub struct HostModel {
     /// Taken once before cloning the worker model into the UI.
     pub client_actions: Vec<actions::Queued>,
     pub performs: Vec<perform::Pending>,
+    /// This launch's downloads from the host, oldest first; see [`crate::download`].
+    pub downloads: Vec<crate::download::Transfer>,
     pub connection_epoch: u64,
     pub protocol: ProtocolStats,
     pub sessions: Vec<session::Session>,
@@ -420,6 +423,13 @@ pub enum HostCommand {
         block: String,
         files: Vec<crate::upload::File>,
     },
+    /// Download a file from the block's machine into a folder here (API revision 13). The
+    /// transfer appears in `HostModel::downloads` under the request's id.
+    Download(Box<downloads::Request>),
+    /// Start the stream of a download that is `AwaitingConfirmation`.
+    DownloadConfirm(u64),
+    /// Stop a download at any point; its partial file is deleted.
+    DownloadCancel(u64),
     Reconnect,
     /// The terminal theme to declare from now on, also while disconnected; none declares
     /// nothing (Follow server).
@@ -1297,6 +1307,10 @@ async fn run_host(
             shared.update(|m| {
                 m.connection_epoch += 1;
                 m.performs.clear();
+                // Rex ends a stream when the connection that issued its ticket goes away.
+                for transfer in &mut m.downloads {
+                    transfer.apply(crate::download::Event::Failed(crate::download::Failure::ConnectionLost));
+                }
                 m.client_id = identity.id.clone();
                 m.protocol.api_revision = control.welcome().api_revision;
                 m.views.clear();
@@ -1309,6 +1323,7 @@ async fn run_host(
                 m.activity_epoch += 1;
             });
             let mut state = ControlState::default();
+            let mut downloads = downloads::Downloads::default();
             let mut busy_since = Some(Instant::now());
             let boot = bootstrap_request(wanted.as_deref(), create.is_some(), workers.values().map(|w| w.session.clone()));
             let started = Instant::now();
@@ -1443,6 +1458,12 @@ async fn run_host(
                             }
                             continue;
                         }
+                        if let HostCommand::Download(request) = command {
+                            downloads.start(&mut control, shared, &endpoint, *request).await?;
+                            continue;
+                        }
+                        if let HostCommand::DownloadConfirm(id) = command { downloads.signal(id, downloads::Signal::Confirm); continue; }
+                        if let HostCommand::DownloadCancel(id) = command { downloads.signal(id, downloads::Signal::Cancel); continue; }
                         if let HostCommand::Navigate { id, deadline, .. } = &command
                             && Instant::now() >= *deadline
                         {
@@ -1505,6 +1526,8 @@ async fn run_host(
                     Ok(HostCommand::Keymap(new)) => keymap = Some(new),
                     Ok(HostCommand::Ticket { reply, .. }) => { let _ = reply.send(Err("Host is reconnecting".into())); }
                     Ok(HostCommand::Claim { .. } | HostCommand::PerformReply { .. }) => {}
+                    Ok(HostCommand::Download(request)) => downloads::refuse(shared, *request, crate::download::Failure::Disconnected),
+                    Ok(HostCommand::DownloadConfirm(_) | HostCommand::DownloadCancel(_)) => {}
                     Ok(HostCommand::Terminal { block, command: Command::Selection(input), .. }) => {
                         if let Some(worker) = workers.get(&block) { let _ = worker.commands.send(DataCommand::Selection(input)); }
                     }
@@ -1531,6 +1554,9 @@ async fn run_host(
                 }
                 HostCommand::Terminal { block, command, .. } => {
                     forward_search(&workers, &block, &command);
+                }
+                HostCommand::Download(request) => {
+                    downloads::refuse(shared, *request, crate::download::Failure::Disconnected)
                 }
                 _ => {}
             }
@@ -1924,6 +1950,9 @@ async fn handle_command(
         | HostCommand::Shutdown
         | HostCommand::PrefetchViews(_)
         | HostCommand::Keymap(_)
+        | HostCommand::Download(_)
+        | HostCommand::DownloadConfirm(_)
+        | HostCommand::DownloadCancel(_)
         | HostCommand::Upload { .. } => {
             unreachable!()
         }

@@ -20,7 +20,7 @@ cargo test --manifest-path vendor/rexrs/Cargo.toml --all-features
 
 Requirements are listed in the README (Rust 1.96+, Zig 0.17.x for `ghostty-vt`, Linux graphics and input libraries). `Cargo.lock` is committed; keep `--locked` working.
 
-Some probes and Python scripts in `scripts/` connect to the configured Rex server and create sessions there; others start their own server. Run them only against a disposable server or socket you control, and check each script's requirements in its docstring. Anything that exercises the UI against real input (`x11-smoke.py`, `rune-acceptance-x11.py`, `wayland-seat-smoke.py`) needs a built binary and the tools it names.
+Some probes and Python scripts in `scripts/` connect to the configured Rex server and create sessions there; others start their own server. Run them only against a disposable server or socket you control, and check each script's requirements in its docstring. `rex-download-probe <unix endpoint> <work dir>` creates a session on the server it is given and downloads real files from it; it refuses the default per-user socket path. Anything that exercises the UI against real input (`x11-smoke.py`, `rune-acceptance-x11.py`, `wayland-seat-smoke.py`) needs a built binary and the tools it names.
 
 ## Code layout
 
@@ -29,6 +29,7 @@ Some probes and Python scripts in `scripts/` connect to the configured Rex serve
   - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition.
   - `terminal.rs`: Ghostty decoding and render frames. `terminal/search.rs`: searching the screen and scrollback with Ghostty's search. `links.rs`: OSC 8 hyperlinks and text URLs in a frame.
   - `layout.rs`: split placement. `settings.rs`: local configuration.
+  - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream, `open.rs` the "never Open" list); driven by `HostCommand::Download` in `connection/downloads.rs`. No UI yet.
   - `ssh.rs`: `ssh://` endpoints, a Rex socket forwarded with `ssh -L`. `tailnet.rs`: the machines in `tailscale status --json` and the check for a Rex server on each.
 - `src/main.rs` and `src/app/`: the Rune front end (behind the default `ui` feature).
   - `workspace.rs`: workspace state and behavior (hosts, sessions, tabs, panes, requests, preferences, notices). Host and terminal workers wake the UI through `rune::AppHandle::update`.
