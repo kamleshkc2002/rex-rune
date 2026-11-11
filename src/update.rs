@@ -1068,7 +1068,7 @@ fn xdg_data_dir() -> PathBuf {
         })
 }
 
-fn xdg_state_dir() -> PathBuf {
+pub(crate) fn xdg_state_dir() -> PathBuf {
     std::env::var_os("XDG_STATE_HOME")
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())

@@ -8,7 +8,7 @@ use tokio::{
 };
 use tokio_tungstenite::{
     WebSocketStream,
-    tungstenite::{Message, client::IntoClientRequest},
+    tungstenite::{Message, client::IntoClientRequest, protocol::WebSocketConfig},
 };
 
 pub trait Io: AsyncRead + AsyncWrite + Unpin + Send {}
@@ -52,15 +52,31 @@ fn detect_silent_peer(tcp: &tokio::net::TcpStream) -> std::io::Result<()> {
 }
 
 pub async fn socket(endpoint: &str, path: &str, protocol: &str) -> Result<Socket> {
+    socket_with_config(endpoint, path, protocol, None).await
+}
+
+/// [`socket`] with the WebSocket limits of `config` (messages, frames) instead of the library's
+/// defaults, which allow 64 MiB a message.
+pub async fn socket_with_config(
+    endpoint: &str,
+    path: &str,
+    protocol: &str,
+    config: Option<WebSocketConfig>,
+) -> Result<Socket> {
     tokio::time::timeout(
         std::time::Duration::from_secs(10),
-        open_socket(endpoint, path, protocol),
+        open_socket(endpoint, path, protocol, config),
     )
     .await
     .context("Rex WebSocket connection timed out")?
 }
 
-async fn open_socket(endpoint: &str, path: &str, protocol: &str) -> Result<Socket> {
+async fn open_socket(
+    endpoint: &str,
+    path: &str,
+    protocol: &str,
+    config: Option<WebSocketConfig>,
+) -> Result<Socket> {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let mut request_url = if endpoint.starts_with("unix://") {
         url::Url::parse("ws://localhost")?
@@ -83,7 +99,7 @@ async fn open_socket(endpoint: &str, path: &str, protocol: &str) -> Result<Socke
         .insert("Sec-WebSocket-Protocol", protocol.parse()?);
     let stream = io(endpoint, &request_url).await?;
     let (socket, response) =
-        tokio_tungstenite::client_async_tls_with_config(request, stream, None, None).await?;
+        tokio_tungstenite::client_async_tls_with_config(request, stream, config, None).await?;
     anyhow::ensure!(
         response
             .headers()
