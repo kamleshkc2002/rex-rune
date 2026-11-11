@@ -17,6 +17,7 @@ use std::{
 
 pub mod activity;
 pub mod clipboard;
+pub mod downloads;
 mod prefetch;
 
 /// The label new tabs get. A tab that still has it shows its program's terminal title.
@@ -193,6 +194,8 @@ pub struct HostModel {
     /// Taken once before cloning the worker model into the UI.
     pub client_actions: Vec<actions::Queued>,
     pub performs: Vec<perform::Pending>,
+    /// This launch's downloads from the host, oldest first; see [`crate::download`].
+    pub downloads: Vec<crate::download::Transfer>,
     pub connection_epoch: u64,
     pub protocol: ProtocolStats,
     pub sessions: Vec<session::Session>,
@@ -420,6 +423,13 @@ pub enum HostCommand {
         block: String,
         files: Vec<crate::upload::File>,
     },
+    /// Download a file from the block's machine into a folder here (API revision 13). The
+    /// transfer appears in `HostModel::downloads` under the request's id.
+    Download(Box<downloads::Request>),
+    /// Start the stream of a download that is `AwaitingConfirmation`.
+    DownloadConfirm(u64),
+    /// Stop a download at any point; its partial file is deleted.
+    DownloadCancel(u64),
     Reconnect,
     /// The terminal theme to declare from now on, also while disconnected; none declares
     /// nothing (Follow server).
@@ -658,6 +668,44 @@ impl Drop for PaneWorker {
     }
 }
 
+/// The host worker threads that have started and not yet ended, named by their model's address.
+static RUNNING_HOSTS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+
+fn running_hosts() -> std::sync::MutexGuard<'static, Vec<usize>> {
+    RUNNING_HOSTS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Lists one host worker thread for as long as it lives, runtime and tasks included.
+struct HostThread(usize);
+impl Drop for HostThread {
+    fn drop(&mut self) {
+        running_hosts().retain(|host| *host != self.0);
+    }
+}
+
+fn wait_until(timeout: Duration, done: impl Fn(&[usize]) -> bool) -> bool {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if done(&running_hosts()) {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+/// Waits until every host worker thread has ended, or `timeout` has passed; returns whether they
+/// all have. To exit cleanly: drop the [`HostConnection`]s (each sends `HostCommand::Shutdown`),
+/// then call this. A host that ends drops its transfers, and a transfer's partial file is deleted
+/// as it drops, so a download in flight leaves nothing behind. The threads are detached: a
+/// process that exits without waiting ends them mid-transfer, and the partial files stay for
+/// [`crate::download::Records::clean_up_leftovers`] at the next launch.
+pub fn wait_for_hosts(timeout: Duration) -> bool {
+    wait_until(timeout, |hosts| hosts.is_empty())
+}
+
 impl HostConnection {
     pub fn spawn(
         endpoint: String,
@@ -708,9 +756,13 @@ impl HostConnection {
             theme,
             label,
         };
+        let alive = HostThread(Arc::as_ptr(&model) as usize);
+        running_hosts().push(alive.0);
         std::thread::Builder::new()
             .name("rex-host".into())
             .spawn(move || {
+                // Ends after the runtime and its tasks are gone, which deletes partial files.
+                let _alive = alive;
                 let result = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
@@ -1309,6 +1361,7 @@ async fn run_host(
                 m.activity_epoch += 1;
             });
             let mut state = ControlState::default();
+            let mut downloads = downloads::Downloads::default();
             let mut busy_since = Some(Instant::now());
             let boot = bootstrap_request(wanted.as_deref(), create.is_some(), workers.values().map(|w| w.session.clone()));
             let started = Instant::now();
@@ -1443,6 +1496,12 @@ async fn run_host(
                             }
                             continue;
                         }
+                        if let HostCommand::Download(request) = command {
+                            downloads.start(&mut control, shared, &endpoint, *request, crate::download::new_ref).await?;
+                            continue;
+                        }
+                        if let HostCommand::DownloadConfirm(id) = command { downloads.signal(id, downloads::Signal::Confirm); continue; }
+                        if let HostCommand::DownloadCancel(id) = command { downloads.signal(id, downloads::Signal::Cancel); continue; }
                         if let HostCommand::Navigate { id, deadline, .. } = &command
                             && Instant::now() >= *deadline
                         {
@@ -1505,6 +1564,8 @@ async fn run_host(
                     Ok(HostCommand::Keymap(new)) => keymap = Some(new),
                     Ok(HostCommand::Ticket { reply, .. }) => { let _ = reply.send(Err("Host is reconnecting".into())); }
                     Ok(HostCommand::Claim { .. } | HostCommand::PerformReply { .. }) => {}
+                    Ok(HostCommand::Download(request)) => downloads::refuse(shared, *request, crate::download::Failure::Disconnected),
+                    Ok(HostCommand::DownloadConfirm(_) | HostCommand::DownloadCancel(_)) => {}
                     Ok(HostCommand::Terminal { block, command: Command::Selection(input), .. }) => {
                         if let Some(worker) = workers.get(&block) { let _ = worker.commands.send(DataCommand::Selection(input)); }
                     }
@@ -1531,6 +1592,9 @@ async fn run_host(
                 }
                 HostCommand::Terminal { block, command, .. } => {
                     forward_search(&workers, &block, &command);
+                }
+                HostCommand::Download(request) => {
+                    downloads::refuse(shared, *request, crate::download::Failure::Disconnected)
                 }
                 _ => {}
             }
@@ -1924,6 +1988,9 @@ async fn handle_command(
         | HostCommand::Shutdown
         | HostCommand::PrefetchViews(_)
         | HostCommand::Keymap(_)
+        | HostCommand::Download(_)
+        | HostCommand::DownloadConfirm(_)
+        | HostCommand::DownloadCancel(_)
         | HostCommand::Upload { .. } => {
             unreachable!()
         }

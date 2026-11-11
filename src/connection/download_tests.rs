@@ -1,0 +1,1624 @@
+//! Downloads against a mock Rex: a control server that answers `download_begin`, and a data
+//! server that plays one stream. The real server is exercised by `rex-download-probe`.
+use super::*;
+use crate::download::{
+    self, Config, Confirmation, Failure, Limits, Reason, State,
+    tests::{Temp, names},
+};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
+
+const TICKET: &str = "AAAAAAAAAAAAAAAAAAAAAA";
+
+/// What the data server plays after the WELCOME.
+#[derive(Clone)]
+enum Step {
+    Data(Vec<u8>),
+    /// The empty message that ends a stream.
+    End,
+    Close(u16, &'static str),
+    Text,
+    /// Hang up without a Close frame.
+    Hangup,
+    /// Wait for the client to end the stream, within the test's patience.
+    Hold,
+    /// A WebSocket ping, which carries no file data.
+    Ping,
+    /// Do nothing for a while.
+    Pause(Duration),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Ended {
+    /// The client sent a Close frame with this code.
+    ClientClose(Option<u16>),
+    /// The client dropped the connection.
+    ClientGone,
+    /// The server hung up itself.
+    ServerHangup,
+    /// Nobody ended it.
+    Nobody,
+}
+
+async fn serve_data(listener: &TcpListener, steps: Vec<Step>) -> (Vec<u8>, Ended) {
+    let mut ws = accept(listener, crate::upload::PROTOCOL).await;
+    let hello = ws.next().await.unwrap().unwrap().into_data().to_vec();
+    let mut welcome = vec![0; 32];
+    welcome[0] = 0x81;
+    welcome[24] = 1;
+    ws.send(Message::Binary(welcome.into())).await.unwrap();
+    for step in steps {
+        match step {
+            // The client may hang up on a message it will not take.
+            Step::Data(bytes) => {
+                let _ = ws.send(Message::Binary(bytes.into())).await;
+            }
+            Step::End => ws.send(Message::Binary(Vec::new().into())).await.unwrap(),
+            Step::Close(code, reason) => ws
+                .send(Message::Close(Some(CloseFrame {
+                    code: CloseCode::from(code),
+                    reason: reason.into(),
+                })))
+                .await
+                .unwrap(),
+            Step::Text => ws.send(Message::Text("hello".into())).await.unwrap(),
+            Step::Hangup => return (hello, Ended::ServerHangup),
+            // The client may be gone by now.
+            Step::Ping => {
+                let _ = ws
+                    .send(Message::Ping(b"are you there".to_vec().into()))
+                    .await;
+            }
+            Step::Pause(time) => tokio::time::sleep(time).await,
+            Step::Hold => break,
+        }
+    }
+    let ended = tokio::time::timeout(Duration::from_secs(6), async {
+        loop {
+            match ws.next().await {
+                Some(Ok(Message::Close(frame))) => {
+                    return Ended::ClientClose(frame.map(|f| u16::from(f.code)));
+                }
+                Some(Ok(_)) => {}
+                Some(Err(_)) | None => return Ended::ClientGone,
+            }
+        }
+    })
+    .await
+    .unwrap_or(Ended::Nobody);
+    (hello, ended)
+}
+
+/// Accepts a control connection, completes its welcome and bootstrap.
+async fn control(listener: &TcpListener, revision: u32) -> WebSocketStream<TcpStream> {
+    let mut ws = accept(listener, "rex.control.v1").await;
+    welcome(&mut ws, revision).await;
+    let request = recv(&mut ws).await;
+    assert_eq!(request["method"], "session.bootstrap");
+    send(
+        &mut ws,
+        json!({"type":"response","id":request["id"],"seq":1,"payload":boot()}),
+    )
+    .await;
+    ws
+}
+
+fn reply(request: &Value, payload: Value) -> Value {
+    json!({"type":"response","id":request["id"],"seq":2,"payload":payload})
+}
+
+fn api_error(request: &Value, code: &str, status: u16, message: &str) -> Value {
+    json!({"type":"response","id":request["id"],"error":{"code":code,"message":message,"status":status}})
+}
+
+fn ticket_reply(size: u64) -> Value {
+    json!({"ticket":TICKET,"expires_in_ms":60000,"path":"/srv/data/file.bin","name":"file.bin",
+        "size":size,"modified_at":"2026-11-11T00:00:00Z"})
+}
+
+fn download_begin(request: &Value) -> Value {
+    assert_eq!(
+        request["method"],
+        "com.superlogical.terminal.download_begin"
+    );
+    request["payload"].clone()
+}
+
+struct Fixture {
+    listener: Arc<TcpListener>,
+    endpoint: String,
+    temp: Temp,
+    dir: PathBuf,
+}
+
+impl Fixture {
+    async fn new() -> Self {
+        let listener = Arc::new(TcpListener::bind("127.0.0.1:0").await.unwrap());
+        let endpoint = format!("http://{}", listener.local_addr().unwrap());
+        let temp = Temp::new("conn");
+        let dir = temp.dir("out");
+        Self {
+            listener,
+            endpoint,
+            temp,
+            dir,
+        }
+    }
+    fn config(&self) -> Config {
+        Config {
+            records: self.temp.records(),
+            ..Config::default()
+        }
+    }
+    fn request(&self, config: Config) -> (u64, HostCommand) {
+        let id = download::next_id();
+        let mut request =
+            downloads::Request::new(id, SESSION, "block:1", "some/file.bin", &self.dir);
+        request.config = config;
+        (id, HostCommand::Download(Box::new(request)))
+    }
+}
+
+async fn wait_for<T>(
+    host: &HostConnection,
+    what: &str,
+    mut get: impl FnMut(&HostModel) -> Option<T>,
+) -> T {
+    let deadline = Instant::now() + Duration::from_secs(8);
+    loop {
+        if let Some(found) = get(&host.model.lock().unwrap()) {
+            return found;
+        }
+        assert!(Instant::now() < deadline, "timed out waiting for {what}");
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
+async fn finished(host: &HostConnection, id: u64) -> State {
+    wait_for(host, "a final state", |m| {
+        m.downloads
+            .iter()
+            .find(|t| t.id == id)
+            .filter(|t| t.state.is_final())
+            .map(|t| t.state.clone())
+    })
+    .await
+}
+
+async fn state_of(
+    host: &HostConnection,
+    id: u64,
+    what: &str,
+    test: impl Fn(&State) -> bool,
+) -> State {
+    wait_for(host, what, |m| {
+        m.downloads
+            .iter()
+            .find(|t| t.id == id)
+            .filter(|t| test(&t.state))
+            .map(|t| t.state.clone())
+    })
+    .await
+}
+
+/// Whether the client opened the ticket's stream, got its WELCOME and closed it with 1000 at
+/// once, which is how Rex is told to free a file and slot it was holding for the ticket.
+async fn released(listener: &TcpListener) -> bool {
+    let accepted = tokio::time::timeout(Duration::from_secs(3), async {
+        serve_data(listener, vec![Step::Hold]).await
+    })
+    .await;
+    let Ok((hello, ended)) = accepted else {
+        return false;
+    };
+    hello.first() == Some(&1)
+        && hello[1..] == URL_SAFE_NO_PAD.decode(TICKET).unwrap()
+        && ended == Ended::ClientClose(Some(1000))
+}
+
+/// A partial file appears in `dir`.
+async fn partial_appears(dir: &Path) -> String {
+    let deadline = Instant::now() + Duration::from_secs(8);
+    loop {
+        if let Some(name) = names(dir).into_iter().find(|n| n.ends_with(".rex-part")) {
+            return name;
+        }
+        assert!(Instant::now() < deadline, "no partial file appeared");
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
+fn chunks(bytes: &[u8]) -> Vec<Step> {
+    bytes
+        .chunks(32 * 1024)
+        .map(|c| Step::Data(c.to_vec()))
+        .collect()
+}
+
+fn pattern(len: usize) -> Vec<u8> {
+    (0..len).map(|i| (i * 7 + i / 251) as u8).collect()
+}
+
+/// A download that plays `steps` on a hint of `hint` bytes. Returns the final state, the server's
+/// view of the request and stream, and leaves nothing running.
+async fn run(
+    hint: u64,
+    steps: Vec<Step>,
+    configure: impl FnOnce(&mut Config),
+) -> (State, Value, (Vec<u8>, Ended), Fixture) {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    configure(&mut config);
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        let payload = download_begin(&request);
+        send(&mut ws, reply(&request, ticket_reply(hint))).await;
+        let data = serve_data(&listener, steps).await;
+        (payload, data, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let state = finished(&host, id).await;
+    let (payload, data, mut ws) = server.await.unwrap();
+    drop(host);
+    assert!(matches!(
+        ws.next().await,
+        Some(Ok(Message::Close(_))) | None
+    ));
+    (state, payload, data, f)
+}
+
+fn assert_clean(f: &Fixture, saved: &[&str]) {
+    assert_eq!(names(&f.dir), saved, "nothing but the saved files is left");
+    assert!(
+        f.temp.records().list().is_empty(),
+        "no partial file is still recorded"
+    );
+}
+
+#[tokio::test]
+async fn a_download_sends_the_documented_request_and_saves_the_exact_bytes() {
+    let bytes = pattern(100_000);
+    let mut steps = chunks(&bytes);
+    steps.extend([Step::End, Step::Close(1000, "")]);
+    let (state, payload, (hello, ended), f) = run(bytes.len() as u64, steps, |_| {}).await;
+    // The request: the pane's block, a fresh lower-case ref, the path as typed, nothing else.
+    assert_eq!(payload["session_id"], SESSION);
+    assert_eq!(payload["block_id"], "block:1");
+    let args = payload["args"].as_object().unwrap();
+    assert_eq!(args.keys().collect::<Vec<_>>(), ["path", "ref"]);
+    assert_eq!(args["path"], "some/file.bin");
+    let reference = args["ref"].as_str().unwrap();
+    let uuid = reference.strip_prefix("download:").unwrap();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, uuid.to_lowercase());
+    assert!(!payload.to_string().contains("if_none_match"));
+    // The stream: HELLO with the ticket's 16 bytes.
+    assert_eq!(hello[0], 1);
+    assert_eq!(&hello[1..], URL_SAFE_NO_PAD.decode(TICKET).unwrap());
+    // The client answered the server's Close, which ends the stream on the server's side.
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(Some(1000))),
+        "{ended:?}"
+    );
+    let State::Saved { path, bytes: n, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(n, 100_000);
+    assert_eq!(path, f.dir.join("file.bin"));
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    assert_clean(&f, &["file.bin"]);
+}
+
+#[tokio::test]
+async fn an_empty_file_and_a_hostile_name_save_safely() {
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        let mut payload = ticket_reply(0);
+        payload["name"] = json!("..\\..\\.bash\u{202e}rc\n. ");
+        send(&mut ws, reply(&request, payload)).await;
+        let data = serve_data(&listener, vec![Step::End, Step::Close(1000, "")]).await;
+        (data, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let state = finished(&host, id).await;
+    let State::Saved { path, bytes, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(bytes, 0);
+    assert_eq!(path, f.dir.join("_bashrc"));
+    assert_eq!(std::fs::read(&path).unwrap(), b"");
+    let transfer = host.model.lock().unwrap().downloads[0].clone();
+    assert_eq!(transfer.name.as_deref(), Some("_bashrc"));
+    assert_eq!(transfer.resolved.as_deref(), Some("/srv/data/file.bin"));
+    drop(host);
+    server.await.unwrap();
+    assert_clean(&f, &["_bashrc"]);
+}
+
+#[tokio::test]
+async fn a_stream_shorter_than_the_hint_is_kept_and_says_so() {
+    // Rex ends a stream at the file's end whatever its size said (sysfs reports 4096 for a
+    // 6-byte file), so a normal end is a complete file that is shorter than the hint.
+    let bytes = pattern(5_000);
+    let mut steps = chunks(&bytes);
+    steps.extend([Step::End, Step::Close(1000, "")]);
+    let (state, _, _, f) = run(9_000, steps, |_| {}).await;
+    let State::Saved {
+        path,
+        bytes: n,
+        short_of,
+    } = state
+    else {
+        panic!("{state:?}")
+    };
+    assert_eq!((n, short_of), (5_000, Some(9_000)));
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    assert_clean(&f, &["file.bin"]);
+}
+
+#[tokio::test]
+async fn a_stream_past_the_growth_cap_fails_and_one_within_it_succeeds() {
+    let limits = Limits {
+        growth: 1_000,
+        ..Limits::default()
+    };
+    // Hint 1000: the cap is 2000.
+    let mut steps = chunks(&pattern(2_500));
+    steps.push(Step::Hold);
+    let (state, _, (_, ended), f) = run(1_000, steps, |c| c.limits = limits).await;
+    assert_eq!(state, State::Failed(Failure::TooMuchData { limit: 2_000 }));
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "{ended:?}"
+    );
+    assert_clean(&f, &[]);
+
+    // A file that grew a little is saved as it arrived.
+    let mut steps = chunks(&pattern(1_800));
+    steps.extend([Step::End, Step::Close(1000, "")]);
+    let (state, _, _, f) = run(1_000, steps, |c| c.limits = limits).await;
+    let State::Saved { path, bytes, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(bytes, 1_800);
+    assert_eq!(std::fs::read(path).unwrap(), pattern(1_800));
+    assert_clean(&f, &["file.bin"]);
+}
+
+#[tokio::test]
+async fn an_ending_that_is_not_the_normal_one_fails() {
+    let data = || chunks(&pattern(1_000));
+    let cases: Vec<(Vec<Step>, Failure)> = vec![
+        (
+            [data(), vec![Step::Close(1011, "data provider failed")]].concat(),
+            Failure::Closed {
+                code: Some(1011),
+                reason: "data provider failed".into(),
+            },
+        ),
+        (
+            [data(), vec![Step::Close(1001, "data provider canceled")]].concat(),
+            Failure::Closed {
+                code: Some(1001),
+                reason: "data provider canceled".into(),
+            },
+        ),
+        (
+            [data(), vec![Step::Close(4000, "block closed")]].concat(),
+            Failure::Closed {
+                code: Some(4000),
+                reason: "block closed".into(),
+            },
+        ),
+        // The reason is the server's text: cleaned before anyone shows it.
+        (
+            [
+                data(),
+                vec![Step::Close(1011, "bad\n\u{1b}[0m\u{202e}reason")],
+            ]
+            .concat(),
+            Failure::Closed {
+                code: Some(1011),
+                reason: "bad  [0mreason".into(),
+            },
+        ),
+        // The end marker and then something other than 1000.
+        (
+            [data(), vec![Step::End, Step::Close(1011, "")]].concat(),
+            Failure::Closed {
+                code: Some(1011),
+                reason: String::new(),
+            },
+        ),
+        // 1000 with no end marker is not success.
+        (
+            [data(), vec![Step::Close(1000, "")]].concat(),
+            Failure::Protocol("the stream closed without its end marker".into()),
+        ),
+        // Data after the end marker.
+        (
+            [data(), vec![Step::End], data()].concat(),
+            Failure::Protocol("data after the end of the file".into()),
+        ),
+        (
+            [data(), vec![Step::Text]].concat(),
+            Failure::Protocol("a text message".into()),
+        ),
+    ];
+    for (steps, expected) in cases {
+        let mut steps = steps;
+        steps.push(Step::Hold);
+        let (state, _, _, f) = run(1_000, steps, |_| {}).await;
+        assert_eq!(state, State::Failed(expected.clone()), "{expected:?}");
+        assert_clean(&f, &[]);
+    }
+    // The server hangs up in the middle without a Close.
+    let (state, _, _, f) = run(1_000, [data(), vec![Step::Hangup]].concat(), |_| {}).await;
+    assert!(
+        matches!(
+            state,
+            State::Failed(Failure::Closed { code: None, .. } | Failure::Connection(_))
+        ),
+        "{state:?}"
+    );
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn a_stalled_stream_fails_after_the_timeout_and_is_dropped() {
+    let mut steps = chunks(&pattern(3_000));
+    steps.push(Step::Hold);
+    let started = Instant::now();
+    let (state, _, (_, ended), f) = run(10_000, steps, |c| {
+        c.limits.stall = Duration::from_millis(300)
+    })
+    .await;
+    assert_eq!(state, State::Failed(Failure::Stalled));
+    assert!(started.elapsed() < Duration::from_secs(5));
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "the socket is closed: {ended:?}"
+    );
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn cancel_closes_the_socket_and_removes_the_partial_file() {
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(1_000_000))).await;
+        let mut steps = chunks(&pattern(100_000));
+        steps.push(Step::Hold);
+        (serve_data(&listener, steps).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    partial_appears(&f.dir).await;
+    state_of(&host, id, "bytes", |s| matches!(s, State::Receiving { .. })).await;
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    assert_eq!(finished(&host, id).await, State::Cancelled);
+    let ((_, ended), _ws) = server.await.unwrap();
+    assert_eq!(
+        ended,
+        Ended::ClientClose(Some(1000)),
+        "the data socket was closed"
+    );
+    assert_clean(&f, &[]);
+    // Cancelling again, or an unknown transfer, does nothing.
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    host.commands
+        .send(HostCommand::DownloadCancel(u64::MAX))
+        .unwrap();
+    host.commands
+        .send(HostCommand::DownloadConfirm(u64::MAX))
+        .unwrap();
+    drop(host);
+}
+
+#[tokio::test]
+async fn a_reconnect_mid_transfer_fails_it_and_sends_nothing_again() {
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let (late_id, late_command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut first = control(&listener, 13).await;
+        let request = recv(&mut first).await;
+        send(&mut first, reply(&request, ticket_reply(1_000_000))).await;
+        let mut steps = chunks(&pattern(100_000));
+        steps.push(Step::Hold);
+        let (_, ended) = serve_data(&listener, steps).await;
+        // The reconnected control connection sees a bootstrap and nothing else.
+        let mut second = control(&listener, 13).await;
+        let extra = tokio::time::timeout(Duration::from_millis(600), second.next()).await;
+        (ended, extra.is_err(), first, second)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    partial_appears(&f.dir).await;
+    host.commands.send(HostCommand::Reconnect).unwrap();
+    assert_eq!(
+        finished(&host, id).await,
+        State::Failed(Failure::ConnectionLost)
+    );
+    // While disconnected a new request is refused, not queued for later.
+    host.commands.send(late_command).unwrap();
+    assert_eq!(
+        finished(&host, late_id).await,
+        State::Failed(Failure::Disconnected)
+    );
+    host.commands.send(HostCommand::Reconnect).unwrap();
+    let (ended, quiet, _first, _second) = server.await.unwrap();
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "{ended:?}"
+    );
+    assert!(quiet, "nothing was sent on the new connection");
+    assert_clean(&f, &[]);
+    drop(host);
+}
+
+#[tokio::test]
+async fn a_reconnect_while_a_question_is_open_fails_it_without_touching_the_ticket() {
+    // No host-side sweep fails it: its own task sees the control connection go away. Rex has
+    // revoked the ticket with that connection, so nothing is opened on the data endpoint.
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1_000;
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut first = control(&listener, 13).await;
+        let request = recv(&mut first).await;
+        send(&mut first, reply(&request, ticket_reply(5_000))).await;
+        let second = control(&listener, 13).await;
+        let extra = tokio::time::timeout(Duration::from_millis(600), listener.accept()).await;
+        (extra.is_err(), first, second)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    host.commands.send(HostCommand::Reconnect).unwrap();
+    assert_eq!(
+        finished(&host, id).await,
+        State::Failed(Failure::ConnectionLost)
+    );
+    assert!(server.await.unwrap().0, "no data connection was opened");
+    drop(host);
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn an_old_revision_never_sends_the_request() {
+    for revision in [10, 11, 12] {
+        let f = Fixture::new().await;
+        let (id, command) = f.request(f.config());
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, revision).await;
+            let extra = tokio::time::timeout(Duration::from_millis(400), ws.next()).await;
+            (extra.is_err(), ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        host.commands.send(command).unwrap();
+        assert_eq!(
+            finished(&host, id).await,
+            State::Failed(Failure::ServerTooOld),
+            "revision {revision}"
+        );
+        let (quiet, _ws) = server.await.unwrap();
+        assert!(quiet, "revision {revision}: nothing was sent");
+        drop(host);
+    }
+}
+
+#[tokio::test]
+async fn rex_refusing_the_request_is_shown_in_its_words_and_nothing_is_streamed() {
+    let cases = [
+        (
+            "not_found",
+            404,
+            "not found: /x does not exist",
+            Failure::Server("not found: /x does not exist".into()),
+        ),
+        (
+            "bad_request",
+            400,
+            "not a regular file: /x is a directory",
+            Failure::Server("not a regular file: /x is a directory".into()),
+        ),
+        (
+            "conflict",
+            409,
+            "conflict: 16 downloads are already reserved, the most a terminal allows",
+            Failure::Server(
+                "conflict: 16 downloads are already reserved, the most a terminal allows".into(),
+            ),
+        ),
+        (
+            "revision_too_low",
+            400,
+            "needs API revision 13",
+            Failure::ServerTooOld,
+        ),
+        (
+            "method_not_found",
+            404,
+            "method not found",
+            Failure::ServerTooOld,
+        ),
+    ];
+    for (code, status, message, expected) in cases {
+        let f = Fixture::new().await;
+        let (id, command) = f.request(f.config());
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, 13).await;
+            let request = recv(&mut ws).await;
+            send(&mut ws, api_error(&request, code, status, message)).await;
+            let extra = tokio::time::timeout(Duration::from_millis(300), listener.accept()).await;
+            (extra.is_err(), ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        host.commands.send(command).unwrap();
+        assert_eq!(finished(&host, id).await, State::Failed(expected), "{code}");
+        let (no_stream, _ws) = server.await.unwrap();
+        assert!(no_stream, "{code}: no data connection was opened");
+        // The host stays connected: a refusal is not a broken connection.
+        assert!(host.model.lock().unwrap().connected);
+        drop(host);
+        assert_clean(&f, &[]);
+    }
+}
+
+#[tokio::test]
+async fn an_undecodable_reply_or_an_oversized_request_fails_only_that_transfer() {
+    for case in ["no size", "huge path"] {
+        let f = Fixture::new().await;
+        let (id, mut command) = f.request(f.config());
+        if case == "huge path" {
+            let HostCommand::Download(request) = &mut command else {
+                unreachable!()
+            };
+            // The mock server's message limit is 64 KiB.
+            request.path = "x".repeat(200_000);
+        }
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, 13).await;
+            if case == "no size" {
+                let request = recv(&mut ws).await;
+                let mut payload = ticket_reply(1);
+                payload.as_object_mut().unwrap().remove("size");
+                send(&mut ws, reply(&request, payload)).await;
+            }
+            // The control connection must still be the one in use.
+            let extra = tokio::time::timeout(Duration::from_millis(500), listener.accept()).await;
+            (extra.is_err(), ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        let epoch = host.model.lock().unwrap().connection_epoch;
+        host.commands.send(command).unwrap();
+        let state = finished(&host, id).await;
+        let State::Failed(failure) = &state else {
+            panic!("{case}: {state:?}")
+        };
+        assert!(
+            !matches!(failure, Failure::ConnectionLost),
+            "{case}: {failure:?}"
+        );
+        let (kept, _ws) = server.await.unwrap();
+        assert!(kept, "{case}: the host did not reconnect");
+        let model = host.model.lock().unwrap();
+        assert!(model.connected, "{case}");
+        assert_eq!(model.connection_epoch, epoch, "{case}");
+        drop(model);
+        drop(host);
+        assert_clean(&f, &[]);
+    }
+}
+
+#[tokio::test]
+async fn long_server_messages_are_cut_and_cleaned() {
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        let message = format!(
+            "not found: {}\n\u{1b}[31m does not exist",
+            "p".repeat(5_000)
+        );
+        send(&mut ws, api_error(&request, "not_found", 404, &message)).await;
+        ws
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let State::Failed(Failure::Server(message)) = finished(&host, id).await else {
+        panic!()
+    };
+    assert_eq!(message.chars().count(), 300);
+    assert!(message.starts_with("not found: ppp") && message.ends_with(" does not exist"));
+    assert!(!message.contains(['\n', '\u{1b}']));
+    let _ws = server.await.unwrap();
+    drop(host);
+}
+
+#[tokio::test]
+async fn a_reply_without_a_ticket_or_with_not_modified_fails_without_streaming() {
+    let replies = [
+        json!({"path":"/p","name":"f","size":1,"modified_at":"x"}),
+        json!({"not_modified":true,"path":"/p","name":"f","size":1,"modified_at":"x","version":"v1"}),
+        json!({"ticket":TICKET,"not_modified":true,"path":"/p","name":"f","size":1,"modified_at":"x"}),
+    ];
+    for payload in replies {
+        let f = Fixture::new().await;
+        let (id, command) = f.request(f.config());
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, 13).await;
+            let request = recv(&mut ws).await;
+            download_begin(&request);
+            send(&mut ws, reply(&request, payload)).await;
+            let extra = tokio::time::timeout(Duration::from_millis(300), listener.accept()).await;
+            (extra.is_err(), ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        host.commands.send(command).unwrap();
+        let state = finished(&host, id).await;
+        assert!(
+            matches!(state, State::Failed(Failure::UnexpectedReply(_))),
+            "{state:?}"
+        );
+        let (no_stream, _ws) = server.await.unwrap();
+        assert!(no_stream);
+        drop(host);
+        assert_clean(&f, &[]);
+    }
+}
+
+#[tokio::test]
+async fn a_symlinked_destination_is_refused_before_anything_is_sent() {
+    let f = Fixture::new().await;
+    let link = f.temp.0.join("link");
+    std::os::unix::fs::symlink(&f.dir, &link).unwrap();
+    let id = download::next_id();
+    let mut request = downloads::Request::new(id, SESSION, "block:1", "file", &link);
+    request.config = f.config();
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let extra = tokio::time::timeout(Duration::from_millis(400), ws.next()).await;
+        (extra.is_err(), ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands
+        .send(HostCommand::Download(Box::new(request)))
+        .unwrap();
+    let state = finished(&host, id).await;
+    let State::Failed(Failure::Destination(message)) = state else {
+        panic!("{state:?}")
+    };
+    assert!(message.contains("symbolic link"), "{message}");
+    assert!(server.await.unwrap().0, "no request was sent");
+    drop(host);
+}
+
+#[tokio::test]
+async fn a_large_file_waits_for_a_yes_and_streams_only_after_it() {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1_000;
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let (confirmed_tx, confirmed) = tokio::sync::oneshot::channel::<()>();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(5_000))).await;
+        // No stream until the person says yes.
+        let early = tokio::time::timeout(Duration::from_millis(400), listener.accept()).await;
+        assert!(
+            early.is_err(),
+            "a data connection was opened before the confirmation"
+        );
+        confirmed_tx.send(()).ok();
+        let mut steps = chunks(&pattern(5_000));
+        steps.extend([Step::End, Step::Close(1000, "")]);
+        (serve_data(&listener, steps).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let state = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    let State::AwaitingConfirmation(Confirmation { reason, hint, .. }) = state else {
+        unreachable!()
+    };
+    assert_eq!((reason, hint), (Reason::Large, 5_000));
+    assert!(names(&f.dir).is_empty(), "no partial file before the yes");
+    tokio::time::sleep(Duration::from_millis(450)).await;
+    host.commands
+        .send(HostCommand::DownloadConfirm(id))
+        .unwrap();
+    confirmed.await.unwrap();
+    let State::Saved { path, bytes, .. } = finished(&host, id).await else {
+        panic!()
+    };
+    assert_eq!(bytes, 5_000);
+    assert_eq!(std::fs::read(path).unwrap(), pattern(5_000));
+    let _ = server.await.unwrap();
+    drop(host);
+}
+
+#[tokio::test]
+async fn cancelling_or_ignoring_the_question_frees_the_ticket_without_taking_data() {
+    for answer in ["cancel", "expire"] {
+        let f = Fixture::new().await;
+        let mut config = f.config();
+        config.limits.confirm_at = 1_000;
+        let (id, command) = f.request(config);
+        let listener = f.listener.clone();
+        let server = tokio::spawn(async move {
+            let mut ws = control(&listener, 13).await;
+            let request = recv(&mut ws).await;
+            let mut payload = ticket_reply(5_000);
+            if answer == "expire" {
+                // Five seconds of margin are kept: this leaves 150 ms.
+                payload["expires_in_ms"] = json!(5_150);
+            }
+            send(&mut ws, reply(&request, payload)).await;
+            (released(&listener).await, ws)
+        });
+        let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+        connected(&host).await;
+        host.commands.send(command).unwrap();
+        state_of(&host, id, "the question", |s| {
+            matches!(s, State::AwaitingConfirmation(_))
+        })
+        .await;
+        if answer == "cancel" {
+            host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+        }
+        let state = finished(&host, id).await;
+        match answer {
+            "cancel" => assert_eq!(state, State::Cancelled),
+            _ => assert_eq!(state, State::Failed(Failure::ConfirmationExpired)),
+        }
+        assert!(server.await.unwrap().0, "{answer}: the ticket was released");
+        drop(host);
+        assert_clean(&f, &[]);
+    }
+}
+
+#[tokio::test]
+async fn a_large_file_is_confirmed_even_when_free_space_cannot_be_read() {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1_000;
+    config.space = Some(Arc::new(|| -> std::io::Result<u64> {
+        Err(std::io::Error::other("no statvfs"))
+    }));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(5_000))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let state = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    let State::AwaitingConfirmation(question) = state else {
+        unreachable!()
+    };
+    assert_eq!(
+        (question.reason, question.hint, question.free),
+        (Reason::Large, 5_000, None)
+    );
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    assert_eq!(finished(&host, id).await, State::Cancelled);
+    assert!(server.await.unwrap().0);
+    drop(host);
+}
+
+#[tokio::test]
+async fn cancelling_before_the_stream_is_open_frees_the_ticket() {
+    // The first connection never gets its WELCOME; the cancel lands while it is opening.
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(1_000))).await;
+        let mut stuck = accept(&listener, crate::upload::PROTOCOL).await;
+        let _hello = stuck.next().await;
+        (released(&listener).await, ws, stuck)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    // Receiving{0, hint} while the stream opens.
+    state_of(&host, id, "receiving", |s| {
+        matches!(s, State::Receiving { .. })
+    })
+    .await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    host.commands.send(HostCommand::DownloadCancel(id)).unwrap();
+    assert_eq!(finished(&host, id).await, State::Cancelled);
+    let (released, _ws, _stuck) = server.await.unwrap();
+    assert!(released, "the ticket was released");
+    drop(host);
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn too_little_free_space_stops_it_before_and_during_the_stream() {
+    // Before: under the floor, a question can't help, so the ticket is freed and no data is taken.
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.space = Some(Arc::new(|| -> std::io::Result<u64> {
+        Ok(10 * 1024 * 1024)
+    }));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(1_000))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    assert_eq!(
+        finished(&host, id).await,
+        State::Failed(Failure::LowSpace {
+            free: 10 * 1024 * 1024
+        })
+    );
+    assert!(server.await.unwrap().0, "the ticket was released");
+    drop(host);
+
+    // During: the disk fills while the file arrives.
+    let calls = Arc::new(AtomicU64::new(0));
+    let seen = calls.clone();
+    let mut steps = chunks(&pattern(20_000));
+    steps.push(Step::Hold);
+    let (state, _, (_, ended), f) = run(1_000_000, steps, move |c| {
+        c.limits.check_every = 4_000;
+        c.space = Some(Arc::new(move || -> std::io::Result<u64> {
+            // The first look is the start; later ones see the disk nearly full.
+            Ok(if seen.fetch_add(1, Ordering::Relaxed) == 0 {
+                10 * 1024 * 1024 * 1024
+            } else {
+                1024
+            })
+        }));
+    })
+    .await;
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 1024 }));
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "{ended:?}"
+    );
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn a_fourth_download_for_a_host_is_refused_until_one_finishes() {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.confirm_at = 1;
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let mut begins = 0;
+        // Every request that arrives is answered and counted: one that was refused by the
+        // client never arrives.
+        while let Ok(message) = tokio::time::timeout(Duration::from_millis(900), ws.next()).await {
+            let request: Value =
+                serde_json::from_str(message.unwrap().unwrap().to_text().unwrap()).unwrap();
+            if request["method"] == "com.superlogical.terminal.download_begin" {
+                begins += 1;
+                send(&mut ws, reply(&request, ticket_reply(10))).await;
+            }
+        }
+        (begins, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    let mut ids = Vec::new();
+    for _ in 0..4 {
+        let (id, command) = f.request(config.clone());
+        ids.push(id);
+        host.commands.send(command).unwrap();
+    }
+    assert_eq!(
+        finished(&host, ids[3]).await,
+        State::Failed(Failure::TooManyActive { limit: 3 })
+    );
+    for id in &ids[..3] {
+        state_of(&host, *id, "the question", |s| {
+            matches!(s, State::AwaitingConfirmation(_))
+        })
+        .await;
+    }
+    // A finished one frees a place: a fifth is accepted and asked about like the first three.
+    host.commands
+        .send(HostCommand::DownloadCancel(ids[0]))
+        .unwrap();
+    assert_eq!(finished(&host, ids[0]).await, State::Cancelled);
+    let (fifth, command) = f.request(config.clone());
+    host.commands.send(command).unwrap();
+    state_of(&host, fifth, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await;
+    // And the host is full again.
+    let (sixth, command) = f.request(config.clone());
+    host.commands.send(command).unwrap();
+    assert_eq!(
+        finished(&host, sixth).await,
+        State::Failed(Failure::TooManyActive { limit: 3 })
+    );
+    let (begins, _ws) = server.await.unwrap();
+    assert_eq!(begins, 4, "three, then the one after a place was freed");
+    drop(host);
+}
+
+/// The disk's free space as a test sees it: the first two looks (when the transfer is admitted,
+/// and again when the question is answered yes) report `first`, every later one (during the
+/// stream) `later`.
+fn space_of(first: u64, later: u64) -> Arc<dyn download::FreeSpace> {
+    space_looks(&[first, first, later])
+}
+
+/// Each look at the disk reports the next of `values`; the last one repeats.
+fn space_looks(values: &[u64]) -> Arc<dyn download::FreeSpace> {
+    let values = values.to_vec();
+    let looks = AtomicU64::new(0);
+    Arc::new(move || -> std::io::Result<u64> {
+        let look = looks.fetch_add(1, Ordering::Relaxed) as usize;
+        Ok(values[look.min(values.len() - 1)])
+    })
+}
+
+/// Runs a download that is asked about and answered yes, playing `steps` afterwards. Returns the
+/// question, the final state and the fixture.
+async fn confirmed(
+    hint: u64,
+    steps: Vec<Step>,
+    configure: impl FnOnce(&mut Config),
+) -> (Confirmation, State, Fixture) {
+    confirmed_in(hint, steps, |config, _| configure(config)).await
+}
+
+/// [`confirmed`], with the destination folder known to the configuration.
+async fn confirmed_in(
+    hint: u64,
+    steps: Vec<Step>,
+    configure: impl FnOnce(&mut Config, &Path),
+) -> (Confirmation, State, Fixture) {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    configure(&mut config, &f.dir);
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(hint))).await;
+        let data = serve_data(&listener, steps).await;
+        (data, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let State::AwaitingConfirmation(question) = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await
+    else {
+        unreachable!()
+    };
+    host.commands
+        .send(HostCommand::DownloadConfirm(id))
+        .unwrap();
+    let state = finished(&host, id).await;
+    let _ = server.await.unwrap();
+    drop(host);
+    (question, state, f)
+}
+
+/// Limits small enough to play with: a reserve of 1000 bytes and a floor of 100.
+fn small_limits() -> Limits {
+    Limits {
+        reserve: 1_000,
+        low_floor: 100,
+        check_every: 100,
+        ..Limits::default()
+    }
+}
+
+#[tokio::test]
+async fn a_file_larger_than_the_free_space_is_refused_without_a_question() {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits = small_limits();
+    // 1500 bytes free, a 2000-byte file: it cannot fit, so nobody is asked.
+    config.space = Some(Arc::new(|| -> std::io::Result<u64> { Ok(1_500) }));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(2_000))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    assert_eq!(
+        finished(&host, id).await,
+        State::Failed(Failure::LowSpace { free: 1_500 })
+    );
+    assert!(server.await.unwrap().0, "the ticket was released");
+    drop(host);
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn a_yes_to_the_low_space_question_lets_the_file_use_the_reserve() {
+    // 1200 free, reserve 1000, a 600-byte file: it fits, and would leave 600 < 1000. The disk is
+    // reported at 500 free once the stream runs: under the reserve, over the floor.
+    let bytes = pattern(600);
+    let mut steps = chunks(&bytes);
+    steps.extend([Step::End, Step::Close(1000, "")]);
+    let (question, state, f) = confirmed(600, steps, |c| {
+        c.limits = small_limits();
+        c.space = Some(space_of(1_200, 500));
+    })
+    .await;
+    assert_eq!(
+        question,
+        Confirmation {
+            reason: Reason::LowSpace,
+            hint: 600,
+            free: Some(1_200)
+        }
+    );
+    let State::Saved { path, bytes: n, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(n, 600);
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+    assert_clean(&f, &["file.bin"]);
+
+    // The reserve is the only limit lifted: the growth cap still applies to this transfer.
+    let mut steps = chunks(&pattern(5_000));
+    steps.push(Step::Hold);
+    let (_, state, f) = confirmed(600, steps, |c| {
+        c.limits = small_limits();
+        c.limits.growth = 100;
+        c.space = Some(space_of(1_200, 500));
+    })
+    .await;
+    // Hint 600: the cap is the larger of 1200 and 700.
+    assert_eq!(state, State::Failed(Failure::TooMuchData { limit: 1_200 }));
+    assert_clean(&f, &[]);
+
+    // So does the stall timer.
+    let mut steps = chunks(&pattern(300));
+    steps.push(Step::Hold);
+    let (_, state, f) = confirmed(600, steps, |c| {
+        c.limits = small_limits();
+        c.limits.stall = Duration::from_millis(300);
+        c.space = Some(space_of(1_200, 500));
+    })
+    .await;
+    assert_eq!(state, State::Failed(Failure::Stalled));
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn a_yes_to_the_large_file_question_keeps_the_reserve_check() {
+    // Plenty of space when asked (10000 free, reserve 1000), a file over the confirm size; then
+    // the disk is nearly full. This is the large-file question, which keeps the reserve check.
+    let mut steps = chunks(&pattern(600));
+    steps.push(Step::Hold);
+    let (question, state, f) = confirmed(600, steps, |c| {
+        c.limits = small_limits();
+        c.limits.confirm_at = 500;
+        c.space = Some(space_of(10_000, 100));
+    })
+    .await;
+    assert_eq!(question.reason, Reason::Large);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 100 }));
+    assert_clean(&f, &[]);
+}
+
+/// A disk of `total` bytes holding nothing but what is in `dir`: its free space falls as the
+/// partial file grows.
+struct Disk {
+    dir: PathBuf,
+    total: u64,
+}
+
+impl download::FreeSpace for Disk {
+    fn free(&self) -> std::io::Result<u64> {
+        let mut used = 0;
+        for entry in std::fs::read_dir(&self.dir)? {
+            used += entry?.metadata()?.len();
+        }
+        Ok(self.total.saturating_sub(used))
+    }
+}
+
+#[tokio::test]
+async fn a_server_that_overruns_its_hint_after_a_low_space_yes_cannot_take_the_floor() {
+    // Reserve 1000, floor 100, a 1500-byte disk and a 1000-byte file: it fits, but leaves 500, so
+    // it is asked about. The server then sends 2000 bytes (the growth cap allows them). The yes
+    // lowers the reserve to the floor, not to nothing: the transfer is stopped with LowSpace when
+    // the disk is under 100 free, at most one check interval (100 bytes) late.
+    let mut steps: Vec<Step> = pattern(2_000)
+        .chunks(50)
+        .map(|c| Step::Data(c.to_vec()))
+        .collect();
+    steps.push(Step::Hold);
+    let (question, state, f) = confirmed_in(1_000, steps, move |c, dir| {
+        c.limits = small_limits();
+        c.limits.stall = Duration::from_millis(500);
+        c.space = Some(Arc::new(Disk {
+            dir: dir.to_path_buf(),
+            total: 1_500,
+        }));
+    })
+    .await;
+    assert_eq!(question.reason, Reason::LowSpace);
+    let State::Failed(Failure::LowSpace { free }) = state else {
+        panic!("{state:?}")
+    };
+    assert!(free < 100, "stopped under the floor, not before it: {free}");
+    assert!(
+        100 - free <= 100 + 50,
+        "crossed the floor by more than a check interval and a chunk: {free}"
+    );
+    assert_clean(&f, &[]);
+}
+
+/// A download that is asked about and answered yes, whose free space the person's answer finds
+/// changed (`looks`: the admission, then the answer). Returns the question, the final state and
+/// whether the ticket was released.
+async fn yes_to_a_stale_question(
+    hint: u64,
+    looks: &[u64],
+    configure: impl FnOnce(&mut Config),
+) -> (Confirmation, State, bool) {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits = small_limits();
+    configure(&mut config);
+    config.space = Some(space_looks(looks));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(hint))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let State::AwaitingConfirmation(question) = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await
+    else {
+        unreachable!()
+    };
+    host.commands
+        .send(HostCommand::DownloadConfirm(id))
+        .unwrap();
+    let state = finished(&host, id).await;
+    let released = server.await.unwrap().0;
+    drop(host);
+    assert_clean(&f, &[]);
+    (question, state, released)
+}
+
+#[tokio::test]
+async fn a_yes_that_waited_is_checked_against_the_disk_as_it_is_now() {
+    // A large file, asked about with plenty of room; by the yes the disk can't hold it with the
+    // floor left over (650 free, 600 bytes, floor 100): refused, and the ticket is freed.
+    let (question, state, released) = yes_to_a_stale_question(600, &[10_000, 650], |c| {
+        c.limits.confirm_at = 500;
+    })
+    .await;
+    assert_eq!(question.reason, Reason::Large);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 650 }));
+    assert!(released, "the ticket was released");
+
+    // The same large yes, but the disk now needs the other question (1200 free leaves 600 < 1000):
+    // the person answered a different question, so it fails instead of proceeding.
+    let (question, state, released) = yes_to_a_stale_question(600, &[10_000, 1_200], |c| {
+        c.limits.confirm_at = 500;
+    })
+    .await;
+    assert_eq!(question.reason, Reason::Large);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 1_200 }));
+    assert!(released, "the ticket was released");
+
+    // A yes to the low-space question, and the disk has since lost the room for the floor.
+    let (question, state, released) = yes_to_a_stale_question(600, &[1_200, 650], |_| {}).await;
+    assert_eq!(question.reason, Reason::LowSpace);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 650 }));
+    assert!(released, "the ticket was released");
+}
+
+#[tokio::test]
+async fn a_failed_data_reference_fails_only_that_transfer() {
+    // `download::new_ref` can fail (no randomness). The transfer must end as Failed, not stay
+    // Requested holding a place, and the control connection must go on.
+    let f = Fixture::new().await;
+    let (client, ws) = tokio::join!(
+        transport::control_with_label(&f.endpoint, None, "test"),
+        async {
+            let mut ws = accept(&f.listener, "rex.control.v1").await;
+            welcome(&mut ws, 13).await;
+            ws
+        }
+    );
+    let mut ws = ws;
+    let mut client = client.unwrap();
+    let (wake, _woken) = flume::bounded(1);
+    let shared = Shared {
+        model: Arc::new(Mutex::new(HostModel::default())),
+        wake,
+    };
+    let mut downloads = downloads::Downloads::default();
+    let id = download::next_id();
+    let request = downloads::Request::new(id, SESSION, "block:1", "file", &f.dir);
+    let started = downloads
+        .start(&mut client, &shared, &f.endpoint, request, || {
+            anyhow::bail!("no randomness")
+        })
+        .await;
+    assert!(started.is_ok(), "the control connection is not given up");
+    {
+        let model = shared.model.lock().unwrap();
+        let transfer = &model.downloads[0];
+        let State::Failed(Failure::Connection(message)) = &transfer.state else {
+            panic!("{:?}", transfer.state)
+        };
+        assert!(message.contains("no randomness"), "{message}");
+        assert_eq!(download::active(&model.downloads), 0, "no place is held");
+    }
+    // Nothing was sent to Rex.
+    let sent = tokio::time::timeout(Duration::from_millis(300), ws.next()).await;
+    assert!(sent.is_err(), "{sent:?}");
+}
+
+#[test]
+fn waiting_for_hosts_waits_for_the_listed_ones_to_end() {
+    let address = 0x1234_5678_usize;
+    running_hosts().push(address);
+    assert!(!wait_until(Duration::from_millis(60), |hosts| !hosts.contains(&address)));
+    let ender = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(100));
+        running_hosts().retain(|host| *host != address);
+    });
+    assert!(wait_until(Duration::from_secs(5), |hosts| !hosts.contains(&address)));
+    ender.join().unwrap();
+}
+
+#[tokio::test]
+async fn shutting_a_host_down_deletes_the_partial_files_of_transfers_in_flight() {
+    // What the app does when it exits: drop its hosts, then wait for their threads.
+    let f = Fixture::new().await;
+    let (id, command) = f.request(f.config());
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(1_000_000))).await;
+        let mut steps = chunks(&pattern(100_000));
+        steps.push(Step::Hold);
+        let data = tokio::spawn({
+            let listener = listener.clone();
+            async move { serve_data(&listener, steps).await }
+        });
+        // Keep reading the control connection so that its Close is answered.
+        while let Some(Ok(_)) = ws.next().await {}
+        data.await.unwrap()
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    let address = Arc::as_ptr(&host.model) as usize;
+    connected(&host).await;
+    assert!(
+        running_hosts().contains(&address),
+        "a running host is listed"
+    );
+    host.commands.send(command).unwrap();
+    state_of(&host, id, "receiving", |s| {
+        matches!(s, State::Receiving { .. })
+    })
+    .await;
+    let partial = partial_appears(&f.dir).await;
+    // Some of the file is on disk.
+    let deadline = Instant::now() + Duration::from_secs(8);
+    while std::fs::metadata(f.dir.join(&partial)).unwrap().len() == 0 {
+        assert!(Instant::now() < deadline, "no bytes arrived");
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert_eq!(f.temp.records().list().len(), 1, "{partial} is recorded");
+
+    drop(host); // sends Shutdown
+    assert!(
+        wait_until(Duration::from_secs(8), |hosts| !hosts.contains(&address)),
+        "the host thread ended"
+    );
+    // Gone by the time the thread is: the host dropped its transfers on the way out.
+    assert!(names(&f.dir).is_empty(), "{:?}", names(&f.dir));
+    assert!(f.temp.records().list().is_empty(), "and its record");
+    let (_, ended) = server.await.unwrap();
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "{ended:?}"
+    );
+}
+
+#[tokio::test]
+async fn a_message_over_a_mebibyte_fails_the_transfer_and_one_of_exactly_that_size_does_not() {
+    // The hint is huge, so the growth cap is not what stops it. Rex sends 32 KiB at a time.
+    let mut steps = chunks(&pattern(1_000));
+    steps.extend([Step::Data(vec![7; (1 << 20) + 1]), Step::Hold]);
+    let (state, _, (_, ended), f) = run(100 << 20, steps, |_| {}).await;
+    assert_eq!(
+        state,
+        State::Failed(Failure::Protocol("a message larger than 1 MiB".into()))
+    );
+    assert!(
+        matches!(ended, Ended::ClientGone | Ended::ClientClose(_)),
+        "{ended:?}"
+    );
+    assert_clean(&f, &[]);
+
+    let steps = vec![
+        Step::Data(vec![9; 1 << 20]),
+        Step::End,
+        Step::Close(1000, ""),
+    ];
+    let (state, _, _, f) = run(1 << 20, steps, |_| {}).await;
+    let State::Saved { bytes, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(bytes, 1 << 20);
+    assert_clean(&f, &["file.bin"]);
+}
+
+#[tokio::test]
+async fn a_big_message_on_a_hint_of_zero_fails_at_the_growth_allowance() {
+    // Hint 0 and a growth allowance of 1000: after 800 bytes, a message of 900 KiB is over the
+    // cap. (That nothing of it is written is pinned in `download::tests`.)
+    let limits = Limits {
+        growth: 1_000,
+        ..Limits::default()
+    };
+    let steps = vec![
+        Step::Data(pattern(800)),
+        Step::Data(vec![1; 900 * 1024]),
+        Step::Hold,
+    ];
+    let (state, _, _, f) = run(0, steps, |c| c.limits = limits).await;
+    assert_eq!(state, State::Failed(Failure::TooMuchData { limit: 1_000 }));
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn a_partial_file_is_not_made_when_its_record_cannot_be_written() {
+    let blocker_dir = Temp::new("blocker");
+    let blocker = blocker_dir.0.join("blocker");
+    std::fs::write(&blocker, "a file where a folder should be").unwrap();
+    let mut steps = chunks(&pattern(1_000));
+    steps.push(Step::Hold);
+    let (state, _, _, f) = run(1_000, steps, |c| {
+        c.records = download::Records::at(blocker.join("downloads.json"))
+    })
+    .await;
+    let State::Failed(Failure::Disk(message)) = state else {
+        panic!("{state:?}")
+    };
+    assert!(message.contains("downloads.json"), "{message}");
+    assert_clean(&f, &[]);
+}
+
+#[tokio::test]
+async fn pings_neither_end_a_stream_nor_keep_a_silent_one_alive() {
+    // Between data messages, pings go by: the file arrives whole.
+    let bytes = pattern(70_000);
+    let mut steps = vec![Step::Ping];
+    for chunk in chunks(&bytes) {
+        steps.extend([chunk, Step::Ping]);
+    }
+    steps.extend([Step::Ping, Step::End, Step::Ping, Step::Close(1000, "")]);
+    let (state, _, _, f) = run(bytes.len() as u64, steps, |_| {}).await;
+    let State::Saved { path, bytes: n, .. } = state else {
+        panic!("{state:?}")
+    };
+    assert_eq!(n, 70_000);
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+    assert_clean(&f, &["file.bin"]);
+
+    // The stall timer counts data only: a ping every 150 ms for 1.5 s does not hold off a
+    // 400 ms stall.
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits.stall = Duration::from_millis(400);
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(10_000))).await;
+        let mut steps = chunks(&pattern(3_000));
+        for _ in 0..10 {
+            steps.extend([Step::Pause(Duration::from_millis(150)), Step::Ping]);
+        }
+        steps.push(Step::Hold);
+        (serve_data(&listener, steps).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    let sent = Instant::now();
+    host.commands.send(command).unwrap();
+    let state = finished(&host, id).await;
+    let took = sent.elapsed();
+    assert_eq!(state, State::Failed(Failure::Stalled));
+    assert!(
+        took < Duration::from_millis(1_000),
+        "stalled after {took:?}, not 400 ms after the last data"
+    );
+    let _ = server.await.unwrap();
+    drop(host);
+    assert_clean(&f, &[]);
+}
