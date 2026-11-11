@@ -214,6 +214,10 @@ mod tests {
             b"\n  #!/bin/sh",
             b"\xef\xbb\xbf#!/bin/sh\n",
             b"MZ\x90\x00",
+            // The match is on the prefix, so plain text that starts with these letters loses Open.
+            b"MZ notes for Tuesday",
+            b"<header>",
+            b"<h10>",
             b"%!PS-Adobe-3.0 EPSF-3.0\n",
             b"<!DOCTYPE html><script>alert(1)</script>",
             b"<html><body>x",

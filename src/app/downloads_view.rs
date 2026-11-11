@@ -15,12 +15,12 @@ use rex_linux::download::{self, State, Transfer};
 use rune::{El, KeyEvent, LiveRegion, Tx, col, el, row, text};
 use rune_kit::TextField;
 
-/// A paragraph of the dialog. Text with no break opportunity (a 255-byte name, a long path in
-/// Rex's error) wraps inside the word instead of running through the dialog's edge, and a
-/// paragraph past `lines` is cut with an ellipsis; the accessibility text keeps all of it.
 /// Lines of a row's state text before it is cut with an ellipsis.
 const STATE_LINES: usize = 4;
 
+/// A paragraph of the dialog. Text with no break opportunity (a 255-byte name, a long path in
+/// Rex's error) wraps inside the word instead of running through the dialog's edge, and a
+/// paragraph past `lines` is cut with an ellipsis; the accessibility text keeps all of it.
 fn paragraph(message: String, size: f32, tone: u32, lines: usize) -> El {
     text(message)
         .font(ui(size))

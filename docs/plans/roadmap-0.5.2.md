@@ -273,7 +273,7 @@ Unchanged from the approved PR 5, but last, and to be confirmed when its turn co
 - **Progress.** While a transfer runs, one toolbar chip, in the form of the pending-sequence chip: `↓ build.log 42%`, or `↓ 3 files`. Clicking it opens a Downloads popover with a row per transfer from this launch: name, host, a state line ("12.4 of 80 MB", "Saved to ~/Downloads", "Cancelled", "Failed: …"). With nothing running there is no chip; Commands → Downloads opens the same popover.
 - **Cancel** is on the row. It closes the stream and deletes the partial file.
 - **When it finishes:** one information notice, "Saved build.log from devbox to ~/Downloads". A failure is a sticky notice with the reason. Nothing is retried, as with uploads.
-- **Opening.** Never automatic. A finished row offers **Show in folder** (the file manager's `ShowItems` call, else `xdg-open` on the folder) and, for most files, **Open** (`xdg-open`). **Open is not offered** for files that can run or script something when opened: ELF and `#!` content, and extensions such as `.desktop`, `.sh`, `.py`, `.jar`, `.AppImage`, `.deb`, `.rpm`, `.pkg.tar.zst`, `.html`, `.svg`, `.exe`. The list lives in one place with a test.
+- **Opening.** Never automatic. A finished row offers **Show in folder** (the file manager's `ShowItems` call, else `xdg-open` on the folder) and, for a short allow list of types, **Open** (`xdg-open`). **Open is offered only** for a final extension on the allow list (text, Markdown, CSV, JSON, PDF, common images and archives, compared without case) whose first bytes also pass: a file that starts as a program or script (ELF, `#!`, `MZ`), as HTML, SVG or XML markup or as a desktop entry gets no **Open** under any name, and a type with magic bytes must have them. Everything else (no extension, SVG, HTML, Office files, scripts, packages and any unknown type) gets only **Show in folder**. The list lives in one place with a test.
 
 ### Storage and cache policy
 
@@ -300,7 +300,7 @@ There is no fixed maximum size. The disk and the confirmation are the limits.
 - **Nothing a host sends starts a download:** no escape sequence, no `client.perform`, no queued client action. Only this person's action does.
 - **The file name is hostile input.** Take the last path component; drop control characters and Unicode direction overrides; turn a leading dot into `_`; trim trailing dots and spaces; replace an empty name, `.` or `..` with `download`; cap it at 255 bytes, keeping the extension. The same cleaned name is used in the dialog, the notices and the popover.
 - **The destination is never followed through a symlink and never overwritten.**
-- **Never opened automatically, never made executable**, and the risky kinds are never opened from the app at all.
+- **Never opened automatically, never made executable**, and only the allow-listed types, after a check of the file's first bytes, can be opened from the app at all.
 - **The resolved path the server reports** is shown in the confirmation and in the row's tooltip, so a relative path that resolved somewhere unexpected is visible.
 - **A download is tied to the host whose pane was captured.** Its control connection makes the request; the bytes arrive on that host's data endpoint, including through an SSH forward.
 - **Revision gate:** 13. On an older host (shuvbot today) the dialog says "Rex on shuvbot is too old to send files; update Rex there."
