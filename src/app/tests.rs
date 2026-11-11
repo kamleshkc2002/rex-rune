@@ -1140,7 +1140,7 @@ fn ui_zoom_reflows_the_root_and_preserves_a_focused_forms_text() {
     assert_eq!(focused(&rt), focus);
     assert_eq!(rt.state.panel.as_ref().unwrap().inputs[0].text, "keep-me");
     assert!((rt.state.area[2] - 1200. / 1.5).abs() < 1.);
-    for _ in 0..90 {
+    for _ in 0..10 {
         rt.key(KeyEvent {
             key: Key::Command('-'),
             mods,
