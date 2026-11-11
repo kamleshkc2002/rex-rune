@@ -54,7 +54,8 @@ fn rows(rt: &Runtime<Workspace>) -> Vec<(String, u8, bool)> {
         .collect()
 }
 
-/// A menu's groups never interleave, and a destructive row is the last one, alone in its group.
+/// A menu's groups never interleave, and its destructive rows are its last group, ending with
+/// `close`: nothing else is in that group and nothing destructive is in another.
 fn assert_structured(rt: &Runtime<Workspace>, menu: &str, close: &str) {
     let rows = rows(rt);
     assert!(
@@ -74,8 +75,8 @@ fn assert_structured(rt: &Runtime<Workspace>, menu: &str, close: &str) {
     let (last, others) = rows.split_last().unwrap();
     assert_eq!((last.0.as_str(), last.2), (close, true), "{menu}: last row");
     assert!(
-        others.iter().all(|r| !r.2 && r.1 != last.1),
-        "{menu}: only the last row is destructive, in a group of its own"
+        others.iter().all(|r| r.2 == (r.1 == last.1)),
+        "{menu}: the last group is the destructive rows and only them: {rows:?}"
     );
 }
 
@@ -109,8 +110,8 @@ fn every_menu_separates_its_groups_and_ends_with_its_destructive_row() {
     assert_structured(&rt, "pane", "Close pane…");
     assert_eq!(
         rows(&rt).iter().map(|r| r.1).collect::<Vec<_>>(),
-        [0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 3, 4],
-        "clipboard, layout, the pane itself, its terminal, Close"
+        [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 3, 3, 3, 4],
+        "clipboard, layout (four sides and Zoom), the pane itself, its terminal, Close"
     );
     assert_eq!(label_color(&mut rt, "Close pane…"), rgb(danger()));
     assert_eq!(label_color(&mut rt, "Split right"), rgb(ink()));
@@ -119,6 +120,7 @@ fn every_menu_separates_its_groups_and_ends_with_its_destructive_row() {
     secondary_click(&mut rt, "tab:split");
     assert_structured(&rt, "tab", "Close tab…");
     assert_eq!(label_color(&mut rt, "Close tab…"), rgb(danger()));
+    assert_eq!(label_color(&mut rt, "Close other tabs…"), rgb(danger()));
     press(&mut rt, Key::Escape);
 
     secondary_click(&mut rt, "session:0:next");
@@ -164,13 +166,53 @@ fn commands_keep_destructive_rows_last_and_a_filtered_list_is_flat() {
         .filter(|e| e.danger)
         .map(|e| e.label.as_str())
         .collect();
-    assert_eq!(destructive, ["Close tab…", "Close pane…"]);
-    for group in ["Workspace", "Pane · Terminal"] {
-        let last = entries.iter().rfind(|e| e.group == group).unwrap();
-        assert!(last.danger, "{group} ends with its destructive row");
+    assert_eq!(
+        destructive,
+        [
+            "Close session…",
+            "Close other tabs…",
+            "Close tab…",
+            "Close pane or tab…",
+            "Close pane…",
+            "Remove host test-0…"
+        ]
+    );
+    // Under each heading the rows that end something come last, after a hairline, and no
+    // group interleaves its sections.
+    let mut headings: Vec<&str> = Vec::new();
+    for entry in &entries {
+        if headings.last() != Some(&entry.group.as_str()) {
+            headings.push(&entry.group);
+        }
     }
-    // One line before Close tab…, four in the pane's group; none across a group header.
-    assert_eq!(separators(&rt), 5);
+    let mut lines = 0;
+    for heading in headings {
+        let group: Vec<_> = entries.iter().filter(|e| e.group == heading).collect();
+        assert!(
+            group.windows(2).all(|w| w[0].section <= w[1].section),
+            "{heading}: sections in order"
+        );
+        let ends = group.last().unwrap().section;
+        assert!(
+            group
+                .iter()
+                .all(|e| e.danger == (e.danger && e.section == ends)),
+            "{heading}: destructive rows are the last section"
+        );
+        if group.iter().any(|e| e.danger) {
+            assert!(
+                group.iter().all(|e| e.danger == (e.section == ends)),
+                "{heading}: and nothing else is in it"
+            );
+        }
+        lines += group
+            .windows(2)
+            .filter(|w| w[0].section != w[1].section)
+            .count();
+    }
+    // A line a boundary inside a group; none across a group header.
+    assert_eq!(separators(&rt), lines);
+    assert!(lines >= 9, "session, tab, host and the pane's six: {lines}");
 
     rt.update(|s, _| {
         s.panel.as_mut().unwrap().inputs[0].text = "pane".into();

@@ -1,6 +1,6 @@
 //! Named workspace actions shared by keyboard, pointer and Commands dispatch.
 //! The registry structure follows Andrea Zito (nivox), commit 8037d78.
-use super::{panel::Intent, workspace::Workspace};
+use super::{panel::Intent, splits::SplitWay, workspace::Workspace};
 use rex_linux::connection::Command;
 use rune::Tx;
 use serde_json::{Value, json};
@@ -53,6 +53,25 @@ enum Handler {
     PaneHeaders,
     FindNext,
     FindPrevious,
+    MoveTab,
+    MuteTab,
+    CloseOtherTabs,
+    FocusNextPane,
+    FocusPreviousPane,
+    FontIncrease,
+    FontDecrease,
+    FontReset,
+    Help,
+    CloseSession,
+    NextSession,
+    PreviousSession,
+    RefreshSessions,
+    CollapseOtherHosts,
+    ChooseTheme,
+    CopyVersion,
+    ReportIssue,
+    About,
+    CopyDebug,
 }
 
 pub struct Spec {
@@ -103,9 +122,28 @@ specs! {
     "pane.copy_id" => CopyPaneId,
     "pane.clear" => ClearTerminal,
     "pane.reset" => ResetTerminal,
-    "client.pane_headers.toggle" => PaneHeaders,
+    super::pane_header::TOGGLE => PaneHeaders,
     super::find::NEXT => FindNext,
     super::find::PREVIOUS => FindPrevious,
+    "client.tab.move" => MoveTab,
+    "client.tab.mute" => MuteTab,
+    "client.tab.close_others" => CloseOtherTabs,
+    super::splits::FOCUS_NEXT => FocusNextPane,
+    super::splits::FOCUS_PREVIOUS => FocusPreviousPane,
+    super::font_size::INCREASE => FontIncrease,
+    super::font_size::DECREASE => FontDecrease,
+    super::font_size::RESET => FontReset,
+    super::help::ACTION => Help,
+    super::commands::CLOSE_SESSION => CloseSession,
+    super::commands::NEXT_SESSION => NextSession,
+    super::commands::PREVIOUS_SESSION => PreviousSession,
+    super::commands::REFRESH_SESSIONS => RefreshSessions,
+    super::commands::COLLAPSE_OTHER_HOSTS => CollapseOtherHosts,
+    super::commands::CHOOSE_THEME => ChooseTheme,
+    super::commands::COPY_VERSION => CopyVersion,
+    super::commands::REPORT_ISSUE => ReportIssue,
+    super::about::ABOUT => About,
+    super::about::COPY_DEBUG => CopyDebug,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -138,7 +176,11 @@ impl Spec {
             NewTab => Remote::Never("Use rex window new instead."),
             Split => Remote::Never("Use rex split instead."),
             Close | ClosePane => Remote::Never("Use rex block close instead."),
-            CloseTab => Remote::Never("Use rex window close instead."),
+            CloseTab | CloseOtherTabs => Remote::Never("Use rex window close instead."),
+            MoveTab => Remote::Never("Use rex window move instead."),
+            MuteTab => Remote::Never(
+                "Only the person at this computer can mute this client's notifications.",
+            ),
             RenameTab => Remote::Never("Use rex window rename instead."),
             RenameSession => Remote::Never("Use rex session rename instead."),
             Palette | Settings | Search | SwitchSession | PaneActions => {
@@ -164,6 +206,30 @@ impl Spec {
             FindNext | FindPrevious => {
                 Remote::Never("Only the person at this computer can search a terminal.")
             }
+            FocusNextPane | FocusPreviousPane => {
+                Remote::Never("Use pane.focus with a direction instead.")
+            }
+            FontIncrease | FontDecrease | FontReset => Remote::Never(
+                "Only the person at this computer can change saved terminal preferences.",
+            ),
+            Help | ReportIssue => {
+                Remote::Never("Only the person at this computer can open its browser.")
+            }
+            CloseSession => Remote::Never("Use rex session kill instead."),
+            NextSession | PreviousSession => {
+                Remote::Never("Use rex do session.select on the target host instead.")
+            }
+            RefreshSessions => Remote::Never("Use rex session ls instead."),
+            CollapseOtherHosts => Remote::Never(
+                "Only the person at this computer can change saved interface preferences.",
+            ),
+            ChooseTheme => {
+                Remote::Never("Only the person at this computer can open dialogs and popups.")
+            }
+            CopyVersion | CopyDebug => {
+                Remote::Never("Remote actions cannot change this computer's clipboard.")
+            }
+            About => Remote::Never("Only the person at this computer can open dialogs and popups."),
         }
     }
     pub fn global(&self) -> bool {
@@ -184,6 +250,10 @@ impl Spec {
                     | Handler::PreviousGlobal
                     | Handler::FindNext
                     | Handler::FindPrevious
+                    | Handler::FocusNextPane
+                    | Handler::FocusPreviousPane
+                    | Handler::FontIncrease
+                    | Handler::FontDecrease
             )
     }
 
@@ -201,9 +271,9 @@ impl Spec {
             Handler::PreviousGlobal => "Previous tab across hosts",
             Handler::Back => "Back in history",
             Handler::Forward => "Forward in history",
-            Handler::ZoomIn => "Enlarge interface",
-            Handler::ZoomOut => "Shrink interface",
-            Handler::ZoomReset => "Reset interface size",
+            Handler::ZoomIn => "Increase interface zoom",
+            Handler::ZoomOut => "Decrease interface zoom",
+            Handler::ZoomReset => "Reset interface zoom",
             Handler::SwitchSession => "Switch session",
             Handler::SelectSession => "Show session",
             Handler::NewSession => "New session",
@@ -228,6 +298,25 @@ impl Spec {
             Handler::PaneHeaders => "Reveal pane headers",
             Handler::FindNext => "Find next",
             Handler::FindPrevious => "Find previous",
+            Handler::MoveTab => "Move tab",
+            Handler::MuteTab => "Mute or unmute tab",
+            Handler::CloseOtherTabs => "Close other tabs",
+            Handler::FocusNextPane => "Focus next pane",
+            Handler::FocusPreviousPane => "Focus previous pane",
+            Handler::FontIncrease => "Increase terminal font size",
+            Handler::FontDecrease => "Decrease terminal font size",
+            Handler::FontReset => "Reset terminal font size",
+            Handler::Help => "Rex help",
+            Handler::CloseSession => "Close session",
+            Handler::NextSession => "Next session",
+            Handler::PreviousSession => "Previous session",
+            Handler::RefreshSessions => "Refresh sessions",
+            Handler::CollapseOtherHosts => "Collapse other hosts",
+            Handler::ChooseTheme => "Change terminal theme",
+            Handler::CopyVersion => "Copy version info",
+            Handler::ReportIssue => "Report an issue",
+            Handler::About => "About Rex Linux",
+            Handler::CopyDebug => "Copy debug info",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -238,7 +327,14 @@ impl Spec {
             | Handler::ZoomIn
             | Handler::ZoomOut
             | Handler::ZoomReset
-            | Handler::PaneHeaders => "Interface",
+            | Handler::PaneHeaders
+            | Handler::Help
+            | Handler::CollapseOtherHosts
+            | Handler::ChooseTheme
+            | Handler::CopyVersion
+            | Handler::ReportIssue
+            | Handler::About
+            | Handler::CopyDebug => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -247,14 +343,21 @@ impl Spec {
             | Handler::Forward
             | Handler::SwitchSession
             | Handler::SelectSession
-            | Handler::GotoTab => "Navigate",
+            | Handler::GotoTab
+            | Handler::NextSession
+            | Handler::PreviousSession
+            | Handler::RefreshSessions => "Navigate",
             Handler::NewTab
             | Handler::NewSession
             | Handler::Close
             | Handler::CloseTab
             | Handler::RenameTab
             | Handler::RenameSession
-            | Handler::ClosePane => "Create and close",
+            | Handler::ClosePane
+            | Handler::MoveTab
+            | Handler::MuteTab
+            | Handler::CloseOtherTabs
+            | Handler::CloseSession => "Create and close",
             Handler::Split
             | Handler::ZoomPane
             | Handler::FocusPane
@@ -262,7 +365,9 @@ impl Spec {
             | Handler::Reconnect
             | Handler::CopyPaneId
             | Handler::ClearTerminal
-            | Handler::ResetTerminal => "Panes",
+            | Handler::ResetTerminal
+            | Handler::FocusNextPane
+            | Handler::FocusPreviousPane => "Panes",
             Handler::Copy
             | Handler::Paste
             | Handler::SelectAll
@@ -270,7 +375,10 @@ impl Spec {
             | Handler::SendKey
             | Handler::Search
             | Handler::FindNext
-            | Handler::FindPrevious => "Text and view",
+            | Handler::FindPrevious
+            | Handler::FontIncrease
+            | Handler::FontDecrease
+            | Handler::FontReset => "Text and view",
         }
     }
     fn schema(&self) -> Option<Value> {
@@ -282,7 +390,7 @@ impl Spec {
         let (key, schema) = match self.handler {
             Handler::Split => (
                 "direction",
-                json!({"type":"string","enum":["right","down"]}),
+                json!({"type":"string","enum":SplitWay::ALL.map(SplitWay::arg)}),
             ),
             Handler::FocusPane => (
                 "direction",
@@ -294,6 +402,10 @@ impl Spec {
             ),
             Handler::GotoTab => ("index", json!({"type":"integer","minimum":-1})),
             Handler::SendKey => ("key", json!({"type":"string"})),
+            Handler::MoveTab => (
+                "direction",
+                json!({"type":"string","enum":["left","right"]}),
+            ),
             _ => return None,
         };
         Some(
@@ -313,6 +425,7 @@ impl Spec {
                         | Handler::Scroll
                         | Handler::GotoTab
                         | Handler::SendKey
+                        | Handler::MoveTab
                 );
         };
         match self.handler {
@@ -323,9 +436,7 @@ impl Spec {
                         .get("window_id")
                         .is_none_or(|id| id.as_str().is_some_and(|id| !id.is_empty()))
             }
-            Handler::Split => {
-                object.len() == 1 && matches!(args["direction"].as_str(), Some("right" | "down"))
-            }
+            Handler::Split => object.len() == 1 && split_way(args).is_some(),
             Handler::FocusPane => {
                 object.len() == 1
                     && matches!(
@@ -344,6 +455,9 @@ impl Spec {
                     && args["index"]
                         .as_i64()
                         .is_some_and(|n| n == -1 || n > 0 && usize::try_from(n).is_ok())
+            }
+            Handler::MoveTab => {
+                object.len() == 1 && matches!(args["direction"].as_str(), Some("left" | "right"))
             }
             Handler::SendKey => {
                 object.len() == 1
@@ -389,14 +503,11 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
             }
         }
         Handler::NewSession => s.perform(Intent::NewSession, tx),
-        Handler::Split => s.perform(
-            Intent::Split(if args["direction"] == "right" {
-                "horizontal"
-            } else {
-                "vertical"
-            }),
-            tx,
-        ),
+        Handler::Split => {
+            if let Some(way) = split_way(args) {
+                s.perform(Intent::Split(way), tx);
+            }
+        }
         Handler::ZoomPane => s.perform(Intent::Zoom, tx),
         Handler::FocusPane => s.request("session.focus_direction", args.clone()),
         Handler::PaneActions => {
@@ -464,6 +575,34 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
                 s.perform(Intent::Pane(target, verb), tx);
             }
         }
+        Handler::MoveTab | Handler::MuteTab | Handler::CloseOtherTabs => {
+            use super::tabs::TabAction;
+            let action = match spec.handler {
+                Handler::MuteTab => TabAction::Mute,
+                Handler::CloseOtherTabs => TabAction::CloseOthers,
+                _ if args["direction"] == "left" => TabAction::MoveLeft,
+                _ => TabAction::MoveRight,
+            };
+            if let Some(target) = s.active_tab() {
+                s.perform(Intent::Window(target, action), tx);
+            }
+        }
+        Handler::FocusNextPane => s.cycle_pane(true),
+        Handler::FocusPreviousPane => s.cycle_pane(false),
+        Handler::FontIncrease => s.step_font_size(1),
+        Handler::FontDecrease => s.step_font_size(-1),
+        Handler::FontReset => s.step_font_size(0),
+        Handler::Help => s.open_link(super::help::url()),
+        Handler::CloseSession => s.close_session_on_screen(tx),
+        Handler::NextSession => s.cycle_session(1, tx),
+        Handler::PreviousSession => s.cycle_session(-1, tx),
+        Handler::RefreshSessions => s.refresh_sessions(),
+        Handler::CollapseOtherHosts => s.collapse_other_hosts(),
+        Handler::ChooseTheme => s.perform(Intent::ChooseTheme, tx),
+        Handler::CopyVersion => s.copy_version_info(tx),
+        Handler::CopyDebug => s.copy_debug_info(tx),
+        Handler::About => s.perform(Intent::About, tx),
+        Handler::ReportIssue => s.open_link(super::commands::issue_url()),
         Handler::SendKey => {
             if let Some(payloads) = args["key"].as_str().and_then(super::keys::synthesize)
                 && let Some(term) = s.active_terminal_mut()
@@ -475,6 +614,10 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         }
     }
     true
+}
+
+fn split_way(args: &Value) -> Option<SplitWay> {
+    args["direction"].as_str().and_then(SplitWay::parse)
 }
 
 pub fn tab_index(args: &Value, count: usize) -> Option<usize> {
@@ -553,7 +696,11 @@ pub fn binding_title(binding: &rexrs::api::client::Binding) -> String {
         return title.into();
     };
     let detail = match binding.action.as_str() {
-        "pane.split" | "pane.focus" => args["direction"].as_str().unwrap_or_default().to_owned(),
+        // `best_fit` reads as two words.
+        "pane.split" | "pane.focus" | "client.tab.move" => args["direction"]
+            .as_str()
+            .unwrap_or_default()
+            .replace('_', " "),
         "pane.scroll" => {
             let lines = args["lines"].as_i64().unwrap_or_default();
             let direction = if lines < 0 { "up" } else { "down" };
@@ -636,7 +783,7 @@ mod tests {
         assert!(
             !find("pane.split")
                 .unwrap()
-                .accepts(&json!({"direction":"left"}))
+                .accepts(&json!({"direction":"sideways"}))
         );
         assert!(!find("pane.scroll").unwrap().accepts(&json!({"lines":1.5})));
         assert!(

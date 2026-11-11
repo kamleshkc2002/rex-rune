@@ -5,12 +5,15 @@ use super::{
     keycaps::keycaps,
     panel::Intent,
     panes::divider_handle,
+    tabs::{TabAction, muted_mark, target_ring},
     theme::*,
     widgets::{chrome_button, glyph},
     workspace::Workspace,
 };
 use rex_linux::connection::HostCommand;
-use rune::{Cursor, Cx, Edge, El, ScrollSpec, SpringPair, Transition, Tx, col, el, row, text};
+use rune::{
+    Cursor, Cx, Edge, El, PointerButton, ScrollSpec, SpringPair, Transition, Tx, col, el, row, text,
+};
 
 const HOST_ROW: f32 = 28.;
 const SESSION_ROW: f32 = 32.;
@@ -119,7 +122,14 @@ fn host_header(s: &Workspace, index: usize) -> El {
 fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
     let host = &s.hosts[index];
     let selected = index == s.active && host.model.selected.as_deref() == Some(id);
-    let count = host.model.views.get(id).map(|v| v.windows.len());
+    // A count earns its place only when it says something: a session has one tab unless
+    // told otherwise.
+    let count = host
+        .model
+        .views
+        .get(id)
+        .map(|v| v.windows.len())
+        .filter(|count| *count > 1);
     let target = id.to_owned();
     let menu_id = id.to_owned();
     // The session a session menu, its rename form or its close confirm acts on.
@@ -202,6 +212,8 @@ fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
     if let Some(count) = count {
         e = e.child(
             text(count.to_string())
+                .key(format!("session-count:{index}:{id}"))
+                .label(format!("{count} tabs"))
                 .font(medium(10.5))
                 .color(rgb(muted())),
         );
@@ -233,11 +245,19 @@ fn window_row(s: &Workspace, index: usize, session: &str, tab: &rexrs::api::sess
     let activity = tab_activity(model, tab);
     let label = tab_name(model, tab);
     let (target_session, target_window) = (session.to_owned(), id.to_owned());
+    let (rename_session, rename_window) = (session.to_owned(), id.to_owned());
+    let (menu_session, menu_window) = (session.to_owned(), id.to_owned());
+    let shown = s.tab_activity_shown(index, id);
+    let quiet = s.tab_muted(index, id);
     let mut row = row()
         .key(format!("sidebar-tab:{index}:{session}:{id}"))
         .role("tab")
         .focus_selected(active)
-        .label(label.clone())
+        .label(if quiet {
+            format!("{label} · Muted")
+        } else {
+            label.clone()
+        })
         .h(32.)
         .ml(12.)
         .pl(10.)
@@ -249,9 +269,25 @@ fn window_row(s: &Workspace, index: usize, session: &str, tab: &rexrs::api::sess
         .cursor(Cursor::Pointer)
         .preserve_focus_on_press(true)
         .help_when_truncated(label.clone())
+        .pointer_buttons([PointerButton::Middle])
         .on_press_tx(move |s: &mut Workspace, tx: &mut Tx| {
-            s.select_window(index, target_session.clone(), target_window.clone(), tx);
-            tx.blur();
+            // Middle-click closes, behind the same confirmation as Close tab.
+            if tx.button() == PointerButton::Middle {
+                if let Some(target) = s.tab_target(index, &target_session, &target_window) {
+                    s.perform(Intent::Window(target, TabAction::Close), tx);
+                }
+            } else {
+                s.select_window(index, target_session.clone(), target_window.clone(), tx);
+                tx.blur();
+            }
+        })
+        .on_double_press_tx(move |s: &mut Workspace, tx: &mut Tx| {
+            if let Some(target) = s.tab_target(index, &rename_session, &rename_window) {
+                s.perform(Intent::Window(target, TabAction::Rename), tx);
+            }
+        })
+        .on_secondary_press(move |s: &mut Workspace, p, _| {
+            s.tab_menu(index, &menu_session, &menu_window, (p.x, p.y))
         })
         .child(glyph(
             program_icon(activity.program.as_deref()),
@@ -273,16 +309,20 @@ fn window_row(s: &Workspace, index: usize, session: &str, tab: &rexrs::api::sess
     } else {
         row = row.hover(white(0.05));
     }
-    if s.settings.notifications.show_in_tabs
+    if shown
         && let Some((word, tone)) =
             tab_word(&activity, s.unseen_on(index, id), s.bell_on(index, id))
     {
         row = row.child(text(word).font(medium(10.5)).color(rgb(tone)));
     }
-    if s.settings.notifications.show_in_tabs
-        && let Some(progress) = tab_progress(&activity)
-    {
+    if quiet {
+        row = row.child(muted_mark(id));
+    }
+    if shown && let Some(progress) = tab_progress(&activity) {
         row = row.child(progress_bar(format!("tab-progress:{id}"), progress, 10.));
+    }
+    if s.tab_targeted(index, id) {
+        row = row.child(target_ring(id, 10.));
     }
     row
 }

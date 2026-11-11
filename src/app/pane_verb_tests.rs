@@ -139,7 +139,9 @@ fn the_pane_menu_lists_the_verbs_in_groups_and_marks_what_cannot_run() {
             ("Paste", 0),
             ("Select all", 0),
             ("Split right", 1),
+            ("Split left", 1),
             ("Split down", 1),
+            ("Split up", 1),
             ("Zoom pane", 1),
             ("Rename pane…", 2),
             ("Copy pane ID", 2),
@@ -453,7 +455,7 @@ fn commands_lists_the_verbs_for_the_focused_pane() {
         .map(|e| (e.label, e.enabled))
         .collect();
     for (label, on) in [
-        ("Copy", false),
+        ("Copy selection", false),
         ("Paste", true),
         ("Select all", true),
         ("Copy pane ID", true),
@@ -471,9 +473,9 @@ fn commands_lists_the_verbs_for_the_focused_pane() {
         press(&mut rt, Key::Text(c.to_string()));
     }
     assert_eq!(
-        rows(&rt),
-        [("Reset terminal".to_owned(), true)],
-        "one match"
+        rows(&rt).first(),
+        Some(&("Reset terminal".to_owned(), true)),
+        "the pane's row is the first match, before the view's resets"
     );
     press(&mut rt, Key::Enter);
     assert!(rt.state.panel.is_none());

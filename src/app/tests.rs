@@ -4,6 +4,8 @@
 mod about_tests;
 #[path = "bindings_integration_tests.rs"]
 mod bindings_integration_tests;
+#[path = "command_tests.rs"]
+mod command_tests;
 #[path = "find_tests.rs"]
 mod find_tests;
 #[path = "menu_tests.rs"]
@@ -22,6 +24,10 @@ mod remote_session_tests;
 mod remote_tests;
 #[path = "settings_tests.rs"]
 mod settings_tests;
+#[path = "tab_tests.rs"]
+mod tab_tests;
+#[path = "workspace_fixes_tests.rs"]
+mod workspace_fixes_tests;
 use super::{
     panel::{Form, Intent, PanelKind, SessionAction},
     placeholder, view,
@@ -471,7 +477,10 @@ fn tabs_and_splits_start_the_right_hosts_shell() {
         .expect("a view"),
     );
     ws.perform(
-        Intent::Pane(target, super::panel::PaneAction::Split("horizontal")),
+        Intent::Pane(
+            target,
+            super::panel::PaneAction::Split(super::splits::SplitWay::Right),
+        ),
         &mut tx,
     );
     let sent = requests(&other);
@@ -718,10 +727,12 @@ fn a_tabs_menu_and_middle_click_act_on_that_tab() {
     let mut rt = runtime(ws);
     secondary_click(&mut rt, "tab:split");
     let panel = rt.state.panel.as_ref().expect("a tab menu");
-    assert!(matches!(&panel.kind, PanelKind::Window(id) if id == "split"));
+    assert!(matches!(&panel.kind, PanelKind::Window));
+    assert_eq!(panel.tab.as_ref().map(|t| t.window.as_str()), Some("split"));
     assert_eq!(panel.title, "dev");
     let labels: Vec<String> = rt.state.entries().into_iter().map(|e| e.label).collect();
-    assert_eq!(labels, ["Rename tab…", "New tab", "Close tab…"]);
+    assert_eq!(labels.first().map(String::as_str), Some("Rename tab…"));
+    assert_eq!(labels.last().map(String::as_str), Some("Close tab…"));
     assert!(has(&rt, "menu-surface"));
     press(&mut rt, Key::Escape);
     assert!(rt.state.panel.is_none());
@@ -795,7 +806,10 @@ fn capture_host(ws: &mut Workspace, index: usize) -> flume::Receiver<HostCommand
 #[test]
 fn split_uses_the_focused_pane_as_its_directory_source() {
     let (mut ws, rx) = tabbed_workspace("split");
-    ws.perform(Intent::Split("vertical"), &mut rune::Tx::default());
+    ws.perform(
+        Intent::Split(super::splits::SplitWay::Down),
+        &mut rune::Tx::default(),
+    );
     let sent = requests(&rx);
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].0, "session.new_split");

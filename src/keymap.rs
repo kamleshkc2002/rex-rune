@@ -387,14 +387,22 @@ pub fn defaults() -> KeymapDefault {
         ("ctrl+shift+v", "pane.paste"),
         ("ctrl+shift+f", "client.search"),
         ("ctrl+shift+r", "pane.reconnect"),
+        // Of an action's bindings the last is the one Commands and menus show: the main
+        // block's key, not the numpad's.
+        ("ctrl+[NumpadAdd]", "client.zoom.in"),
         ("ctrl+=", "client.zoom.in"),
         ("ctrl+shift+=", "client.zoom.in"),
         ("ctrl++", "client.zoom.in"),
-        ("ctrl+[NumpadAdd]", "client.zoom.in"),
-        ("ctrl+-", "client.zoom.out"),
         ("ctrl+[NumpadSubtract]", "client.zoom.out"),
-        ("ctrl+0", "client.zoom.reset"),
+        ("ctrl+-", "client.zoom.out"),
         ("ctrl+[Numpad0]", "client.zoom.reset"),
+        ("ctrl+0", "client.zoom.reset"),
+        // Terminal font size, beside interface zoom rather than in place of it.
+        ("ctrl+alt+=", "client.font.increase"),
+        ("ctrl+alt+shift+=", "client.font.increase"),
+        ("ctrl+alt++", "client.font.increase"),
+        ("ctrl+alt+-", "client.font.decrease"),
+        ("ctrl+alt+0", "client.font.reset"),
     ] {
         bindings.push(Binding::new([keys], action));
     }
@@ -406,6 +414,13 @@ pub fn defaults() -> KeymapDefault {
             Binding::new([format!("ctrl+alt+{direction}")], "pane.focus")
                 .args(json!({"direction": direction})),
         );
+    }
+    for (keys, direction) in [
+        ("ctrl+shift+pageup", "left"),
+        ("ctrl+shift+pagedown", "right"),
+    ] {
+        bindings
+            .push(Binding::new([keys], "client.tab.move").args(json!({"direction": direction})));
     }
     for (keys, lines) in [("shift+pageup", -20), ("shift+pagedown", 20)] {
         bindings.push(Binding::new([keys], "pane.scroll").args(json!({"lines": lines})));
@@ -795,7 +810,7 @@ mod tests {
         let layer = defaults();
         assert_eq!(layer.name, "linux");
         assert!(layer.removals.is_empty());
-        assert_eq!(layer.bindings.len(), 33);
+        assert_eq!(layer.bindings.len(), 40);
         for binding in &layer.bindings {
             assert_eq!(normalize(&binding.keys.join(">")).unwrap(), binding.keys);
             assert!(binding.source.is_none() && binding.mode.is_none());
@@ -806,6 +821,13 @@ mod tests {
             ("ctrl+shift+f", "client.search"),
             ("ctrl++", "client.zoom.in"),
             ("ctrl+[Numpad0]", "client.zoom.reset"),
+            ("ctrl+0", "client.zoom.reset"),
+            ("ctrl+alt+=", "client.font.increase"),
+            ("ctrl+alt++", "client.font.increase"),
+            ("ctrl+alt+-", "client.font.decrease"),
+            ("ctrl+alt+0", "client.font.reset"),
+            ("ctrl+shift+pageup", "client.tab.move"),
+            ("ctrl+shift+pagedown", "client.tab.move"),
         ] {
             assert!(
                 layer

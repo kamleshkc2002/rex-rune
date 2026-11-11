@@ -395,6 +395,9 @@ pub enum HostCommand {
         blocks: Vec<String>,
     },
     Select(String),
+    /// Read the session list and the selected session's layout again, on request. Read-only:
+    /// nothing is attached, created or closed.
+    RefreshSessions,
     /// Select a session and optionally focus a window as one correlated navigation.
     Navigate {
         id: u64,
@@ -1821,6 +1824,12 @@ async fn handle_command(
                 m.selected = Some(id);
                 m.notice = None;
             });
+        }
+        HostCommand::RefreshSessions => {
+            list(control, shared, state).await?;
+            // A selected session that has gone is forgotten by the list, not re-read.
+            let selected = shared.model.lock().expect("host model").selected.clone();
+            after_request(control, shared, workers, state, selected.as_deref()).await?;
         }
         HostCommand::CreateSession { label, shell } => {
             let layout = crate::layout::shell_layout(

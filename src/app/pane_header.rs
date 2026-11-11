@@ -8,6 +8,7 @@
 //! under it: the grid keeps its rows, so nothing is resized on the server.
 use super::{
     panel::{Intent, PaneAction},
+    splits::SplitWay,
     theme::*,
     widgets::glyph,
     workspace::Workspace,
@@ -20,6 +21,9 @@ use rexrs::api::session::Window;
 use rune::{Cursor, El, Icon, SpringPair, Transition, Tx, el, row, text};
 use serde_json::{Value, json};
 use std::time::Duration;
+
+/// Floats the header on every pane that has no row, until it is run again.
+pub const TOGGLE: &str = "client.pane_headers.toggle";
 
 /// A header button's square, and the icon in it.
 pub const BUTTON: f32 = 24.;
@@ -183,7 +187,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
                 hint("Split right", "pane.split", json!({"direction": "right"})),
                 lit,
                 false,
-                on(PaneAction::Split("horizontal")),
+                on(PaneAction::Split(SplitWay::Right)),
             ))
             .child(button(
                 format!("pane-split-down:{block}"),
@@ -192,7 +196,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
                 hint("Split down", "pane.split", json!({"direction": "down"})),
                 lit,
                 false,
-                on(PaneAction::Split("vertical")),
+                on(PaneAction::Split(SplitWay::Down)),
             ));
     }
     let zoom = if zoomed(window, block) {

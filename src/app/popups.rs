@@ -12,12 +12,33 @@ use rune::{El, ScrollSpec, TextEdit, Tx, col, el, row, text};
 use rune_kit::TextInput;
 
 const HEADER: f32 = 26.;
+/// Commands shows about this many rows and scrolls to the rest, whatever the window's height.
+const COMMAND_ROWS: f32 = 20.;
 
 #[derive(Clone)]
 enum Hidden {
     Session,
     Offline(String),
+    /// A command under its group's heading, by the group's name.
+    Command(String),
     Other,
+}
+
+/// What Commands says is below the fold: the groups still to come, in order.
+fn groups_below(hidden: &[&Hidden]) -> String {
+    let mut groups: Vec<&str> = Vec::new();
+    for row in hidden {
+        if let Hidden::Command(group) = row
+            && groups.last() != Some(&group.as_str())
+        {
+            groups.push(group);
+        }
+    }
+    if groups.is_empty() {
+        "More results below".into()
+    } else {
+        format!("More below: {}", groups.join(" · "))
+    }
 }
 
 /// A transparent full-window layer that eats presses outside the popup and closes it.
@@ -102,7 +123,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     // Context menus (a pane's, a tab's, a sidebar session's) share one shape.
     let pane = matches!(
         panel.kind,
-        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window(_)
+        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window
     );
     let commands = matches!(panel.kind, PanelKind::Picker(false));
     // The values of one setting: a short list with the current one checked.
@@ -164,10 +185,15 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     } else {
         40.
     };
-    let list_max = match room {
+    let mut list_max = match room {
         Some((below, above)) => (below.max(above) - input_height - 42.).clamp(60., 360.),
         None => (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.),
     };
+    if commands {
+        list_max = list_max.min(COMMAND_ROWS * (row_height + 1.));
+    }
+    // Commands under their headings, rather than the one list a search shows.
+    let headed = commands && s.query().is_empty();
 
     // Rows, with their content spans for the overflow hint.
     let mut list = col().key("results").w_full().pr(4.).gap(1.);
@@ -182,7 +208,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Discover => "discover",
         PanelKind::Session => "session-menu",
         PanelKind::Host(_) => "host-menu",
-        PanelKind::Window(_) => "tab-menu",
+        PanelKind::Window => "tab-menu",
         _ => "pane-menu",
     };
     let mut spans: Vec<(f32, f32, Hidden)> = Vec::new();
@@ -334,6 +360,10 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     Intent::RetryHost(host) => {
                         Hidden::Offline(s.settings.hosts[*host].label.clone())
                     }
+                    // The heading's first words: "Tab" of "Tab · shell".
+                    _ if headed => {
+                        Hidden::Command(entry.group.split(" · ").next().unwrap_or_default().into())
+                    }
                     _ => Hidden::Other,
                 },
             ));
@@ -367,6 +397,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         .scroll(ScrollSpec {
             stick_bottom: false,
         })
+        // Rows leave under a short fade, not a hard cut above the hint.
+        .scroll_edge_fade(10.)
         .child(list);
     if overflow {
         let switcher = matches!(panel.kind, PanelKind::Picker(true));
@@ -379,20 +411,19 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 }
                 .into();
             }
-            if !switcher {
-                return if sessions {
-                    "More sessions below"
-                } else {
-                    "More results below"
-                }
-                .into();
-            }
             let bottom = offset + view_h;
             let hidden: Vec<&Hidden> = spans
                 .iter()
                 .filter(|(_, b, _)| *b > bottom + 1.)
                 .map(|(_, _, h)| h)
                 .collect();
+            if !switcher {
+                return if sessions {
+                    "More sessions below".into()
+                } else {
+                    groups_below(&hidden)
+                };
+            }
             let sessions_below = hidden
                 .iter()
                 .filter(|h| matches!(h, Hidden::Session))

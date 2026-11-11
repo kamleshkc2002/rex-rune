@@ -48,9 +48,9 @@ fn focused_block(window: &session::Window) -> Option<&str> {
         .or_else(|| blocks(window).next())
 }
 
-/// What a tab is called: its chosen name, or for a default label, its focused program's
-/// terminal title when there is one.
-pub fn tab_name(model: &HostModel, window: &session::Window) -> String {
+/// Whether a tab still has a default label, so it shows its program's title: no label, the
+/// label this client gives new tabs, or the one the server makes from the window's ID.
+pub fn default_title(window: &session::Window) -> bool {
     let label = window.label.as_deref().filter(|l| !l.is_empty());
     // The server's default uses the last eight ID characters. Match this window's
     // own ID so an explicitly named "Window ..." on another window stays intact.
@@ -63,7 +63,14 @@ pub fn tab_name(model: &HostModel, window: &session::Window) -> String {
                     .as_deref()
                     .is_some_and(|id| id.ends_with(suffix))
         });
-    let title = (generated || label.is_none_or(|l| l == DEFAULT_TAB_LABEL))
+    generated || label.is_none_or(|l| l == DEFAULT_TAB_LABEL)
+}
+
+/// What a tab is called: its chosen name, or for a default label, its focused program's
+/// terminal title when there is one.
+pub fn tab_name(model: &HostModel, window: &session::Window) -> String {
+    let label = window.label.as_deref().filter(|l| !l.is_empty());
+    let title = default_title(window)
         .then(|| focused_block(window).and_then(|b| model.title(b)))
         .flatten();
     title.or(label).unwrap_or("Terminal").to_owned()
@@ -311,7 +318,8 @@ impl Workspace {
             ProgramState::Done => config.done,
             ProgramState::Idle => false,
         };
-        if !config.system_notifications || !wanted {
+        // A muted tab stays quiet whatever its programs do.
+        if !config.system_notifications || !wanted || self.tab_muted(index, &window) {
             return;
         }
         let word = match state {
@@ -362,10 +370,9 @@ impl Workspace {
                         .find(|w| blocks(w).any(|b| b == notice.block))
                         .and_then(|w| w.window_id.clone())
                 });
-            if window
-                .as_deref()
-                .is_some_and(|w| self.tab_seen(index, &notice.session, w))
-            {
+            if window.as_deref().is_some_and(|w| {
+                self.tab_seen(index, &notice.session, w) || self.tab_muted(index, w)
+            }) {
                 continue;
             }
             let (tab, place) = self.describe_tab(index, &notice.session, window.as_deref());

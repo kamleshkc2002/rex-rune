@@ -11,6 +11,10 @@ use rex_linux::{connection::HostModel, format_version, settings::Host};
 use rune::{Align, El, col, row, text};
 
 pub const REPOSITORY: &str = "https://github.com/shuv1337/rex-rune";
+/// Opens Settings → About.
+pub const ABOUT: &str = "client.about";
+/// Copies the version info and each host's kind and state, without names or addresses.
+pub const COPY_DEBUG: &str = "client.debug.copy";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const COMMIT: &str = env!("REX_BUILD_COMMIT");
 const BUILD_DATE: &str = env!("REX_BUILD_DATE");
