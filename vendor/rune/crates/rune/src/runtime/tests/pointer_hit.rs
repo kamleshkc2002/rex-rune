@@ -149,7 +149,7 @@ fn secondary_only_children_preserve_primary_click_hover_and_background_blur() {
     rt.state.2 = true;
     rt.invalidate();
     rt.frame(0.0);
-    rt.focused = Some("previous-input".into());
+    rt.focus.focus = crate::runtime::focus_machine::Focus::On { path: "previous-input".into(), hovered: false, from: None };
     rt.pointer_move(10.0, 10.0);
     rt.pointer_down(10.0, 10.0);
     assert!(rt.hovered.is_none());
@@ -353,6 +353,63 @@ fn presses_on_a_window_drag_region_move_the_window_but_not_its_buttons() {
     }
     rt.frame(1.0 / 120.0);
     assert_eq!(rt.state.pressed, 1, "the button inside the title bar still presses");
+}
+
+#[test]
+fn presses_on_a_window_resize_region_resize_the_window_from_its_edge() {
+    use crate::{Cursor, WindowEdge};
+    struct State { pressed: u32 }
+    fn view(_: &State, _: &mut Cx<State>) -> El {
+        col().size(200.0, 200.0)
+            .child(el().key("grip").size(200.0, 10.0).window_resize(WindowEdge::North).cursor(Cursor::ResizeEdge(WindowEdge::North)))
+            .child(el().key("button").size(40.0, 40.0).window_resize(WindowEdge::South).on_press(|s: &mut State| s.pressed += 1))
+    }
+    let mut rt = Runtime::new(State { pressed: 0 }, view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    rt.pointer_move(100.0, 5.0);
+    assert_eq!(rt.cursor(), Cursor::ResizeEdge(WindowEdge::North));
+    for (x, y, asked) in [(100.0, 5.0, Some(TitlebarAction::Resize(WindowEdge::North))), (20.0, 20.0, None), (100.0, 100.0, None)] {
+        rt.pointer_move(x, y);
+        rt.pointer_down(x, y);
+        assert_eq!(rt.take_titlebar_action(), asked, "at {x}, {y}");
+        rt.pointer_up(x, y);
+    }
+    rt.frame(1.0 / 120.0);
+    assert_eq!(rt.state.pressed, 1, "a region with its own press keeps it");
+}
+
+#[test]
+fn a_handler_asks_for_the_window_menu_at_a_point() {
+    let mut tx = Tx::default();
+    tx.show_window_menu(3.0, 4.0);
+    let mut rt = Runtime::new((), |_: &(), _: &mut Cx<()>| el(), (100.0, 100.0), Env::new(true, 1.0));
+    rt.latch_requests(&mut tx);
+    assert_eq!(rt.take_show_window_menu(), Some((3.0, 4.0)));
+    assert_eq!(rt.take_show_window_menu(), None, "taken once");
+}
+
+#[test]
+fn a_double_press_on_nothing_in_the_native_titlebar_band_takes_the_titlebar_action() {
+    fn view(_: &(), _: &mut Cx<()>) -> El {
+        col().size(200.0, 200.0).child(el().key("button").size(40.0, 40.0).on_press(|_: &mut ()| {}))
+    }
+    let mut rt = Runtime::new((), view, (200.0, 200.0), Env::new(true, 1.0));
+    rt.frame(0.0);
+    let double = |rt: &mut Runtime<()>, x: f32, y: f32| {
+        let mut actions = Vec::new();
+        for _ in 0..2 {
+            rt.pointer_move(x, y);
+            rt.pointer_down(x, y);
+            actions.push(rt.take_titlebar_action());
+            rt.pointer_up(x, y);
+        }
+        actions
+    };
+    assert_eq!(double(&mut rt, 100.0, 10.0), [None, None], "no native band, nothing to do");
+    rt.set_native_titlebar_band(28.0);
+    assert_eq!(double(&mut rt, 100.0, 10.0), [None, Some(TitlebarAction::DoubleClick)], "the system drags; Rune adds the double click");
+    assert_eq!(double(&mut rt, 100.0, 60.0), [None, None], "below the band");
+    assert_eq!(double(&mut rt, 20.0, 10.0), [None, None], "a button in the band keeps its presses");
 }
 
 #[test]

@@ -1,4 +1,5 @@
 use super::*;
+use crate::time::Instant;
 
 #[test]
 fn trace_annotations_from_hidden_poll_survive_idle_catch_up_once() {
@@ -87,9 +88,9 @@ fn trace_annotations_reach_both_writers_once() {
 
 #[test]
 fn native_traces_add_target_and_present_times_without_changing_other_fields() {
-    struct Presents(std::sync::Mutex<Vec<crate::present_time::Presented>>);
-    impl crate::present_time::Source for Presents {
-        fn take(&self, out: &mut Vec<crate::present_time::Presented>) { out.append(&mut self.0.lock().unwrap()); }
+    struct Presents(std::sync::Mutex<Vec<crate::frame::present_time::Presented>>);
+    impl crate::frame::present_time::Source for Presents {
+        fn take(&self, out: &mut Vec<crate::frame::present_time::Presented>) { out.append(&mut self.0.lock().unwrap()); }
     }
     let view = |_: &bool, _: &mut Cx<bool>| crate::el().key("box").size(20.0, 20.0);
     let run = |name: &str, timed: bool| {
@@ -129,9 +130,9 @@ fn native_traces_add_target_and_present_times_without_changing_other_fields() {
     assert_eq!(frames[1]["target_ms"], 8.333);
     assert_eq!(frames[1]["present_ms"], 28.333);
     assert_eq!(frames[1]["present_dt_ms"], 8.333);
-    let summary = crate::present_time::Summary::of_trace(&timed).unwrap();
+    let summary = crate::frame::present_time::Summary::of_trace(&timed).unwrap();
     assert_eq!((summary.frames, summary.presented, summary.bunched, summary.missed), (3, 3, 0, 0));
-    assert!(crate::present_time::Summary::of_trace(&plain).is_none());
+    assert!(crate::frame::present_time::Summary::of_trace(&plain).is_none());
 }
 
 #[test]
@@ -223,6 +224,25 @@ fn duration_and_out_select_headless_png_output_unless_native() {
         assert_eq!(files, ["frame_0000.png", "frame_0001.png", "frame_0002.png", "frame_0003.png"]);
     }
     std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn headless_runs_report_each_frame_to_on_frame_encoded() {
+    let _turn = HEADLESS.lock().unwrap_or_else(|e| e.into_inner());
+    let snap = std::env::temp_dir().join(format!("rune-encoded-{}.png", std::process::id()));
+    let seen = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let log = seen.clone();
+    let app = crate::App::new(AppSpec::new("encoded", (8.0, 8.0), || (), |_, _| crate::el())).on_frame_encoded(move |f| {
+        log.borrow_mut().push((f.seq(), f.outcome(), f.window().map(str::to_owned), f.refresh_hz(), f.started().is_some(), f.update_ms(), f.encode_ms()));
+    });
+    headless(app, Args { snap: Some(snap.clone()), at: Some(0.1), fps: 30.0, scale: Some(1.0), ..Default::default() });
+    std::fs::remove_file(snap).unwrap();
+    let seen = seen.borrow();
+    assert_eq!(seen.len(), 4, "frames 0 to 3 at 30 fps: {seen:?}");
+    for (i, (seq, outcome, window, hz, started, update, encode)) in seen.iter().enumerate() {
+        assert_eq!((*seq, *outcome, window.as_deref(), *hz, *started), (i as u64, crate::FrameOutcome::Drawn, Some("main"), Some(30.0), true));
+        assert!(update.is_some_and(|ms| ms >= 0.0) && encode.is_some_and(|ms| ms >= 0.0));
+    }
 }
 
 #[test]
@@ -781,7 +801,7 @@ fn keycaps_draw_over_frames_but_never_enter_the_tree() {
     assert_eq!(keys.0, light.0, "auto caps follow the app's light background");
     assert_ne!(light.0, dark.0);
 
-    use crate::keycaps::Corner;
+    use crate::input::keycaps::Corner;
     let args = |v: &[&str]| Args::parse_from(v.iter().map(|s| (*s).into()).collect());
     assert_eq!(args(&["--keys", "--snap", "a.png"]).keys, Some(Corner::BottomLeft), "the corner is optional");
     assert_eq!(args(&["--keys", "top"]).keys, Some(Corner::Top));
@@ -823,6 +843,15 @@ fn native_trace_does_not_select_virtual_rendering() {
     assert!(args(&["--trace", "trace.jsonl", "--frames", "120"]).headless());
     assert!(!args(&["--native", "--trace", "trace.jsonl", "--frames", "120"]).headless());
     assert!(args(&["--native", "--snap", "snap.png"]).headless());
+}
+
+#[test]
+fn a_script_alone_replays_headless_unless_native() {
+    // A window never replays a script, so `--script` alone renders offscreen like `--frames`.
+    let args = |v: &[&str]| Args::parse_from(v.iter().map(|s| (*s).into()).collect());
+    assert!(args(&["--script", "s.json"]).headless());
+    assert!(!args(&["--native", "--script", "s.json"]).headless());
+    assert!(!args(&["--theme", "light"]).headless());
 }
 
 #[test]
@@ -921,3 +950,29 @@ fn the_window_title_starts_from_the_spec_and_follows_set_title() {
 
 #[path = "playground_cli_tests.rs"]
 mod playground_cli;
+
+#[test]
+fn a_trace_says_how_far_scrolling_carries_an_element_when_that_changes() {
+    fn view(_: &(), _: &mut Cx<()>) -> El {
+        crate::col().key("scroll").size(100.0, 100.0).scroll(crate::ScrollSpec { stick_bottom: false })
+            .child(crate::el().key("row").w_full().h(400.0))
+    }
+    let mut rt = Runtime::new((), view, (100.0, 100.0), Env { scale: 1.0, system_dark: true });
+    rt.frame(0.0);
+    let path = std::env::temp_dir().join(format!("rune-trace-scrolled-{}.jsonl", std::process::id()));
+    {
+        let mut trace = Trace::open(&path, rt.viewport, 60.0, 1.0);
+        trace.frame(&mut rt, 0.0, 0.0);
+        rt.update(|_, tx| tx.scroll_to_instant("scroll", 0.0, 30.0));
+        rt.frame(0.02);
+        trace.frame(&mut rt, 20.0, 0.0);
+        trace.frame(&mut rt, 40.0, 0.0);
+    }
+    let text = std::fs::read_to_string(&path).unwrap();
+    std::fs::remove_file(path).unwrap();
+    let lines: Vec<Value> = text.lines().map(|line| serde_json::from_str(line).unwrap()).collect();
+    let row = lines[1]["m"].as_array().unwrap().iter().find(|m| m["nm"].as_str().unwrap().ends_with("row")).unwrap()["id"].clone();
+    assert!(lines[1].get("sc").is_none(), "nothing scrolled yet");
+    assert_eq!(lines[2]["sc"], json!([[row, 0.0, 30.0]]));
+    assert!(lines[3].get("sc").is_none(), "only when it changes");
+}

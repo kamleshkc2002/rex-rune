@@ -7,7 +7,7 @@ impl<S: 'static> Live<S> {
     pub(crate) fn view(&self, app: &S, view: fn(&S, &mut Cx<S>) -> El, cx: &mut Cx<S>, viewport: (f32, f32)) -> El {
         let dark = self.app_dark.map_or_else(|| cx.system_dark(), |dark| dark(app));
         let t = tok::theme(dark);
-        if !self.open {
+        if !self.is_open() {
             if !self.bar { return call(view, app, cx); }
             let root = call(view, app, cx);
             // Laid out as the root of a window BAR shorter, as the runtime sizes a root. The
@@ -16,21 +16,24 @@ impl<S: 'static> Live<S> {
                 .child(root.w(viewport.0).h((viewport.1 - BAR).max(0.0)))
                 .child(self.bar_view(t));
         }
-        let stage_w = (viewport.0 - SIDEBAR - SIDE - 2.0).max(0.0);
+        let (sidebar_w, side_w) = self.widths(viewport.0);
+        let stage_w = (viewport.0 - sidebar_w - side_w - 2.0).max(0.0);
         let stage = self.stage(app, view, cx, (stage_w, viewport.1), t, dark);
-        let stage = match self.region {
+        let stage = match self.region() {
             // The stage has no selection to colour, so a ring inside its edge shows it has the
             // keyboard. It takes no input, so presses reach the story under it.
             Region::Stage => stage.child(el().key("playground-stage-ring").pin(Some(0.0), Some(0.0), Some(0.0), Some(0.0)).border(2.0, cx.focus_color())),
             _ => stage,
         };
-        let side = self.side(app, cx, t, dark, viewport.1);
+        let side = self.side(app, cx, t, dark, side_w, viewport.1);
         row().key("playground").w(viewport.0).h(viewport.1).fill(t.bg)
-            .child(self.sidebar(t, dark, cx.accent(), cx.titlebar_inset(), viewport.1))
+            .child(self.sidebar(t, dark, cx.accent(), cx.titlebar_inset(), sidebar_w, viewport.1))
             .child(el().w(1.0).h(viewport.1).fill(t.separator))
             .child(stage)
             .child(el().w(1.0).h(viewport.1).fill(t.separator))
             .child(side)
+            .child(self.sidebar_edge(sidebar_w, viewport))
+            .child(self.side_edge(side_w, viewport))
     }
 
     fn bar_view(&self, t: Theme) -> El {
@@ -53,13 +56,13 @@ impl<S: 'static> Live<S> {
     }
 
     /// Along the sidebar's foot: the stage's size, motion and appearance.
-    pub(super) fn stage_controls(&self, t: Theme, window_dark: bool) -> El {
+    pub(super) fn stage_controls(&self, t: Theme, window_dark: bool, sidebar_w: f32) -> El {
         let dark = self.dark.unwrap_or(window_dark);
         let (glyph, appearance) = if dark { (&MOON, "Dark appearance") } else { (&SUN, "Light appearance") };
         let theme = icon_button(t, "playground-theme", glyph, appearance, false, window_dark, Request::Dark(!dark));
         let reduce = icon_button(t, "playground-reduce-motion", &MOTION, "Reduce Motion", self.reduce_motion, window_dark, Request::ReduceMotion(!self.reduce_motion));
         let sizes = (!self.sizes.is_empty()).then(|| self.size_menu(t));
-        row().key("playground-stage-controls").w(SIDEBAR).h(HEADER).px(8.0).gap(2.0).center_y()
+        row().key("playground-stage-controls").w(sidebar_w).h(HEADER).px(8.0).gap(2.0).center_y()
             .children(sizes)
             .child(spacer())
             .child(reduce)
@@ -93,7 +96,7 @@ impl<S: 'static> Live<S> {
 
     /// The column right of the stage: the story's group and name, the app's controls for it,
     /// its triggers, and a key hint.
-    fn side(&self, app: &S, cx: &mut Cx<S>, t: Theme, dark: bool, height: f32) -> El {
+    fn side(&self, app: &S, cx: &mut Cx<S>, t: Theme, dark: bool, side_w: f32, height: f32) -> El {
         let i = self.selected;
         let title = (i < self.count()).then(|| {
             col().key("playground-title").px(4.0).gap(2.0)
@@ -138,7 +141,10 @@ impl<S: 'static> Live<S> {
                 }))
         });
         let hint = self.hint(variants.len(), slot.is_some() || !variants.is_empty() || !triggers.is_empty());
-        col().key("playground-side").w(SIDE).h(height).px(12.0).pt(12.0).pb(12.0).gap(12.0)
+        // The Windows caption buttons sit over the column's top.
+        let chrome = cx.chrome_insets();
+        let under_caption = if chrome.trailing > 0.0 { chrome.height } else { 0.0 };
+        col().key("playground-side").w(side_w).h(height).px(12.0).pt(12.0 + under_caption).pb(12.0).gap(12.0)
             .children(title)
             .children(slot)
             .children(picker)
@@ -150,7 +156,7 @@ impl<S: 'static> Live<S> {
     /// The keys of the column that has the keyboard, under the side column.
     fn hint(&self, variants: usize, controls: bool) -> String {
         let variants = match variants.min(9) { 0 => None, 1 => Some("1\u{a0}variant".into()), n => Some(format!("1–{n}\u{a0}variants")) };
-        let parts: Vec<Option<String>> = match self.region {
+        let parts: Vec<Option<String>> = match self.region() {
             Region::List => vec![
                 Some("↑↓\u{a0}stories".into()),
                 Some("←→\u{a0}groups".into()),
@@ -168,20 +174,20 @@ impl<S: 'static> Live<S> {
     /// The app's controls for the open story, from `Playground::side` or `Story::side` (or
     /// their `side_keys`), acting on its stage state.
     fn side_slot(&self, app: &S, cx: &mut Cx<S>) -> Option<El> {
-        if let Some(scene) = &self.scene {
+        if let Some(scene) = self.scene() {
             let (_, view) = self.sides.iter().find(|(s, _)| *s == self.selected)?;
             let mut stage = cx.retype::<S>();
             let root = match view {
                 Side::Stage(view) => view(&scene.state, &mut stage),
                 Side::Real(view) => view(&scene.state, app, &mut stage),
-                Side::Keys(view, _) => view(&scene.state, self.side_active, &mut stage),
+                Side::Keys(view, _) => view(&scene.state, self.side_active(), &mut stage),
             };
             cx.absorb(stage);
             return Some(root);
         }
         let (own, stage) = self.own()?;
         let mut unit = cx.retype::<()>();
-        let root = own.side(stage, self.side_active, &mut unit);
+        let root = own.side(stage, self.side_active(), &mut unit);
         cx.absorb(unit);
         root
     }
@@ -194,13 +200,13 @@ impl<S: 'static> Live<S> {
         let preset = self.size.checked_sub(1).and_then(|i| self.sizes.get(i)).map(|(_, size)| *size);
         let layout = self.layout();
         let (w, h) = if layout == Stage::Fill { area } else { frame.or(preset).unwrap_or(area) };
-        let content = match (&self.scene, page) {
+        let content = match (self.scene(), page) {
             (Some(scene), _) => Some(self.nested(cx, env, |c| call(view, &scene.state, c))),
             (None, Some((_, Page { kind: Kind::Live(page), .. }))) => Some(self.nested(cx, env, |c| page(app, c))),
             (None, Some(_)) => self.own().map(|(own, stage)| {
                 let mut unit = cx.retype::<()>();
                 unit.set_env(env);
-                unit.set_titlebar_inset(0.0);
+                unit.clear_chrome();
                 if self.reduce_motion { unit.reduced_motion(true); }
                 let root = own.view(stage, &mut unit);
                 cx.absorb(unit);
@@ -234,7 +240,7 @@ impl<S: 'static> Live<S> {
     fn nested(&self, cx: &mut Cx<S>, env: crate::Env, f: impl FnOnce(&mut Cx<S>) -> El) -> El {
         let mut stage = cx.retype::<S>();
         stage.set_env(env);
-        stage.set_titlebar_inset(0.0);
+        stage.clear_chrome();
         if self.reduce_motion { stage.reduced_motion(true); }
         let root = f(&mut stage);
         cx.absorb(stage);

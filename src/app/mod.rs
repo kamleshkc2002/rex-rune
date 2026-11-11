@@ -212,7 +212,7 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
     rune::text::set_app_font_paths(fonts.paths)
         .map_err(|_| anyhow::anyhow!("terminal fonts were already initialized"))?;
     rune::set_app_id("dev.shuv.rex-linux");
-    if let Err(error) = rune::set_app_icon_png(APP_ICON) {
+    if let Err(error) = rune::set_app_icon(APP_ICON) {
         eprintln!("Could not load the Rex window icon: {error}");
     }
     let rune_args = std::mem::take(&mut options.rune);

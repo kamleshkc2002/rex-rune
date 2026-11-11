@@ -5,7 +5,7 @@ use super::Win;
 
 /// What a built frame hands the window besides its pixels: secure input, the IME, the cursor,
 /// help tags and the clipboard.
-pub(super) fn sync_platform<S: 'static>(l: &mut Win, rt: &mut Runtime<S>, secure_input: &mut crate::secure_input::SecureInput,
+pub(super) fn sync_platform<S: 'static>(l: &mut Win, rt: &mut Runtime<S>, secure_input: &mut crate::input::secure_input::SecureInput,
     ime: &mut bool, clipboard: &crate::clipboard::Client) {
     let focused = l.window.has_focus();
     secure_input.set(rt.has_secure_focus() && focused);
@@ -17,9 +17,18 @@ pub(super) fn sync_platform<S: 'static>(l: &mut Win, rt: &mut Runtime<S>, secure
     }
     l.apply_cursor(rt, focused);
     #[cfg(target_os = "macos")]
-    l.help.sync(&l.window, rt.help_regions());
+    if rt.zoom() == 1.0 {
+        l.native.help.sync(&l.window, rt.help_regions());
+    } else {
+        // Window points: the view's times its zoom.
+        let regions: Vec<([f32; 4], String)> = rt.help_regions().iter().map(|(r, t)| (rt.to_window(*r), t.clone())).collect();
+        l.native.help.sync(&l.window, &regions);
+    }
+    // The process has one menu theme: the active window's, so its window menu matches it.
+    #[cfg(target_os = "windows")]
+    if focused { crate::platform::win32::dark_mode::menus(rt.backdrop_dark().unwrap_or(rt.env.system_dark)); }
     clipboard.flush(rt);
-    if let Some(a) = rt.ime_area {
+    if let Some(a) = rt.ime_area.map(|a| rt.to_window(a)) {
         l.window.set_ime_cursor_area(
             LogicalPosition::new(a[0] as f64, a[1] as f64),
             LogicalSize::new(a[2] as f64, a[3] as f64),

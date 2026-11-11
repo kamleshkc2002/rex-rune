@@ -52,6 +52,10 @@ fn run_configured(_: Factory, _: Args, _: bool) -> Result<(), String> {
 #[cfg(not(target_arch = "wasm32"))]
 fn run_configured(factory: Factory, args: Args, accessory: bool) -> Result<(), String> {
     let _ = accessory;
+    // A relaunch goes on once the app it restarts has exited.
+    crate::relaunch::wait_for_previous();
+    crate::tooling::perf_warn::launch::run_starts();
+    crate::platform::ready_signal::run_starts();
     #[cfg(target_os = "macos")]
     if !window_server_session() {
         crate::render::discard_prewarm();
@@ -71,13 +75,40 @@ fn run_configured(factory: Factory, args: Args, accessory: bool) -> Result<(), S
     }
     let event_loop = builder.build().inspect_err(|_| crate::render::discard_prewarm()).map_err(event_loop_error)?;
     event_loop.set_control_flow(ControlFlow::Wait);
+    #[cfg(target_os = "macos")]
+    crate::platform::app_icon::launched();
     let proxy = event_loop.create_proxy();
+    let turn = proxy.clone();
+    crate::popup_menu::start(std::sync::Arc::new(move || { let _ = turn.send_event(WakeEvent::Turn); }));
     let mut windows = Windows { factory: Some(factory), args, proxy, hosts: Vec::new(), gpu: Rc::default() };
-    crate::open_url_in::prepare();
+    crate::open_url::incoming::prepare();
+    crate::marks::mark("loop.run");
     let result = event_loop.run_app(&mut windows);
+    crate::marks::mark("loop.exited");
+    // The windows' interaction timing queued its last rollups as they closed.
+    crate::tooling::interaction::flush();
     crate::render::discard_prewarm();
     crate::clipboard::shutdown(); // Also cover an event-loop error before `exiting`.
+    crate::platform::ready_signal::clear();
     result.map_err(|error| format!("run: {error}"))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Windows {
+    /// The idle turn winit runs between its message loops, run while a native menu's modal
+    /// loop holds winit's (`WakeEvent::Turn`): hosts whose timers are due resume, then
+    /// `about_to_wait` draws overlays, answers assistive clients and sets the next wake.
+    pub(super) fn turn(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        use winit::application::ApplicationHandler;
+        let now = std::time::Instant::now();
+        for host in self.hosts.iter_mut().flatten() {
+            if let Some(due) = host.wake_deadline().filter(|&due| due <= now) {
+                host.new_events(event_loop, winit::event::StartCause::ResumeTimeReached { start: due, requested_resume: due });
+            }
+        }
+        self.about_to_wait(event_loop);
+        self.cleanup(event_loop);
+    }
 }
 
 #[test]

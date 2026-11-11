@@ -217,7 +217,7 @@ struct CompHost {
     comp_animates: std::rc::Rc<std::cell::Cell<bool>>,
     frames: u32,
     /// Called where `draw` calls it.
-    reports: crate::frame_encoded::FrameReports<u32>,
+    reports: crate::frame::encoded::FrameReports<u32>,
 }
 
 impl CompHost {
@@ -250,7 +250,7 @@ impl CompHost {
     /// nothing, unless a compositor draws it. Returns whether it presented.
     fn frame(&mut self, quiet: bool) -> bool {
         let started = Instant::now();
-        let animating = self.rt.frame(crate::frame_clock::RESUME_STEP);
+        let animating = self.rt.frame(crate::frame::clock::RESUME_STEP);
         let update_ms = started.elapsed().as_secs_f64() * 1000.0;
         if quiet && self.comp.is_none() && self.presented.as_ref().is_some_and(|p| p.unchanged(&self.rt, &self.config, animating, None)) {
             self.reports.unchanged(None);
@@ -319,7 +319,7 @@ fn an_animating_compositor_draws_every_frame() {
 fn a_compositor_s_frame_never_counts_as_unchanged() {
     let mut host = CompHost::new(Some(false), still);
     host.rt.update(|_, _| {});
-    host.rt.frame(crate::frame_clock::RESUME_STEP);
+    host.rt.frame(crate::frame::clock::RESUME_STEP);
     let p = host.presented.as_ref().unwrap();
     assert!(!p.same(&host.rt, &host.config), "the same instances may composite differently");
     assert!(!p.unchanged(&host.rt, &host.config, false, None));
@@ -371,8 +371,8 @@ fn reporting_frames_changes_no_frame_skip_or_redraw() {
         let log = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
         let sink = log.clone();
         let mut host = CompHost::new(None, every_third);
-        let hook = hook.then(|| Box::new(move |f: &crate::FrameEncoded| sink.borrow_mut().push(f.outcome())) as crate::frame_encoded::OnFrameEncoded);
-        host.reports = crate::frame_encoded::FrameReports::new(hook, Some("main"));
+        let hook = hook.then(|| Box::new(move |f: &crate::FrameEncoded| sink.borrow_mut().push(f.outcome())) as crate::frame::encoded::OnFrameEncoded);
+        host.reports = crate::frame::encoded::FrameReports::new(hook, Some("main"));
         let mut steps = Vec::new();
         for i in 0..12 {
             let presented = if i % 5 == 0 { host.frame(false) } else { host.timer_wake() };
@@ -389,4 +389,321 @@ fn reporting_frames_changes_no_frame_skip_or_redraw() {
     assert!(outcomes.contains(&crate::FrameOutcome::Drawn) && outcomes.contains(&crate::FrameOutcome::Unchanged), "{outcomes:?}");
     let drawn = outcomes.iter().filter(|o| **o == crate::FrameOutcome::Drawn).count() as u32;
     assert_eq!(drawn, hooked.last().unwrap().4 - 2, "one Drawn per presented frame after the two `new` drew");
+}
+
+#[test]
+fn hidden_pace_renders_a_change_at_once_then_at_most_every_refresh() {
+    let t0 = Instant::now();
+    let mut pace = HiddenPace::default();
+    assert!(pace.changed(t0), "the first change renders at once");
+    pace.rendered(t0);
+    assert_eq!(pace.deadline(), None);
+    assert!(!pace.changed(t0 + Duration::from_millis(100)));
+    assert!(!pace.changed(t0 + Duration::from_millis(200)));
+    assert_eq!(pace.deadline(), Some(t0 + HIDDEN_REFRESH), "later ones wait for one render");
+    assert!(!pace.take_due(t0 + Duration::from_millis(249)));
+    assert!(pace.take_due(t0 + HIDDEN_REFRESH));
+    assert_eq!(pace.deadline(), None, "a due render asked for doesn't wake the loop again");
+    assert!(pace.changed(t0 + HIDDEN_REFRESH));
+    pace.rendered(t0 + HIDDEN_REFRESH);
+    assert_eq!(pace.deadline(), None);
+    assert!(pace.changed(t0 + Duration::from_secs(5)), "after a quiet spell, at once again");
+    pace.reset();
+    assert!(pace.changed(t0 + Duration::from_secs(5)));
+}
+
+#[test]
+fn missed_frames_never_poll() {
+    use wgpu::CurrentSurfaceTexture as S;
+    let now = Instant::now();
+    for status in [S::Occluded, S::Timeout, S::Outdated, S::Lost, S::Validation] {
+        let missed = Missed::of(status).err().expect("a miss");
+        for paced in [false, true] {
+            for wait in [Duration::ZERO, OCCLUDED_RETRY, Duration::from_secs(60)] {
+                let mut backoff = Backoff::seeded(wait, TIMEOUT_RETRY);
+                backoff.step(BackoffEvent::Missed { missed, paced, now });
+                // A retry deadline at or before now would spin like a poll.
+                let flow = match backoff.deadline() {
+                    Some(at) => { assert!(at > now, "{missed:?} retries later, not now"); ControlFlow::WaitUntil(at) }
+                    None => ControlFlow::Wait,
+                };
+                assert_ne!(flow, ControlFlow::Poll, "{missed:?} (paced: {paced}) must not poll");
+            }
+        }
+    }
+    let occluded = |wait| {
+        let mut backoff = Backoff::seeded(wait, TIMEOUT_RETRY);
+        backoff.step(BackoffEvent::Missed { missed: Missed::Occluded, paced: true, now });
+        backoff.deadline()
+    };
+    assert_eq!(occluded(Duration::ZERO), Some(now + OCCLUDED_RETRY), "the safety net is slow");
+    assert_eq!(occluded(Duration::from_secs(60)), Some(now + OCCLUDED_MAX));
+    let miss = |backoff: &mut Backoff, missed| {
+        backoff.step(BackoffEvent::Missed { missed, paced: true, now });
+        backoff.deadline()
+    };
+    let mut backoff = Backoff::default();
+    assert_eq!(miss(&mut backoff, Missed::Timeout), None, "a running display link retries on its tick");
+    assert_eq!(miss(&mut backoff, Missed::Outdated), Some(now + OCCLUDED_RETRY));
+    assert_eq!(miss(&mut backoff, Missed::Occluded), Some(now + OCCLUDED_RETRY), "an occluded miss waits its backoff");
+    assert_eq!(miss(&mut backoff, Missed::Occluded), Some(now + OCCLUDED_RETRY * 2), "and backs off");
+    assert_eq!(miss(&mut backoff, Missed::Outdated), Some(now + OCCLUDED_RETRY), "other misses leave the backoff");
+    assert_eq!(miss(&mut backoff, Missed::Occluded), Some(now + OCCLUDED_RETRY * 4), "which carries on");
+}
+
+/// A shown window's due timer asks for a frame. On Wayland a surface that is covered before its
+/// frame callback fires withholds `RedrawRequested`, and the same overdue timer would turn the
+/// loop at once for a frame that can't come. The host waits out the bound, then runs the timer
+/// covered; its next one is ahead, so the loop sleeps.
+#[test]
+fn a_timer_frame_that_never_comes_runs_its_timer_covered_instead_of_spinning() {
+    #[derive(Default)]
+    struct Due { polls: u32 }
+    fn poll(app: &mut Due, _: f64, tx: &mut Tx) -> bool {
+        app.polls += 1;
+        tx.wake_after(Duration::from_millis(100));
+        true
+    }
+    let mut rt = Runtime::new(Due::default(), |_, _| crate::el().size(20.0, 20.0), (20.0, 20.0), crate::Env::default());
+    rt.poll = Some(poll);
+    rt.wall_start = Some(Instant::now());
+    rt.frame(0.0);
+    // A change since that frame, as a `wake` whose poll it hasn't drawn leaves it.
+    rt.invalidate();
+    assert!(rt.stale() && !rt.rests(), "the window doesn't rest: its frame is still to come");
+    // As `new_events` at the timer, which is due by the time the loop runs for it.
+    let due = timer_deadline(&rt).expect("a timer is armed");
+    rt.wall_start = rt.wall_start.map(|t| t - due.saturating_duration_since(Instant::now()) - Duration::from_millis(1));
+    let now = Instant::now();
+    assert!(timer_deadline(&rt).expect("armed") <= now, "the timer is due: this is what turned the loop");
+
+    let mut frame = TimerFrame::default();
+    frame.asked_quiet(now);
+    assert_eq!(frame.wait(timer_deadline(&rt), now), Some(now + TIMER_FRAME_STALL),
+        "the frame the timer asked for keeps the loop asleep until the bound");
+    assert!(!frame.stalled(now + TIMER_FRAME_STALL - Duration::from_millis(1)));
+    assert!(frame.stalled(now + TIMER_FRAME_STALL), "after the bound the timer runs covered");
+
+    let polls = rt.state.polls;
+    covered_step(&mut rt);
+    assert_eq!(rt.state.polls, polls + 1, "the due timer polled");
+    let next = timer_deadline(&rt).expect("its next timer is armed");
+    assert!(next > Instant::now(), "the next timer is ahead: {next:?}");
+    // The covered step takes the frame's place, and a timer still ahead keeps its own time.
+    frame.drawn();
+    frame.asked_quiet(Instant::now());
+    assert_eq!(frame.wait(timer_deadline(&rt), Instant::now()), Some(next), "the loop sleeps until its next timer");
+    frame.drawn();
+    assert!(!frame.stalled(now + TIMER_FRAME_STALL), "a frame that comes clears it");
+}
+
+#[test]
+fn a_window_s_first_updates_can_register_on_a_later_window() {
+    use crate::{App, AppSpec, MenuItem, el};
+    type S = Vec<String>;
+    let apps: Vec<App<S>> = ["first", "second"].map(|title| App::new(AppSpec::new(title, (10.0, 10.0), Vec::new, |_, _| el()))).into();
+    let second = apps[1].handle();
+    apps[0].handle().update(move |s: &mut S, _| {
+        s.push(format!("{:?}", second.register_shortcut("ctrl+alt+shift+f18".parse().unwrap(), |_, _| {}).map(|_| ())));
+        s.push(format!("{:?}", second.set_menu([MenuItem::new("Item", |_: &mut S, _| {})])));
+    });
+    // As Host::new and Host::resumed: attach the guards, then drain the first updates.
+    let hosts = start_all(apps.into(), |_, app| {
+        let shortcuts = crate::shortcuts::Guard::attach(&app.shared, Arc::new(|| {}), true, false);
+        let menus = crate::native_menu::Guard::attach(&app.shared, true);
+        Some((app, shortcuts, menus, S::new()))
+    }, |(app, _, _, state)| for f in app.shared.take().updates { f(state, &mut Tx::default()); });
+    assert_eq!(hosts[0].as_ref().unwrap().3, ["Ok(())", "Ok(())"]);
+}
+
+#[test]
+fn drag_region_policy_preserves_titled_windows_and_panels() {
+    for enabled in [false, true] {
+        for full_size in [false, true] {
+            let chrome = Chrome { drag_regions: enabled, full_size_content: full_size, ..Chrome::DEFAULT };
+            assert_eq!(uses_drag_regions(chrome, false, false), enabled && full_size);
+            assert_eq!(uses_drag_regions(chrome, true, false), enabled);
+            assert!(!uses_drag_regions(chrome, false, true));
+            assert!(!uses_drag_regions(chrome, true, true));
+        }
+    }
+}
+
+/// A GPU-free wgpu instance.
+#[cfg(target_os = "linux")]
+fn noop_instance() -> wgpu::Instance {
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+    descriptor.backends = wgpu::Backends::NOOP;
+    descriptor.backend_options.noop.enable = true;
+    wgpu::Instance::new(descriptor)
+}
+
+/// A GPU on wgpu's noop backend: its device takes anything and refuses every surface.
+#[cfg(target_os = "linux")]
+fn noop_gpu(instance: &wgpu::Instance) -> (Gpu, wgpu::Surface<'static>) {
+    use std::num::NonZeroU32;
+    use std::ptr::NonNull;
+    use winit::raw_window_handle::{RawDisplayHandle, RawWindowHandle, XcbDisplayHandle, XcbWindowHandle};
+    // The noop backend takes any handle and reports no capabilities, so configuring fails.
+    let surface = unsafe {
+        instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::RawHandle {
+            raw_display_handle: Some(RawDisplayHandle::Xcb(XcbDisplayHandle::new(Some(NonNull::dangling()), 0))),
+            raw_window_handle: RawWindowHandle::Xcb(XcbWindowHandle::new(NonZeroU32::new(1).unwrap())),
+        })
+    }
+    .unwrap();
+    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).unwrap();
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).unwrap();
+    (Gpu::from_device(instance.clone(), adapter, device, queue), surface)
+}
+
+/// What the noop backend takes for a surface: the format the test configures it in.
+#[cfg(target_os = "linux")]
+fn noop_config() -> wgpu::SurfaceConfiguration {
+    wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Bgra8UnormSrgb,
+        width: 200,
+        height: 80,
+        present_mode: wgpu::PresentMode::AutoVsync,
+        desired_maximum_frame_latency: 2,
+        alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+        view_formats: vec![],
+        color_space: Default::default(),
+    }
+}
+
+/// A surface that refuses its configuration reports it as an error its owner can drop, not a
+/// panic in wgpu's default handler that takes the app's every window with it (hex#979).
+#[cfg(target_os = "linux")]
+#[test]
+fn a_refused_surface_configuration_is_an_error_not_a_panic() {
+    let instance = noop_instance();
+    let (gpu, surface) = noop_gpu(&instance);
+    let config = noop_config();
+    let error = configure(&surface, &gpu, &config).unwrap_err();
+    assert!(error.starts_with("Validation Error: In Surface::configure"), "{error}");
+    assert!(error.ends_with("(200x80, Bgra8UnormSrgb, PreMultiplied, AutoVsync)"), "{error}");
+}
+
+/// A surface whose configuration failed has no presentation, and wgpu panics
+/// ("Surface is not configured for presentation") on the drawable Rune would ask it for. The
+/// acquire reports the miss instead, and the window makes a surface and device before its next
+/// frame (hex's Modern Standby panic).
+#[cfg(target_os = "linux")]
+#[test]
+fn a_surface_with_no_presentation_is_never_asked_for_a_drawable() {
+    let instance = noop_instance();
+    let (gpu, surface) = noop_gpu(&instance);
+    let config = noop_config();
+    configure(&surface, &gpu, &config).expect_err("the noop surface refuses its configuration");
+    let mut meter = SurfaceMeter::new("unconfigured", Arc::default());
+    assert_eq!(acquire(&surface, &gpu, &config, false, 1, &mut meter), Err(Missed::Unconfigured));
+    assert_eq!(meter.totals().failed(), 1, "the miss is counted");
+}
+
+/// `Device::destroy` only marks the device invalid: its lost callback runs when the device next
+/// maintains itself, which `configure` does with a poll. Without that poll the surface gets no
+/// presentation while `is_lost` still reads false, `configure` says Ok, and the drawable the next
+/// frame asks for panics ("Surface is not configured for presentation").
+#[cfg(target_os = "linux")]
+#[test]
+fn a_destroyed_device_that_has_not_reported_its_loss_is_not_configured() {
+    let instance = noop_instance();
+    let (gpu, surface) = noop_gpu(&instance);
+    let config = noop_config();
+    gpu.device.destroy();
+    assert!(!gpu.is_lost(), "the callback waits for the device's next maintain");
+    let error = configure(&surface, &gpu, &config).unwrap_err();
+    assert!(error.starts_with("the GPU device was lost"), "{error}");
+    assert!(gpu.is_lost());
+    let mut meter = SurfaceMeter::new("destroyed", Arc::default());
+    assert_eq!(acquire(&surface, &gpu, &config, true, 1, &mut meter), Err(Missed::Unconfigured));
+}
+
+/// A surface that won't come back is replaced a bounded number of times, waiting longer after
+/// each failure, and then the window gives it up: a lost device can never be replaced, and a
+/// frame must not ask again forever.
+#[test]
+fn surface_replacements_give_up_after_a_bounded_number_of_tries() {
+    use super::win::{SurfaceStep, SURFACE_TRIES};
+    let now = Instant::now();
+    let mut retries = SurfaceRetries::default();
+    let mut waits = Vec::new();
+    loop {
+        assert_eq!(retries.attempt(), SurfaceStep::Replace);
+        match retries.retry(now) {
+            Some(at) => waits.push(at - now),
+            None => break,
+        }
+        assert!(waits.len() < 100, "a replacement that keeps failing never gives up");
+    }
+    assert_eq!(waits.len() as u8, SURFACE_TRIES - 1, "one try, then bounded retries");
+    assert!(waits.windows(2).all(|pair| pair[1] > pair[0]), "each wait is longer: {waits:?}");
+    assert_eq!(retries.failures(), SURFACE_TRIES);
+    assert_eq!(retries.attempt(), SurfaceStep::GiveUp);
+
+    // A frame that reached the screen starts over.
+    retries.worked();
+    assert_eq!(retries.failures(), 0);
+    assert_eq!(retries.attempt(), SurfaceStep::Replace);
+}
+
+/// A replacement that works still counts: a surface replaced and lost again before its frame
+/// presents gives the window up after `SURFACE_TRIES` replacements instead of making one
+/// forever. This is the shape `Host::replace_lost_surface` runs, where only `draw`'s present
+/// calls `worked`.
+#[test]
+fn a_surface_lost_after_every_replacement_gives_up_after_the_tries() {
+    use super::win::{SurfaceStep, SURFACE_TRIES};
+    let mut retries = SurfaceRetries::default();
+    let mut replaced = 0;
+    while retries.attempt() == SurfaceStep::Replace {
+        // The replacement worked, and the frame it made was lost before it presented.
+        replaced += 1;
+        assert!(replaced < 100, "a surface lost before it presents never stops being replaced");
+    }
+    assert_eq!(replaced, SURFACE_TRIES, "the window gives up after a bounded number of replacements");
+
+    // One frame reaches the screen: the next loss starts over.
+    retries.worked();
+    assert_eq!(retries.attempt(), SurfaceStep::Replace);
+}
+
+/// A device that went away (a driver reset, a GPU removed, Windows' Modern Standby) configures
+/// nothing, and wgpu drops the `DeviceLost` that would say so: `configure` reports the lost
+/// device itself, and no drawable is ever asked of it.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_lost_device_is_reported_and_never_drawn_with() {
+    let instance = noop_instance();
+    let (gpu, surface) = noop_gpu(&instance);
+    let config = noop_config();
+    assert!(!gpu.is_lost());
+    gpu.device.destroy();
+    // wgpu loses a destroyed device once its queues drain, when the device next maintains itself.
+    gpu.device.poll(wgpu::PollType::wait_indefinitely()).ok();
+    assert!(gpu.is_lost(), "the device's lost callback marks it");
+    let error = configure(&surface, &gpu, &config).unwrap_err();
+    assert!(error.starts_with("the GPU device was lost"), "{error}");
+    let mut meter = SurfaceMeter::new("lost", Arc::default());
+    assert_eq!(acquire(&surface, &gpu, &config, true, 1, &mut meter), Err(Missed::Unconfigured));
+    assert_eq!(meter.totals().failed(), 1, "a lost device is a miss, not a panic");
+}
+
+/// Each Rune GPU has its own wgpu instance, and wgpu compares devices by an id each instance
+/// numbers from the start, so a new GPU's device equals the old one's. A renderer's device key
+/// tells them apart, so a compositor keeping resources by it remakes them (hex#982).
+#[cfg(target_os = "linux")]
+#[test]
+fn a_new_gpus_device_equals_the_old_one_but_its_key_differs() {
+    let device = || {
+        let adapter = pollster::block_on(noop_instance().request_adapter(&wgpu::RequestAdapterOptions::default())).unwrap();
+        pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).unwrap().0
+    };
+    let (old, new) = (device(), device());
+    assert!(old == new, "wgpu tells devices of separate instances apart by now: device equality may do");
+    let format = wgpu::TextureFormat::Bgra8Unorm;
+    let (old, new) = (crate::render::Renderer::new(&old, format), crate::render::Renderer::new(&new, format));
+    assert_ne!(old.device_key(), new.device_key());
 }

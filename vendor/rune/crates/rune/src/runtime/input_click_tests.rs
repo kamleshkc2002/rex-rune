@@ -139,7 +139,7 @@ fn double_and_triple_click_select_word_and_line_in_single_line_input() {
     rt.pointer_up(x, y);
     rt.frame(1.0 / 60.0);
     assert!(rt.state.single.focused);
-    assert!(!rt.keyboard_focus, "pointer focus does not turn on keyboard focus ring");
+    assert!(!rt.focus.keyboard(), "pointer focus does not turn on keyboard focus ring");
     assert_eq!(rt.state.single.anchor, rt.state.single.focus);
     assert!(rt.state.single.focus > 0 && rt.state.single.focus < 4);
 
@@ -334,7 +334,7 @@ fn timing_slop_and_target_changes_reset_multiclick_count_and_preedit_ignores_it(
     let before = (rt.state.single.anchor, rt.state.single.focus);
     click(&mut rt, pt);
     click(&mut rt, pt);
-    assert!(rt.state.single.preedit.is_some());
+    assert!(rt.state.single.preedit().is_some());
     assert_eq!((rt.state.single.anchor, rt.state.single.focus), before);
 }
 
@@ -492,4 +492,36 @@ fn custom_input_on_key_handler_resets_multiclick_history() {
     // Clicking again immediately within double_click_interval is a single click, not a word selection.
     click(&mut rt, pt);
     assert_eq!(rt.state.single.anchor, rt.state.single.focus);
+}
+
+#[test]
+fn presses_land_on_targets_inside_a_scrolled_viewport() {
+    fn view(_: &Vec<usize>, _: &mut Cx<Vec<usize>>) -> El {
+        let rows = (0..10).map(|i| crate::el().key(format!("row{i}")).w_full().h(50.0).on_press(move |s: &mut Vec<usize>| s.push(i)));
+        col().size(200.0, 100.0).scroll(crate::ScrollSpec { stick_bottom: false }).child(col().w_full().children(rows))
+    }
+    let mut rt = Runtime::new(Vec::new(), view, (200.0, 100.0), Env { system_dark: true, scale: 1.0 });
+    rt.frame(0.0);
+    rt.pointer_move(100.0, 25.0);
+    rt.wheel(100.0, 25.0, -200.0);
+    for _ in 0..240 {
+        rt.frame(1.0 / 120.0);
+    }
+    rt.pointer_move(100.0, 25.0);
+    rt.pointer_down(100.0, 25.0);
+    rt.pointer_up(100.0, 25.0);
+    rt.frame(1.0 / 120.0);
+    assert_eq!(rt.state, [4]);
+}
+
+#[test]
+fn a_field_that_stops_following_its_press_keeps_the_press_until_release() {
+    let mut c = InputClick::default();
+    c.capture = Capture::Held { dragging: Some("field".into()) };
+    c.steps.push_back(("field".into(), Step::Drag));
+    c.on_focus_change(Some("other"));
+    assert!(c.captured() && c.dragging_path().is_none(), "focus left: the drag stops, the press stays the field's");
+    assert!(matches!(c.steps.front(), Some((_, Step::Cancelled))), "its queued drag step does nothing");
+    assert!(c.end_press());
+    assert!(!c.captured() && !c.end_press(), "the release ends it once");
 }

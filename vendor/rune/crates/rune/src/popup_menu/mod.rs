@@ -5,6 +5,9 @@
 //!
 //! - macOS: an `NSMenu` popped up in the window's view, overlays included. Rune keeps drawing
 //!   while the menu tracks: frames, display-link pacing and animations keep running.
+//! - Windows: a `TrackPopupMenuEx` menu owned by the window, light or dark as the window's
+//!   content is. It drops down below an element anchor, as Windows menus do, and Rune keeps
+//!   drawing while it tracks: frames, wakes, timers and overlays.
 //! - Other platforms: [`popup_menu_supported`] is false and the callback gets `None` at once.
 //! - Headless runs: the menu stays open in `--tree` (`popupMenu`) until a script's
 //!   `{"type": "menu-pick", "id": "dark"}` or `{"type": "menu-cancel"}` answers it.
@@ -21,10 +24,35 @@ use crate::{PointerPress, Runtime, Shortcut, Tx};
 
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "macos")]
+use macos as host;
+#[cfg(target_os = "windows")]
+mod win32;
+#[cfg(target_os = "windows")]
+use win32 as host;
+#[cfg(target_os = "windows")]
+pub(crate) use win32::{layout, turns};
 
-/// Whether this platform shows native pop-up menus. Where it doesn't, [`Tx::popup_menu`] calls
-/// back with `None` straight away, so an app can draw its own menu instead.
-pub fn popup_menu_supported() -> bool { cfg!(target_os = "macos") }
+/// Platforms without native menus: nothing opens, so every request answers `None` at once.
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+mod host {
+    use super::{Arc, Rc, Session, Show, Waker, Window};
+    pub(super) const SUPPORTED: bool = false;
+    pub(super) type Tracking = ();
+    pub(super) fn show(_: &Arc<Window>, _: Show, _: Rc<Session>, _: Option<Waker>) -> bool { false }
+    pub(super) fn stop(_: Tracking) {}
+    pub(super) fn scheme(_: bool) {}
+    pub(super) fn start(_: Waker) {}
+}
+
+/// Whether this platform shows native pop-up menus (macOS and Windows). Where it doesn't,
+/// [`Tx::popup_menu`] calls back with `None` straight away, so an app can draw its own menu
+/// instead.
+pub fn popup_menu_supported() -> bool { host::SUPPORTED }
+
+/// The event loop starts. `turn` runs its idle turn (due timers, overlays), for a platform whose
+/// menus hold the event loop in a modal loop of their own while they track.
+pub(crate) fn start(turn: Waker) { host::start(turn); }
 
 /// One choice in a [`PopupMenu`]: enabled and unchecked unless set.
 #[derive(Clone, Debug, PartialEq)]
@@ -46,7 +74,8 @@ impl PopupItem {
     pub fn checked(mut self, checked: bool) -> Self { self.checked = checked; self }
     /// The shortcut shown beside the title. It is a hint: the menu doesn't register it.
     pub fn key_equivalent(mut self, shortcut: Shortcut) -> Self { self.key_equivalent = Some(shortcut); self }
-    /// An SF Symbol shown before the title on macOS 11 and later, e.g. `"moon"`.
+    /// An SF Symbol shown before the title on macOS 11 and later, e.g. `"moon"`. Windows shows
+    /// no symbol.
     pub fn symbol(mut self, name: impl Into<String>) -> Self { self.symbol = Some(name.into()); self }
 
     pub fn id(&self) -> &str { &self.id }
@@ -59,7 +88,8 @@ impl PopupItem {
 pub(crate) enum Entry {
     Item(PopupItem),
     Separator,
-    Submenu(String, PopupMenu),
+    /// A titled submenu, and whether it opens.
+    Submenu(String, PopupMenu, bool),
 }
 
 /// The items of a native pop-up or context menu. Ids must be unique across the menu and its
@@ -92,7 +122,12 @@ impl PopupMenu {
     }
     pub fn separator(mut self) -> Self { self.entries.push(Entry::Separator); self }
     pub fn submenu(mut self, title: impl Into<String>, menu: PopupMenu) -> Self {
-        self.entries.push(Entry::Submenu(title.into(), menu));
+        self.entries.push(Entry::Submenu(title.into(), menu, true));
+        self
+    }
+    /// A submenu shown greyed out and closed unless nabled.
+    pub fn submenu_enabled(mut self, title: impl Into<String>, menu: PopupMenu, enabled: bool) -> Self {
+        self.entries.push(Entry::Submenu(title.into(), menu, enabled));
         self
     }
     /// The top-level item that opens over an element anchor, like a pop-up button's current
@@ -104,7 +139,7 @@ impl PopupMenu {
     pub fn find(&self, id: &str) -> Option<&PopupItem> {
         self.entries.iter().find_map(|entry| match entry {
             Entry::Item(item) if item.id == id => Some(item),
-            Entry::Submenu(_, menu) => menu.find(id),
+            Entry::Submenu(_, menu, _) => menu.find(id),
             _ => None,
         })
     }
@@ -122,7 +157,7 @@ impl PopupMenu {
                     if item.id.is_empty() { return Err("an item has an empty id".into()); }
                     if !ids.insert(item.id.clone()) { return Err(format!("duplicate item id {:?}", item.id)); }
                 }
-                Entry::Submenu(_, menu) => menu.validate(ids)?,
+                Entry::Submenu(_, menu, _) => menu.validate(ids)?,
                 Entry::Separator => {}
             }
         }
@@ -138,7 +173,8 @@ impl PopupMenu {
                 v
             }
             Entry::Separator => json!({ "separator": true }),
-            Entry::Submenu(title, menu) => json!({ "submenu": title, "menu": menu.to_json() }),
+            Entry::Submenu(title, menu, true) => json!({ "submenu": title, "menu": menu.to_json() }),
+            Entry::Submenu(title, menu, false) => json!({ "submenu": title, "enabled": false, "menu": menu.to_json() }),
         }).collect();
         let mut v = json!({ "items": entries });
         if let Some(selected) = &self.selected { v["selected"] = selected.clone().into(); }
@@ -185,6 +221,8 @@ pub(crate) struct Request {
     pub menu: PopupMenu,
     pub anchor: PopupAnchor,
     pub on_pick: PickFn,
+    /// A text field's own menu, whose picks the runtime acts on.
+    pub field: Option<Box<crate::runtime::field_menu::FieldMenu>>,
 }
 
 impl Request {
@@ -230,19 +268,22 @@ impl Tx {
             // None once the playground has dropped the stage that asked.
             if let Some(s) = s.cast::<S>() { on_pick(s, picked, tx); }
         });
-        let request = Request { menu, anchor: anchor.into(), on_pick };
+        let request = Request { menu, anchor: anchor.into(), on_pick, field: None };
         self.popups.push(Call(Rc::new(RefCell::new(Some(request)))));
     }
 }
 
 /// What a host opens: the menu, where its positioned item (or its top-left corner) goes, in
-/// window points, and the narrowest it may be.
+/// window points, and the narrowest it may be. `element` is the anchor element's rect, for a
+/// host that places menus its platform's way.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Show {
     pub menu: PopupMenu,
     pub at: (f32, f32),
     pub positioned: Option<String>,
     pub min_width: f32,
+    #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), allow(dead_code))]
+    pub element: Option<[f32; 4]>,
 }
 
 impl Show {
@@ -258,20 +299,82 @@ impl Show {
             PopupAnchor::Key(_) => ((x, y + h), w),
             PopupAnchor::Point(..) => ((x, y), 0.0),
         };
-        Self { menu, at, positioned, min_width }
+        let element = matches!(anchor, PopupAnchor::Key(_)).then_some(rect);
+        Self { menu, at, positioned, min_width, element }
     }
 }
 
-/// One native menu, from the host handing it over until its answer is read. A cancelled
-/// session's menu never opens (or stops tracking), and its answer is never read.
+/// Where one native menu is. The presenter holds no session while it's closed; a handed-over
+/// menu is `Opening` until the platform puts it up, `Open` while it tracks, and ends
+/// `Resolved` with its answer, or `Cancelled` when its window goes away first. A cancelled
+/// menu never opens (or stops tracking), and its answer is dropped.
+#[derive(Default)]
+#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
+pub(crate) enum Phase {
+    #[default]
+    Opening,
+    /// Up. `tracking` is the platform's hold on the menu while its loop runs, to stop it.
+    Open { tracking: Option<host::Tracking> },
+    /// Closed with `picked`. `pointer`: where the pointer was over the window as it closed, in
+    /// window points, for a platform that sends no pointer move until the pointer moves again.
+    Resolved { picked: Option<String>, pointer: Option<(f32, f32)> },
+    Cancelled,
+}
+
+/// One native menu, from the host handing it over until its answer is read.
 #[derive(Default)]
 pub(crate) struct Session {
-    /// The closed menu's answer: `Some(picked)`.
-    pub answer: RefCell<Option<Option<String>>>,
-    pub cancelled: std::cell::Cell<bool>,
-    /// The menu while it tracks, to cancel it.
-    #[cfg(target_os = "macos")]
-    pub tracking: RefCell<Option<objc2::rc::Retained<objc2_app_kit::NSMenu>>>,
+    phase: RefCell<Phase>,
+}
+
+// Only macOS and Windows open menus; elsewhere every request answers `None` before a session.
+#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
+impl Session {
+    /// `Opening` → `Open`, as the menu comes up. False when it was cancelled first.
+    pub(crate) fn begin(&self) -> bool {
+        let mut phase = self.phase.borrow_mut();
+        if !matches!(*phase, Phase::Opening) { return false; }
+        *phase = Phase::Open { tracking: None };
+        true
+    }
+
+    /// The menu's tracking loop starts (`Some`) or returns (`None`).
+    pub(crate) fn tracking(&self, menu: Option<host::Tracking>) {
+        if let Phase::Open { tracking } = &mut *self.phase.borrow_mut() { *tracking = menu; }
+    }
+
+    /// `Opening` or `Open` → `Resolved`: the menu closed with `picked`, the pointer at
+    /// `pointer`. False, and the answer dropped, when it was cancelled first.
+    pub(crate) fn resolve(&self, picked: Option<String>, pointer: Option<(f32, f32)>) -> bool {
+        let mut phase = self.phase.borrow_mut();
+        if !matches!(*phase, Phase::Opening | Phase::Open { .. }) { return false; }
+        *phase = Phase::Resolved { picked, pointer };
+        true
+    }
+
+    /// Any phase → `Cancelled`. The menu to stop, when its loop was tracking.
+    pub(crate) fn cancel(&self) -> Option<host::Tracking> {
+        match self.phase.replace(Phase::Cancelled) {
+            Phase::Open { tracking } => tracking,
+            _ => None,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_cancelled(&self) -> bool { matches!(*self.phase.borrow(), Phase::Cancelled) }
+
+    /// The answer of a `Resolved` menu, and where the pointer was, once: the session is
+    /// `Cancelled` after.
+    fn take_answer(&self) -> Option<(Option<String>, Option<(f32, f32)>)> {
+        let mut phase = self.phase.borrow_mut();
+        match std::mem::replace(&mut *phase, Phase::Cancelled) {
+            Phase::Resolved { picked, pointer } => Some((picked, pointer)),
+            other => {
+                *phase = other;
+                None
+            }
+        }
+    }
 }
 
 /// One window's native menu: opens what its runtime asks for, and hands the answer back after
@@ -279,7 +382,6 @@ pub(crate) struct Session {
 #[derive(Default)]
 pub(crate) struct Presenter {
     session: Option<Rc<Session>>,
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     wake: Option<Waker>,
 }
 
@@ -288,14 +390,18 @@ impl Presenter {
 
     pub(crate) fn connect(&mut self, wake: Waker) { self.wake = Some(wake); }
 
-    /// Runs the callback of a menu that closed since the last event. True when one ran.
+    /// Runs the callback of a menu that closed since the last event. True when one ran. The
+    /// pointer the menu released is back where the menu left it, so a click that doesn't move
+    /// it first still lands.
     pub(crate) fn answer<S: 'static>(&mut self, rt: &mut Runtime<S>) -> bool {
-        let Some(picked) = self.session.as_ref().and_then(|s| s.answer.borrow_mut().take()) else { return false };
+        let Some((picked, pointer)) = self.session.as_ref().and_then(|s| s.take_answer()) else { return false };
         self.session = None;
         if let Err(error) = rt.resolve_popup(picked.as_deref()) {
             eprintln!("rune: {error}");
             let _ = rt.resolve_popup(None);
         }
+        // In window points; the view's are over its zoom.
+        if let Some((x, y)) = pointer && rt.pointer().is_none() { rt.pointer_move(x / rt.zoom(), y / rt.zoom()); }
         true
     }
 
@@ -310,16 +416,15 @@ impl Presenter {
             if window.is_some() && paints && rt.popup_waits_for_layout() { return true; }
             let Some(show) = rt.take_popup() else { return redraw };
             redraw = true;
-            #[cfg(target_os = "macos")]
             if let (Some(show), Some(window)) = (show, window) {
+                // As dark as what the window draws, which may not be the system's appearance.
+                host::scheme(rt.backdrop_dark().unwrap_or(rt.env.system_dark));
                 let session = Rc::new(Session::default());
-                if macos::show(window, show, session.clone(), self.wake.clone()) {
+                if host::show(window, show, session.clone(), self.wake.clone()) {
                     self.session = Some(session);
                     return true;
                 }
             }
-            #[cfg(not(target_os = "macos"))]
-            let _ = (window, show);
             let _ = rt.resolve_popup(None);
         }
     }
@@ -334,12 +439,7 @@ impl Presenter {
 
     fn stop(&mut self) {
         let Some(session) = self.session.take() else { return };
-        session.cancelled.set(true);
-        #[cfg(target_os = "macos")]
-        if let Some(menu) = session.tracking.borrow_mut().take() {
-            // SAFETY: the host's (main) thread. The tracking loop ends once this handler returns.
-            unsafe { menu.cancelTrackingWithoutAnimation() };
-        }
+        if let Some(menu) = session.cancel() { host::stop(menu); }
     }
 }
 

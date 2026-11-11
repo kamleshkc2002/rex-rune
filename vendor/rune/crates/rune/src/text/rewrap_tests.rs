@@ -55,7 +55,7 @@ fn cases() -> Vec<Case> {
         .iter()
         .map(|label| {
             let start = pill_text.find(label).unwrap() as u32;
-            PillChip { start, end: start + label.len() as u32, icon: None, bg: None, fg: None }
+            PillChip { start, end: start + label.len() as u32, icon: None, bg: None, fg: None, bare: None }
         })
         .collect();
     vec![
@@ -181,4 +181,36 @@ fn resizing_a_window_rebreaks_wrapped_text_and_draws_as_a_fresh_one() {
         fresh.frame(0.0);
         assert_eq!(glyphs(&rt), glyphs(&fresh), "at {w}");
     }
+}
+
+/// A width change re-breaks a layout no one holds, from an earlier commit, in place: it moves
+/// to the new width rather than being copied. One still held, or handed out this commit, is
+/// copied and left as it was.
+#[test]
+fn a_layout_nothing_holds_rebreaks_in_place_at_a_new_width() {
+    let mut ts = TextSystem::default();
+    let style = TextStyle::new(15.0, 400.0);
+    let text = "a paragraph long enough to wrap over several lines at a narrow width";
+    let wide = ts.layout_rich(text, &[], style, 2.0, Some(400.0));
+    let at = Rc::as_ptr(&wide);
+    drop(wide);
+    ts.end_commit();
+    let narrow = ts.layout_rich(text, &[], style, 2.0, Some(300.0));
+    assert_eq!(Rc::as_ptr(&narrow), at, "moved, not copied");
+    assert_eq!(ts.cached_layout_count(), 1, "the old width's entry moved with it");
+    assert_eq!(geometry(&narrow), geometry(&TextSystem::default().layout_rich(text, &[], style, 2.0, Some(300.0))));
+
+    // Handed out this commit: copied, and the width it was at still hits.
+    let (shaped, rebroken) = (ts.shaped, ts.rebroken);
+    let narrower = ts.layout_rich(text, &[], style, 2.0, Some(200.0));
+    assert_ne!(Rc::as_ptr(&narrower), at);
+    assert!(Rc::ptr_eq(&ts.layout_rich(text, &[], style, 2.0, Some(300.0)), &narrow));
+    assert_eq!((ts.shaped, ts.rebroken), (shaped, rebroken + 1));
+
+    // Held from an earlier commit: copied, and the holder's layout is untouched.
+    ts.end_commit();
+    let before = geometry(&narrower);
+    let other = ts.layout_rich(text, &[], style, 2.0, Some(150.0));
+    assert!(!Rc::ptr_eq(&other, &narrower));
+    assert_eq!(geometry(&narrower), before);
 }

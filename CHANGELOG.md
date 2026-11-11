@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. Two patches are dropped because Rune now provides them: `Tx::toggle_maximize` (now `Tx::toggle_maximized`) and the `fc-list` system-font discovery. The Linux window icon moved into Rune's `rune::set_app_icon`, whose Linux support is still a Rex patch. Scrolling and redraw cost far less: on the acceptance machine, p95 frame CPU while scrolling btop fell from about 35 ms to about 8 ms.
+- **Rex now takes Rune's rendering as it is.** Translucent 1 pt rims on chips, popovers, pills and cards are slightly brighter, because borders draw over the fill; at 1.25× and 1.5× they are exactly one device pixel wide. Text line boxes are no longer rounded up to device pixels, so Settings rows are 1 pt tighter. Text uses Rune's new default rasteriser, which is heavier at 1× and unchanged at 2×. Terminal cell size and column positions are unchanged.
+
 ## 0.6.0 - 2026-11-10
 
 ### Added

@@ -72,7 +72,7 @@ rustPlatform.buildRustPackage {
   cargoLock = {
     lockFile = ../Cargo.lock;
     outputHashes = {
-      "rune-kit-0.0.1" = "sha256-qWQd1il3ccR69j7jQY3Whl3L7odgkaA8RvP+OVY5stA=";
+      "rune-kit-0.0.1" = "sha256-IWvwANCYSmgeI9ZZ/X0YYFeJaSKSr2CYnQSsZyJgB1c=";
     };
   };
   nativeBuildInputs = [

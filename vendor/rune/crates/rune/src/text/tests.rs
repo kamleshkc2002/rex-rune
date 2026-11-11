@@ -28,6 +28,52 @@ fn cjk_falls_back_to_an_installed_font() {
     assert_eq!(glyph_ids("Hello"), glyph_ids("Hello"));
 }
 
+/// Korean, Japanese and Chinese each shape without missing glyphs where a font for them is
+/// installed (Hex #820: Hangul drew boxes on macOS, which ships Apple SD Gothic Neo).
+#[test]
+fn hangul_kana_and_han_fall_back_to_installed_fonts() {
+    let installed = |fragments: &[&str]| !system_font_files(fragments).is_empty();
+    let korean = installed(&["applesdgothicneo", "malgun", "notosanskr", "notosanscjk", "applegothic"]);
+    let japanese = installed(&["hiragino", "yugoth", "meiryo", "notosansjp", "notosanscjk"]);
+    for (text, has_font) in [("안녕하세요 세계", korean), ("こんにちは世界", japanese), ("你好世界", installed(&CJK_FONT_FILES))] {
+        if !has_font {
+            eprintln!("skipping {text}: no font for it installed");
+            continue;
+        }
+        let ids = glyph_ids(text);
+        assert!(ids.iter().all(|id| *id != 0), "tofu in {text}: {ids:?}");
+    }
+}
+
+/// Han text falls back to the language's fonts: with Japanese and Simplified Chinese fonts both
+/// installed, `ja` and `zh` draw the same characters from different fonts (Hex #1382: Japanese
+/// interface text was drawn in a Chinese font's forms).
+#[test]
+fn han_text_falls_back_to_the_languages_font() {
+    let japanese = !system_font_files(&["notosanscjkjp", "notosansjp", "yugoth", "meiryo", "hiragino"]).is_empty();
+    let chinese = !system_font_files(&["notosanscjksc", "notosanssc", "msyh", "pingfang"]).is_empty();
+    if !(japanese && chinese) {
+        eprintln!("skipping: needs a Japanese and a Simplified Chinese font");
+        return;
+    }
+    let fonts = |tag: &str| {
+        let mut ts = TextSystem::default();
+        ts.set_language(parley::fontique::Language::parse(tag).ok());
+        let layout = ts.layout_rich("直骨", &[], TextStyle::new(13.0, 400.0), 2.0, None);
+        let mut fonts = Vec::new();
+        for line in layout.lines() {
+            for item in line.items() {
+                if let PositionedLayoutItem::GlyphRun(run) = item {
+                    let font = run.run().font();
+                    fonts.push((font.data.id(), font.index));
+                }
+            }
+        }
+        fonts
+    };
+    assert_ne!(fonts("ja"), fonts("zh"));
+}
+
 /// A tab shapes as a space: no missing-glyph box, and the same advance.
 #[test]
 fn a_tab_draws_as_a_space() {
@@ -224,6 +270,22 @@ fn scripts_load_their_system_fonts_on_first_use() {
         assert!(glyphs.iter().all(|(_, id)| *id != 0), "tofu in {sample}: {glyphs:?}");
     }
     assert_eq!(ts.scripts.count_ones() as usize, fallback::SCRIPT_FONTS.len());
+}
+
+/// Fonts fontconfig knows outside the scanned directories (NixOS keeps them in its store) are
+/// found too.
+#[cfg(target_os = "linux")]
+#[test]
+fn system_fonts_include_fontconfig_files() {
+    let Ok(out) = std::process::Command::new("fc-list").arg("--format=%{file}\n").output() else {
+        eprintln!("skipping: no fc-list");
+        return;
+    };
+    let found = system_font_files(&[""]);
+    for line in String::from_utf8_lossy(&out.stdout).lines() {
+        let font = [".ttf", ".otf", ".ttc", ".otc"].iter().any(|ext| line.to_lowercase().ends_with(ext));
+        assert!(!font || found.iter().any(|path| path.as_os_str() == line), "{line} not found");
+    }
 }
 
 #[test]
