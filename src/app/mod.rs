@@ -3,25 +3,35 @@ mod about;
 mod actions;
 mod activity;
 mod bindings;
+mod commands;
 mod dialogs;
 mod discover;
 mod downloads;
 mod downloads_view;
+mod find;
+mod font_size;
 mod fonts;
+mod help;
 mod input;
 mod integrations;
+mod keycaps;
 mod keys;
 mod navigation;
 mod notify;
+mod pane_header;
+mod pane_verbs;
 mod panel;
 mod panes;
 mod popups;
 mod remote;
+mod settings_kit;
 mod settings_view;
 mod sidebar;
+mod splits;
 mod sprites;
 mod ssh_setup;
 mod stats;
+mod tabs;
 mod term;
 mod theme;
 mod toolbar;
@@ -151,9 +161,11 @@ fn poll(s: &mut Workspace, _: f64, tx: &mut Tx) -> bool {
     }
     // Reveal the active tab after selection, resize and sidebar changes, and again on the
     // next frame once the strip has its new width.
-    let tab = s.model().view().and_then(|v| v.active_window_id.clone());
+    // A tab that moved within its session's order is revealed again where it now is.
+    let place = s.active_tab_place();
+    let tab = place.as_ref().map(|(id, _)| id.clone());
     let reveal = (
-        tab.clone(),
+        place,
         s.area[2].round() as i32,
         s.sidebar.is_open(),
         s.bar_chips(),

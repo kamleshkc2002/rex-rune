@@ -5,6 +5,12 @@ pub const BUILD_CHANNEL: &str = match option_env!("REX_LINUX_CHANNEL") {
     None => "source",
 };
 
+/// A Rex Linux version as every page, notice, command and copied report prints it: the
+/// bare number, without the `v` of a release tag.
+pub fn format_version(version: &str) -> String {
+    version.trim().trim_start_matches(['v', 'V']).to_owned()
+}
+
 pub mod connection;
 pub mod download;
 pub mod keymap;

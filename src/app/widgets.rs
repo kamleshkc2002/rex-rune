@@ -1,6 +1,6 @@
 //! Building blocks on the Midnight tokens: chrome icon buttons, pill buttons, list rows with a
 //! sliding highlight, scroll thumbs and hint lines.
-use super::{theme::*, workspace::Workspace};
+use super::{keycaps::keycaps, theme::*, workspace::Workspace};
 use rune::{Color, Cursor, El, Icon, Live, LiveText, ScrollPos, Tx, el, icon, row, text};
 
 pub fn glyph(i: &'static Icon, size: f32, color: Color) -> El {
@@ -120,23 +120,48 @@ pub struct Row<'a> {
     pub surface: &'a str,
     pub label: &'a str,
     pub detail: &'a str,
+    /// The row's shortcut, drawn as keycaps in place of the detail text.
+    pub keys: &'a [Vec<String>],
     pub height: f32,
     pub check: Option<bool>,
     pub followup: bool,
     pub enabled: bool,
+    /// A destructive row: its label is in `DANGER`, and its selection tints in `DANGER`.
+    pub danger: bool,
     pub selected: bool,
     /// Shown at the end in place of the detail, while the row is highlighted.
     pub actions: Option<El>,
+    /// Columns drawn after the label in place of the detail, with the widest the label may
+    /// be. The label then keeps its own width up to that, and the columns give way first.
+    pub columns: Option<(El, f32)>,
+}
+
+/// The width every list row keeps for its follow-up chevron, drawn or not, so the hints of a
+/// list end on one line.
+pub const CHEVRON_COLUMN: f32 = 14.;
+/// The height a [`separator`] takes in a list, its margins included.
+pub const SEPARATOR: f32 = 9.;
+
+/// A hairline between the groups of a menu.
+pub fn separator() -> El {
+    el().role("separator")
+        .w_full()
+        .h(SEPARATOR)
+        .px(9.)
+        .center_y()
+        .child(el().w_full().h(1.).fill(white(0.09)))
 }
 
 /// The sliding selection: a childless background that flies to the next selected row, with no
-/// entrance or exit of its own (so two never show). Fill **and** outline, never fill alone.
-pub fn highlight(id: &str, radius: f32) -> El {
+/// entrance or exit of its own (so two never show). The `SELECTION` tint **and** its outline,
+/// never fill alone, so it cannot be mistaken for a hover.
+pub fn highlight(id: &str, radius: f32, destructive: bool) -> El {
+    let (fill, outline) = selection(destructive);
     el().pin(Some(0.), Some(0.), Some(0.), Some(0.))
         .radius(radius)
         .continuous_corners()
-        .fill(white(0.09))
-        .border(1., white(0.06))
+        .fill(fill)
+        .border(1., outline)
         .matched(id.to_owned())
         .transition(no_presence())
         .motion(SNAPPY)
@@ -148,12 +173,22 @@ pub fn list_row(
     index: usize,
     on_press: impl Fn(&mut Workspace, &mut Tx) + 'static,
 ) -> El {
-    let fg = rgb(if r.enabled { ink() } else { muted() });
+    // A destructive label is `DANGER` until its row is selected: there the tint and outline
+    // carry the colour and the label stays `INK`, which `DANGER` on its own tint cannot match
+    // for contrast.
+    let fg = rgb(if !r.enabled {
+        muted()
+    } else if r.danger && !r.selected {
+        danger()
+    } else {
+        ink()
+    });
     let detail = if r.selected {
         rgb(ink()).alpha(0.75)
     } else {
         rgb(muted())
     };
+    let hint = format!("{}:keys", r.key);
     let mut e = row()
         .key(r.key)
         .role("menuitem")
@@ -163,11 +198,15 @@ pub fn list_row(
         .px(9.)
         .gap(8.)
         .center_y()
-        .help_when_truncated(format!("{} · {}", r.label, r.detail));
+        .help_when_truncated(if r.detail.is_empty() {
+            r.label.to_owned()
+        } else {
+            format!("{} · {}", r.label, r.detail)
+        });
     // The highlight's slot is always there, so the row's other children keep their places
     // (and don't animate) as it comes and goes.
     e = e.child(if r.selected {
-        highlight(&format!("sel:{}", r.surface), 7.)
+        highlight(&format!("sel:{}", r.surface), 7., r.danger)
     } else {
         el().pin(Some(0.), Some(0.), Some(0.), Some(0.))
     });
@@ -188,22 +227,39 @@ pub fn list_row(
             el()
         }));
     }
-    e = e.child(
-        text(r.label.to_owned())
-            .font(if r.selected { medium(13.) } else { ui(13.) })
-            .color(fg)
-            .truncate()
-            .grow(1.)
-            .shrink(),
-    );
+    let label = text(r.label.to_owned())
+        .font(if r.selected { medium(13.) } else { ui(13.) })
+        .color(fg)
+        .truncate();
+    let (label, columns) = match r.columns {
+        // A box as wide as the label, so the row never shrinks it; the label is cut only
+        // once it reaches the box's limit.
+        Some((columns, limit)) => (
+            row()
+                .max_w(limit)
+                .child(label.help_when_truncated(r.label.to_owned())),
+            Some(columns),
+        ),
+        None => (label.grow(1.).shrink(), None),
+    };
+    e = e.child(label);
     match r.actions.filter(|_| r.selected) {
         Some(actions) => e
             .child(actions)
             .child(el().pin(Some(0.), Some(0.), Some(0.), Some(0.))),
         None => e
-            .child(text(r.detail.to_owned()).font(ui(11.)).color(detail))
-            .child(el().w(14.).child(if r.followup {
-                glyph(&RIGHT, 13., rgb(muted()))
+            .child(match columns {
+                Some(columns) => columns,
+                None if r.keys.is_empty() => text(r.detail.to_owned()).font(ui(11.)).color(detail),
+                // An unavailable row's keys recede with its label.
+                None => {
+                    keycaps(r.keys, r.selected)
+                        .key(hint)
+                        .opacity(if r.enabled { 1. } else { 0.5 })
+                }
+            })
+            .child(el().w(CHEVRON_COLUMN).child(if r.followup {
+                glyph(&RIGHT, 13., detail)
             } else {
                 el()
             })),

@@ -2,21 +2,90 @@
 //! an outside press dismisses and is consumed.
 use super::{
     input::{list_key, rename_key},
+    keycaps::keycap,
     panel::{Intent, PanelKind},
     theme::*,
-    widgets::{Row, glyph, list_row, row_action},
+    widgets::{Row, SEPARATOR, glyph, list_row, row_action, separator},
     workspace::Workspace,
 };
 use rune::{El, ScrollSpec, TextEdit, Tx, col, el, row, text};
 use rune_kit::TextInput;
 
 const HEADER: f32 = 26.;
+/// Commands shows about this many rows and scrolls to the rest, whatever the window's height.
+const COMMAND_ROWS: f32 = 20.;
 
 #[derive(Clone)]
 enum Hidden {
     Session,
     Offline(String),
+    /// A command under its group's heading: the group's name, and where the bottom of that
+    /// heading is in the list.
+    Command(String, f32),
     Other,
+}
+
+/// What Commands says is below the fold, whose bottom edge is `bottom` in the list: the
+/// groups still to come, in order. A group whose heading is already on screen (or above) is
+/// not below, though its last rows may be: it is named only when nothing else is.
+fn groups_below(hidden: &[&Hidden], bottom: f32) -> String {
+    let mut groups: Vec<&str> = Vec::new();
+    let mut started = None;
+    for row in hidden {
+        let Hidden::Command(group, heading) = row else {
+            continue;
+        };
+        if *heading <= bottom + 1. {
+            started = Some(group.as_str());
+        } else if groups.last() != Some(&group.as_str()) {
+            groups.push(group);
+        }
+    }
+    match (groups.is_empty(), started) {
+        (false, _) => format!("More below: {}", groups.join(" · ")),
+        (true, Some(group)) => format!("More {group} commands below"),
+        (true, None) => "More results below".into(),
+    }
+}
+
+/// A group's heading: its words in small capitals, and `name`, the part of it someone chose
+/// (a host, a session, a tab), in the case they gave it. The name gives way first.
+fn heading_words(group: &str, name: Option<&str>) -> El {
+    let caps = |words: &str| {
+        text(words.to_owned())
+            .font(label_caps())
+            .text_case(rune::TextCase::Uppercase)
+            .color(rgb(muted()))
+    };
+    let words = row()
+        .role("heading")
+        .label(group.to_owned())
+        .gap(4.)
+        .center_y()
+        .grow(1.)
+        .shrink()
+        .min_w(0.);
+    let Some((at, name)) = name
+        .filter(|name| !name.is_empty())
+        .and_then(|name| Some((group.find(name)?, name)))
+    else {
+        return words.child(caps(group).truncate().shrink());
+    };
+    let (before, after) = (
+        group[..at].trim_end(),
+        group[at + name.len()..].trim_start(),
+    );
+    words
+        .children((!before.is_empty()).then(|| caps(before)))
+        .child(
+            text(name.to_owned())
+                .font(medium(11.))
+                .color(rgb(muted()))
+                .truncate()
+                .shrink()
+                .help_when_truncated(group.to_owned()),
+        )
+        .children((!after.is_empty()).then(|| caps(after)))
 }
 
 /// A transparent full-window layer that eats presses outside the popup and closes it.
@@ -32,9 +101,24 @@ fn dismiss_layer() -> El {
     el().key("popup-dismiss")
         .pin(Some(0.), Some(0.), Some(0.), Some(0.))
         .preserve_focus_on_press(true)
-        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| s.close_panel(tx))
-        .on_secondary_press(|s: &mut Workspace, _, tx| s.close_panel(tx))
+        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| dismiss(s, tx))
+        .on_secondary_press(|s: &mut Workspace, _, tx| dismiss(s, tx))
 }
+
+/// A press outside a list closes it; one opened from a Settings control goes back to Settings.
+fn dismiss(s: &mut Workspace, tx: &mut Tx) {
+    if s.panel
+        .as_ref()
+        .is_some_and(|p| super::settings_kit::under(p).is_some())
+    {
+        s.cancel_panel(tx)
+    } else {
+        s.close_panel(tx)
+    }
+}
+
+/// How far a list opened from a control sits from it.
+const CONTROL_GAP: f32 = 4.;
 
 /// The captured pane's outline, in window points, above any scrim and below the panel.
 pub fn target_outline(s: &Workspace) -> Option<El> {
@@ -59,7 +143,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
         .into_iter()
         .find(|p| p.block == target.block)?;
     let [ax, ay, aw, ah] = s.area;
-    let bleed = super::panes::full_bleed(current);
+    let bleed = super::pane_header::full_bleed(s, current);
     let ([x, y, w, h], radius) = if bleed {
         ([0., 0., aw, ah], 0.)
     } else {
@@ -87,18 +171,36 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     // Context menus (a pane's, a tab's, a sidebar session's) share one shape.
     let pane = matches!(
         panel.kind,
-        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window(_)
+        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window
     );
     let commands = matches!(panel.kind, PanelKind::Picker(false));
+    // The values of one setting: a short list with the current one checked.
+    let values = matches!(panel.kind, PanelKind::Choice(_) | PanelKind::Chromes);
+    // Lists that mark the current value keep the check's column on every row, so names align.
+    let checks = values || matches!(panel.kind, PanelKind::Themes);
     let [vw, vh] = viewport;
-    let width = (if pane {
-        260.
+    // The control a Settings popup button opened this list from, `[x, y, w, h]` where layout
+    // put it: the list goes right under it, or right above when there is more room there.
+    let control = panel.anchor_to.as_deref().and_then(rune::memo::layout);
+    let room = control.map(|[_, y, _, h]| {
+        let below = vh - (y + h + CONTROL_GAP) - 8.;
+        let above = y - CONTROL_GAP - 8.;
+        (below, above)
+    });
+    // Add host: machines in columns, each name whole.
+    let discover = matches!(panel.kind, PanelKind::Discover);
+    let width = (if values {
+        220.
+    } else if pane {
+        280.
     } else if sessions {
         340.
+    } else if discover {
+        super::discover::LIST_WIDTH
     } else {
         460.
-    } as f32)
-        .min(vw - 16.);
+    })
+    .min(vw - 16.);
     let top = if sessions || pane {
         TOOLBAR - 4.
     } else if vh < 750. {
@@ -117,10 +219,29 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         top,
     ));
     let entries = s.entries();
+    // A machine already added carries a chip, in a column every row of the list keeps.
+    let added_column = discover && entries.iter().any(|e| e.current);
+    let name_limit = super::discover::name_limit(width, added_column);
     let row_height = if commands { 30. } else { 28. };
     let footer_count = entries.iter().filter(|e| e.footer).count();
-    let input_height = if panel.inputs.is_empty() { 32. } else { 40. };
-    let list_max = (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.);
+    // A list under its control needs no title: the control's row names it.
+    let titled = control.is_none() || !panel.inputs.is_empty();
+    let input_height = if !titled {
+        0.
+    } else if panel.inputs.is_empty() {
+        32.
+    } else {
+        40.
+    };
+    let mut list_max = match room {
+        Some((below, above)) => (below.max(above) - input_height - 42.).clamp(60., 360.),
+        None => (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.),
+    };
+    if commands {
+        list_max = list_max.min(COMMAND_ROWS * (row_height + 1.));
+    }
+    // Commands under their headings, rather than the one list a search shows.
+    let headed = commands && s.query().is_empty();
 
     // Rows, with their content spans for the overflow hint.
     let mut list = col().key("results").w_full().pr(4.).gap(1.);
@@ -131,18 +252,26 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Hosts(_) => "hosts",
         PanelKind::Themes => "themes",
         PanelKind::Chromes => "chromes",
+        PanelKind::Choice(_) => "choice",
         PanelKind::Discover => "discover",
         PanelKind::Session => "session-menu",
         PanelKind::Host(_) => "host-menu",
-        PanelKind::Window(_) => "tab-menu",
+        PanelKind::Window => "tab-menu",
         _ => "pane-menu",
     };
     let mut spans: Vec<(f32, f32, Hidden)> = Vec::new();
     let mut y = 0.;
     let mut group = String::new();
+    // Where the heading of the group being listed ends.
+    let mut heading_bottom = 0.;
     let mut list_rows = 0;
+    // The menu group of the row above, under the same header. A filtered list is flat: its
+    // rows are matches, not a menu.
+    let mut section = None;
+    let grouped = s.query().is_empty();
     for (i, entry) in entries.iter().enumerate() {
         if !entry.footer && entry.group != group {
+            section = None;
             group = entry.group.clone();
             if !group.is_empty() {
                 let first = y == 0.;
@@ -156,13 +285,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         .center_y()
                         .children(entry.group_icon.map(|i| glyph(i, 13., rgb(muted()))))
                         .child(
-                            text(group.clone())
-                                .font(label_caps())
-                                .text_case(rune::TextCase::Uppercase)
-                                .color(rgb(muted()))
-                                .truncate()
-                                .grow(1.)
-                                .shrink(),
+                            heading_words(&group, entry.group_name.as_deref())
+                                .key(format!("group-heading:{i}")),
                         )
                         .children(entry.group_create.clone().map(|(action, help)| {
                             el().key(format!("group-create:{i}"))
@@ -185,7 +309,15 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         })),
                 );
                 y += HEADER - if first { 4. } else { 0. } + 1.;
+                heading_bottom = y;
             }
+        }
+        if !entry.footer {
+            if grouped && section.is_some_and(|above| above != entry.section) {
+                list = list.child(separator());
+                y += SEPARATOR + 1.;
+            }
+            section = Some(entry.section);
         }
         let action = entry.action.clone();
         let enabled = entry.enabled;
@@ -231,12 +363,26 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     surface: surface_id,
                     label: &entry.label,
                     detail: &entry.detail,
+                    keys: &entry.keys,
                     height: if entry.footer { 28. } else { row_height },
-                    check: (sessions || entry.current).then_some(entry.current),
+                    // The Add host list marks an added machine with its chip instead.
+                    check: (sessions || checks || (entry.current && !discover))
+                        .then_some(entry.current),
                     followup: entry.followup,
                     enabled,
+                    danger: entry.danger,
                     selected: i == panel.selected && enabled,
                     actions,
+                    columns: discover
+                        .then(|| {
+                            s.machine_columns(
+                                &entry.action,
+                                i == panel.selected && enabled,
+                                added_column,
+                            )
+                        })
+                        .flatten()
+                        .map(|columns| (columns, name_limit)),
                 },
                 i,
                 move |s: &mut Workspace, tx: &mut Tx| s.perform(action.clone(), tx),
@@ -260,6 +406,11 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     Intent::RetryHost(host) => {
                         Hidden::Offline(s.settings.hosts[*host].label.clone())
                     }
+                    // The heading's first words: "Tab" of "Tab · shell".
+                    _ if headed => Hidden::Command(
+                        entry.group.split(" · ").next().unwrap_or_default().into(),
+                        heading_bottom,
+                    ),
                     _ => Hidden::Other,
                 },
             ));
@@ -293,6 +444,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         .scroll(ScrollSpec {
             stick_bottom: false,
         })
+        // Rows leave under a short fade, not a hard cut above the hint.
+        .scroll_edge_fade(10.)
         .child(list);
     if overflow {
         let switcher = matches!(panel.kind, PanelKind::Picker(true));
@@ -305,20 +458,19 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 }
                 .into();
             }
-            if !switcher {
-                return if sessions {
-                    "More sessions below"
-                } else {
-                    "More results below"
-                }
-                .into();
-            }
             let bottom = offset + view_h;
             let hidden: Vec<&Hidden> = spans
                 .iter()
                 .filter(|(_, b, _)| *b > bottom + 1.)
                 .map(|(_, _, h)| h)
                 .collect();
+            if !switcher {
+                return if sessions {
+                    "More sessions below".into()
+                } else {
+                    groups_below(&hidden, bottom)
+                };
+            }
             let sessions_below = hidden
                 .iter()
                 .filter(|h| matches!(h, Hidden::Session))
@@ -366,7 +518,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     )
     .clip_rounded(12.)
     .transition(pop_in());
-    if panel.inputs.is_empty() {
+    if titled && panel.inputs.is_empty() {
         surface = surface.child(
             row().h(26.).px(10.).center_y().child(
                 text(panel.title.clone())
@@ -375,7 +527,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     .truncate(),
             ),
         );
-    } else {
+    } else if titled {
         let placeholder = panel
             .fields
             .first()
@@ -400,7 +552,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         .text_style(ui(13.))
                         .height(32.)
                         .plain()
-                        .trailing(text("esc").font(medium(10.5)).color(rgb(muted())))
+                        .trailing(keycap("Esc", false))
                         .on_edit(|s: &mut Workspace| s.edit_input(0))
                         .on_change(|s: &mut Workspace, _: &mut Tx| s.query_changed())
                         .on_key(list_key)
@@ -433,11 +585,43 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         + if overflow { 24. } else { 0. };
     let x = ax.clamp(8., (vw - width - 8.).max(8.));
     let y = ay.clamp(8., (vh - estimated - 8.).max(8.));
-    let mut layer = overlay().child(dismiss_layer());
+    // Over Settings when opened from one of its controls: the page stays where it was, inert.
+    let mut layer = match super::settings_kit::under(panel) {
+        Some(_) => super::settings_view::settings_under(s, viewport),
+        None => overlay(),
+    }
+    .child(dismiss_layer());
+    // The page under the list is inert, so the control lost focus when the list opened. The
+    // list holds the keyboard as a modal (its field, or the surface itself when it has none),
+    // and this empty marker, removed with the list, hands focus back to the control: Rune
+    // returns focus that was inside the marker's parent.
+    if let Some(control) = panel.anchor_to.as_ref().filter(|_| control.is_some()) {
+        surface = surface.modal(true, |s: &mut Workspace| s.cancel_panel_quiet());
+        // With a field, the field has the keys; without one the surface takes them itself.
+        if panel.inputs.is_empty() {
+            surface = surface.focusable(true).no_focus_ring().on_key(list_key);
+        }
+        layer = layer.child(
+            el().key("list-focus-return")
+                .absolute(0., 0.)
+                .size(0., 0.)
+                .focus_return(control.clone()),
+        );
+    }
     if let Some(outline) = target_outline(s) {
         layer = layer.child(outline);
     }
-    layer.child(surface.absolute(x, y))
+    let Some(([cx, cy, cw, ch], (below, above))) = control.zip(room) else {
+        return layer.child(surface.absolute(x, y));
+    };
+    // Its trailing edge on the control's; pinned by the edge that touches the control, so
+    // the gap holds whatever the list's height turns out to be.
+    let x = (cx + cw - width).clamp(8., (vw - width - 8.).max(8.));
+    layer.child(if estimated > below && above > below {
+        surface.pin(Some(x), None, None, Some(vh - (cy - CONTROL_GAP)))
+    } else {
+        surface.absolute(x, cy + ch + CONTROL_GAP)
+    })
 }
 
 /// A switcher row renamed in place: its name becomes a field, Enter saves and Esc goes back to
@@ -465,7 +649,7 @@ fn rename_row(edit: &TextEdit, height: f32, current: bool, surface: &str) -> El 
                 .text_style(medium(13.))
                 .height(height - 2.)
                 .plain()
-                .trailing(text("enter").font(medium(10.5)).color(rgb(muted())))
+                .trailing(keycap("Enter", false))
                 .on_edit(|s: &mut Workspace| s.rename_input())
                 .on_key(rename_key)
                 .width(None)
@@ -476,4 +660,30 @@ fn rename_row(edit: &TextEdit, height: f32, current: bool, surface: &str) -> El 
                 .grow(1.)
                 .shrink(),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_hint_names_only_groups_whose_heading_is_still_below() {
+        let row = |group: &str, heading: f32| Hidden::Command(group.into(), heading);
+        // The list's bottom edge is at 600 pt. Tab's heading ended at 180 pt, so its hidden
+        // rows are not a group below; Pane's and Host's headings are further down.
+        let rows = [
+            row("Tab", 180.),
+            row("Tab", 180.),
+            row("Pane", 660.),
+            row("Pane", 660.),
+            row("Host", 1400.),
+        ];
+        let hidden: Vec<&Hidden> = rows.iter().collect();
+        assert_eq!(groups_below(&hidden, 600.), "More below: Pane · Host");
+        // Only the rest of a group whose heading is on screen: it is named as that.
+        assert_eq!(groups_below(&hidden[..2], 600.), "More Tab commands below");
+        // A heading the fold cuts through is not on screen yet.
+        assert_eq!(groups_below(&hidden[2..4], 650.), "More below: Pane");
+        assert_eq!(groups_below(&[&Hidden::Other], 600.), "More results below");
+    }
 }

@@ -1,27 +1,27 @@
 //! The pane area: server-placed terminals as floating cards in 8pt gutters, each with a header
-//! (status, label, size, exception pill), drag handles in the gutters, and empty states. A tab
-//! with a single pane draws it edge to edge instead. Compact density removes card decorations
-//! and gaps from every placement.
+//! (label, activity, exception pill and the pane's buttons), drag handles in the gutters, and
+//! empty states. A tab with a single pane draws it edge to edge instead. Compact density
+//! removes card decorations and gaps from every placement. Where a header is, and whether it
+//! is a row or floats over the terminal, is `pane_header`'s to say.
 //! Cards spring when the layout changes; the terminal grid inside never animates.
 use super::{
     activity::{pane_activity, progress_bar, tab_progress, tab_word},
-    input::search_key,
+    find,
+    pane_header::{self, Placement, full_bleed},
     panel::{Form, Intent, PanelKind},
     term::{self, CursorLook, GridLook, Metrics, MouseGesture},
     theme::*,
     widgets::{Pill, pill},
-    workspace::{DividerDrag, HostId, Workspace},
+    workspace::{DividerDrag, Workspace},
 };
 use rex_linux::{
-    connection::Command, layout, settings::PaneDensity,
+    connection::Command,
+    layout,
+    settings::{PaneDensity, PaneHeader},
     terminal::selection::Phase as SelectionPhase,
 };
 use rexrs::api::session::Window;
-use rune::{
-    Cursor, El, KeyEvent, Phase, PointerButton, PointerEvent, TextEdit, Tx, WheelEvent, col, el,
-    row, text,
-};
-use rune_kit::TextInput;
+use rune::{Cursor, El, Phase, PointerButton, PointerEvent, Tx, WheelEvent, col, el, row, text};
 
 /// The area cards are laid out in, in the pane area's own points.
 fn inner(s: &Workspace) -> [f32; 4] {
@@ -80,12 +80,14 @@ enum CardState {
     Plain,
 }
 
-/// A tab with one pane, not zoomed, draws it edge to edge: no card, header or margin.
-pub fn full_bleed(window: &Window) -> bool {
-    window.zoomed_block_id.is_none() && layout::placements(window, None).0.len() == 1
-}
-
-fn header(s: &Workspace, block: &str, width: f32, focused: bool, m: &Metrics) -> El {
+fn header(
+    s: &Workspace,
+    window: &Window,
+    block: &str,
+    width: f32,
+    focused: bool,
+    m: &Metrics,
+) -> El {
     let label = s.pane_name(block);
     // The tab's words for this pane alone; Done and Bell stay with the tab, which they latch.
     let activity = pane_activity(s.model(), block);
@@ -107,7 +109,10 @@ fn header(s: &Workspace, block: &str, width: f32, focused: bool, m: &Metrics) ->
         .key(format!("pane-header:{block}"))
         .w_full()
         .h(CARD_HEADER)
-        .px(14.)
+        .pl(14.)
+        // The trailing buttons stay clear of the card's 12 pt corner, where a hover fill
+        // 4 pt from the edge all but touched the curve of the border.
+        .pr(8.)
         .gap(8.)
         .center_y()
         .preserve_focus_on_press(true)
@@ -130,6 +135,10 @@ fn header(s: &Workspace, block: &str, width: f32, focused: bool, m: &Metrics) ->
                 .help_when_truncated(label)
                 .shrink(),
         );
+    let h = match pane_header::zoomed_chip(window, block) {
+        Some(chip) => h.child(chip),
+        None => h,
+    };
     // The label truncates first; the word always stays whole.
     let h = match word {
         Some(word) => h.child(word),
@@ -140,14 +149,15 @@ fn header(s: &Workspace, block: &str, width: f32, focused: bool, m: &Metrics) ->
         Some(strip) => h.child(strip),
         None => h,
     };
-    match tab_progress(&activity).filter(|_| s.settings.notifications.show_in_tabs) {
+    let h = match tab_progress(&activity).filter(|_| s.settings.notifications.show_in_tabs) {
         Some(progress) => h.child(progress_bar(
             format!("pane-progress:{block}"),
             progress,
             14.,
         )),
         None => h,
-    }
+    };
+    h.child(pane_header::actions(s, window, block, width, focused))
 }
 
 /// The exception strip for a pane that is reconnecting, with its Retry action.
@@ -210,8 +220,11 @@ fn strip(s: &Workspace, block: &str, width: f32, m: &Metrics) -> Option<El> {
     })
 }
 
+/// `bleed` draws the pane flat, with no card around it (a single pane, or Compact density).
+#[allow(clippy::too_many_arguments)]
 fn pane_card(
     s: &Workspace,
+    window: &Window,
     block: &str,
     rect: [f32; 4],
     m: &Metrics,
@@ -220,6 +233,13 @@ fn pane_card(
     bleed: bool,
 ) -> El {
     let key = s.term_key(block);
+    // The search field has the terminal's top-right corner, so nothing floats over it.
+    let searching = s.terminals.get(&key).is_some_and(|t| t.search.is_some());
+    let placement = match pane_header::placement(s, window, block) {
+        Placement::Floating if searching => Placement::None,
+        placement => placement,
+    };
+    let headed = placement == Placement::Row;
     let id = block.to_owned();
     let (drop_id, hover_id) = (block.to_owned(), block.to_owned());
     let focused = matches!(state, CardState::Focused);
@@ -269,7 +289,9 @@ fn pane_card(
                 .border_gradient(1., white(0.10), white(0.035))
                 .box_shadow(shadow(0., 10., 30., black(0.45))),
         };
-        c = c.child(header(s, block, rect[2], focused, m));
+    }
+    if headed {
+        c = c.child(header(s, window, block, rect[2], focused, m));
     }
     let c = match s.terminals.get(&key) {
         Some(t) => {
@@ -327,6 +349,7 @@ fn pane_card(
                         t.rect = r;
                         t.resize_if_owner(font);
                     }
+                    s.place_find(&k1);
                 })
                 .on_drag(move |s: &mut Workspace, d, tx| {
                     let cell = term::metrics(s.settings.font_size).cell;
@@ -502,40 +525,73 @@ fn pane_card(
                     true
                 })
                 .child(term::grid(&format!("g{block}"), t, m, look));
-            let grid = match &t.search {
-                Some(edit) => grid.child(search_field(block, &key, edit, t)),
-                None => grid,
-            };
             let padding = s.settings.pane_padding;
             // The card draws a background of its own colour, edge included; any other sits
             // inside the card's border, never over it.
             let fill = t.body(&colors);
-            let body = if fill == card() {
-                col().w_full().px(padding).pb(padding)
+            // `side` is from the card's left, right and bottom edges to the grid, and `lead`
+            // from the body's top to where its top padding starts.
+            let (body, top, side, lead) = if fill == card() {
+                (col().w_full().px(padding).pb(padding), padding, padding, 0.)
             } else {
                 let (edge, radius) = if bleed {
                     (0., 0.)
                 } else {
                     (1., CARD_RADIUS - 1.)
                 };
-                col()
-                    .self_stretch()
-                    .mx(edge)
-                    .mb(edge)
-                    .px((padding - edge).max(0.))
-                    .pb((padding - edge).max(0.))
-                    .corners([0., 0., radius, radius])
-                    .continuous_corners()
-                    .fill(rgb(fill))
+                // Under a header row the fill starts square, at the row; with none it has the
+                // card's top corners too and stays inside the top border.
+                let (above, crown) = if headed { (0., 0.) } else { (edge, radius) };
+                (
+                    col()
+                        .self_stretch()
+                        .mx(edge)
+                        .mb(edge)
+                        .mt(above)
+                        .px((padding - edge).max(0.))
+                        .pb((padding - edge).max(0.))
+                        .corners([crown, crown, radius, radius])
+                        .continuous_corners()
+                        .fill(rgb(fill)),
+                    (padding - above).max(0.),
+                    edge + (padding - edge).max(0.),
+                    above,
+                )
             };
-            c.child(
+            let c = c.child(
                 body.grow(1.)
                     .min_h(0.)
-                    .pt(padding)
+                    .pt(top)
                     .instant_changes()
                     .motion(STILL)
                     .child(grid),
-            )
+            );
+            // The find bar is the card's, not the grid's: it is chrome over a corner of the
+            // terminal, and springs when it changes corner.
+            match &t.search {
+                Some(edit) => {
+                    let above = if headed { CARD_HEADER } else { 0. } + lead + top;
+                    let pane = find::Pane {
+                        size: (
+                            (rect[2] - 2. * side).max(0.),
+                            (rect[3] - above - side).max(0.),
+                        ),
+                        cell: m.cell,
+                        lowered: find::lowered(s, window, block, t),
+                    };
+                    c.child(find::apron(block, t, pane, (side, above), fill))
+                        .child(find::bar(
+                            s,
+                            block,
+                            &key,
+                            edit,
+                            t,
+                            pane,
+                            (side, above, side),
+                        ))
+                }
+                None => c,
+            }
         }
         None => c.child(
             col().grow(1.).center().child(
@@ -550,57 +606,23 @@ fn pane_card(
         ),
     };
     // With no header to hold it, the strip floats over the pane's top-right corner.
-    match strip(s, block, rect[2], m).filter(|_| bleed) {
+    let c = match strip(s, block, rect[2], m).filter(|_| placement == Placement::None) {
         Some(strip) => c.child(strip.pin(None, Some(8.), Some(12.), None)),
         None => c,
-    }
-}
-
-/// The search field over a terminal's top-right corner, with the selected match's place among
-/// all matches, newest first.
-fn search_field(block: &str, key: &(HostId, String), edit: &TextEdit, t: &term::Term) -> El {
-    let results = t.frame.as_ref().and_then(|f| f.search.as_ref());
-    let status = match results {
-        _ if edit.text.is_empty() => "esc".to_owned(),
-        Some(r) if r.total == 0 => "No matches".to_owned(),
-        Some(r) => format!("{}/{}", r.index.map_or(0, |i| i + 1), r.total),
-        None => String::new(),
     };
-    let (k1, k2, k3) = (key.clone(), key.clone(), key.clone());
-    row()
-        .key(format!("search:{block}"))
-        .w(280.)
-        .h(34.)
-        .px(2.)
-        .center_y()
-        .radius(8.)
-        .continuous_corners()
-        .fill(rgb(popover()).alpha(0.95))
-        .border(1., white(0.12))
-        .box_shadow(shadow(0., 4., 16., black(0.45)))
-        .pin(None, Some(6.), Some(6.), None)
-        .child(
-            TextInput::new(edit)
-                .placeholder("Search terminal")
-                .leading_icon(&SEARCH)
-                .leading_icon_size(14.)
-                .text_style(ui(13.))
-                .height(32.)
-                .plain()
-                .trailing(text(status).font(medium(10.5)).color(rgb(muted())))
-                .on_edit(move |s: &mut Workspace| s.search_input(&k1))
-                .on_change(move |s: &mut Workspace, _: &mut Tx| {
-                    s.last_keypress = Some(std::time::Instant::now());
-                    s.search_changed(&k2);
-                })
-                .on_key(move |s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx| {
-                    search_key(s, &k3, ev, tx)
-                })
-                .width(None)
-                .build(kit())
-                .key(format!("search-field:{block}"))
-                .w_full(),
-        )
+    let c = if !headed && !searching && s.settings.pane_header == PaneHeader::OnHover {
+        c.child(pane_header::reveal_band(block))
+    } else {
+        c
+    };
+    if placement == Placement::Floating {
+        c.child(pane_header::floating(
+            header(s, window, block, rect[2], focused, m),
+            !bleed,
+        ))
+    } else {
+        c
+    }
 }
 
 fn empty(s: &Workspace) -> El {
@@ -629,7 +651,10 @@ fn empty(s: &Workspace) -> El {
     } else {
         (
             "Choose a session",
-            "Select a session in the sidebar or press Ctrl K.".into(),
+            match s.shortcut_detail("session.switch", &serde_json::Value::Null) {
+                keys if keys.is_empty() => "Select a session in the sidebar.".into(),
+                keys => format!("Select a session in the sidebar or press {keys}."),
+            },
             "New session",
             Intent::NewSession,
         )
@@ -711,7 +736,7 @@ pub fn area(s: &Workspace, px: f32) -> El {
     let preview = s.drag.as_ref().map(|d| (d.divider.key(), d.ratio));
     let (panes, dividers) =
         layout::placements(current, preview.as_ref().map(|(k, r)| (k.as_str(), *r)));
-    let bleed = full_bleed(current);
+    let bleed = full_bleed(s, current);
     for placement in panes {
         let rect = if bleed {
             [0., 0., s.area[2], s.area[3]]
@@ -730,6 +755,7 @@ pub fn area(s: &Workspace, px: f32) -> El {
         };
         area = area.child(pane_card(
             s,
+            current,
             &placement.block,
             rect,
             &m,

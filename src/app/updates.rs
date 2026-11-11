@@ -2,7 +2,7 @@
 //! Checks signed release metadata over HTTPS without self-updating or downloading binaries.
 use super::{
     panel::{Intent, PanelKind, SettingsSection},
-    settings_view::{divider, group, setting},
+    settings_kit::{self, button, card, page, row_frame, setting, unavailable, value, words},
     theme::*,
     widgets::{Pill, glyph, pill},
     workspace::Workspace,
@@ -11,7 +11,7 @@ use rex_linux::update::{
     AvailableUpdate, CHECK_INTERVAL_SECS, CheckConfig, CheckOutcome, InstallChannel, STARTUP_DELAY,
     UpdateState, check_for_updates, now_epoch_secs,
 };
-use rune::{Cursor, El, Key, KeyEvent, Tx, col, el, row, text};
+use rune::{Cursor, El, Tx, col, el, row, text};
 use rune_kit::Switch;
 use std::time::{Duration, Instant};
 
@@ -118,23 +118,10 @@ impl Updates {
     }
 }
 
-fn button(
-    key: &str,
-    label: &str,
-    style: Pill,
-    action: impl Fn(&mut Workspace, &mut Tx) + Clone + 'static,
-) -> El {
-    pill(key, label, style, 28., action.clone()).on_key(
-        move |s: &mut Workspace, event: &KeyEvent, tx: &mut Tx| {
-            (event.key == Key::Enter).then(|| action(s, tx)).is_some()
-        },
-    )
-}
-
 pub fn section(s: &Workspace) -> El {
     let k = kit();
     let u = &s.updates;
-    let current = &u.config.current_version;
+    let current = &rex_linux::format_version(&u.config.current_version);
     let channel_label = u.channel.label();
     let auto_allowed = u.channel.checks_by_default() && !u.env_opt_out;
     let switch_on = s.settings.updates.check && auto_allowed;
@@ -142,9 +129,9 @@ pub fn section(s: &Workspace) -> El {
     let toggle_detail = if u.env_opt_out {
         "Turned off by REX_LINUX_NO_UPDATE_CHECK=1 in the environment."
     } else if !u.channel.checks_by_default() {
-        "Source builds never check automatically; use Check now when you want to compare against the latest release."
+        "Source builds never check on their own; use Check now."
     } else {
-        "Checks signed release metadata on GitHub at most once a day. Never downloads binaries or installs automatically."
+        "Reads signed release metadata once a day. Never downloads or installs."
     };
 
     let status_detail = if u.checking {
@@ -155,9 +142,12 @@ pub fn section(s: &Workspace) -> El {
         match &avail.unsupported_floor {
             Some(floor) => format!(
                 "Rex Linux {} is available (requires upgrading to {floor}+ first).",
-                avail.version
+                rex_linux::format_version(&avail.version)
             ),
-            None => format!("Rex Linux {} is available.", avail.version),
+            None => format!(
+                "Rex Linux {} is available.",
+                rex_linux::format_version(&avail.version)
+            ),
         }
     } else if u.state.last_checked.is_some() {
         format!("Rex Linux {current} is up to date.")
@@ -166,48 +156,37 @@ pub fn section(s: &Workspace) -> El {
     };
 
     let check_button = if u.checking {
-        pill(
-            "updates-checking",
-            "Checking…",
-            Pill::Neutral,
-            28.,
-            |_, _| {},
-        )
-        .opacity(0.45)
-        .inert()
+        unavailable("updates-checking", "Checking…", "")
     } else {
         button("updates-check-now", "Check now", Pill::Neutral, |s, _| {
             s.check_updates_now();
         })
     };
 
-    let mut body = col()
-        .gap(4.)
-        .child(setting(
-            "Installed version",
-            &channel_label,
-            text(format!("v{current}"))
-                .key("updates-current-version")
-                .font(medium(13.))
-                .color(rgb(ink()))
-                .selectable(true),
-        ))
-        .child(divider())
-        .child(setting(
-            "Automatic update checks",
-            toggle_detail,
-            Switch::new(switch_on)
-                .label("Check for updates automatically")
-                .hide_label()
-                .disabled(!auto_allowed)
-                .on_toggle(|s: &mut Workspace| {
-                    s.set_update_check(!s.settings.updates.check);
-                })
-                .build(k)
-                .key("updates-auto-switch"),
-        ))
-        .child(divider())
-        .child(setting("Release status", &status_detail, check_button).key("updates-status-row"));
+    let mut sections = vec![settings_kit::section(
+        "",
+        [card([
+            setting(
+                "Installed version",
+                &channel_label,
+                value(current.clone()).key("updates-current-version"),
+            ),
+            setting(
+                "Automatic update checks",
+                toggle_detail,
+                Switch::new(switch_on)
+                    .label("Check for updates automatically")
+                    .hide_label()
+                    .disabled(!auto_allowed)
+                    .on_toggle(|s: &mut Workspace| {
+                        s.set_update_check(!s.settings.updates.check);
+                    })
+                    .build(k)
+                    .key("updates-auto-switch"),
+            ),
+            setting("Release status", &status_detail, check_button).key("updates-status-row"),
+        ])],
+    )];
 
     if let Some(avail) = u.available() {
         let guidance = u.channel.guidance(&avail.version);
@@ -234,20 +213,29 @@ pub fn section(s: &Workspace) -> El {
             ),
             None => guidance.detail.clone(),
         };
-        body = body
-            .child(divider())
-            .child(group("Available update"))
-            .child(
-                setting(&format!("Rex Linux {}", avail.version), &detail, actions)
-                    .key("updates-available-row"),
-            );
+        let mut rows = vec![
+            setting(
+                &format!("Rex Linux {}", rex_linux::format_version(&avail.version)),
+                &detail,
+                actions,
+            )
+            .key("updates-available-row"),
+        ];
         if let Some(cmd) = guidance.command {
             let cmd_copy = cmd.clone();
-            body = body.child(
-                setting(
-                    "Upgrade command",
-                    &cmd,
-                    button(
+            rows.push(
+                row_frame(true)
+                    .key("updates-command-row")
+                    .child(
+                        words("Upgrade command", "").child(
+                            text(cmd)
+                                .font(mono(11.5))
+                                .color(rgb(muted()))
+                                .wrap()
+                                .selectable(true),
+                        ),
+                    )
+                    .child(button(
                         "updates-copy-command",
                         "Copy command",
                         Pill::Neutral,
@@ -255,14 +243,13 @@ pub fn section(s: &Workspace) -> El {
                             tx.copy(cmd_copy.clone());
                             s.inform("Copied upgrade command to clipboard.");
                         },
-                    ),
-                )
-                .key("updates-command-row"),
+                    )),
             );
         }
+        sections.push(settings_kit::section("Available update", [card(rows)]));
     }
 
-    body
+    page(sections)
 }
 
 /// Non-blocking toast card for an available update, with What's new, Updates…, and Dismiss.
@@ -272,7 +259,7 @@ pub fn toast_card(s: &Workspace) -> Option<El> {
     let summary = match &avail.unsupported_floor {
         Some(floor) => format!(
             "Rex Linux {} is available (manual upgrade via {floor}+ required).",
-            avail.version
+            rex_linux::format_version(&avail.version)
         ),
         None => guidance.summary,
     };

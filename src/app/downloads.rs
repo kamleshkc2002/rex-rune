@@ -182,6 +182,16 @@ pub fn question(name: &str, folder: &str, confirmation: &Confirmation) -> String
 /// The widest a folder is written in a line of the popover, the dialog or a notice.
 pub const FOLDER_CHARS: usize = 36;
 
+/// Why `text` cannot be the download folder: it must be absolute or start with `~/`. Empty is
+/// fine; it means the system's Downloads folder.
+pub fn folder_error(text: &str) -> Option<&'static str> {
+    let text = text.trim();
+    (!text.is_empty()
+        && (text.chars().any(char::is_control)
+            || !(text.starts_with('/') || text == "~" || text.starts_with("~/"))))
+    .then_some("Enter an absolute folder path, or one starting with ~/")
+}
+
 /// `s` cut in the middle with an ellipsis so it is at most `max` characters.
 fn cut_middle(s: &str, max: usize) -> String {
     let chars: Vec<char> = s.chars().collect();
@@ -491,12 +501,25 @@ impl Workspace {
         }
     }
 
-    /// **Change** beside Save in: the folder becomes a field.
-    pub fn change_download_folder(&mut self) {
-        let text = match &self.settings.downloads.directory {
+    /// What the folder field starts with: the saved choice, else where files go now.
+    pub(super) fn download_folder_text(&self) -> String {
+        match &self.settings.downloads.directory {
             Some(directory) if !directory.trim().is_empty() => directory.trim().to_owned(),
             _ => tilde(&self.download_folder()),
-        };
+        }
+    }
+
+    /// Keep `text` (already checked with `folder_error`) as `downloads.directory`; an empty
+    /// one goes back to the system's Downloads folder.
+    pub(super) fn set_download_folder(&mut self, text: &str) {
+        let text = text.trim();
+        self.settings.downloads.directory = (!text.is_empty()).then(|| text.to_owned());
+        self.save();
+    }
+
+    /// **Change** beside Save in: the folder becomes a field.
+    pub fn change_download_folder(&mut self) {
+        let text = self.download_folder_text();
         let Some(panel) = &mut self.panel else { return };
         let PanelKind::Download(dialog) = &mut panel.kind else {
             return;
@@ -516,16 +539,11 @@ impl Workspace {
     pub fn apply_download_folder(&mut self) {
         let Some(panel) = &self.panel else { return };
         let text = panel.inputs[1].text.trim().to_owned();
-        if !text.is_empty()
-            && (text.chars().any(char::is_control)
-                || !(text.starts_with('/') || text == "~" || text.starts_with("~/")))
-        {
-            self.panel.as_mut().unwrap().error =
-                Some("Enter an absolute folder path, or one starting with ~/".into());
+        if let Some(error) = folder_error(&text) {
+            self.panel.as_mut().unwrap().error = Some(error.into());
             return;
         }
-        self.settings.downloads.directory = (!text.is_empty()).then_some(text);
-        self.save();
+        self.set_download_folder(&text);
         self.stop_changing_folder();
     }
 

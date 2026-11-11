@@ -1,90 +1,36 @@
-//! Settings: a section list on the left and the chosen section's controls on the right.
+//! Settings: a section list on the left and the chosen section's page on the right. Pages are
+//! built from `settings_kit` (sections, cards, rows and their controls).
 use super::{
-    dialogs::modal_frame,
+    dialogs::modal_layer,
+    keycaps::{Chords, keycaps, spell},
     panel::{Intent, SettingsSection},
+    settings_kit::{
+        NAV_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, Segment, button, card, disclosure, footnote,
+        mono_footnote, page, row_frame, section, segmented, select_row, setting, stepper,
+        unavailable, value, value_popup, words,
+    },
     theme::*,
-    widgets::{Pill, glyph, pill},
+    widgets::{Pill, glyph},
     workspace::Workspace,
 };
-use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity};
-use rune::{Cursor, El, ScrollSpec, Tx, col, el, row, text};
-use rune_kit::{IconButton, Keybind, SegmentedControl, Switch};
+use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity, PaneHeader};
+use rune::{Cursor, El, ScrollPos, ScrollSpec, Tx, col, el, row, text};
+use rune_kit::{IconButton, Switch};
 
-/// A labelled setting: name and optional explanation on the left, its control on the right.
-pub(super) fn setting(label: &str, detail: &str, control: El) -> El {
-    let mut words = col()
-        .grow(1.)
-        .min_w(0.)
-        .gap(2.)
-        .child(text(label.to_owned()).font(ui(13.)).color(rgb(ink())));
-    if !detail.is_empty() {
-        words = words.child(
-            text(detail.to_owned())
-                .font(ui(11.5))
-                .color(rgb(muted()))
-                .wrap(),
-        );
-    }
-    row()
-        .w_full()
-        .min_h(44.)
-        .gap(16.)
-        .center_y()
-        .child(words)
-        .child(control)
-}
+/// The page's header row, above its scroll region.
+const HEADER: f32 = 56.;
+/// The least space between the dialog and the toolbar above it, and the window's bottom edge.
+const CLEARANCE: f32 = 12.;
+/// The page's inset from the section list and from the dialog's trailing edge.
+const PAGE_INSET: f32 = 20.;
 
-pub(super) fn group(name: &str) -> El {
-    text(name.to_owned())
-        .font(label_caps())
-        .text_case(rune::TextCase::Uppercase)
-        .color(rgb(muted()))
-        .mt(10.)
-}
-
-pub(super) fn divider() -> El {
-    el().w_full().h(1.).fill(white(0.06))
-}
-
-/// A stepper: − value +, with Return acting on the focused button as Space does.
-fn stepper(
-    key: &str,
-    value: String,
-    down: impl Fn(&mut Workspace, &mut Tx) + Clone + 'static,
-    up: impl Fn(&mut Workspace, &mut Tx) + Clone + 'static,
-) -> El {
-    let k = kit();
-    let (down2, up2) = (down.clone(), up.clone());
-    row()
-        .gap(8.)
-        .center_y()
-        .child(
-            IconButton::new(&MINUS)
-                .label("Smaller")
-                .on_press_tx(move |s: &mut Workspace, tx: &mut Tx| down(s, tx))
-                .build(k)
-                .key(format!("{key}-smaller"))
-                .on_key(move |s: &mut Workspace, ev: &rune::KeyEvent, tx: &mut Tx| {
-                    (ev.key == rune::Key::Enter).then(|| down2(s, tx)).is_some()
-                }),
-        )
-        .child(
-            row()
-                .w(52.)
-                .center()
-                .child(text(value).font(medium(13.)).color(rgb(ink()))),
-        )
-        .child(
-            IconButton::new(&PLUS)
-                .label("Larger")
-                .on_press_tx(move |s: &mut Workspace, tx: &mut Tx| up(s, tx))
-                .build(k)
-                .key(format!("{key}-larger"))
-                .on_key(move |s: &mut Workspace, ev: &rune::KeyEvent, tx: &mut Tx| {
-                    (ev.key == rune::Key::Enter).then(|| up2(s, tx)).is_some()
-                }),
-        )
-}
+/// The Pane headers choices, in the order the control lists them.
+const PANE_HEADERS: [PaneHeader; 4] = [
+    PaneHeader::Auto,
+    PaneHeader::Always,
+    PaneHeader::OnHover,
+    PaneHeader::Hidden,
+];
 
 fn interface(s: &Workspace) -> El {
     let k = kit();
@@ -93,102 +39,143 @@ fn interface(s: &Workspace) -> El {
         NoticePosition::TopRight => 0,
         NoticePosition::BottomRight => 1,
     };
-    col()
-        .gap(4.)
-        .child(setting(
-            "Theme",
-            "The window's colours. Until you pick a terminal theme, terminals take the matching one (Follow chrome).",
-            row()
-                .gap(10.)
-                .center_y()
-                .child(
-                    text(s.settings.chrome_theme.name())
-                        .font(medium(13.))
-                        .color(rgb(ink()))
-                        .truncate()
-                        .max_w(160.),
-                )
-                .child(pill("chrome-theme", "Change…", Pill::Neutral, 26., |s, tx| {
-                    s.perform(Intent::ChooseChrome, tx)
-                })),
-        ))
-        .child(divider())
-        .child(setting(
-            "Interface zoom",
-            "Chrome and terminals together, 70–150%. Ctrl + and Ctrl − also work.",
-            row()
-                .gap(8.)
-                .center_y()
-                .child(stepper(
-                    "zoom",
-                    format!("{percent}%"),
-                    |s, tx| s.change_ui_scale(-1, tx),
-                    |s, tx| s.change_ui_scale(1, tx),
-                ))
-                .child(pill("zoom-reset", "Reset", Pill::Neutral, 26., |s, tx| {
-                    s.change_ui_scale(0, tx)
-                })),
-        ))
-        .child(divider())
-        .child(setting(
-            "Pane density",
-            "Compact uses straight separators, without pane headers or gaps.",
-            SegmentedControl::new(
-                &["Compact", "Comfortable"],
-                Some(usize::from(s.settings.pane_density == PaneDensity::Comfortable)),
-            )
-            .fit()
-            .on_pick(|s: &mut Workspace, i, tx| {
-                s.settings.pane_density = if i == 0 {
-                    PaneDensity::Compact
-                } else {
-                    PaneDensity::Comfortable
-                };
-                s.save();
-                tx.instant();
-            })
-            .build(k)
-            .key("pane-density"),
-        ))
-        .child(divider())
-        .child(setting(
-            "Session sidebar",
-            "Hosts and their sessions beside the terminals. Ctrl Shift B.",
-            Switch::new(s.sidebar.is_open())
-                .label("Show session sidebar")
-                .hide_label()
-                .on_toggle_tx(|s: &mut Workspace, tx: &mut Tx| s.perform(Intent::Sidebar, tx))
-                .build(k)
-                .key("sidebar-switch"),
-        ))
-        .child(setting(
-            "Tab position",
-            "In the toolbar, or under each session in the sidebar while it's open.",
-            SegmentedControl::new(
-                &["Top", "Sidebar"],
-                Some(usize::from(s.settings.vertical_tabs)),
-            )
-            .fit()
-            .on_pick(|s: &mut Workspace, i, _| s.set_vertical_tabs(i == 1))
-            .build(k)
-            .key("tab-position"),
-        ))
-        .child(divider())
-        .child(setting(
+    page([
+        section(
+            "Appearance",
+            [card([
+                setting(
+                    "Theme",
+                    "Terminals take the matching theme until you choose one.",
+                    value_popup(
+                        "chrome-theme",
+                        s.settings.chrome_theme.name(),
+                        Intent::ChooseChrome,
+                    ),
+                ),
+                setting(
+                    "Interface zoom",
+                    "Chrome and terminals together, from 70% to 150%.",
+                    row()
+                        .gap(8.)
+                        .center_y()
+                        .child(stepper(
+                            "zoom",
+                            format!("{percent}%"),
+                            |s, tx| s.change_ui_scale(-1, tx),
+                            |s, tx| s.change_ui_scale(1, tx),
+                        ))
+                        .child(button("zoom-reset", "Reset", Pill::Neutral, |s, tx| {
+                            s.change_ui_scale(0, tx)
+                        })),
+                ),
+            ])],
+        ),
+        section(
+            "Panes",
+            [card([
+                setting(
+                    "Pane density",
+                    "Compact joins panes edge to edge, with no gaps.",
+                    segmented(
+                        "pane-density",
+                        &[
+                            Segment::new("Compact").icon(&PANES_JOINED),
+                            Segment::new("Comfortable").icon(&PANES_APART),
+                        ],
+                        Some(usize::from(
+                            s.settings.pane_density == PaneDensity::Comfortable,
+                        )),
+                        |s, i, tx| {
+                            s.settings.pane_density = if i == 0 {
+                                PaneDensity::Compact
+                            } else {
+                                PaneDensity::Comfortable
+                            };
+                            s.save();
+                            tx.instant();
+                        },
+                    ),
+                ),
+                select_row(
+                    "pane-header",
+                    "Pane headers",
+                    "Auto shows them on split panes in Comfortable density.",
+                    &["Auto", "Always", "On hover", "Hidden"],
+                    PANE_HEADERS
+                        .iter()
+                        .position(|h| *h == s.settings.pane_header)
+                        .unwrap_or_default(),
+                    |s, i, tx| {
+                        s.settings.pane_header = PANE_HEADERS[i.min(PANE_HEADERS.len() - 1)];
+                        // A header that was brought out by hand goes back with the old choice.
+                        s.header_reveal = Default::default();
+                        s.save();
+                        tx.instant();
+                    },
+                ),
+            ])],
+        ),
+        section(
+            "Sidebar and tabs",
+            [card([
+                setting(
+                    "Session sidebar",
+                    "Hosts and their sessions beside the terminals.",
+                    Switch::new(s.sidebar.is_open())
+                        .label("Show session sidebar")
+                        .hide_label()
+                        .on_toggle_tx(|s: &mut Workspace, tx: &mut Tx| {
+                            s.perform(Intent::Sidebar, tx)
+                        })
+                        .build(k)
+                        .key("sidebar-switch"),
+                ),
+                setting(
+                    "Tab position",
+                    "Sidebar tabs show while the sidebar is open.",
+                    segmented(
+                        "tab-position",
+                        &[
+                            Segment::new("Top").icon(&TABS_TOP),
+                            Segment::new("Sidebar").icon(&SIDEBAR),
+                        ],
+                        Some(usize::from(s.settings.vertical_tabs)),
+                        |s, i, _| s.set_vertical_tabs(i == 1),
+                    ),
+                ),
+            ])],
+        ),
+        section(
+            "Downloads",
+            [card([disclosure(
+                "download-folder",
+                "Download folder",
+                "Where Download file… saves.",
+                &super::downloads::folder_text(
+                    &s.download_folder(),
+                    super::downloads::FOLDER_CHARS,
+                ),
+                |s, tx| s.perform(Intent::DownloadFolder, tx),
+            )])],
+        ),
+        section(
             "Notices",
-            "Where in-app notices appear.",
-            SegmentedControl::new(&["Top right", "Bottom right"], Some(corner))
-                .fit()
-                .on_pick(|s: &mut Workspace, i, _| {
+            [card([select_row(
+                "notice-position",
+                "Position",
+                "Where in-app notices appear.",
+                &["Top right", "Bottom right"],
+                corner,
+                |s, i, _| {
                     s.set_notice_position(if i == 0 {
                         NoticePosition::TopRight
                     } else {
                         NoticePosition::BottomRight
                     })
-                })
-                .build(k)
-                .key("notice-position"),
-        ))
+                },
+            )])],
+        ),
+    ])
 }
 
 /// Where a notification switch keeps its value.
@@ -212,20 +199,6 @@ fn notify_switch(key: &str, label: &str, on: bool, disabled: bool, field: Field)
 fn notifications(s: &Workspace) -> El {
     let n = &s.settings.notifications;
     let off = !n.system_notifications;
-    let mut body = col()
-        .gap(4.)
-        .child(setting(
-            "Activity in tabs",
-            "A word on a tab whose programs need you or failed, and Done on one that finished while you were away.",
-            notify_switch("notify-tabs", "Show activity in tabs", n.show_in_tabs, false, |n| &mut n.show_in_tabs),
-        ))
-        .child(divider())
-        .child(setting(
-            "Desktop notifications",
-            "For tabs you aren't looking at, through your desktop's notification service. Clicking one shows its tab.",
-            notify_switch("notify-system", "Desktop notifications", n.system_notifications, false, |n| &mut n.system_notifications),
-        ))
-        .child(group("Notify when a program"));
     let states: [(&str, &str, &str, bool, Field); 4] = [
         (
             "notify-blocked",
@@ -248,248 +221,284 @@ fn notifications(s: &Workspace) -> El {
             &mut n.working
         }),
     ];
-    for (i, (key, label, detail, on, field)) in states.into_iter().enumerate() {
-        if i > 0 {
-            body = body.child(divider());
-        }
-        body = body.child(setting(
-            label,
-            detail,
-            notify_switch(key, label, on, off, field),
-        ));
-    }
-    body.child(divider()).child(setting(
-        "Messages from programs",
-        "Notifications programs send themselves with OSC 9 or OSC 777.",
-        notify_switch(
-            "notify-messages",
-            "Messages from programs",
-            n.program_messages,
-            off,
-            |n| &mut n.program_messages,
+    page([
+        section(
+            "",
+            [card([
+                setting(
+                    "Activity in tabs",
+                    "A word on a tab that needs you, failed, or finished while you were away.",
+                    notify_switch(
+                        "notify-tabs",
+                        "Show activity in tabs",
+                        n.show_in_tabs,
+                        false,
+                        |n| &mut n.show_in_tabs,
+                    ),
+                ),
+                setting(
+                    "Desktop notifications",
+                    "For tabs you aren't looking at. Clicking one shows its tab.",
+                    notify_switch(
+                        "notify-system",
+                        "Desktop notifications",
+                        n.system_notifications,
+                        false,
+                        |n| &mut n.system_notifications,
+                    ),
+                ),
+            ])],
         ),
-    ))
+        section(
+            "Notify when a program",
+            [card(states.into_iter().map(
+                |(key, label, detail, on, field)| {
+                    setting(label, detail, notify_switch(key, label, on, off, field))
+                },
+            ))],
+        ),
+        section(
+            "Programs",
+            [card([setting(
+                "Messages from programs",
+                "Notifications programs send themselves with OSC 9 or OSC 777.",
+                notify_switch(
+                    "notify-messages",
+                    "Messages from programs",
+                    n.program_messages,
+                    off,
+                    |n| &mut n.program_messages,
+                ),
+            )])],
+        ),
+    ])
 }
 
 fn terminal(s: &Workspace) -> El {
     let saved = &s.settings.font_family;
     let active = s.terminal_family.unwrap_or("IBM Plex Mono (bundled)");
-    let font = if *saved != s.launch_saved_font {
-        format!("{saved} is saved and applies when you reopen the client. Active: {active}.")
+    // The row's helper is one sentence. What terminals are drawn in now goes under the card,
+    // and only while that isn't the family the row names.
+    let drawn = if *saved != s.launch_saved_font {
+        Some(format!(
+            "{saved} is saved and applies when you reopen the client. Until then terminals use {active}."
+        ))
     } else if s.terminal_family.is_none() {
-        format!(
+        Some(format!(
             "{} isn't installed, so terminals use {active}.",
             s.launch_font
+        ))
+    } else {
+        None
+    };
+    let fallbacks = if s.settings.font_fallbacks.is_empty() {
+        "Automatic".to_owned()
+    } else {
+        s.settings.font_fallbacks.join(", ")
+    };
+    let shells = s.settings.hosts.iter().enumerate().map(|(i, host)| {
+        disclosure(
+            &format!("host-shell:{i}"),
+            &host.label,
+            "",
+            host.shell.as_deref().unwrap_or("Server default"),
+            move |s, tx| s.perform(Intent::HostShell(i), tx),
+        )
+    });
+    page([
+        section(
+            "Typography",
+            std::iter::once(card([
+                disclosure(
+                    "font-change",
+                    "Font family",
+                    "Applies when you reopen the client.",
+                    saved,
+                    |s, tx| s.perform(Intent::Fonts, tx),
+                ),
+                setting(
+                    "Font size",
+                    "From 8 to 48 pt, for every terminal.",
+                    stepper(
+                        "font",
+                        format!("{} pt", s.settings.font_size),
+                        |s, _| s.change_font(-1.),
+                        |s, _| s.change_font(1.),
+                    ),
+                ),
+                setting(
+                    "Fallback fonts",
+                    "For glyphs the font lacks, before the system's own fallbacks.",
+                    value(fallbacks).truncate().max_w(260.),
+                ),
+            ]))
+            .chain(drawn.map(|words| footnote(words).key("font-drawn"))),
+        ),
+        section(
+            "Layout",
+            [card([setting(
+                "Pane padding",
+                "Space around each terminal's content, from 0 to 32 pt.",
+                stepper(
+                    "pane-padding",
+                    format!("{} pt", s.settings.pane_padding),
+                    |s, _| {
+                        s.settings.pane_padding = (s.settings.pane_padding - 1.).max(0.);
+                        s.save();
+                    },
+                    |s, _| {
+                        s.settings.pane_padding = (s.settings.pane_padding + 1.).min(32.);
+                        s.save();
+                    },
+                ),
+            )])],
+        ),
+        section(
+            "Colours",
+            [
+                card([setting(
+                    "Theme",
+                    "",
+                    value_popup(
+                        "terminal-theme",
+                        Workspace::theme_label(&s.settings.terminal_theme),
+                        Intent::ChooseTheme,
+                    ),
+                )]),
+                footnote(
+                    "Declared to Rex for panes this client owns or nobody owns. Follow server declares nothing until this client has declared a theme once; from then on it resets those panes to Rex's colours, once each per connection.",
+                ),
+            ],
+        ),
+        section(
+            "Default shell",
+            [
+                card(shells),
+                footnote(
+                    "What new sessions, tabs and splits start on each host. Running terminals keep theirs.",
+                ),
+            ],
+        ),
+        section(
+            "",
+            [
+                footnote("These settings are saved in"),
+                mono_footnote(s.settings_path.display().to_string()).mt(-6.),
+            ],
+        ),
+    ])
+}
+
+fn host_card(s: &Workspace, i: usize, last: bool) -> El {
+    let host = &s.settings.hosts[i];
+    let connected = s.hosts.get(i).is_some_and(|h| h.model.connected);
+    let mut actions = row().gap(6.).center_y();
+    // Quiet when healthy: only trouble gets words, beside the action that fixes it.
+    if !connected {
+        actions = actions
+            .child(text("Offline").font(medium(12.)).color(rgb(warning())))
+            .child(button(
+                &format!("host-retry:{i}"),
+                "Retry",
+                Pill::Warning,
+                move |s, tx| s.perform(Intent::RetryHost(i), tx),
+            ));
+    }
+    actions = actions.child(button(
+        &format!("host-edit:{i}"),
+        "Edit…",
+        Pill::Neutral,
+        move |s, tx| s.perform(Intent::EditHost(i), tx),
+    ));
+    actions = actions.child(if last {
+        unavailable(
+            &format!("host-remove:{i}"),
+            "Remove…",
+            "The workspace needs at least one host",
         )
     } else {
-        format!("Active: {active}. Changes apply when you reopen the client.")
-    };
-    let mut body = col()
-        .gap(4.)
-        .child(setting(
-            "Font family",
-            &font,
-            pill("font-change", "Change…", Pill::Neutral, 26., |s, tx| s.perform(Intent::Fonts, tx)),
-        ))
-        .child(divider())
-        .child(setting(
-            "Font size",
-            "8–48 pt, for every terminal.",
-            stepper(
-                "font",
-                format!("{} pt", s.settings.font_size),
-                |s, _| s.change_font(-1.),
-                |s, _| s.change_font(1.),
-            ),
-        ))
-        .child(divider())
-        .child(setting(
-            "Pane padding",
-            "0–32 pt around each terminal's content. Applies immediately to every pane.",
-            stepper(
-                "pane-padding",
-                format!("{} pt", s.settings.pane_padding),
-                |s, _| {
-                    s.settings.pane_padding = (s.settings.pane_padding - 1.).max(0.);
-                    s.save();
-                },
-                |s, _| {
-                    s.settings.pane_padding = (s.settings.pane_padding + 1.).min(32.);
-                    s.save();
-                },
-            ),
-        ))
-        .child(divider())
-        .child(setting(
-            "Fallback fonts",
-            "Used for missing glyphs, followed by installed system fallbacks. Changes apply when you reopen the client.",
-            text(if s.settings.font_fallbacks.is_empty() { "Automatic".into() } else { s.settings.font_fallbacks.join(", ") })
-                .font(medium(13.)).color(rgb(ink())).wrap().max_w(220.),
-        ))
-        .child(divider())
-        .child(setting(
-            "Theme",
-            "Declared to Rex for panes this client owns or nobody owns. Follow server declares nothing until this client has declared a theme once; from then on it resets those panes to Rex's colours, once each per connection.",
-            row()
-                .gap(10.)
-                .center_y()
-                .child(
-                    text(Workspace::theme_label(&s.settings.terminal_theme).to_owned())
-                        .font(medium(13.))
-                        .color(rgb(ink()))
-                        .truncate()
-                        .max_w(160.),
-                )
-                .child(pill("terminal-theme", "Change…", Pill::Neutral, 26., |s, tx| {
-                    s.perform(Intent::ChooseTheme, tx)
-                })),
-        ))
-        .child(group("Default shell"));
-    for (i, host) in s.settings.hosts.iter().enumerate() {
-        let detail = match &host.shell {
-            Some(shell) => format!("New sessions, tabs and splits start {shell}"),
-            None => "New sessions, tabs and splits use the server's default shell".into(),
-        };
-        body = body.child(setting(
-            &host.label,
-            &detail,
-            pill(
-                &format!("host-shell:{i}"),
-                "Change…",
-                Pill::Neutral,
-                26.,
-                move |s, tx| s.perform(Intent::HostShell(i), tx),
-            ),
-        ));
-    }
-    body.child(
-        text(format!("Saved in {}", s.settings_path.display()))
-            .font(ui(11.))
+        button(
+            &format!("host-remove:{i}"),
+            "Remove…",
+            Pill::Danger,
+            move |s, tx| s.perform(Intent::RemoveHost(i), tx),
+        )
+    });
+    let mut address = row().gap(6.).center_y().min_w(0.).child(
+        text(host.endpoint.clone())
+            .font(mono(11.))
             .color(rgb(muted()))
-            .wrap()
-            .selectable(true)
-            .mt(12.),
-    )
+            .truncate()
+            .selectable(true),
+    );
+    if let Some(shell) = &host.shell {
+        address = address.child(
+            text(format!("· {shell}"))
+                .font(mono(11.))
+                .color(rgb(muted())),
+        );
+    }
+    card([
+        row_frame(true)
+            .key(format!("host-row:{i}"))
+            .gap(12.)
+            .child(glyph(s.host_icon(i), 16., rgb(muted())))
+            .child(
+                col()
+                    .grow(1.)
+                    .min_w(0.)
+                    .gap(2.)
+                    .child(
+                        text(host.label.clone())
+                            .font(medium(13.))
+                            .color(rgb(ink()))
+                            .truncate(),
+                    )
+                    .child(address),
+            )
+            .child(actions),
+        setting(
+            "Remote control",
+            "Let rex do and other clients on this host change the view in this window.",
+            Switch::new(host.remote_control)
+                .label(format!("Remote control for {}", host.label))
+                .hide_label()
+                .on_toggle(move |s: &mut Workspace| s.toggle_remote_control(i))
+                .build(kit())
+                .key(format!("remote-control:{i}")),
+        ),
+    ])
 }
 
 fn hosts(s: &Workspace) -> El {
     let last = s.settings.hosts.len() == 1;
-    let mut body = col()
-        .gap(4.)
-        .child(setting(
-            "Client label",
-            &format!(
-                "{}\nVisible on every host; reopen the app after editing.",
-                s.settings.client_label()
-            ),
-            pill("client-label", "Edit…", Pill::Neutral, 26., |s, tx| {
-                s.perform(Intent::ClientLabel, tx)
-            }),
-        ))
-        .child(divider());
-    for (i, host) in s.settings.hosts.iter().enumerate() {
-        let connected = s.hosts.get(i).is_some_and(|h| h.model.connected);
-        let mut actions = row().gap(6.).center_y();
-        // Quiet when healthy: only trouble gets words, beside the action that fixes it.
-        if !connected {
-            actions = actions
-                .child(text("Offline").font(medium(12.)).color(rgb(warning())))
-                .child(pill(
-                    &format!("host-retry:{i}"),
-                    "Retry",
-                    Pill::Warning,
-                    26.,
-                    move |s, tx| s.perform(Intent::RetryHost(i), tx),
-                ));
-        }
-        actions = actions.child(pill(
-            &format!("host-edit:{i}"),
-            "Edit…",
-            Pill::Neutral,
-            26.,
-            move |s, tx| s.perform(Intent::EditHost(i), tx),
-        ));
-        let remove = if last {
-            pill(
-                &format!("host-remove:{i}"),
-                "Remove…",
-                Pill::Neutral,
-                26.,
-                |_, _| {},
-            )
-            .opacity(0.4)
-            .focusable(false)
-            .help("The workspace needs at least one host")
-        } else {
-            pill(
-                &format!("host-remove:{i}"),
-                "Remove…",
-                Pill::Danger,
-                26.,
-                move |s, tx| s.perform(Intent::RemoveHost(i), tx),
-            )
-        };
-        let shell = host
-            .shell
-            .as_deref()
-            .map(|sh| format!(" · {sh}"))
-            .unwrap_or_default();
-        body = body
-            .child(
-                row()
-                    .key(format!("host-row:{i}"))
-                    .w_full()
-                    .min_h(52.)
-                    .gap(12.)
-                    .center_y()
-                    .child(glyph(s.host_icon(i), 16., rgb(muted())))
-                    .child(
-                        col()
-                            .grow(1.)
-                            .min_w(0.)
-                            .gap(2.)
-                            .child(
-                                text(host.label.clone())
-                                    .font(medium(13.))
-                                    .color(rgb(ink()))
-                                    .truncate(),
-                            )
-                            .child(
-                                text(format!("{}{shell}", host.endpoint))
-                                    .font(ui(11.5))
-                                    .color(rgb(muted()))
-                                    .truncate()
-                                    .selectable(true),
-                            ),
-                    )
-                    .child(actions.child(remove)),
-            )
-            .child(setting(
-                "Remote control",
-                "Let rex do and other clients on this host change the view in this window.",
-                rune_kit::Switch::new(host.remote_control)
-                    .label(format!("Remote control for {}", host.label))
-                    .hide_label()
-                    .on_toggle(move |s: &mut Workspace| s.toggle_remote_control(i))
-                    .build(kit())
-                    .key(format!("remote-control:{i}")),
-            ))
-            .child(divider());
-    }
-    body.child(row().mt(8.).child(pill(
-        "settings-add-host",
-        "Add host…",
-        Pill::Neutral,
-        30.,
-        |s, tx| s.perform(Intent::AddHost, tx),
-    )))
-    .child(
-        text("Removing a host only stops this app connecting to it; its sessions keep running.")
-            .font(ui(11.5))
-            .color(rgb(muted()))
-            .wrap()
-            .mt(8.),
-    )
+    let cards = (0..s.settings.hosts.len()).map(|i| host_card(s, i, last));
+    page([
+        section(
+            "This client",
+            [card([disclosure(
+                "client-label",
+                "Client label",
+                "Its name on every host. Takes effect when you reopen the app.",
+                &s.settings.client_label(),
+                |s, tx| s.perform(Intent::ClientLabel, tx),
+            )])],
+        ),
+        section(
+            "Hosts",
+            cards.chain([
+                row().px(2.).child(button(
+                    "settings-add-host",
+                    "Add host…",
+                    Pill::Neutral,
+                    |s, tx| s.perform(Intent::AddHost, tx),
+                )),
+                footnote(
+                    "Removing a host only stops this app connecting to it; its sessions keep running.",
+                ),
+            ]),
+        ),
+    ])
 }
 
 /// Presentation only: preserve dispatch priority within each action/argument group.
@@ -589,107 +598,114 @@ fn shortcut_rows<'a>(
         .collect()
 }
 
+/// The headings of the Shortcuts page, in order. Every action's `category()` is one of them
+/// (a test checks), and an action this client does not know is listed under Server.
+pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
+    "Navigate",
+    "Create and close",
+    "Panes",
+    "Text and view",
+    "Interface",
+    "Server",
+];
+
 fn shortcuts(s: &Workspace) -> El {
-    let k = kit();
-    let mut body = col().gap(4.);
+    let mut sections = Vec::new();
     let effective = s.effective_bindings();
-    for name in [
-        "Navigate",
-        "Create and close",
-        "Panes",
-        "Text and view",
-        "Interface",
-        "Server",
-    ] {
+    for name in SHORTCUT_CATEGORIES {
         let list = shortcut_rows(&effective, name);
         if list.is_empty() {
             continue;
         }
-        body = body.child(group(name));
-        for (index, display) in list.iter().enumerate() {
+        // A row reads as a menu row does: what it runs on the left, in the name Commands and
+        // the menus use, and its keys on the right as the same keycaps.
+        let rows = list.iter().enumerate().map(|(index, display)| {
             let binding = display.binding;
-            let mut caps = col().gap(3.);
-            for (depth, chord) in binding.chords.as_ref().unwrap().iter().enumerate() {
-                if depth > 0 {
-                    caps = caps.child(text("then").font(ui(10.5)).color(rgb(muted())));
-                }
-                let names = if display.arrows {
-                    vec!["Ctrl".into(), "Alt".into(), "Arrows".into()]
-                } else {
-                    chord.keycaps()
-                };
-                let keys: Vec<_> = names.iter().map(String::as_str).collect();
-                caps = caps.child(Keybind::new(&keys).build(k));
-            }
-            if display.also_numpad {
-                caps = caps.child(text("also numpad").font(ui(10.5)).color(rgb(muted())));
-            }
+            let chords: Chords = if display.arrows {
+                vec![vec!["Ctrl".into(), "Alt".into(), "Arrows".into()]]
+            } else {
+                let chords = binding.chords.as_ref().unwrap();
+                chords.iter().map(|chord| chord.keycaps()).collect()
+            };
             let source = match binding.binding.source.as_deref() {
                 Some("linux") => None,
                 Some("settings") => Some("shortcuts.json"),
                 Some(source) => Some(source),
                 None => Some("Server"),
             };
-            let mut words = col().grow(1.).min_w(0.).gap(2.).child(
-                text(if display.arrows {
-                    "Focus adjacent pane".into()
-                } else {
-                    super::actions::binding_title(&binding.binding)
-                })
-                .font(ui(12.5))
-                .color(rgb(ink()))
-                .wrap(),
-            );
-            if let Some(source) = source {
-                words = words.child(text(source).font(ui(10.5)).color(rgb(muted())).wrap());
-            }
-            body = body.child(
-                row()
-                    .key(format!("shortcut-{name}-{index}"))
-                    .min_h(38.)
-                    .py(3.)
-                    .gap(12.)
-                    .center_y()
-                    .child(el().w(190.).child(caps))
-                    .child(words),
-            );
-        }
+            let title = if display.arrows {
+                "Focus adjacent pane".into()
+            } else {
+                super::actions::binding_title(&binding.binding)
+            };
+            let numpad = display.also_numpad.then_some("Also on the numpad");
+            let detail: Vec<&str> = source.into_iter().chain(numpad).collect();
+            let detail = detail.join(" · ");
+            row_frame(!detail.is_empty())
+                .key(format!("shortcut-{name}-{index}"))
+                .child(words(&title, &detail))
+                .child(
+                    keycaps(&chords, false)
+                        .key(format!("shortcut-keys-{name}-{index}"))
+                        .label(spell(&chords)),
+                )
+        });
+        sections.push(section(name, [card(rows)]));
     }
-    body = body.child(group("Pointer")).child(
-        row()
-            .min_h(30.)
-            .gap(12.)
-            .center_y()
-            .child(
-                el().w(190.)
-                    .child(Keybind::new(&["Mouse", "Back / Forward"]).build(k)),
-            )
-            .child(text("Navigation history").font(ui(12.5)).color(rgb(ink()))),
-    );
+    // The pointer's buttons are not keys: plain words, as in Commands.
+    sections.push(section(
+        "Pointer",
+        [card([setting(
+            "Back and forward in history",
+            "",
+            value("Mouse Back / Forward"),
+        )])],
+    ));
     let diagnostics = &s.effective_keymap().diagnostics;
     if !diagnostics.is_empty() || s.model().keymap_error.is_some() {
-        body = body.child(group("Problems"));
-        if let Some(error) = &s.model().keymap_error {
-            body = body.child(text(error).font(ui(11.5)).color(rgb(warning())).wrap());
-        }
-        for (index, problem) in diagnostics.iter().enumerate() {
-            body = body.child(
-                text(format!(
-                    "{}: {}",
-                    problem.source.as_deref().unwrap_or("keymap"),
-                    problem.message
-                ))
-                .key(format!("shortcut-problem-{index}"))
+        let problem = |words: String| {
+            text(words)
                 .font(ui(11.5))
                 .color(rgb(warning()))
-                .wrap(),
+                .wrap()
+                .grow(1.)
+                .shrink()
+        };
+        let mut rows = Vec::new();
+        if let Some(error) = &s.model().keymap_error {
+            rows.push(row_frame(false).child(problem(error.clone())));
+        }
+        for (index, found) in diagnostics.iter().enumerate() {
+            rows.push(
+                row_frame(false).child(
+                    problem(format!(
+                        "{}: {}",
+                        found.source.as_deref().unwrap_or("keymap"),
+                        found.message
+                    ))
+                    .key(format!("shortcut-problem-{index}")),
+                ),
             );
         }
+        sections.push(section("Problems", [card(rows)]));
     }
-    body = body.child(group("Files"));
+    let path = |key: &str, words: String| {
+        row_frame(false).child(
+            text(words)
+                .key(key.to_owned())
+                .font(mono(11.))
+                .color(rgb(muted()))
+                .selectable(true)
+                .wrap()
+                .grow(1.)
+                .shrink(),
+        )
+    };
+    let mut files = Vec::new();
     if let Some(snapshot) = s.keymap_snapshot() {
-        body = body.child(
-            text(format!(
+        files.push(path(
+            "server-shortcuts-path",
+            format!(
                 "Server: {}{}",
                 snapshot.reply.config.path,
                 if snapshot.reply.config.exists {
@@ -697,37 +713,29 @@ fn shortcuts(s: &Workspace) -> El {
                 } else {
                     " (not created)"
                 }
-            ))
-            .key("server-shortcuts-path")
-            .font(ui(11.5))
-            .color(rgb(muted()))
-            .selectable(true)
-            .wrap(),
-        );
+            ),
+        ));
     }
-    body = body.child(
-        text(
-            rex_linux::settings::shortcuts::Shortcuts::path(&s.settings_path)
-                .display()
-                .to_string(),
-        )
-        .key("shortcuts-path")
-        .font(ui(11.5))
-        .color(rgb(muted()))
-        .selectable(true)
-        .wrap()
-        .mt(12.),
-    );
-    body.child(
-        text("Edit the overrides file, then return to Rex to reload. Escape cancels a sequence; unbound keys reach the terminal.")
-            .font(ui(11.5))
-            .color(rgb(muted()))
-            .wrap()
-            .mt(12.),
-    )
+    files.push(path(
+        "shortcuts-path",
+        rex_linux::settings::shortcuts::Shortcuts::path(&s.settings_path)
+            .display()
+            .to_string(),
+    ));
+    sections.push(section(
+        "Files",
+        [
+            card(files),
+            footnote(
+                "Edit the overrides file, then return to Rex to reload. Escape cancels a sequence; unbound keys reach the terminal.",
+            ),
+        ],
+    ));
+    page(sections)
 }
 
-fn nav(s: &Workspace) -> El {
+/// The section list, in gapped groups: the window, what runs in it, and the app itself.
+fn nav(s: &Workspace, width: f32) -> El {
     let mut list = col()
         .key("settings-sections")
         .role("tablist")
@@ -755,6 +763,12 @@ fn nav(s: &Workspace) -> El {
                     .font(if selected { medium(13.) } else { ui(13.) })
                     .color(rgb(if selected { ink() } else { muted() })),
             );
+        if matches!(
+            section,
+            SettingsSection::Terminal | SettingsSection::Updates
+        ) {
+            item = item.mt(12.);
+        }
         item = if selected {
             item.fill(white(0.09))
         } else {
@@ -763,7 +777,7 @@ fn nav(s: &Workspace) -> El {
         list = list.child(item);
     }
     col()
-        .w(190.)
+        .w(width)
         .h_full()
         .padding(14.)
         .gap(12.)
@@ -777,7 +791,9 @@ fn nav(s: &Workspace) -> El {
         .child(list)
 }
 
-pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
+/// The dialog's surface: the section list, and the page under its header. The page scrolls
+/// with a fade at whichever edge hides content and a thumb while there is more than fits.
+fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
     let k = kit();
     let section = s.settings_section;
     let body = match section {
@@ -790,14 +806,41 @@ pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
         SettingsSection::Updates => super::updates::section(s),
         SettingsSection::About => super::about::section(s),
     };
+    let width = PANEL_WIDTH.min(viewport[0] * 0.92);
+    // Under the toolbar, which stays whole above it, with a margin at both ends.
+    let height = PANEL_HEIGHT.min((viewport[1] - TOOLBAR - 2. * CLEARANCE).max(0.));
+    let nav_width = NAV_WIDTH.min(width * 0.3);
+    let (page_width, page_height) = (width - nav_width - 1., height - HEADER);
+    let thumb = s.settings_fx.thumb.clone();
+    let scroller = col()
+        .key(format!("settings-scroll:{}", section.key()))
+        .grow(1.)
+        .min_h(0.)
+        .w_full()
+        .scroll(ScrollSpec {
+            stick_bottom: false,
+        })
+        .scroll_edge_fade(16.)
+        .on_scroll_offset(move |at: ScrollPos| {
+            let hidden = at.max[1];
+            if hidden < 1. {
+                thumb.set([0.; 4]);
+                return;
+            }
+            let length = (page_height * page_height / (page_height + hidden)).max(24.);
+            let top = at.offset[1] / hidden * (page_height - length - 8.);
+            thumb.set([page_width - 7., top + 4., 4., length]);
+        })
+        .child(body.px(PAGE_INSET).pt(2.).pb(24.));
     let content = col()
         .grow(1.)
         .min_w(0.)
         .h_full()
         .child(
             row()
-                .h(56.)
-                .px(24.)
+                .h(HEADER)
+                .pl(PAGE_INSET + super::settings_kit::INSET)
+                .pr(PAGE_INSET)
                 .center_y()
                 .justify_between()
                 .child(text(section.title()).font(strong(17.)).color(rgb(ink())))
@@ -811,24 +854,27 @@ pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
         )
         .child(
             col()
-                .key(format!("settings-scroll:{}", section.key()))
                 .grow(1.)
                 .min_h(0.)
                 .w_full()
-                .scroll(ScrollSpec {
-                    stick_bottom: false,
-                })
-                .child(body.px(24.).pb(20.)),
+                .child(scroller)
+                .child(s.settings_fx.thumb_el()),
         );
-    modal_frame(
-        s,
-        row()
-            .w(760f32.min(viewport[0] * 0.92))
-            .h(520f32.min(viewport[1] * 0.88))
-            .child(nav(s))
-            .child(el().w(1.).h_full().fill(white(0.06)))
-            .child(content),
-    )
+    row()
+        .w(width)
+        .h(height)
+        .child(nav(s, nav_width))
+        .child(el().w(1.).h_full().fill(white(0.06)))
+        .child(content)
+}
+
+pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
+    modal_layer(s, surface(s, viewport), false, TOOLBAR)
+}
+
+/// Settings under a list opened from one of its controls: drawn where it was, taking no input.
+pub fn settings_under(s: &Workspace, viewport: [f32; 2]) -> El {
+    modal_layer(s, surface(s, viewport), true, TOOLBAR)
 }
 
 #[cfg(test)]

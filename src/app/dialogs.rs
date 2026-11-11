@@ -22,6 +22,15 @@ fn modal(s: &Workspace, viewport: [f32; 2], body: El) -> El {
 
 /// A centered dialog surface over a dark scrim; `surface` sets its own size and padding.
 pub fn modal_frame(s: &Workspace, surface: El) -> El {
+    modal_layer(s, surface, false, 0.)
+}
+
+/// [`modal_frame`], or with `under` the same layer and dialog drawn but inert, for a list
+/// opened from one of the dialog's controls to sit on: the dialog keeps its place, its scroll
+/// position and its rects, and takes no input until the list closes. `top` keeps the dialog
+/// that far below the window's top edge: it is centred in what is left, under the scrim,
+/// which still covers the whole window.
+pub fn modal_layer(s: &Workspace, surface: El, under: bool, top: f32) -> El {
     // Padding, dividers and disabled controls must not pass a press to the dismiss scrim.
     // Children still handle their own input; empty space leaves the keyboard focus alone.
     let name = s
@@ -35,18 +44,24 @@ pub fn modal_frame(s: &Workspace, surface: El) -> El {
         .label(name)
         .preserve_focus_on_press(true)
         .on_press(|_: &mut Workspace| {});
-    let panel = glass(surface, 16., true).transition(pop_in());
-    let mut layer = overlay()
-        .center()
-        .modal(false, |s: &mut Workspace| s.cancel_panel_quiet())
-        .child(
-            el().key("scrim")
-                .pin(Some(0.), Some(0.), Some(0.), Some(0.))
-                // No blur: it would hide the pane a confirmation names, and re-blur every
-                // frame while terminals stream behind it.
-                .fill(black(0.5))
-                .on_press_tx(|s: &mut Workspace, tx: &mut Tx| s.cancel_panel(tx)),
-        );
+    let mut panel = glass(surface, 16., true).transition(pop_in());
+    if under {
+        panel = panel.inert();
+    }
+    let mut layer = overlay().center().pt(top);
+    // The list over it has the keyboard: a focus trap here would take focus for the layer
+    // itself and keep the list's keys (handled with nothing focused) from reaching it.
+    if !under {
+        layer = layer.modal(false, |s: &mut Workspace| s.cancel_panel_quiet());
+    }
+    let mut layer = layer.child(
+        el().key("scrim")
+            .pin(Some(0.), Some(0.), Some(0.), Some(0.))
+            // No blur: it would hide the pane a confirmation names, and re-blur every
+            // frame while terminals stream behind it.
+            .fill(black(0.5))
+            .on_press_tx(|s: &mut Workspace, tx: &mut Tx| s.cancel_panel(tx)),
+    );
     if let Some(outline) = target_outline(s) {
         layer = layer.child(outline);
     }
@@ -122,6 +137,29 @@ fn form(s: &Workspace, form: &Form) -> El {
                 .wrap(),
         );
     }
+    if let Form::DownloadFolder = form {
+        body = body.child(
+            text("Where Download file… saves. Empty uses the system's Downloads folder. The folder must exist; nothing is overwritten.")
+                .font(ui(12.))
+                .color(rgb(muted()))
+                .wrap(),
+        );
+    }
+    // A tab the user named can go back to the title its program sets.
+    let named_tab = matches!(form, Form::RenameWindow(_))
+        && panel.tab.as_ref().is_some_and(|tab| s.tab_named(tab));
+    if let Form::RenameWindow(_) = form {
+        body = body.child(
+            text(if named_tab {
+                "Use default title shows the title this tab's program sets again."
+            } else {
+                "This tab shows the title its program sets. A name saved here replaces it."
+            })
+            .font(ui(12.))
+            .color(rgb(muted()))
+            .wrap(),
+        );
+    }
     if let Form::Fonts = form {
         body = body.child(
             text("Applied when you reopen the client. --font and --font-fallback override saved choices for that launch. Server sessions keep running.")
@@ -135,10 +173,20 @@ fn form(s: &Workspace, form: &Form) -> El {
     } else {
         "Save"
     };
+    let mut buttons = row().gap(8.).justify_end();
+    if named_tab {
+        buttons = buttons
+            .child(pill(
+                "default-title",
+                "Use default title",
+                Pill::Neutral,
+                32.,
+                |s, tx| s.use_default_tab_title(tx),
+            ))
+            .child(el().grow(1.));
+    }
     body.child(
-        row()
-            .gap(8.)
-            .justify_end()
+        buttons
             .child(pill(
                 "cancel-form",
                 "Cancel",

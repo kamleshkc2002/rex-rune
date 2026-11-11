@@ -1956,3 +1956,88 @@ fn xdg_open_gets_one_argument_the_absolute_path() {
         );
     }
 }
+
+#[test]
+fn settings_interface_holds_the_download_folder_and_its_form_checks_like_change() {
+    let (mut ws, _rx, dir) = workspace_13();
+    let mut tx = rune::Tx::default();
+    ws.perform(Intent::Settings, &mut tx);
+    ws.open_section(crate::app::panel::SettingsSection::Interface);
+    let mut rt = runtime(ws);
+    for _ in 0..30 {
+        rt.frame(1. / 60.);
+    }
+    // The row shows where files go now, and opens a form from Settings.
+    assert!(
+        has(&rt, "download-folder"),
+        "a Download folder row on the Interface page"
+    );
+    click(&mut rt, "download-folder");
+    let panel = rt.state.panel.as_ref().expect("the form");
+    assert!(matches!(
+        panel.kind,
+        PanelKind::Form(crate::app::panel::Form::DownloadFolder)
+    ));
+    assert_eq!(panel.inputs[0].text, dir.display().to_string(), "prefilled");
+    // The same check as Change in the dialog.
+    set_field(&mut rt, 0, "relative/dir");
+    press(&mut rt, Key::Enter);
+    assert!(shows(&rt, "absolute folder"));
+    assert_eq!(
+        rt.state.settings.downloads.directory.as_deref(),
+        Some(dir.display().to_string().as_str()),
+        "nothing changed"
+    );
+    let other = scratch();
+    set_field(&mut rt, 0, &format!("  {}  ", other.display()));
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        rt.state.settings.downloads.directory.as_deref(),
+        Some(other.display().to_string().as_str())
+    );
+    assert!(
+        matches!(
+            rt.state.panel.as_ref().map(|p| &p.kind),
+            Some(PanelKind::Settings)
+        ),
+        "back in Settings"
+    );
+    assert_eq!(rt.state.download_folder(), other);
+    // Escape leaves it as it was; an empty folder goes back to the system's.
+    click(&mut rt, "download-folder");
+    set_field(&mut rt, 0, "/never/saved");
+    press(&mut rt, Key::Escape);
+    assert_eq!(
+        rt.state.settings.downloads.directory.as_deref(),
+        Some(other.display().to_string().as_str())
+    );
+    click(&mut rt, "download-folder");
+    set_field(&mut rt, 0, "");
+    press(&mut rt, Key::Enter);
+    assert_eq!(rt.state.settings.downloads.directory, None);
+    std::fs::remove_file(&rt.state.settings_path).ok();
+    std::fs::remove_dir_all(dir).ok();
+    std::fs::remove_dir_all(other).ok();
+}
+
+#[test]
+fn a_binding_for_pane_download_is_the_hint_in_the_pane_menu_and_commands() {
+    let (mut ws, _rx, dir) = workspace_13();
+    ws.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(
+        &serde_json::json!([{"keys":"ctrl+alt+d","action":"pane.download"}]),
+    );
+    ws.local_keymap = actions::resolve(&ws.settings.shortcut_file.overrides);
+    ws.keymap_generation += 1;
+    ws.pane_menu("block:b".into(), None);
+    let hint = |ws: &Workspace| {
+        ws.entries()
+            .into_iter()
+            .find(|e| e.label == "Download file…")
+            .map(|e| e.detail)
+    };
+    assert_eq!(hint(&ws).as_deref(), Some("Ctrl Alt D"), "pane menu");
+    ws.cancel_panel_quiet();
+    ws.picker(false);
+    assert_eq!(hint(&ws).as_deref(), Some("Ctrl Alt D"), "Commands");
+    std::fs::remove_dir_all(dir).ok();
+}
