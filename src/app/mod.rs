@@ -257,5 +257,17 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
         app = app.on_frame_encoded(move |f| frames.record(f));
     }
     app.run();
+    // The window is gone and the workspace with it: every host connection has been told to shut
+    // down. Give the host threads a moment to drop their transfers, so a download in flight
+    // deletes its partial file before the process ends (the next launch sweeps whatever a host
+    // stuck connecting leaves behind).
+    wait_for_hosts_at_exit();
     Ok(())
+}
+
+/// The longest the app waits for its host threads once the window is closed.
+const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+fn wait_for_hosts_at_exit() {
+    rex_linux::connection::wait_for_hosts(EXIT_WAIT);
 }

@@ -1465,3 +1465,233 @@ fn a_chip_coming_into_a_wide_enough_bar_scrolls_the_active_tab_back_into_view() 
     );
     std::fs::remove_dir_all(dir).ok();
 }
+
+#[test]
+fn folders_are_written_with_a_tilde_and_cut_in_the_middle_by_whole_folders() {
+    use crate::app::downloads::{folder_text_in, tilde_in};
+    let home = Path::new("/home/dev");
+    assert_eq!(tilde_in(Path::new("/home/dev"), Some(home)), "~");
+    assert_eq!(
+        tilde_in(Path::new("/home/dev/Downloads"), Some(home)),
+        "~/Downloads"
+    );
+    assert_eq!(
+        tilde_in(Path::new("/home/devious/x"), Some(home)),
+        "/home/devious/x",
+        "a folder that only starts with the same letters is not under home"
+    );
+    assert_eq!(tilde_in(Path::new("/home/dev/x"), None), "/home/dev/x");
+    // Short enough: as it is.
+    assert_eq!(
+        folder_text_in(Path::new("/home/dev/Downloads"), Some(home), 36),
+        "~/Downloads"
+    );
+    // Too long: the start (`~`), then `…`, then the folders that fit, the end kept whole.
+    let deep = Path::new("/home/dev/projects/client-work/2026/quarterly-reports/final/scans");
+    let text = folder_text_in(deep, Some(home), 36);
+    assert_eq!(text, "~/…/quarterly-reports/final/scans");
+    assert!(text.chars().count() <= 36);
+    // Outside home the first folder stays.
+    let text = folder_text_in(
+        Path::new("/mnt/storage/archive/2026/november/reports"),
+        Some(home),
+        28,
+    );
+    assert_eq!(text, "/mnt/…/2026/november/reports");
+    // One folder too long to fit at all is cut in the middle by characters.
+    let long = format!("/home/dev/{}", "x".repeat(80));
+    let text = folder_text_in(Path::new(&long), Some(home), 36);
+    assert_eq!(text.chars().count(), 36, "{text}");
+    assert!(text.contains('…') && text.starts_with("~/x") && text.ends_with('x'));
+}
+
+#[test]
+fn the_low_space_question_says_what_saving_leaves_and_large_keeps_its_words() {
+    let ask = |reason, hint, free| {
+        crate::app::downloads::question(
+            "build.img",
+            "~/Downloads",
+            &Confirmation { reason, hint, free },
+        )
+    };
+    assert_eq!(
+        ask(Reason::Large, 3_200_000_000, Some(41_000_000_000)),
+        "build.img is 3.2 GB. ~/Downloads has 41 GB free."
+    );
+    assert_eq!(
+        ask(Reason::LowSpace, 300_000_000, Some(400_000_000)),
+        "build.img is 300 MB. ~/Downloads has 400 MB free, so saving it leaves about 100 MB."
+    );
+    assert_eq!(
+        ask(Reason::LowSpace, 300_000_000, None),
+        "build.img is 300 MB.",
+        "unknown free space: only the size"
+    );
+    assert_eq!(
+        ask(Reason::Large, 5_000_000_000, None),
+        "build.img is 5 GB."
+    );
+}
+
+#[test]
+fn a_low_space_question_shows_in_the_dialog_with_cancel_focused() {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, "/home/dev/build.img");
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            id,
+            "build.img",
+            &dir,
+            State::AwaitingConfirmation(Confirmation {
+                reason: Reason::LowSpace,
+                hint: 300_000_000,
+                free: Some(400_000_000),
+            }),
+        ))
+    });
+    assert!(
+        shows(&rt, "build.img is 300 MB. ")
+            && shows(&rt, "has 400 MB free, so saving it leaves about 100 MB."),
+        "{:?}",
+        texts(&rt)
+    );
+    assert!(
+        focused(&rt).is_some_and(|p| p.ends_with("cancel-download")),
+        "Cancel has focus"
+    );
+    assert!(asked(&rx).is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// A folder far deeper than any line, inside a new scratch folder.
+fn deep_folder() -> (PathBuf, PathBuf) {
+    let root = scratch();
+    let deep = root
+        .join("projects")
+        .join("client-work-with-a-long-name")
+        .join("2026")
+        .join("quarterly-reports")
+        .join("final-scans");
+    std::fs::create_dir_all(&deep).unwrap();
+    (root, deep)
+}
+
+#[test]
+fn a_deep_folder_is_cut_in_the_middle_in_the_save_in_line_and_in_a_saved_row() {
+    let (root, deep) = deep_folder();
+    let (mut ws, rx, dir) = workspace_13();
+    ws.settings.downloads.directory = Some(deep.display().to_string());
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    let line = element_text(&rt, "save-in-folder");
+    let line = line.concat();
+    assert!(
+        line.contains('…') && line.ends_with("final-scans") && line.chars().count() <= 36,
+        "Save in line: {line}"
+    );
+    assert!(
+        !shows(&rt, &deep.display().to_string()),
+        "the full path is not a line of the dialog"
+    );
+    assert_eq!(
+        label_of(&rt, "save-in").map(|(_, label)| label),
+        Some(format!("Save in {}", deep.display())),
+        "the accessible name keeps all of it"
+    );
+    press(&mut rt, Key::Escape);
+    asked(&rx);
+
+    let (mut ws, _rx, _dir) = workspace_13();
+    ws.perform(Intent::Downloads, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "report.pdf",
+            &deep,
+            State::Saved {
+                path: deep.join("report.pdf"),
+                bytes: 10,
+                short_of: None,
+            },
+        ))
+    });
+    let state = element_text(&rt, "download-state:1").concat();
+    assert!(
+        state.starts_with("test-0 · Saved to /")
+            && state.contains('…')
+            && state.ends_with("final-scans"),
+        "{state}"
+    );
+    let row = rect_of(&rt, "download-state:1").unwrap();
+    assert!(
+        row[3] < 40.,
+        "the state line stays one or two lines: {row:?}"
+    );
+    std::fs::remove_dir_all(root).ok();
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_launch_cleanup_deletes_a_recorded_partial_of_a_dead_process_and_nothing_else() {
+    use rex_linux::download::store::Records;
+    let dir = scratch();
+    let state = scratch();
+    // A process that has ended: its id is no longer a running process's.
+    let mut child = std::process::Command::new("true").spawn().unwrap();
+    let dead = child.id();
+    child.wait().unwrap();
+    let leftover = ".a.iso.11111111-2222-3333-4444-555555555555.rex-part";
+    let other = ".b.iso.11111111-2222-3333-4444-555555555556.rex-part";
+    let unrecorded = "notes.txt";
+    for name in [leftover, other, unrecorded] {
+        std::fs::write(dir.join(name), b"x").unwrap();
+    }
+    let records = state.join("downloads.json");
+    // This process's own start time, as the core reads it, so its record says it is running.
+    let stat = std::fs::read_to_string("/proc/self/stat").unwrap();
+    let started: u64 = stat[stat.rfind(')').unwrap() + 1..]
+        .split_whitespace()
+        .nth(19)
+        .unwrap()
+        .parse()
+        .unwrap();
+    let record = |name: &str, pid: u32, started: u64| serde_json::json!({"dir": dir, "name": name, "pid": pid, "started": started, "created": 1});
+    // `other` belongs to this very process, which is running: it must stay.
+    std::fs::write(
+        &records,
+        serde_json::json!({"partials": [record(leftover, dead, 1), record(other, std::process::id(), started)]})
+            .to_string(),
+    )
+    .unwrap();
+    let worker = Workspace::clean_up_leftovers_in(Records::at(records.clone()))
+        .expect("the cleanup starts a worker");
+    worker.join().unwrap();
+    assert!(
+        !dir.join(leftover).exists(),
+        "the dead process's partial is gone"
+    );
+    assert!(
+        dir.join(other).exists(),
+        "a running process's partial is kept"
+    );
+    assert!(
+        dir.join(unrecorded).exists(),
+        "nothing unrecorded is touched"
+    );
+    let left = Records::at(records).list();
+    assert_eq!(
+        left.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
+        [other],
+        "only the dead process's record is forgotten"
+    );
+    std::fs::remove_dir_all(dir).ok();
+    std::fs::remove_dir_all(state).ok();
+}

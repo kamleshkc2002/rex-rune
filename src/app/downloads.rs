@@ -122,10 +122,14 @@ fn reported_text(hint: u64) -> String {
 
 /// A path with the home folder written `~`.
 pub fn tilde(path: &Path) -> String {
-    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from)
+    tilde_in(path, std::env::var_os("HOME").map(PathBuf::from).as_deref())
+}
+
+pub(super) fn tilde_in(path: &Path, home: Option<&Path>) -> String {
+    if let Some(home) = home
         && home.is_absolute()
         && home.components().count() > 1
-        && let Ok(rest) = path.strip_prefix(&home)
+        && let Ok(rest) = path.strip_prefix(home)
     {
         return if rest.as_os_str().is_empty() {
             "~".into()
@@ -190,17 +194,80 @@ fn after_bytes(failure: &Failure) -> bool {
     )
 }
 
-/// The question a confirmation asks, in the words the dialog shows.
+/// The question a confirmation asks, in the words the dialog shows. A yes to the Large question
+/// only commits the time and the space; a yes to the LowSpace one says how little is left.
 pub fn question(name: &str, folder: &str, confirmation: &Confirmation) -> String {
     let size = size_text(confirmation.hint);
     match (confirmation.reason, confirmation.free) {
-        (Reason::LowSpace, Some(free)) => format!(
-            "{name} is {size}, but {folder} has only {} free.",
-            size_text(free)
+        (Reason::LowSpace, Some(free)) if free > confirmation.hint => format!(
+            "{name} is {size}. {folder} has {} free, so saving it leaves about {}.",
+            size_text(free),
+            size_text(free - confirmation.hint)
         ),
         (_, Some(free)) => format!("{name} is {size}. {folder} has {} free.", size_text(free)),
         (_, None) => format!("{name} is {size}."),
     }
+}
+
+/// The widest a folder is written in a line of the popover, the dialog or a notice.
+pub const FOLDER_CHARS: usize = 36;
+
+/// `s` cut in the middle with an ellipsis so it is at most `max` characters.
+fn cut_middle(s: &str, max: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= max {
+        return s.to_owned();
+    }
+    let keep = max.saturating_sub(1);
+    let head = keep.div_ceil(2);
+    let tail = keep - head;
+    chars[..head]
+        .iter()
+        .chain(std::iter::once(&'…'))
+        .chain(&chars[chars.len() - tail..])
+        .collect()
+}
+
+/// A folder as a line shows it: the home folder as `~`, and a long one cut in the middle by
+/// whole folders (`~/…/reports/2026`), so the end, the part that tells folders apart, stays.
+pub fn folder_text(path: &Path, max: usize) -> String {
+    folder_text_in(
+        path,
+        std::env::var_os("HOME").map(PathBuf::from).as_deref(),
+        max,
+    )
+}
+
+pub(super) fn folder_text_in(path: &Path, home: Option<&Path>, max: usize) -> String {
+    let full = tilde_in(path, home);
+    if full.chars().count() <= max {
+        return full;
+    }
+    let (root, rest) = match full.strip_prefix("~/") {
+        Some(rest) => ("~", rest),
+        None => ("", full.trim_start_matches('/')),
+    };
+    let parts: Vec<&str> = rest.split('/').filter(|p| !p.is_empty()).collect();
+    // `~` or `/first`, then `…`, then as many of the last folders as fit.
+    let (head, tail) = match (root, parts.split_first()) {
+        ("", Some((first, tail))) => (format!("/{first}"), tail),
+        _ => (root.to_owned(), parts.as_slice()),
+    };
+    let mut kept: Vec<&str> = Vec::new();
+    let mut width = head.chars().count() + 2; // "/…"
+    for part in tail.iter().rev() {
+        let next = width + 1 + part.chars().count();
+        if next > max {
+            break;
+        }
+        width = next;
+        kept.push(part);
+    }
+    if kept.is_empty() {
+        return cut_middle(&full, max);
+    }
+    kept.reverse();
+    format!("{head}/…/{}", kept.join("/"))
 }
 
 /// The line under a transfer's name in the popover.
@@ -221,7 +288,7 @@ pub fn state_line(host: &str, transfer: &Transfer) -> String {
             ),
             None => format!(
                 "Saved to {}",
-                tilde(path.parent().unwrap_or(&transfer.directory))
+                folder_text(path.parent().unwrap_or(&transfer.directory), FOLDER_CHARS)
             ),
         },
         State::Cancelled => "Cancelled".into(),
@@ -592,7 +659,8 @@ impl Workspace {
                 let saved = path
                     .file_name()
                     .map_or(name, |n| n.to_string_lossy().into_owned());
-                let folder = tilde(path.parent().unwrap_or(&transfer.directory));
+                let folder =
+                    folder_text(path.parent().unwrap_or(&transfer.directory), FOLDER_CHARS);
                 let mut text = format!("Saved {saved} from {label} to {folder}");
                 if let Some(hint) = short_of {
                     text.push_str(&format!(
@@ -689,14 +757,23 @@ impl Workspace {
             });
     }
 
-    /// Once at launch, on a worker: delete the partial files an earlier run left behind and
-    /// recorded. The first frame never waits for it.
+    /// Once at launch (`app::run` is the only caller), on a worker: delete the partial files an
+    /// earlier run left behind and recorded. The first frame never waits for it.
     pub fn clean_up_download_leftovers() {
-        let _ = std::thread::Builder::new()
+        let _ = Self::clean_up_leftovers_in(store::Records::default());
+    }
+
+    /// The launch cleanup against `records`, on its own thread. Split out so a test can point it
+    /// at a private records file and wait for it.
+    pub(super) fn clean_up_leftovers_in(
+        records: store::Records,
+    ) -> Option<std::thread::JoinHandle<()>> {
+        std::thread::Builder::new()
             .name("rex-download-cleanup".into())
-            .spawn(|| {
-                store::Records::default().clean_up_leftovers();
-            });
+            .spawn(move || {
+                records.clean_up_leftovers();
+            })
+            .ok()
     }
 }
 

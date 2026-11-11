@@ -2,7 +2,9 @@
 //! goes back to it (`downloads.rs`).
 use super::{
     dialogs::title,
-    downloads::{Dialog, Row, progress_text, question, state_line, tilde, too_old},
+    downloads::{
+        Dialog, FOLDER_CHARS, Row, folder_text, progress_text, question, state_line, tilde, too_old,
+    },
     input::global_key,
     popups::overlay,
     theme::*,
@@ -86,8 +88,11 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
         }) = transfer
         {
             let mut b = body.child(
-                note(question(&name, &tilde(directory), confirmation), ink())
-                    .key("download-question"),
+                note(
+                    question(&name, &folder_text(directory, FOLDER_CHARS), confirmation),
+                    ink(),
+                )
+                .key("download-question"),
             );
             if let Some(path) = resolved {
                 b = b.child(
@@ -101,10 +106,12 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
                 .default_button()
                 .tab_index(1),
                 Some(
+                    // Tinted like the close confirmation's "Close and end programs": the
+                    // question is a warning and Cancel, focused, is the quiet safe answer.
                     pill(
                         "confirm-download",
                         "Download",
-                        Pill::Primary,
+                        Pill::Warning,
                         32.,
                         |s, _| s.confirm_download(),
                     )
@@ -153,12 +160,13 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
                 ),
             );
     } else {
-        let folder = tilde(&s.download_folder());
+        let full = tilde(&s.download_folder());
+        let folder = folder_text(&s.download_folder(), FOLDER_CHARS);
         body = body.child(
             row()
                 .key("save-in")
                 .role("group")
-                .label(format!("Save in {folder}"))
+                .label(format!("Save in {full}"))
                 .w_full()
                 .gap(10.)
                 .center_y()
@@ -174,7 +182,7 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
                         .font(ui(13.))
                         .color(rgb(ink()))
                         .truncate_middle()
-                        .help_when_truncated(folder)
+                        .help(full)
                         .grow(1.)
                         .shrink()
                         .a11y_hidden(),
