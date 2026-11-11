@@ -11,7 +11,10 @@ use super::{
 };
 use rex_linux::{
     connection::{HostCommand, downloads::Request},
-    download::{self, Confirmation, Failure, Reason, State, Transfer, open, store},
+    download::{
+        self, Confirmation, Failure, Reason, State, Transfer, number_text, open, power_of,
+        size_text, store,
+    },
 };
 use rune::{TextEdit, Tx};
 use std::{
@@ -57,41 +60,6 @@ pub struct Row<'a> {
     pub host: HostId,
     pub label: &'a str,
     pub transfer: &'a Transfer,
-}
-
-const UNITS: [&str; 5] = ["kB", "MB", "GB", "TB", "PB"];
-
-/// The unit a size is written in: 0 is bytes, 1 kB, 2 MB, and so on.
-fn power_of(bytes: u64) -> usize {
-    let mut value = bytes as f64;
-    let mut power = 0;
-    while value >= 999.95 && power < UNITS.len() {
-        value /= 1000.;
-        power += 1;
-    }
-    power
-}
-
-/// `3.2 GB`, `41 GB`, `12.4 MB`, `6 bytes`: decimal units, one decimal below 100.
-pub fn size_text(bytes: u64) -> String {
-    let power = power_of(bytes);
-    if power == 0 {
-        return format!("{bytes} byte{}", if bytes == 1 { "" } else { "s" });
-    }
-    format!(
-        "{} {}",
-        number_text(bytes as f64 / 1000f64.powi(power as i32)),
-        UNITS[power - 1]
-    )
-}
-
-fn number_text(value: f64) -> String {
-    if value >= 99.95 {
-        format!("{value:.0}")
-    } else {
-        let text = format!("{value:.1}");
-        text.strip_suffix(".0").map_or(text.clone(), str::to_owned)
-    }
 }
 
 /// `12.4 of 80 MB` while the size is known, else `12.4 MB`.

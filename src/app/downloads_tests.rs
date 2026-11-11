@@ -521,7 +521,7 @@ fn errors_before_any_bytes_stay_in_the_dialog_in_the_servers_words() {
         ),
         (
             Failure::LowSpace { free: 0 },
-            "The destination has only 0 MB left.",
+            "The destination has only 0 bytes free, too little to save this file and keep some space free.",
         ),
         (
             Failure::NoAnswer,
@@ -1135,7 +1135,8 @@ fn the_downloads_directory_survives_a_relaunch() {
 
 #[test]
 fn sizes_read_as_the_dialog_and_popover_write_them() {
-    use crate::app::downloads::{progress_text, size_text};
+    use crate::app::downloads::progress_text;
+    use rex_linux::download::size_text;
     assert_eq!(size_text(0), "0 bytes");
     assert_eq!(size_text(1), "1 byte");
     assert_eq!(size_text(999), "999 bytes");

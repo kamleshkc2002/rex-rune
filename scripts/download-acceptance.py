@@ -13,7 +13,8 @@ target/{release,debug}) for the file name with a newline, which a single-line fi
 It starts and owns everything it touches: two private servers (own HOME, XDG, socket,
 `--restore=false`, no tailscale on PATH), a throttling proxy, a private sshd and a private
 Xvfb, all under one temporary directory below ~/.cache/agent-ws that holds every download
-folder, state directory and artifact (the directory is printed and kept). A stub xdg-open on
+folder, state directory and artifact (the directory is printed; it is deleted when every case
+passed and kept when any failed or was skipped, or with --keep). A stub xdg-open on
 PATH logs every call; the run fails if it is ever called. Every REX_* and display variable is
 scrubbed and an endpoint under /run/user is refused, so nothing can reach another server.
 Processes are stopped by PID.
@@ -22,15 +23,17 @@ Most cases drive the built binary with Rune's --script (the dialog is opened fro
 a path is typed, Enter pressed; the screen is read back as an accessibility tree). The cases
 that need real input events (a plain transfer, the ssh:// transfer, quitting and killing the
 app mid-transfer) use xdotool on the private Xvfb. Prints PASS, FAIL or SKIP per case; exits 1
-when any case fails. Naming case functions on the command line runs only those (and the final
-checks), for development.
+when any case fails. A skipped case (a missing tool) does not fail the run by itself: use
+--strict, as for a release, to make any skip exit 1, and then the run must also have compared at
+least MIN_SAVED saved files. Naming case functions on the command line runs only those (and the
+final checks), for development.
 
 Cases: names (spaces, Unicode, leading dash, empty file, symlink, same file twice, modes, Open
 withheld for programs); relative paths after cd; a folder, a FIFO, a missing and an unreadable
 file refused in the server's words; API 12 "too old" with nothing sent; the 1 GiB question; a 1
 GiB file cancelled partway (partial gone, the server's descriptor closed); a file growing during
 the transfer; a fourth concurrent transfer; low space (a yes, and a refusal); a newline in the
-name (core probe); real X11 input; one transfer over a real ssh:// host; Close and SIGKILL
+name (core library only: the probe, not the client binary); real X11 input; one transfer over a real ssh:// host; Close and SIGKILL
 mid-transfer; and last, that xdg-open was never called, nothing is executable, no partial is
 left and every saved file's SHA-256 equals its source."""
 import asyncio
@@ -39,6 +42,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import signal
 import subprocess
@@ -89,7 +93,11 @@ SAVED = []          # (saved file, source file or (source, length)): every one i
 DOWNLOAD_DIRS = []  # every download folder of every run
 
 
-FILTER = sys.argv[1:]  # case function names to run alone while developing; none runs everything
+ARGS = sys.argv[1:]
+STRICT = "--strict" in ARGS  # a skipped case exits 1
+KEEP = "--keep" in ARGS      # keep the artifact directory even when every case passed
+FILTER = [a for a in ARGS if not a.startswith("--")]  # case function names to run alone; none runs all
+MIN_SAVED = 15  # a full run saves and compares at least this many files; fewer means cases did not run
 
 
 class Skip(Exception):
@@ -836,13 +844,16 @@ def low_space(rex13):
     over = run_app("space-over", download_steps(2.5, "~/space-90.bin"), 7.5, server=rex13, namespace_tmpfs="100M")
     expect_clean_exit(over)
     message = over.tree.get("download-error", "")
-    assert "left" in message and "download-question" not in over.tree, f"dialog says {message!r}"
+    free = re.search(r"has (\d[\d.]* \w+) free", question)
+    assert free, f"no free space in the question: {question!r}"
+    assert f"only {free.group(1)} free" in message and "download-question" not in over.tree, \
+        f"dialog says {message!r}; the question said {free.group(1)} free"
     assert over.report["files"] == [], over.report["files"]
     assert until(lambda: not rex13.open_files("space-90.bin"), 5), "the server still holds the refused file"
     return f"{question!r}; yes saved 50 MB with sha256 equal; refused: {message!r}"
 
 
-@case("a name with a newline (core probe: a single-line field cannot type one)")
+@case("a name with a newline (core library only, through rex-download-probe, not the client binary)")
 def newline_name(rex13):
     candidates = [os.environ.get("REX_DOWNLOAD_PROBE"), str(Path(APP).with_name("rex-download-probe")),
                   str(ROOT / "target/release/rex-download-probe"), str(ROOT / "target/debug/rex-download-probe")]
@@ -965,6 +976,8 @@ def final_checks():
             assert path.stat().st_size == source.stat().st_size, f"{path.name}: size {path.stat().st_size} vs {source.stat().st_size}"
         assert sha256(path) == sha256(source, length), f"{path} differs from {source}"
         checked += 1
+    if not FILTER:
+        assert checked >= MIN_SAVED, f"only {checked} saved files compared with their sources; expected at least {MIN_SAVED}"
     return f"{checked} saved files compared with their sources; xdg-open stub log empty; {len(DOWNLOAD_DIRS)} folders scanned"
 
 
@@ -1020,8 +1033,20 @@ finally:
             print(f"cleanup: {error}", flush=True)
 failed = [r for r in results if r[0] == "FAIL"]
 skipped = [r for r in results if r[0] == "SKIP"]
+clean = not failed and not skipped and not KEEP
 print(f"\n{len(results) - len(failed) - len(skipped)} passed, {len(failed)} failed, {len(skipped)} skipped "
-      f"(artifacts: {work})", flush=True)
+      f"(artifacts: {'deleted' if clean else work})", flush=True)
 for status, name, detail in skipped:
     print(f"  skipped: {name}: {detail}")
-sys.exit(1 if failed else 0)
+if STRICT and skipped:
+    print(f"--strict: {len(skipped)} skipped case(s) count as a failure")
+if clean:
+    for dirpath, dirnames, filenames in os.walk(work):  # a fixture with mode 000 would stop rmtree
+        os.chmod(dirpath, 0o700)
+        for name in filenames:
+            try:
+                os.chmod(os.path.join(dirpath, name), 0o600)
+            except OSError:
+                pass
+    shutil.rmtree(work, ignore_errors=True)
+sys.exit(1 if failed or (STRICT and skipped) else 0)

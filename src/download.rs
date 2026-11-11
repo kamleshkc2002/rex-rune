@@ -286,6 +286,43 @@ impl Meter {
     }
 }
 
+// -- Sizes in words ---------------------------------------------------------------------------
+
+const UNITS: [&str; 5] = ["kB", "MB", "GB", "TB", "PB"];
+
+/// The unit a size is written in: 0 is bytes, 1 kB, 2 MB, and so on.
+pub fn power_of(bytes: u64) -> usize {
+    let mut value = bytes as f64;
+    let mut power = 0;
+    while value >= 999.95 && power < UNITS.len() {
+        value /= 1000.;
+        power += 1;
+    }
+    power
+}
+
+/// `3.2 GB`, `41 GB`, `12.4 MB`, `6 bytes`: decimal units, one decimal below 100.
+pub fn size_text(bytes: u64) -> String {
+    let power = power_of(bytes);
+    if power == 0 {
+        return format!("{bytes} byte{}", if bytes == 1 { "" } else { "s" });
+    }
+    format!(
+        "{} {}",
+        number_text(bytes as f64 / 1000f64.powi(power as i32)),
+        UNITS[power - 1]
+    )
+}
+
+pub fn number_text(value: f64) -> String {
+    if value >= 99.95 {
+        format!("{value:.0}")
+    } else {
+        let text = format!("{value:.1}");
+        text.strip_suffix(".0").map_or(text.clone(), str::to_owned)
+    }
+}
+
 // -- Configuration ---------------------------------------------------------------------------
 
 /// What a transfer needs beyond its request. `Config::default()` is the product; tests replace
@@ -392,7 +429,11 @@ impl std::fmt::Display for Failure {
                 "the connection to Rex was lost; the download was not retried"
             ),
             Self::LowSpace { free } => {
-                write!(f, "the destination has only {} MB left", free / 1_000_000)
+                write!(
+                    f,
+                    "the destination has only {} free, too little to save this file and keep some space free",
+                    size_text(*free)
+                )
             }
             Self::TooMuchData { limit } => write!(
                 f,
