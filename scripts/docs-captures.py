@@ -72,7 +72,9 @@ SCREENS = [
     },
     {
         "id": "add-host",
-        "script": [OPEN_SIDEBAR, {"t": 1.0, "type": "tap", "key": "commands"}, {"t": 1.8, "tap_text": "Add host…"}],
+        # Commands opens on its first groups; a search brings the Host group's row into view.
+        "script": [OPEN_SIDEBAR, {"t": 1.0, "type": "tap", "key": "commands"},
+                   {"t": 1.4, "type": "type", "text": "add host"}, {"t": 1.8, "tap_text": "Add host…"}],
         "at": 3.0,
         "annotations": [
             ({"key": "popup-search"}, "Search the machines on your tailnet"),

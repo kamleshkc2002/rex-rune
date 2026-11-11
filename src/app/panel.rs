@@ -64,9 +64,11 @@ pub enum Intent {
     Updates,
     /// Trigger an immediate release metadata check.
     CheckUpdates,
+    /// A Commands row that is not a named action.
+    Command(super::commands::Run),
 }
 impl Intent {
-    fn shortcut(&self) -> Option<(&'static str, Value)> {
+    pub(super) fn shortcut(&self) -> Option<(&'static str, Value)> {
         use serde_json::json;
         Some(match self {
             Self::ClientAction(name, args) => (*name, args.clone()),
@@ -106,6 +108,11 @@ impl Intent {
             self,
             Intent::Switcher
                 | Intent::ClientAction("client.settings" | "session.switch", _)
+                // Each asks or lists before anything happens.
+                | Intent::ClientAction(
+                    "client.close" | super::commands::CLOSE_SESSION | super::commands::CHOOSE_THEME,
+                    _
+                )
                 | Intent::ChooseHost(_)
                 | Intent::HostShell(_)
                 | Intent::StartSsh(_)
@@ -597,156 +604,28 @@ impl Workspace {
         let mut entries = Vec::new();
         let model = self.model();
         let host_name = &self.settings.hosts[self.active].label;
-        if !sessions_only && !pane_only {
-            for (label, detail, action) in [
-                ("Switch session…", "", Intent::Switcher),
-                (
-                    "Next tab across hosts",
-                    "",
-                    Intent::ClientAction(super::actions::NEXT_GLOBAL, Value::Null),
-                ),
-                (
-                    "Previous tab across hosts",
-                    "",
-                    Intent::ClientAction(super::actions::PREVIOUS_GLOBAL, Value::Null),
-                ),
-                (
-                    "Back in history",
-                    "Mouse Back",
-                    Intent::ClientAction(super::actions::HISTORY_BACK, Value::Null),
-                ),
-                (
-                    "Forward in history",
-                    "Mouse Forward",
-                    Intent::ClientAction(super::actions::HISTORY_FORWARD, Value::Null),
-                ),
-                (
-                    "Search terminal…",
-                    "",
-                    Intent::ClientAction(super::actions::SEARCH, Value::Null),
-                ),
-                ("New session", "", Intent::NewSession),
-                ("New tab", "", Intent::NewWindow),
-                ("Rename session…", "", Intent::RenameSession),
-                (
-                    if self.sidebar.is_open() {
-                        "Hide sidebar"
-                    } else {
-                        "Show sidebar"
-                    },
-                    "",
-                    Intent::Sidebar,
-                ),
-                ("Remote control", "", Intent::RemoteControl(self.active)),
-                ("Default shell…", "", Intent::HostShell(self.active)),
-                ("Settings…", "", Intent::Settings),
-                ("Check for updates", "", Intent::CheckUpdates),
-                ("Add host…", "", Intent::AddHost),
-                ("Edit host…", "", Intent::EditHost(self.active)),
-                ("Reconnect host", "", Intent::Retry),
-            ] {
-                let mut entry = Entry::new(label, detail, "Workspace", action);
-                if matches!(entry.action, Intent::NewSession) {
-                    entry.label = format!("New session on {host_name}");
-                    entry.enabled = model.connected;
-                }
-                if matches!(entry.action, Intent::EditHost(_)) {
-                    entry.label = format!("Edit host {host_name}…");
-                }
-                if matches!(entry.action, Intent::RemoteControl(_)) {
-                    entry.label = format!(
-                        "Turn {} remote control for {}",
-                        if self.settings.hosts[self.active].remote_control {
-                            "off"
-                        } else {
-                            "on"
-                        },
-                        self.settings.hosts[self.active].label
-                    );
-                }
-                if matches!(entry.action, Intent::HostShell(_)) {
-                    entry.label = format!("Default shell for {host_name}…");
-                    entry.detail = self.shell(self.active).unwrap_or_default().to_owned();
-                }
-                if matches!(entry.action, Intent::NewWindow | Intent::RenameSession) {
-                    entry.enabled = model.connected && model.view().is_some();
-                }
-                if matches!(
-                    entry.action,
-                    Intent::Switcher
-                        | Intent::NewSession
-                        | Intent::NewWindow
-                        | Intent::Sidebar
-                        | Intent::Settings
-                ) && let Some((name, args)) = entry.action.shortcut()
-                {
-                    entry.action = Intent::ClientAction(name, args);
-                }
-                entries.push(entry);
-            }
-            if let Some(avail) = self.updates.available() {
-                entries.push(Entry::new(
-                    format!("Update Rex Linux ({})…", avail.version),
-                    self.updates.channel.id(),
-                    "Workspace",
-                    Intent::Updates,
-                ));
-            }
-            if self.can_start_ssh(self.active) {
-                entries.push(Entry::new(
-                    "Start personal server…",
-                    host_name,
-                    "Workspace",
-                    Intent::StartSsh(self.active),
-                ));
-            }
-            if let Some(id) = model.window().and_then(|w| w.window_id.clone()) {
-                entries.push(Entry::new(
-                    "Rename tab…",
-                    "",
-                    "Workspace",
-                    Intent::RenameWindow(id.clone()),
-                ));
-                entries.push(Entry::new(
-                    "Close tab…",
-                    "",
-                    "Workspace",
-                    Intent::CloseWindow(id),
-                ));
-            }
-            entries.extend(self.tab_commands());
-            entries.extend(self.font_commands());
-            entries.push(super::help::command());
-        }
-        if !sessions_only
+        // A pane's own menu: the four sides, this pane, and Close last. Commands lists the
+        // same actions and more in its Pane group (`commands.rs`).
+        if pane_only
             && let Some(target) = panel
                 .target
                 .clone()
                 .or_else(|| self.focused_block().and_then(|b| self.target(&b)))
         {
-            let group = if pane_only {
-                String::new()
-            } else {
-                format!("Pane · {}", target.name)
-            };
             let zoomed = model
                 .window()
                 .is_some_and(|w| w.zoomed_block_id.as_ref() == Some(&target.block));
-            // A pane's own menu offers the four sides; Commands adds the split that picks a
-            // side and the focus moves, which act on the focused pane.
             for way in SplitWay::ALL {
-                if pane_only && way == SplitWay::BestFit {
+                // The split that picks a side is in Commands only.
+                if way == SplitWay::BestFit {
                     continue;
                 }
                 entries.push(Entry::new(
                     way.label(),
                     "",
-                    &group,
+                    "",
                     Intent::Pane(target.clone(), PaneAction::Split(way)),
                 ));
-            }
-            if !pane_only {
-                entries.extend(self.focus_commands(&group));
             }
             for (label, key, action) in [
                 (
@@ -758,11 +637,9 @@ impl Workspace {
                 ("Reconnect terminal", "", PaneAction::Reconnect),
                 ("Close pane…", "", PaneAction::Close),
             ] {
-                let mut entry =
-                    Entry::new(label, key, &group, Intent::Pane(target.clone(), action));
+                let mut entry = Entry::new(label, key, "", Intent::Pane(target.clone(), action));
                 // The menu's groups: where to split, this pane, and Close last.
-                entry.separated =
-                    pane_only && matches!(action, PaneAction::Zoom | PaneAction::Close);
+                entry.separated = matches!(action, PaneAction::Zoom | PaneAction::Close);
                 entries.push(entry);
             }
         }
@@ -861,6 +738,12 @@ impl Workspace {
                     .contains(&lower)
             });
         }
+        // Commands: its rows first, then the sessions and tabs a search found.
+        if !sessions_only && !pane_only {
+            let mut commands = self.command_entries(&query);
+            commands.append(&mut entries);
+            entries = commands;
+        }
         if sessions_only {
             let (create, elsewhere, key) = match &named {
                 Some(name) => (
@@ -891,7 +774,7 @@ impl Workspace {
         entries
     }
 
-    fn shortcut_details(&self, entries: &mut [Entry]) {
+    pub(super) fn shortcut_details(&self, entries: &mut [Entry]) {
         for entry in entries {
             if entry.detail.starts_with("Mouse ") {
                 continue;

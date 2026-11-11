@@ -387,14 +387,16 @@ pub fn defaults() -> KeymapDefault {
         ("ctrl+shift+v", "pane.paste"),
         ("ctrl+shift+f", "client.search"),
         ("ctrl+shift+r", "pane.reconnect"),
+        // Of an action's bindings the last is the one Commands and menus show: the main
+        // block's key, not the numpad's.
+        ("ctrl+[NumpadAdd]", "client.zoom.in"),
         ("ctrl+=", "client.zoom.in"),
         ("ctrl+shift+=", "client.zoom.in"),
         ("ctrl++", "client.zoom.in"),
-        ("ctrl+[NumpadAdd]", "client.zoom.in"),
-        ("ctrl+-", "client.zoom.out"),
         ("ctrl+[NumpadSubtract]", "client.zoom.out"),
-        ("ctrl+0", "client.zoom.reset"),
+        ("ctrl+-", "client.zoom.out"),
         ("ctrl+[Numpad0]", "client.zoom.reset"),
+        ("ctrl+0", "client.zoom.reset"),
         // Terminal font size, beside interface zoom rather than in place of it.
         ("ctrl+alt+=", "client.font.increase"),
         ("ctrl+alt+shift+=", "client.font.increase"),

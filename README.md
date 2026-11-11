@@ -18,7 +18,7 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 - Multiple saved hosts, each with its sessions; session windows are tabs and splits follow the server's layout.
 - Unix-socket, HTTPS/WSS and SSH endpoints. Add host lists the machines on your tailnet: a server that answers shows its reachable endpoint and, on API 12, a review of its listener addresses and access rules before connecting. Other machines take an SSH user name and are reached by forwarding their Rex socket over SSH (Tailscale SSH needs no keys).
 - A single toolbar with session identity, tabs, commands and the window's own controls. A tab with one pane draws it edge to edge; splits are rounded pane cards. Tabs close from their right-click menu, a middle-click or `Ctrl Shift W`, always behind a confirmation; the same menu renames a tab, mutes it, moves it left or right in its session's order and closes the other tabs. Host-grouped session navigation opens on demand, with an optional sidebar (Ctrl Shift B) that opens at launch as it was left. Tabs can sit in the toolbar or, while the sidebar is open, under each session in the sidebar.
-- Searchable session switcher (`Ctrl K`) and command palette (`Ctrl Shift P`). **Rex help** in Commands opens this guide for the installed version in your browser.
+- Searchable session switcher (`Ctrl K`) and command palette (`Ctrl Shift P`). Commands lists every command under Session, Tab, Pane, Host, View and App headings that name what is on screen, about twenty rows at a time, each with its current shortcut; typing searches commands, sessions and the current session's tabs as one list. Among them: Next and Previous session, Refresh sessions, Close session…, Collapse other hosts, Change terminal theme… and Change interface theme…, compact or comfortable panes, tabs in the sidebar or toolbar, interface zoom and terminal font size, Copy version info, **Report an issue** and **Rex help**, which opens this guide for the installed version in your browser. A host's own actions (those its Rex configuration defines with `rex.action`, and its block types' titled actions) are listed under Server actions when they need no arguments.
 - Splits on any side of a pane (right, left, down, up) or along its longer side (best fit), and focus that moves by direction or cycles through a tab's panes.
 - A window title of `<tab> - <session> · <host>`, so a task switcher can tell windows apart.
 - Snapshot restore, live output, physical-layout key press and release forwarding with dead-key composition, bracketed paste, text selection and copy, local scrollback, and mouse/wheel reporting for terminal programs. Right-click always opens the pane menu; Shift+right-click sends the click to a program that tracks the mouse, and Shift with the left button selects text locally.
@@ -273,7 +273,7 @@ Global tab navigation uses cached tab order without enabling extra prefetch: a s
 | Ctrl + / Ctrl − / Ctrl 0 | Enlarge / shrink / reset the whole interface | `client.zoom.in` / `client.zoom.out` / `client.zoom.reset` |
 | Ctrl Alt + / Ctrl Alt − / Ctrl Alt 0 | Increase / decrease / reset the terminal font size | `client.font.increase` / `client.font.decrease` / `client.font.reset` |
 
-These are the client defaults; bound chords do not reach terminal programs, and every other key goes to the focused pane. Interface zoom changes in 10% steps (70–150%), is saved as `ui_scale`, and is independent of the terminal font size. `Ctrl =` and the numpad `+`/`−` also work. The terminal font size changes one point at a time within 8–48 pt (reset returns to 15 pt), applies to every terminal and is saved as `font_size`; `Ctrl Alt =` also works. Commands lists the three font size actions too.
+These are the client defaults; bound chords do not reach terminal programs, and every other key goes to the focused pane. Interface zoom changes in 10% steps (70–150%), is saved as `ui_scale`, and is independent of the terminal font size. `Ctrl =` and the numpad `+`/`−` also work. The terminal font size changes one point at a time within 8–48 pt (reset returns to 15 pt), applies to every terminal and is saved as `font_size`; `Ctrl Alt =` also works. Commands lists the zoom and font size actions too, and every other action here that needs no argument.
 
 The following actions have no default key binding:
 
@@ -285,6 +285,13 @@ The following actions have no default key binding:
 | `client.tab.mute` | None | Mute the current tab on this client, or unmute it |
 | `client.tab.close_others` | None | Confirm closing every other tab of the current session |
 | `session.rename` | None | Open the current session's rename dialog |
+| `session.next` / `session.previous` | None | Show the next / previous session, in sidebar order across connected hosts (wraps) |
+| `session.refresh` | None | Read every connected host's session list again, and the layout of the session each shows (read-only; sessions normally follow the server's events without it) |
+| `session.close` | None | Confirm closing the current session |
+| `client.sidebar.collapse_others` | None | Collapse every host in the sidebar except the current one |
+| `client.theme.choose` | None | Open the terminal theme list |
+| `client.version.copy` | None | Copy this build's version details, as Settings → About does |
+| `client.issue.report` | None | Open the issue form in the browser |
 | `pane.close` | None | Confirm closing the focused pane |
 | `pane.focus_next` | None | Focus the next pane of the current tab, in the server's layout order (wraps) |
 | `pane.focus_previous` | None | Focus the previous pane of the current tab (wraps) |
@@ -429,8 +436,10 @@ server’s original prefix spellings. Action arguments are checked before dispat
 Keys accept modifier aliases, named keys, F1–F12, W3C physical codes and `>` sequences.
 Letters follow the keyboard layout, with physical US-position fallbacks on
 non-Latin layouts; Shift stays a modifier instead of being folded into the key.
-Key modes, a recording editor, server actions in Commands and pane-resize bindings
-are not implemented. Cross-server `client_call_requested` relaying is also not
+Key modes, a recording editor and pane-resize bindings are not implemented. Commands
+runs a server action with `client.action` (origin `palette`) for the session and pane
+on screen, once: a failure is a notice and is never retried. Server actions that
+require arguments are not listed. Cross-server `client_call_requested` relaying is also not
 implemented ([#20](https://github.com/shuv1337/rex-rune/issues/20)). Agents should use
 Rex's session, window and block commands for server state, and show refusal messages.
 

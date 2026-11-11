@@ -276,38 +276,32 @@ impl Workspace {
         entries
     }
 
-    /// The tab actions Commands lists for the tab on screen, beside Rename tab and Close tab.
-    pub fn tab_commands(&self) -> Vec<Entry> {
-        let Some(target) = self.active_tab() else {
-            return Vec::new();
-        };
+    /// The tab actions Commands lists for the tab on screen, beside Rename tab and Close tab:
+    /// mute, the two moves and Close other tabs.
+    pub fn tab_commands(&self) -> Option<[Entry; 4]> {
+        let target = self.active_tab()?;
         let connected = self.model().connected;
         let (place, count) = self
             .tab_order(&target)
             .map_or((0, 0), |(place, order)| (place, order.len()));
         let (left, right) = self.move_labels();
-        [
-            (self.mute_label(&target), TabAction::Mute, true),
-            (left, TabAction::MoveLeft, connected && place > 0),
-            (right, TabAction::MoveRight, connected && place + 1 < count),
-            (
-                "Close other tabs…",
-                TabAction::CloseOthers,
-                connected && count > 1,
-            ),
-        ]
-        .into_iter()
-        .map(|(label, action, enabled)| {
-            let mut entry = Entry::new(
-                label,
-                "",
-                "Workspace",
-                Intent::Window(target.clone(), action),
-            );
-            entry.enabled = enabled;
-            entry
-        })
-        .collect()
+        Some(
+            [
+                (self.mute_label(&target), TabAction::Mute, true),
+                (left, TabAction::MoveLeft, connected && place > 0),
+                (right, TabAction::MoveRight, connected && place + 1 < count),
+                (
+                    "Close other tabs…",
+                    TabAction::CloseOthers,
+                    connected && count > 1,
+                ),
+            ]
+            .map(|(label, action, enabled)| {
+                let mut entry = Entry::new(label, "", "", Intent::Window(target.clone(), action));
+                entry.enabled = enabled;
+                entry
+            }),
+        )
     }
 
     fn mute_label(&self, target: &TabTarget) -> &'static str {

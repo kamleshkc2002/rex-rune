@@ -3,6 +3,7 @@ mod about;
 mod actions;
 mod activity;
 mod bindings;
+mod commands;
 mod dialogs;
 mod discover;
 mod font_size;

@@ -97,23 +97,27 @@ impl Workspace {
         self.request(method, json!({"wrap": true}));
     }
 
-    /// Commands' rows for the focus moves, which need a second pane to move to.
-    pub(super) fn focus_commands(&self, group: &str) -> Vec<Entry> {
+    /// Commands' rows for the focus moves, which need a second pane to move to: next and
+    /// previous in the tab's order, then the pane on each side.
+    pub(super) fn focus_commands(&self) -> [Entry; 6] {
         let model = self.model();
         let panes = model.window().map_or(0, |window| {
             window.layers.iter().map(|layer| layer.blocks.len()).sum()
         });
+        let direction = |side: &str| ("pane.focus", json!({ "direction": side }));
         [
-            ("Focus next pane", FOCUS_NEXT),
-            ("Focus previous pane", FOCUS_PREVIOUS),
+            ("Focus next pane", (FOCUS_NEXT, Value::Null)),
+            ("Focus previous pane", (FOCUS_PREVIOUS, Value::Null)),
+            ("Focus pane left", direction("left")),
+            ("Focus pane right", direction("right")),
+            ("Focus pane up", direction("up")),
+            ("Focus pane down", direction("down")),
         ]
-        .into_iter()
-        .map(|(label, action)| {
-            let mut entry = Entry::new(label, "", group, Intent::ClientAction(action, Value::Null));
+        .map(|(label, (action, args))| {
+            let mut entry = Entry::new(label, "", "", Intent::ClientAction(action, args));
             entry.enabled = model.connected && panes > 1;
             entry
         })
-        .collect()
     }
 }
 

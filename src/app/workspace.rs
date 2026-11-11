@@ -1343,6 +1343,7 @@ impl Workspace {
                 self.open_panel(PanelKind::RemoveHost(host), &format!("Remove {label}?"), &[]);
             }
             Intent::Retry => self.send(self.active, HostCommand::Reconnect),
+            Intent::Command(command) => command.run(self, tx),
         }
     }
 

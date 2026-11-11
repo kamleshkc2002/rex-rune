@@ -55,6 +55,14 @@ enum Handler {
     FontDecrease,
     FontReset,
     Help,
+    CloseSession,
+    NextSession,
+    PreviousSession,
+    RefreshSessions,
+    CollapseOtherHosts,
+    ChooseTheme,
+    CopyVersion,
+    ReportIssue,
 }
 
 pub struct Spec {
@@ -110,6 +118,14 @@ specs! {
     super::font_size::DECREASE => FontDecrease,
     super::font_size::RESET => FontReset,
     super::help::ACTION => Help,
+    super::commands::CLOSE_SESSION => CloseSession,
+    super::commands::NEXT_SESSION => NextSession,
+    super::commands::PREVIOUS_SESSION => PreviousSession,
+    super::commands::REFRESH_SESSIONS => RefreshSessions,
+    super::commands::COLLAPSE_OTHER_HOSTS => CollapseOtherHosts,
+    super::commands::CHOOSE_THEME => ChooseTheme,
+    super::commands::COPY_VERSION => CopyVersion,
+    super::commands::REPORT_ISSUE => ReportIssue,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -165,7 +181,21 @@ impl Spec {
             FontIncrease | FontDecrease | FontReset => Remote::Never(
                 "Only the person at this computer can change saved terminal preferences.",
             ),
-            Help => Remote::Never("Only the person at this computer can open its browser."),
+            Help | ReportIssue => {
+                Remote::Never("Only the person at this computer can open its browser.")
+            }
+            CloseSession => Remote::Never("Use rex session kill instead."),
+            NextSession | PreviousSession => {
+                Remote::Never("Use rex do session.select on the target host instead.")
+            }
+            RefreshSessions => Remote::Never("Use rex session ls instead."),
+            CollapseOtherHosts => Remote::Never(
+                "Only the person at this computer can change saved interface preferences.",
+            ),
+            ChooseTheme => {
+                Remote::Never("Only the person at this computer can open dialogs and popups.")
+            }
+            CopyVersion => Remote::Never("Remote actions cannot change this computer's clipboard."),
         }
     }
     pub fn global(&self) -> bool {
@@ -205,9 +235,9 @@ impl Spec {
             Handler::PreviousGlobal => "Previous tab across hosts",
             Handler::Back => "Back in history",
             Handler::Forward => "Forward in history",
-            Handler::ZoomIn => "Enlarge interface",
-            Handler::ZoomOut => "Shrink interface",
-            Handler::ZoomReset => "Reset interface size",
+            Handler::ZoomIn => "Increase interface zoom",
+            Handler::ZoomOut => "Decrease interface zoom",
+            Handler::ZoomReset => "Reset interface zoom",
             Handler::SwitchSession => "Switch session",
             Handler::SelectSession => "Show session",
             Handler::NewSession => "New session",
@@ -234,6 +264,14 @@ impl Spec {
             Handler::FontDecrease => "Decrease terminal font size",
             Handler::FontReset => "Reset terminal font size",
             Handler::Help => "Rex help",
+            Handler::CloseSession => "Close session",
+            Handler::NextSession => "Next session",
+            Handler::PreviousSession => "Previous session",
+            Handler::RefreshSessions => "Refresh sessions",
+            Handler::CollapseOtherHosts => "Collapse other hosts",
+            Handler::ChooseTheme => "Change terminal theme",
+            Handler::CopyVersion => "Copy version info",
+            Handler::ReportIssue => "Report an issue",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -244,7 +282,11 @@ impl Spec {
             | Handler::ZoomIn
             | Handler::ZoomOut
             | Handler::ZoomReset
-            | Handler::Help => "Interface",
+            | Handler::Help
+            | Handler::CollapseOtherHosts
+            | Handler::ChooseTheme
+            | Handler::CopyVersion
+            | Handler::ReportIssue => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -253,7 +295,10 @@ impl Spec {
             | Handler::Forward
             | Handler::SwitchSession
             | Handler::SelectSession
-            | Handler::GotoTab => "Navigate",
+            | Handler::GotoTab
+            | Handler::NextSession
+            | Handler::PreviousSession
+            | Handler::RefreshSessions => "Navigate",
             Handler::NewTab
             | Handler::NewSession
             | Handler::Close
@@ -263,7 +308,8 @@ impl Spec {
             | Handler::ClosePane
             | Handler::MoveTab
             | Handler::MuteTab
-            | Handler::CloseOtherTabs => "Create and close",
+            | Handler::CloseOtherTabs
+            | Handler::CloseSession => "Create and close",
             Handler::Split
             | Handler::ZoomPane
             | Handler::FocusPane
@@ -475,6 +521,17 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::FontDecrease => s.step_font_size(-1),
         Handler::FontReset => s.step_font_size(0),
         Handler::Help => s.open_link(super::help::url()),
+        Handler::CloseSession => s.close_session_on_screen(tx),
+        Handler::NextSession => s.cycle_session(1, tx),
+        Handler::PreviousSession => s.cycle_session(-1, tx),
+        Handler::RefreshSessions => s.refresh_sessions(),
+        Handler::CollapseOtherHosts => s.collapse_other_hosts(),
+        Handler::ChooseTheme => s.perform(Intent::ChooseTheme, tx),
+        Handler::CopyVersion => {
+            tx.copy(super::about::version_info(s));
+            s.inform("Version info copied");
+        }
+        Handler::ReportIssue => s.open_link(super::commands::issue_url()),
         Handler::SendKey => {
             if let Some(payloads) = args["key"].as_str().and_then(super::keys::synthesize)
                 && let Some(term) = s.active_terminal_mut()

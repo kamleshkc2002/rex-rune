@@ -17,7 +17,7 @@ pub fn command() -> Entry {
     Entry::new(
         "Rex help",
         "",
-        "Workspace",
+        "",
         Intent::ClientAction(ACTION, Value::Null),
     )
 }

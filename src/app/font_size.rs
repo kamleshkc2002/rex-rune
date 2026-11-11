@@ -53,25 +53,18 @@ impl Workspace {
 
     /// Commands' rows for the terminal font size; a step that would change nothing is
     /// disabled.
-    pub(super) fn font_commands(&self) -> Vec<Entry> {
+    pub(super) fn font_commands(&self) -> [Entry; 3] {
         let size = self.settings.font_size;
         [
             ("Increase terminal font size", INCREASE, 1),
             ("Decrease terminal font size", DECREASE, -1),
             ("Reset terminal font size", RESET, 0),
         ]
-        .into_iter()
         .map(|(label, action, step)| {
-            let mut entry = Entry::new(
-                label,
-                "",
-                "Workspace",
-                Intent::ClientAction(action, Value::Null),
-            );
+            let mut entry = Entry::new(label, "", "", Intent::ClientAction(action, Value::Null));
             entry.enabled = stepped(size, step) != size;
             entry
         })
-        .collect()
     }
 }
 
