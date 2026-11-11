@@ -297,12 +297,24 @@ impl Task {
                     return;
                 }
             }
+            // The question may have waited a while: look at the disk again before the yes counts.
+            if let Some(question) = confirmation
+                && let Err(failure) =
+                    config
+                        .limits
+                        .recheck(question.reason, hint, space.free().ok())
+            {
+                update(&shared, id, Event::Failed(failure));
+                stream::release(&endpoint, &ticket).await;
+                return;
+            }
             update(&shared, id, Event::Confirmed);
         }
         if confirmation.is_some_and(|question| question.reason == Reason::LowSpace) {
-            // A yes to "this leaves less than the reserve" lets this transfer use the reserve.
-            // The growth cap, the stall timer and a real disk-full error still stop it.
-            config.limits.reserve = 0;
+            // A yes to "this leaves less than the reserve" lets this transfer use the reserve down
+            // to the floor. The growth cap, the stall timer and a real disk-full error still
+            // stop it.
+            config.limits.reserve = config.limits.reserve.min(config.limits.low_floor);
         }
         let stop = async {
             loop {

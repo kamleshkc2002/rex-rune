@@ -75,6 +75,10 @@ pub struct Limits {
     /// Abort when the destination has less than this left; also kept free by the confirmation
     /// rule: 256 MiB.
     pub reserve: u64,
+    /// What a yes to the low-space question still keeps free: 16 MiB. The transfer may eat into
+    /// the reserve but never below this, so a server that sends more than it said cannot fill
+    /// the disk to nothing. A file that cannot fit with this left over is refused up front.
+    pub low_floor: u64,
     /// The stream may exceed the hint by this much, or by the hint itself again if that is more:
     /// 64 MiB.
     pub growth: u64,
@@ -91,6 +95,7 @@ impl Default for Limits {
         Self {
             confirm_at: GIB,
             reserve: 256 * MIB,
+            low_floor: 16 * MIB,
             growth: 64 * MIB,
             stall: Duration::from_secs(30),
             per_host: 3,
@@ -106,8 +111,8 @@ pub enum Reason {
     /// reserve: a free-space check during the transfer still stops it.
     Large,
     /// The file fits in the free space but not with [`Limits::reserve`] left over. A yes means
-    /// this transfer may use the reserve; the growth cap, the stall timer and a full disk still
-    /// stop it.
+    /// this transfer may use the reserve down to [`Limits::low_floor`]; below that, the growth
+    /// cap, the stall timer and a full disk stop it.
     LowSpace,
 }
 
@@ -135,9 +140,10 @@ pub enum Admission {
 impl Limits {
     /// Decides what happens to a file of `hint` bytes when `free` bytes are available (`None`
     /// when the filesystem wouldn't say):
-    /// - less free space than the reserve, or a hint above the free space: refused with
-    ///   [`Failure::LowSpace`], since no answer could make it fit;
-    /// - a hint above the free space less the reserve: a [`Reason::LowSpace`] question;
+    /// - a hint above the free space less [`Limits::low_floor`]: refused with
+    ///   [`Failure::LowSpace`], since no answer could make it fit with the floor left over;
+    /// - less free space than the reserve, or a hint above the free space less the reserve: a
+    ///   [`Reason::LowSpace`] question;
     /// - a hint of [`Limits::confirm_at`] or more: a [`Reason::Large`] question;
     /// - otherwise it starts. Unknown free space asks only the large-file question.
     pub fn admission(&self, hint: u64, free: Option<u64>) -> Admission {
@@ -146,7 +152,10 @@ impl Limits {
                 .confirmation_without_space(hint)
                 .map_or(Admission::Start, Admission::Ask);
         };
-        if free < self.reserve || hint > free {
+        if free
+            .checked_sub(self.low_floor)
+            .is_none_or(|room| hint > room)
+        {
             return Admission::Refuse(Failure::LowSpace { free });
         }
         self.confirmation(hint, free)
@@ -155,9 +164,10 @@ impl Limits {
 
     /// Whether a file of `hint` bytes that fits in `free` bytes needs confirming. A hint that is
     /// both large and over the free space less the reserve is reported as [`Reason::LowSpace`].
-    /// [`Limits::admission`] is what decides; it refuses a hint that doesn't fit at all.
+    /// [`Limits::admission`] is what decides; it refuses a hint that doesn't fit at all. With
+    /// less free space than the reserve every file is a [`Reason::LowSpace`] question.
     pub fn confirmation(&self, hint: u64, free: u64) -> Option<Confirmation> {
-        let reason = if hint > free.saturating_sub(self.reserve) {
+        let reason = if free < self.reserve || hint > free - self.reserve {
             Reason::LowSpace
         } else if hint >= self.confirm_at {
             Reason::Large
@@ -180,6 +190,28 @@ impl Limits {
             hint,
             free: None,
         })
+    }
+
+    /// Looks again at a transfer whose question was answered yes while `confirmed` was asked,
+    /// since the answer may have waited a long while and the disk may have filled meanwhile.
+    /// Fails with what [`Limits::admission`] now refuses with; and with [`Failure::LowSpace`]
+    /// when a [`Reason::Large`] yes meets space that now needs the low-space question (the
+    /// person answered a different question). Otherwise the transfer goes on.
+    pub(crate) fn recheck(
+        &self,
+        confirmed: Reason,
+        hint: u64,
+        free: Option<u64>,
+    ) -> Result<(), Failure> {
+        match self.admission(hint, free) {
+            Admission::Refuse(failure) => Err(failure),
+            Admission::Ask(Confirmation {
+                reason: Reason::LowSpace,
+                free: Some(free),
+                ..
+            }) if confirmed == Reason::Large => Err(Failure::LowSpace { free }),
+            _ => Ok(()),
+        }
     }
 
     /// The most bytes a stream may carry for a hint: the larger of twice the hint and the hint

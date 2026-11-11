@@ -992,11 +992,11 @@ async fn cancelling_before_the_stream_is_open_frees_the_ticket() {
 
 #[tokio::test]
 async fn too_little_free_space_stops_it_before_and_during_the_stream() {
-    // Before: under the reserve, a question can't help, so the ticket is freed and no data is taken.
+    // Before: under the floor, a question can't help, so the ticket is freed and no data is taken.
     let f = Fixture::new().await;
     let mut config = f.config();
     config.space = Some(Arc::new(|| -> std::io::Result<u64> {
-        Ok(100 * 1024 * 1024)
+        Ok(10 * 1024 * 1024)
     }));
     let (id, command) = f.request(config);
     let listener = f.listener.clone();
@@ -1012,7 +1012,7 @@ async fn too_little_free_space_stops_it_before_and_during_the_stream() {
     assert_eq!(
         finished(&host, id).await,
         State::Failed(Failure::LowSpace {
-            free: 100 * 1024 * 1024
+            free: 10 * 1024 * 1024
         })
     );
     assert!(server.await.unwrap().0, "the ticket was released");
@@ -1105,16 +1105,20 @@ async fn a_fourth_download_for_a_host_is_refused_until_one_finishes() {
     drop(host);
 }
 
-/// The disk's free space as a test sees it: the first look (when the transfer is admitted)
-/// reports `first`, every later one (during the stream) `later`.
+/// The disk's free space as a test sees it: the first two looks (when the transfer is admitted,
+/// and again when the question is answered yes) report `first`, every later one (during the
+/// stream) `later`.
 fn space_of(first: u64, later: u64) -> Arc<dyn download::FreeSpace> {
+    space_looks(&[first, first, later])
+}
+
+/// Each look at the disk reports the next of `values`; the last one repeats.
+fn space_looks(values: &[u64]) -> Arc<dyn download::FreeSpace> {
+    let values = values.to_vec();
     let looks = AtomicU64::new(0);
     Arc::new(move || -> std::io::Result<u64> {
-        Ok(if looks.fetch_add(1, Ordering::Relaxed) == 0 {
-            first
-        } else {
-            later
-        })
+        let look = looks.fetch_add(1, Ordering::Relaxed) as usize;
+        Ok(values[look.min(values.len() - 1)])
     })
 }
 
@@ -1125,9 +1129,18 @@ async fn confirmed(
     steps: Vec<Step>,
     configure: impl FnOnce(&mut Config),
 ) -> (Confirmation, State, Fixture) {
+    confirmed_in(hint, steps, |config, _| configure(config)).await
+}
+
+/// [`confirmed`], with the destination folder known to the configuration.
+async fn confirmed_in(
+    hint: u64,
+    steps: Vec<Step>,
+    configure: impl FnOnce(&mut Config, &Path),
+) -> (Confirmation, State, Fixture) {
     let f = Fixture::new().await;
     let mut config = f.config();
-    configure(&mut config);
+    configure(&mut config, &f.dir);
     let (id, command) = f.request(config);
     let listener = f.listener.clone();
     let server = tokio::spawn(async move {
@@ -1156,10 +1169,11 @@ async fn confirmed(
     (question, state, f)
 }
 
-/// Limits small enough to play with: a reserve of 1000 bytes.
+/// Limits small enough to play with: a reserve of 1000 bytes and a floor of 100.
 fn small_limits() -> Limits {
     Limits {
         reserve: 1_000,
+        low_floor: 100,
         check_every: 100,
         ..Limits::default()
     }
@@ -1195,13 +1209,13 @@ async fn a_file_larger_than_the_free_space_is_refused_without_a_question() {
 #[tokio::test]
 async fn a_yes_to_the_low_space_question_lets_the_file_use_the_reserve() {
     // 1200 free, reserve 1000, a 600-byte file: it fits, and would leave 600 < 1000. The disk is
-    // reported at 100 free once the stream runs, far under the reserve.
+    // reported at 500 free once the stream runs: under the reserve, over the floor.
     let bytes = pattern(600);
     let mut steps = chunks(&bytes);
     steps.extend([Step::End, Step::Close(1000, "")]);
     let (question, state, f) = confirmed(600, steps, |c| {
         c.limits = small_limits();
-        c.space = Some(space_of(1_200, 100));
+        c.space = Some(space_of(1_200, 500));
     })
     .await;
     assert_eq!(
@@ -1225,7 +1239,7 @@ async fn a_yes_to_the_low_space_question_lets_the_file_use_the_reserve() {
     let (_, state, f) = confirmed(600, steps, |c| {
         c.limits = small_limits();
         c.limits.growth = 100;
-        c.space = Some(space_of(1_200, 100));
+        c.space = Some(space_of(1_200, 500));
     })
     .await;
     // Hint 600: the cap is the larger of 1200 and 700.
@@ -1238,7 +1252,7 @@ async fn a_yes_to_the_low_space_question_lets_the_file_use_the_reserve() {
     let (_, state, f) = confirmed(600, steps, |c| {
         c.limits = small_limits();
         c.limits.stall = Duration::from_millis(300);
-        c.space = Some(space_of(1_200, 100));
+        c.space = Some(space_of(1_200, 500));
     })
     .await;
     assert_eq!(state, State::Failed(Failure::Stalled));
@@ -1260,6 +1274,125 @@ async fn a_yes_to_the_large_file_question_keeps_the_reserve_check() {
     assert_eq!(question.reason, Reason::Large);
     assert_eq!(state, State::Failed(Failure::LowSpace { free: 100 }));
     assert_clean(&f, &[]);
+}
+
+/// A disk of `total` bytes holding nothing but what is in `dir`: its free space falls as the
+/// partial file grows.
+struct Disk {
+    dir: PathBuf,
+    total: u64,
+}
+
+impl download::FreeSpace for Disk {
+    fn free(&self) -> std::io::Result<u64> {
+        let mut used = 0;
+        for entry in std::fs::read_dir(&self.dir)? {
+            used += entry?.metadata()?.len();
+        }
+        Ok(self.total.saturating_sub(used))
+    }
+}
+
+#[tokio::test]
+async fn a_server_that_overruns_its_hint_after_a_low_space_yes_cannot_take_the_floor() {
+    // Reserve 1000, floor 100, a 1500-byte disk and a 1000-byte file: it fits, but leaves 500, so
+    // it is asked about. The server then sends 2000 bytes (the growth cap allows them). The yes
+    // lowers the reserve to the floor, not to nothing: the transfer is stopped with LowSpace when
+    // the disk is under 100 free, at most one check interval (100 bytes) late.
+    let mut steps: Vec<Step> = pattern(2_000)
+        .chunks(50)
+        .map(|c| Step::Data(c.to_vec()))
+        .collect();
+    steps.push(Step::Hold);
+    let (question, state, f) = confirmed_in(1_000, steps, move |c, dir| {
+        c.limits = small_limits();
+        c.limits.stall = Duration::from_millis(500);
+        c.space = Some(Arc::new(Disk {
+            dir: dir.to_path_buf(),
+            total: 1_500,
+        }));
+    })
+    .await;
+    assert_eq!(question.reason, Reason::LowSpace);
+    let State::Failed(Failure::LowSpace { free }) = state else {
+        panic!("{state:?}")
+    };
+    assert!(free < 100, "stopped under the floor, not before it: {free}");
+    assert!(
+        100 - free <= 100 + 50,
+        "crossed the floor by more than a check interval and a chunk: {free}"
+    );
+    assert_clean(&f, &[]);
+}
+
+/// A download that is asked about and answered yes, whose free space the person's answer finds
+/// changed (`looks`: the admission, then the answer). Returns the question, the final state and
+/// whether the ticket was released.
+async fn yes_to_a_stale_question(
+    hint: u64,
+    looks: &[u64],
+    configure: impl FnOnce(&mut Config),
+) -> (Confirmation, State, bool) {
+    let f = Fixture::new().await;
+    let mut config = f.config();
+    config.limits = small_limits();
+    configure(&mut config);
+    config.space = Some(space_looks(looks));
+    let (id, command) = f.request(config);
+    let listener = f.listener.clone();
+    let server = tokio::spawn(async move {
+        let mut ws = control(&listener, 13).await;
+        let request = recv(&mut ws).await;
+        send(&mut ws, reply(&request, ticket_reply(hint))).await;
+        (released(&listener).await, ws)
+    });
+    let host = HostConnection::spawn(f.endpoint.clone(), None, None, None, false, None);
+    connected(&host).await;
+    host.commands.send(command).unwrap();
+    let State::AwaitingConfirmation(question) = state_of(&host, id, "the question", |s| {
+        matches!(s, State::AwaitingConfirmation(_))
+    })
+    .await
+    else {
+        unreachable!()
+    };
+    host.commands
+        .send(HostCommand::DownloadConfirm(id))
+        .unwrap();
+    let state = finished(&host, id).await;
+    let released = server.await.unwrap().0;
+    drop(host);
+    assert_clean(&f, &[]);
+    (question, state, released)
+}
+
+#[tokio::test]
+async fn a_yes_that_waited_is_checked_against_the_disk_as_it_is_now() {
+    // A large file, asked about with plenty of room; by the yes the disk can't hold it with the
+    // floor left over (650 free, 600 bytes, floor 100): refused, and the ticket is freed.
+    let (question, state, released) = yes_to_a_stale_question(600, &[10_000, 650], |c| {
+        c.limits.confirm_at = 500;
+    })
+    .await;
+    assert_eq!(question.reason, Reason::Large);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 650 }));
+    assert!(released, "the ticket was released");
+
+    // The same large yes, but the disk now needs the other question (1200 free leaves 600 < 1000):
+    // the person answered a different question, so it fails instead of proceeding.
+    let (question, state, released) = yes_to_a_stale_question(600, &[10_000, 1_200], |c| {
+        c.limits.confirm_at = 500;
+    })
+    .await;
+    assert_eq!(question.reason, Reason::Large);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 1_200 }));
+    assert!(released, "the ticket was released");
+
+    // A yes to the low-space question, and the disk has since lost the room for the floor.
+    let (question, state, released) = yes_to_a_stale_question(600, &[1_200, 650], |_| {}).await;
+    assert_eq!(question.reason, Reason::LowSpace);
+    assert_eq!(state, State::Failed(Failure::LowSpace { free: 650 }));
+    assert!(released, "the ticket was released");
 }
 
 #[tokio::test]

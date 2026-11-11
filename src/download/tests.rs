@@ -53,6 +53,7 @@ fn defaults_are_the_roadmaps_limits() {
     let limits = Limits::default();
     assert_eq!(limits.confirm_at, GIB);
     assert_eq!(limits.reserve, 256 * MIB);
+    assert_eq!(limits.low_floor, 16 * MIB);
     assert_eq!(limits.growth, 64 * MIB);
     assert_eq!(limits.stall, Duration::from_secs(30));
     assert_eq!(limits.per_host, 3);
@@ -85,13 +86,15 @@ fn confirmation_is_for_large_files_and_for_files_that_would_eat_the_reserve() {
         limits.confirmation(2 * GIB, GIB).unwrap().reason,
         Reason::LowSpace
     );
-    // Less free space than the reserve: any bytes at all are too many.
+    // Less free space than the reserve: every file, even an empty one, is a question.
     assert_eq!(
         limits.confirmation(1, 100 * MIB).unwrap().reason,
         Reason::LowSpace
     );
-    assert_eq!(limits.confirmation(0, 100 * MIB), None);
-    assert_eq!(limits.confirmation(0, 0), None);
+    assert_eq!(
+        limits.confirmation(0, 100 * MIB).unwrap().reason,
+        Reason::LowSpace
+    );
 
     // Space that can't be read still allows the question about a large file, and no other.
     assert_eq!(limits.confirmation_without_space(GIB - 1), None);
@@ -120,8 +123,8 @@ fn admission_refuses_what_cannot_fit_asks_what_would_eat_the_reserve_and_starts_
         limits.admission(100 * MIB, Some(300 * MIB)),
         ask(Reason::LowSpace, 100 * MIB, Some(300 * MIB))
     );
-    // The edges: free less the reserve needs no question; a byte more does; exactly the free
-    // space is still a question; a byte more than it cannot fit.
+    // The edges: free less the reserve needs no question; a byte more does; free less the floor
+    // is still a question; a byte more cannot fit while keeping the floor.
     assert_eq!(
         limits.admission(144 * MIB, Some(400 * MIB)),
         Admission::Start
@@ -131,23 +134,80 @@ fn admission_refuses_what_cannot_fit_asks_what_would_eat_the_reserve_and_starts_
         ask(Reason::LowSpace, 145 * MIB, Some(400 * MIB))
     );
     assert_eq!(
-        limits.admission(400 * MIB, Some(400 * MIB)),
-        ask(Reason::LowSpace, 400 * MIB, Some(400 * MIB))
+        limits.admission(384 * MIB, Some(400 * MIB)),
+        ask(Reason::LowSpace, 384 * MIB, Some(400 * MIB))
     );
     assert_eq!(
-        limits.admission(400 * MIB + 1, Some(400 * MIB)),
+        limits.admission(384 * MIB + 1, Some(400 * MIB)),
+        refuse(400 * MIB)
+    );
+    // Exactly the free space used to be a question; it leaves nothing, so it is refused now.
+    assert_eq!(
+        limits.admission(400 * MIB, Some(400 * MIB)),
         refuse(400 * MIB)
     );
     // A file larger than the free space is refused without a question, large or not.
     assert_eq!(limits.admission(2 * GIB, Some(GIB)), refuse(GIB));
-    // Less free space than the reserve: refused, whatever the file.
-    assert_eq!(limits.admission(1, Some(100 * MIB)), refuse(100 * MIB));
-    assert_eq!(limits.admission(0, Some(100 * MIB)), refuse(100 * MIB));
+    // Less free space than the reserve is a question for a file that leaves the floor, whatever
+    // its size, and a refusal for one that does not (or when the floor itself is gone).
+    assert_eq!(
+        limits.admission(1, Some(100 * MIB)),
+        ask(Reason::LowSpace, 1, Some(100 * MIB))
+    );
+    assert_eq!(
+        limits.admission(0, Some(100 * MIB)),
+        ask(Reason::LowSpace, 0, Some(100 * MIB))
+    );
+    assert_eq!(
+        limits.admission(85 * MIB, Some(100 * MIB)),
+        refuse(100 * MIB)
+    );
+    assert_eq!(
+        limits.admission(0, Some(16 * MIB - 1)),
+        refuse(16 * MIB - 1)
+    );
+    assert_eq!(limits.admission(0, Some(0)), refuse(0));
     // Space that can't be read: only a large file is asked about, and nothing is refused.
     assert_eq!(limits.admission(GIB - 1, None), Admission::Start);
     assert_eq!(
         limits.admission(5 * GIB, None),
         ask(Reason::Large, 5 * GIB, None)
+    );
+}
+
+#[test]
+fn a_yes_is_looked_at_again_against_the_space_there_is_now() {
+    let limits = Limits::default();
+    let low = |free| Err(Failure::LowSpace { free });
+    // Large, answered yes: still room, and a disk that cannot say, goes on.
+    assert_eq!(
+        limits.recheck(Reason::Large, 2 * GIB, Some(100 * GIB)),
+        Ok(())
+    );
+    assert_eq!(limits.recheck(Reason::Large, 2 * GIB, None), Ok(()));
+    // Large: the file no longer fits with the floor left over: refused.
+    assert_eq!(
+        limits.recheck(Reason::Large, 2 * GIB, Some(2 * GIB)),
+        low(2 * GIB)
+    );
+    // Large: space is now low enough for the other question: failed, not silently let through.
+    assert_eq!(
+        limits.recheck(Reason::Large, 2 * GIB, Some(2 * GIB + 100 * MIB)),
+        low(2 * GIB + 100 * MIB)
+    );
+    // Low space, answered yes: the same band is what was agreed to; the floor is not.
+    assert_eq!(
+        limits.recheck(Reason::LowSpace, 300 * MIB, Some(400 * MIB)),
+        Ok(())
+    );
+    assert_eq!(
+        limits.recheck(Reason::LowSpace, 300 * MIB, Some(310 * MIB)),
+        low(310 * MIB)
+    );
+    // Low space, answered yes, and the disk has since been cleared: nothing to refuse.
+    assert_eq!(
+        limits.recheck(Reason::LowSpace, 300 * MIB, Some(10 * GIB)),
+        Ok(())
     );
 }
 
@@ -875,6 +935,7 @@ fn leftover(dir: &Path, name: &str, pid: u32, started: u64) -> Record {
         name: name.into(),
         pid,
         started,
+        created: 0,
     }
 }
 
@@ -967,6 +1028,120 @@ fn a_running_apps_partial_is_not_a_leftover() {
     write_records(&records, &[record]);
     assert_eq!(records.clean_up_leftovers().len(), 1);
     assert!(names(&dir).is_empty());
+}
+
+const DAY: u64 = 24 * 60 * 60;
+
+#[test]
+fn a_leftover_in_a_folder_that_cannot_be_opened_is_kept_until_the_folder_is_back() {
+    // A drive that is not mounted at this launch: its folder is missing. The record stays, and a
+    // later launch with the folder back deletes the file.
+    let temp = Temp::new("unmounted");
+    let drive = temp.dir("drive");
+    let dir = drive.join("Downloads");
+    std::fs::create_dir(&dir).unwrap();
+    let records = temp.records();
+    let partial = format!(".big.iso.{UUID_A}.rex-part");
+    std::fs::write(dir.join(&partial), "half").unwrap();
+    write_records(&records, &[leftover(&dir, &partial, DEAD, 5)]);
+    let away = temp.0.join("away");
+    std::fs::rename(&drive, &away).unwrap();
+    let now = 1_800_000_000;
+    assert!(records.clean_up_leftovers_at(now).is_empty());
+    let kept = records.list();
+    assert_eq!(kept.len(), 1, "the record is kept");
+    assert_eq!(
+        kept[0].created, now,
+        "a record without a date counts as new"
+    );
+    // Still unreachable a week later: still kept, and its date is not moved.
+    assert!(records.clean_up_leftovers_at(now + 7 * DAY).is_empty());
+    assert_eq!(records.list()[0].created, now);
+    // The drive is back.
+    std::fs::rename(&away, &drive).unwrap();
+    assert_eq!(
+        records.clean_up_leftovers_at(now + 8 * DAY),
+        [dir.join(&partial)]
+    );
+    assert!(names(&dir).is_empty());
+    assert!(records.list().is_empty());
+}
+
+#[test]
+fn an_unreachable_leftover_is_forgotten_after_thirty_days_without_touching_anything() {
+    let temp = Temp::new("old-unreachable");
+    let dir = temp.0.join("not-mounted");
+    let bystander = temp.dir("out");
+    std::fs::write(bystander.join("precious.txt"), "keep").unwrap();
+    let records = temp.records();
+    let partial = format!(".old.{UUID_A}.rex-part");
+    let now = 1_800_000_000;
+    let mut thirty_one = leftover(&dir, &partial, DEAD, 5);
+    thirty_one.created = now - 31 * DAY;
+    let mut twenty_nine = leftover(&dir, &format!(".new.{UUID_B}.rex-part"), DEAD, 5);
+    twenty_nine.created = now - 29 * DAY;
+    write_records(&records, &[thirty_one, twenty_nine.clone()]);
+    assert!(records.clean_up_leftovers_at(now).is_empty());
+    assert_eq!(records.list(), [twenty_nine]);
+    assert_eq!(names(&bystander), ["precious.txt"]);
+}
+
+#[test]
+fn records_from_before_the_date_was_kept_still_load_and_count_as_new() {
+    let temp = Temp::new("old-format");
+    let dir = temp.0.join("not-mounted");
+    let records = temp.records();
+    std::fs::create_dir_all(records.path().parent().unwrap()).unwrap();
+    let text = format!(
+        r#"{{"partials":[{{"dir":{:?},"name":".a.{UUID_A}.rex-part","pid":{DEAD},"started":5}}]}}"#,
+        dir.to_str().unwrap()
+    );
+    std::fs::write(records.path(), text).unwrap();
+    assert_eq!(records.list()[0].created, 0);
+    let now = 1_800_000_000;
+    // Far in the future of the epoch is not "old": a record with no date starts its 30 days now.
+    assert!(records.clean_up_leftovers_at(now).is_empty());
+    assert_eq!(records.list()[0].created, now);
+    assert!(records.clean_up_leftovers_at(now + 31 * DAY).is_empty());
+    assert!(records.list().is_empty());
+}
+
+#[test]
+fn a_leftover_that_is_already_gone_is_forgotten_and_one_that_cannot_be_removed_is_kept() {
+    let temp = Temp::new("unlink");
+    let dir = temp.dir("out");
+    let records = temp.records();
+    let gone = format!(".gone.{UUID_A}.rex-part");
+    let stuck = format!(".stuck.{UUID_B}.rex-part");
+    std::fs::write(dir.join(&stuck), "half").unwrap();
+    write_records(
+        &records,
+        &[
+            leftover(&dir, &gone, DEAD, 5),
+            leftover(&dir, &stuck, DEAD, 5),
+        ],
+    );
+    // A read-only folder: the file is there, and unlinking it fails.
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let now = 1_800_000_000;
+    let deleted = records.clean_up_leftovers_at(now);
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+    if unsafe { libc::geteuid() } == 0 {
+        // Root ignores the mode: nothing to prove here, only that it was deleted.
+        assert_eq!(deleted, [dir.join(&stuck)]);
+        return;
+    }
+    assert!(deleted.is_empty());
+    let kept: Vec<String> = records.list().into_iter().map(|r| r.name).collect();
+    assert_eq!(
+        kept,
+        std::slice::from_ref(&stuck),
+        "the absent file's record is dropped"
+    );
+    assert_eq!(names(&dir), std::slice::from_ref(&stuck));
+    // Writable again: the next launch deletes it.
+    assert_eq!(records.clean_up_leftovers_at(now + DAY), [dir.join(&stuck)]);
+    assert!(records.list().is_empty());
 }
 
 #[test]

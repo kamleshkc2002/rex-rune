@@ -397,6 +397,20 @@ pub struct Record {
     /// The process that owns it, so a second running app's files are not taken for leftovers.
     pub pid: u32,
     pub started: u64,
+    /// When the record was made, in seconds since the epoch. Records written before this field
+    /// existed have 0: they count as new when first seen by a cleanup (see
+    /// [`Records::clean_up_leftovers`]).
+    #[serde(default)]
+    pub created: u64,
+}
+
+/// How long a leftover that can't be dealt with (its folder isn't there, say) is remembered.
+const KEEP_UNREACHABLE: u64 = 30 * 24 * 60 * 60;
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -481,6 +495,7 @@ impl Records {
             name: name.into(),
             pid,
             started: process_start(pid).unwrap_or(0),
+            created: unix_now(),
         });
         self.save(&file)
     }
@@ -505,7 +520,16 @@ impl Records {
     /// Only recorded files are looked at; the folder is never listed. A record can delete only
     /// a regular file, directly inside the recorded folder, whose name has the form of a partial
     /// file; nothing is followed through a symlink. Returns what was deleted.
+    ///
+    /// A record is forgotten once its file is gone (deleted now, or already absent) or it can't
+    /// be right (a folder that is not a plain folder, a name or file that is not a partial file of ours). One that couldn't be acted on, because its folder
+    /// can't be opened (a drive that isn't mounted) or the file can't be removed, is kept for
+    /// the next launch, and forgotten for good after 30 days.
     pub fn clean_up_leftovers(&self) -> Vec<PathBuf> {
+        self.clean_up_leftovers_at(unix_now())
+    }
+
+    pub(crate) fn clean_up_leftovers_at(&self, now: u64) -> Vec<PathBuf> {
         let _lock = records_lock();
         let file = self.load();
         if file.partials.is_empty() {
@@ -513,12 +537,23 @@ impl Records {
         }
         let mut keep = Vec::new();
         let mut deleted = Vec::new();
-        for record in file.partials {
+        for mut record in file.partials {
             let running = record.started != 0 && process_start(record.pid) == Some(record.started);
             if running {
                 keep.push(record);
-            } else if let Some(path) = delete_leftover(&record) {
-                deleted.push(path);
+                continue;
+            }
+            match delete_leftover(&record) {
+                Leftover::Deleted(path) => deleted.push(path),
+                Leftover::Done => {}
+                Leftover::TryAgain => {
+                    if record.created == 0 {
+                        record.created = now;
+                    }
+                    if now.saturating_sub(record.created) <= KEEP_UNREACHABLE {
+                        keep.push(record);
+                    }
+                }
             }
         }
         if let Err(error) = self.save(&RecordFile { partials: keep }) {
@@ -551,7 +586,19 @@ pub fn is_partial_name(name: &str) -> bool {
             .all(|b| b == b'-' || b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
-fn delete_leftover(record: &Record) -> Option<PathBuf> {
+/// What became of a recorded leftover.
+enum Leftover {
+    /// Deleted just now.
+    Deleted(PathBuf),
+    /// Nothing more to do: the file is already gone, or the record can't be right (a folder or
+    /// name that is not what the app made, a file that is not ours): nothing is deleted and it is
+    /// never retried.
+    Done,
+    /// The file may still be there but couldn't be reached or removed this time.
+    TryAgain,
+}
+
+fn delete_leftover(record: &Record) -> Leftover {
     if !record.dir.is_absolute()
         || record
             .dir
@@ -559,24 +606,41 @@ fn delete_leftover(record: &Record) -> Option<PathBuf> {
             .any(|c| matches!(c, std::path::Component::ParentDir))
         || !is_partial_name(&record.name)
     {
-        return None;
+        return Leftover::Done;
     }
     let clean: PathBuf = record.dir.components().collect();
-    let dir = open_directory(&clean).ok()?;
-    let name = c_string(record.name.as_bytes()).ok()?;
+    let dir = match open_directory(&clean) {
+        Ok(dir) => dir,
+        // A symlink or a file where the folder was is not the folder the app opened.
+        Err(e) if matches!(e.raw_os_error(), Some(libc::ELOOP | libc::ENOTDIR)) => {
+            return Leftover::Done;
+        }
+        // Missing (a drive that isn't mounted), no permission, an I/O error: it may come back.
+        Err(_) => return Leftover::TryAgain,
+    };
+    let Ok(name) = c_string(record.name.as_bytes()) else {
+        return Leftover::Done;
+    };
     let mut stat: libc::stat = unsafe { std::mem::zeroed() };
-    check(unsafe {
+    let seen = check(unsafe {
         libc::fstatat(
             dir.as_raw_fd(),
             name.as_ptr(),
             &mut stat,
             libc::AT_SYMLINK_NOFOLLOW,
         )
-    })
-    .ok()?;
-    if stat.st_mode & libc::S_IFMT != libc::S_IFREG || stat.st_uid != unsafe { libc::geteuid() } {
-        return None;
+    });
+    match seen {
+        Ok(_) => {}
+        Err(e) if e.raw_os_error() == Some(libc::ENOENT) => return Leftover::Done,
+        Err(_) => return Leftover::TryAgain,
     }
-    unlink_at(dir.as_raw_fd(), &name).ok()?;
-    Some(clean.join(OsStr::from_bytes(record.name.as_bytes())))
+    if stat.st_mode & libc::S_IFMT != libc::S_IFREG || stat.st_uid != unsafe { libc::geteuid() } {
+        return Leftover::Done;
+    }
+    match unlink_at(dir.as_raw_fd(), &name) {
+        Ok(()) => Leftover::Deleted(clean.join(OsStr::from_bytes(record.name.as_bytes()))),
+        Err(e) if e.raw_os_error() == Some(libc::ENOENT) => Leftover::Done,
+        Err(_) => Leftover::TryAgain,
+    }
 }
