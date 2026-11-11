@@ -112,7 +112,10 @@ mode on master serves only the certificate and a not-yet-available landing page.
 The walkthrough has the exact pacman setup and hosting health checks.
 
 Official builds embed `REX_LINUX_CHANNEL=official`, Nix builds `nix`, and source
-builds default to `source`. Packages carry a `share/rex-linux/channel` marker.
+builds default to `source`. Every install method (pacman `rex-linux-bin`, `.deb`,
+Nix, tarball or `install.sh`) installs only the `rex-linux` desktop client, its
+`.desktop` launcher and icons, and never installs, replaces or shadows the `rex`
+server. Packages carry a `share/rex-linux/channel` marker.
 Tarball installation writes the schema-1 path/version/SHA-256 receipt described
 in the walkthrough; source installation and uninstall invalidate it. The client
 reads these markers and receipts to show channel-specific upgrade guidance in
