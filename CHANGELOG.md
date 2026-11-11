@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- **Rune bumped to `d70929a`** (anomalyco/rune `dev`, 920 commits after `100b7d9`), with the vendored window-chrome patches rebased onto it. `Tx::toggle_maximize` and the `fc-list` font discovery are now upstream's (`Tx::toggle_maximized`, Linux system-font discovery), and the Linux window icon goes through upstream's `rune::set_app_icon` instead of `set_app_icon_png`; those patches are dropped. Known visual shift: translucent borders on filled boxes (chips, glass, cards) now draw over the fill, so 1 pt rims read slightly brighter.
+
 ## 0.6.0 - 2026-11-10
 
 ### Added
