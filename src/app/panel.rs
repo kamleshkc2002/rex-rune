@@ -1,4 +1,5 @@
 //! Popup and dialog state, and the action lists the switcher, Commands and menus show.
+use super::tabs::{TabAction, TabTarget};
 use super::theme::{MONITOR, SERVER};
 use super::workspace::Workspace;
 use rex_linux::{
@@ -25,6 +26,8 @@ pub enum Intent {
     HostShell(usize),
     Pane(PaneTarget, PaneAction),
     Session(SessionTarget, SessionAction),
+    /// A tab action on a named tab of any host and session.
+    Window(TabTarget, TabAction),
     NewSession,
     NewWindow,
     Split(&'static str),
@@ -72,6 +75,16 @@ impl Intent {
             Self::RenameSession => ("session.rename", Value::Null),
             Self::RenameWindow(_) => ("client.tab.rename", Value::Null),
             Self::CloseWindow(_) => ("client.tab.close", Value::Null),
+            Self::Window(_, tab) => match tab {
+                TabAction::Rename => ("client.tab.rename", Value::Null),
+                TabAction::Mute => ("client.tab.mute", Value::Null),
+                TabAction::MoveLeft => ("client.tab.move", json!({"direction":"left"})),
+                TabAction::MoveRight => ("client.tab.move", json!({"direction":"right"})),
+                // A new tab in the target's session, which the shortcut's may not be.
+                TabAction::New => return None,
+                TabAction::CloseOthers => ("client.tab.close_others", Value::Null),
+                TabAction::Close => ("client.tab.close", Value::Null),
+            },
             Self::Sidebar => ("client.sidebar.toggle", Value::Null),
             Self::Settings => ("client.settings", Value::Null),
             Self::Pane(_, pane) => match pane {
@@ -101,6 +114,10 @@ impl Intent {
                 | Intent::RenameSession
                 | Intent::RenameWindow(_)
                 | Intent::CloseWindow(_)
+                | Intent::Window(
+                    _,
+                    TabAction::Rename | TabAction::CloseOthers | TabAction::Close
+                )
                 | Intent::Settings
                 | Intent::Updates
                 | Intent::Fonts
@@ -235,8 +252,8 @@ pub enum PanelKind {
     Session,
     /// A sidebar host header's right-click menu.
     Host(usize),
-    /// A tab's right-click menu, by window id.
-    Window(String),
+    /// A tab's right-click menu; the tab is the panel's `tab`.
+    Window,
     Form(Form),
     Settings,
     /// The terminal themes, filtered by the search field.
@@ -275,6 +292,8 @@ pub struct Panel {
     pub error: Option<String>,
     pub target: Option<PaneTarget>,
     pub session: Option<SessionTarget>,
+    /// The tab a tab menu, its rename form or its close confirmations act on.
+    pub tab: Option<TabTarget>,
     pub back: Option<Box<Panel>>,
     pub anchor: Option<(f32, f32)>,
     /// A switcher row being renamed in place, and its field.
@@ -303,6 +322,7 @@ impl Panel {
             error: None,
             target: None,
             session: None,
+            tab: None,
             back: None,
             anchor: None,
             rename: None,
@@ -316,7 +336,7 @@ impl Panel {
                 | PanelKind::Pane
                 | PanelKind::Session
                 | PanelKind::Host(_)
-                | PanelKind::Window(_)
+                | PanelKind::Window
                 | PanelKind::Themes
                 | PanelKind::Chromes
                 | PanelKind::Discover
@@ -333,6 +353,8 @@ pub struct Entry {
     pub followup: bool,
     pub enabled: bool,
     pub footer: bool,
+    /// A hairline above this row, between a menu's groups of actions.
+    pub separated: bool,
     /// Drawn before the group header: the host's kind in the switcher.
     pub group_icon: Option<&'static rune::Icon>,
     /// A create button at the right of the group header, with its help text.
@@ -354,6 +376,7 @@ impl Entry {
             current: false,
             enabled: true,
             footer: false,
+            separated: false,
             group_icon: None,
             group_create: None,
         }
@@ -560,17 +583,12 @@ impl Workspace {
         if let PanelKind::Host(host) = panel.kind {
             return self.host_entries(host);
         }
-        if let PanelKind::Window(id) = &panel.kind {
-            let connected = self.model().connected;
-            let mut entries = vec![
-                Entry::new("Rename tab…", "", "", Intent::RenameWindow(id.clone())),
-                Entry::new("Close tab…", "", "", Intent::CloseWindow(id.clone())),
-                Entry::new("New tab", "", "", Intent::NewWindow),
-            ];
-            for e in &mut entries {
-                e.enabled = connected;
+        if let (PanelKind::Window, Some(target)) = (&panel.kind, &panel.tab) {
+            let mut entries = self.tab_entries(target);
+            // The shortcuts act on the session on screen; another session's tab shows none.
+            if self.tab_on_screen(target) {
+                self.shortcut_details(&mut entries);
             }
-            self.shortcut_details(&mut entries);
             return entries;
         }
         let sessions_only = matches!(panel.kind, PanelKind::Picker(true));
@@ -698,6 +716,7 @@ impl Workspace {
                     Intent::CloseWindow(id),
                 ));
             }
+            entries.extend(self.tab_commands());
         }
         if !sessions_only
             && let Some(target) = panel

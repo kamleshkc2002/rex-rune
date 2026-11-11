@@ -46,6 +46,9 @@ enum Handler {
     RenameSession,
     ClosePane,
     SendKey,
+    MoveTab,
+    MuteTab,
+    CloseOtherTabs,
 }
 
 pub struct Spec {
@@ -92,6 +95,9 @@ specs! {
     "session.rename" => RenameSession,
     "pane.close" => ClosePane,
     "pane.send_key" => SendKey,
+    "client.tab.move" => MoveTab,
+    "client.tab.mute" => MuteTab,
+    "client.tab.close_others" => CloseOtherTabs,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -124,7 +130,11 @@ impl Spec {
             NewTab => Remote::Never("Use rex window new instead."),
             Split => Remote::Never("Use rex split instead."),
             Close | ClosePane => Remote::Never("Use rex block close instead."),
-            CloseTab => Remote::Never("Use rex window close instead."),
+            CloseTab | CloseOtherTabs => Remote::Never("Use rex window close instead."),
+            MoveTab => Remote::Never("Use rex window move instead."),
+            MuteTab => Remote::Never(
+                "Only the person at this computer can mute this client's notifications.",
+            ),
             RenameTab => Remote::Never("Use rex window rename instead."),
             RenameSession => Remote::Never("Use rex session rename instead."),
             Palette | Settings | Search | SwitchSession | PaneActions => {
@@ -192,6 +202,9 @@ impl Spec {
             Handler::RenameSession => "Rename session",
             Handler::ClosePane => "Close pane",
             Handler::SendKey => "Send key",
+            Handler::MoveTab => "Move tab",
+            Handler::MuteTab => "Mute or unmute tab",
+            Handler::CloseOtherTabs => "Close other tabs",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -217,7 +230,10 @@ impl Spec {
             | Handler::CloseTab
             | Handler::RenameTab
             | Handler::RenameSession
-            | Handler::ClosePane => "Create and close",
+            | Handler::ClosePane
+            | Handler::MoveTab
+            | Handler::MuteTab
+            | Handler::CloseOtherTabs => "Create and close",
             Handler::Split
             | Handler::ZoomPane
             | Handler::FocusPane
@@ -251,6 +267,10 @@ impl Spec {
             ),
             Handler::GotoTab => ("index", json!({"type":"integer","minimum":-1})),
             Handler::SendKey => ("key", json!({"type":"string"})),
+            Handler::MoveTab => (
+                "direction",
+                json!({"type":"string","enum":["left","right"]}),
+            ),
             _ => return None,
         };
         Some(
@@ -270,6 +290,7 @@ impl Spec {
                         | Handler::Scroll
                         | Handler::GotoTab
                         | Handler::SendKey
+                        | Handler::MoveTab
                 );
         };
         match self.handler {
@@ -301,6 +322,9 @@ impl Spec {
                     && args["index"]
                         .as_i64()
                         .is_some_and(|n| n == -1 || n > 0 && usize::try_from(n).is_ok())
+            }
+            Handler::MoveTab => {
+                object.len() == 1 && matches!(args["direction"].as_str(), Some("left" | "right"))
             }
             Handler::SendKey => {
                 object.len() == 1
@@ -403,6 +427,18 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
                 s.perform(Intent::Pane(target, super::panel::PaneAction::Close), tx);
             }
         }
+        Handler::MoveTab | Handler::MuteTab | Handler::CloseOtherTabs => {
+            use super::tabs::TabAction;
+            let action = match spec.handler {
+                Handler::MuteTab => TabAction::Mute,
+                Handler::CloseOtherTabs => TabAction::CloseOthers,
+                _ if args["direction"] == "left" => TabAction::MoveLeft,
+                _ => TabAction::MoveRight,
+            };
+            if let Some(target) = s.active_tab() {
+                s.perform(Intent::Window(target, action), tx);
+            }
+        }
         Handler::SendKey => {
             if let Some(payloads) = args["key"].as_str().and_then(super::keys::synthesize)
                 && let Some(term) = s.active_terminal_mut()
@@ -492,7 +528,9 @@ pub fn binding_title(binding: &rexrs::api::client::Binding) -> String {
         return title.into();
     };
     let detail = match binding.action.as_str() {
-        "pane.split" | "pane.focus" => args["direction"].as_str().unwrap_or_default().to_owned(),
+        "pane.split" | "pane.focus" | "client.tab.move" => {
+            args["direction"].as_str().unwrap_or_default().to_owned()
+        }
         "pane.scroll" => {
             let lines = args["lines"].as_i64().unwrap_or_default();
             let direction = if lines < 0 { "up" } else { "down" };

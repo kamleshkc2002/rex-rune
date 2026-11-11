@@ -34,6 +34,7 @@ Some probes and Python scripts in `scripts/` connect to the configured Rex serve
 - `src/main.rs` and `src/app/`: the Rune front end (behind the default `ui` feature).
   - `workspace.rs`: workspace state and behavior (hosts, sessions, tabs, panes, requests, preferences, notices). Host and terminal workers wake the UI through `rune::AppHandle::update`.
   - `panel.rs`: popup and dialog state and the switcher, Commands and pane-menu lists. `discover.rs`: the Add host list of the tailnet's machines.
+  - `tabs.rs`: the tab menu on toolbar pills and sidebar rows, moving a tab in its session's order, muting it on this client, closing the other tabs and its default title.
   - `input.rs`, `keys.rs`: workspace shortcuts first, then every other key to the focused pane's PTY; Rune key events to Rex `client.key` payloads; IME.
   - `term.rs`: one pane's view state and cell grid. Rows are text segments placed at `column × cell width`; a character joins a segment only if it advances exactly one cell; ligatures and kerning are off; rows are memoized by content.
   - `sprites.rs`: box-drawing and block element characters drawn as shapes on whole device pixels, as Ghostty does, instead of font glyphs.

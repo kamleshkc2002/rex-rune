@@ -389,6 +389,15 @@ icon!(
     r#"path d="M8 4v12""#
 );
 icon!(MINUS, "rex-minus", r#"path d="M6 10h8""#);
+// A muted tab: a bell with a stroke through it.
+icon!(
+    BELL_OFF,
+    "rex-bell-off",
+    r#"path d="M7.6 5.2A4 4 0 0 1 14 8.5c0 1.6.3 2.8.8 3.7""#,
+    r#"path d="M6.2 7.2A4 4 0 0 0 6 8.5c0 2.6-.9 3.9-1.75 4.75h9.25""#,
+    r#"path d="M8.75 16h2.5""#,
+    r#"path d="m4 4 12 12""#
+);
 
 // Programs a tab can show instead of the terminal glyph (`activity::program_icon`).
 icon!(

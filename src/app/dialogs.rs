@@ -116,6 +116,21 @@ fn form(s: &Workspace, form: &Form) -> El {
                 .wrap(),
         );
     }
+    // A tab the user named can go back to the title its program sets.
+    let named_tab = matches!(form, Form::RenameWindow(_))
+        && panel.tab.as_ref().is_some_and(|tab| s.tab_named(tab));
+    if let Form::RenameWindow(_) = form {
+        body = body.child(
+            text(if named_tab {
+                "Use default title shows the title this tab's program sets again."
+            } else {
+                "This tab shows the title its program sets. A name saved here replaces it."
+            })
+            .font(ui(12.))
+            .color(rgb(muted()))
+            .wrap(),
+        );
+    }
     if let Form::Fonts = form {
         body = body.child(
             text("Applied when you reopen the client. --font and --font-fallback override saved choices for that launch. Server sessions keep running.")
@@ -129,10 +144,20 @@ fn form(s: &Workspace, form: &Form) -> El {
     } else {
         "Save"
     };
+    let mut buttons = row().gap(8.).justify_end();
+    if named_tab {
+        buttons = buttons
+            .child(pill(
+                "default-title",
+                "Use default title",
+                Pill::Neutral,
+                32.,
+                |s, tx| s.use_default_tab_title(tx),
+            ))
+            .child(el().grow(1.));
+    }
     body.child(
-        row()
-            .gap(8.)
-            .justify_end()
+        buttons
             .child(pill(
                 "cancel-form",
                 "Cancel",

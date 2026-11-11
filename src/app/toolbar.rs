@@ -3,6 +3,7 @@
 use super::{
     activity::{program_icon, progress_bar, tab_activity, tab_name, tab_progress, tab_word},
     panel::Intent,
+    tabs::{muted_mark, target_ring},
     theme::*,
     widgets::{chrome_button, glyph},
     workspace::Workspace,
@@ -89,14 +90,18 @@ fn tab_track(s: &Workspace) -> El {
             let active = view.active_window_id.as_ref() == Some(&id);
             let label = tab_name(model, tab);
             let activity = tab_activity(model, tab);
-            let word = tab_word(&activity, s.unseen(&id), s.bell_on(s.active, &id))
-                .filter(|_| s.settings.notifications.show_in_tabs);
+            let shown = s.tab_activity_shown(s.active, &id);
+            let quiet = s.tab_muted(s.active, &id);
+            let word =
+                tab_word(&activity, s.unseen(&id), s.bell_on(s.active, &id)).filter(|_| shown);
             let (press_id, rename_id, menu_id) = (id.clone(), id.clone(), id.clone());
+            let menu_session = session.clone();
             let mut tab_el = row()
                 .key(format!("tab:{id}"))
                 .role("tab")
                 .label(match &word {
                     Some((word, _)) => format!("{label} · {word}"),
+                    None if quiet => format!("{label} · Muted"),
                     None => label.clone(),
                 })
                 .h_full()
@@ -121,7 +126,7 @@ fn tab_track(s: &Workspace) -> El {
                     s.perform(Intent::RenameWindow(rename_id.clone()), tx);
                 })
                 .on_secondary_press(move |s: &mut Workspace, p, _| {
-                    s.tab_menu(menu_id.clone(), (p.x, p.y))
+                    s.tab_menu(s.active, &menu_session, &menu_id, (p.x, p.y))
                 });
             if active {
                 tab_el = tab_el.child(
@@ -168,10 +173,14 @@ fn tab_track(s: &Workspace) -> El {
                 }
                 tab_el = tab_el.child(mark);
             }
-            if s.settings.notifications.show_in_tabs
-                && let Some(progress) = tab_progress(&activity)
-            {
+            if quiet {
+                tab_el = tab_el.child(muted_mark(&id));
+            }
+            if shown && let Some(progress) = tab_progress(&activity) {
                 tab_el = tab_el.child(progress_bar(format!("tab-progress:{id}"), progress, 14.));
+            }
+            if s.tab_targeted(s.active, &id) {
+                tab_el = tab_el.child(target_ring(&id, 8.));
             }
             names = names.child(tab_el);
         }

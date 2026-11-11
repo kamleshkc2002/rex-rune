@@ -99,8 +99,9 @@ pub struct Workspace {
     pub title: String,
     #[cfg(test)]
     pub opened_links: Vec<String>,
-    /// (active tab, pane width, sidebar open) when the active tab was last revealed.
-    pub last_tab: (Option<String>, i32, bool),
+    /// (active tab and its place, pane width, sidebar open) when the active tab was last
+    /// revealed.
+    pub last_tab: (Option<(String, usize)>, i32, bool),
     pub reveal_tab_again: bool,
     pub tab_strip: TabStrip,
     pub tab_pos: rune::Live<[f32; 2]>,
@@ -554,6 +555,7 @@ impl Workspace {
             self.close_panel(tx);
             self.inform("That pane is no longer available.");
         }
+        self.sync_tabs(index, tx);
         if index == self.active && old_session != self.hosts[index].model.selected {
             self.drag = None;
         }
@@ -984,7 +986,7 @@ impl Workspace {
     }
 
     /// Keep the source host/session/block captured by the action, including pane-menu targets.
-    fn open_terminal(
+    pub(super) fn open_terminal(
         &mut self,
         host: usize,
         method: &str,
@@ -1288,20 +1290,21 @@ impl Workspace {
                 self.open_panel(PanelKind::Form(Form::RenameSession(None)), "Rename session", &[("Session name", "", &label)]);
             }
             Intent::RenameWindow(id) => {
-                let label = self
-                    .model()
-                    .view()
-                    .and_then(|v| v.windows.iter().find(|w| w.window_id.as_ref() == Some(&id)))
-                    .map(|w| super::activity::tab_name(self.model(), w))
-                    .unwrap_or_default();
-                self.open_panel(PanelKind::Form(Form::RenameWindow(id)), "Rename tab", &[("Tab name", "", &label)]);
+                if let Some(target) = self.current_tab(&id) {
+                    self.tab_action(target, super::tabs::TabAction::Rename, tx);
+                }
             }
-            Intent::CloseWindow(id) => self.confirm(
-                "Close this tab?",
-                "session.close_window",
-                json!({"window_id":id}),
-                "Ends every program in this tab on the server. Closing the app itself leaves programs running.",
-            ),
+            // A tab of the session on screen is named in its confirmation (`tabs.rs`).
+            Intent::CloseWindow(id) => match self.current_tab(&id) {
+                Some(target) => self.tab_action(target, super::tabs::TabAction::Close, tx),
+                None => self.confirm(
+                    "Close this tab?",
+                    "session.close_window",
+                    json!({"window_id":id}),
+                    "Ends every program in this tab on the server. Closing the app itself leaves programs running.",
+                ),
+            },
+            Intent::Window(target, action) => self.tab_action(target, action, tx),
             Intent::Zoom => {
                 if let Some(block) = self.focused_block() {
                     self.request("session.zoom_block", json!({"block_id":block}));
@@ -1365,25 +1368,6 @@ impl Workspace {
         }
         let scale = self.ui_scale();
         self.open_panel(PanelKind::Host(host), &title, &[]);
-        let panel = self.panel.as_mut().unwrap();
-        panel.target = None;
-        panel.anchor = Some((anchor.0 / scale, anchor.1 / scale));
-    }
-
-    /// A tab's right-click menu, at the pointer (window points).
-    pub fn tab_menu(&mut self, window: String, anchor: (f32, f32)) {
-        let title = self
-            .model()
-            .view()
-            .and_then(|v| {
-                v.windows
-                    .iter()
-                    .find(|w| w.window_id.as_ref() == Some(&window))
-            })
-            .map(|w| super::activity::tab_name(self.model(), w))
-            .unwrap_or_else(|| "Tab".into());
-        let scale = self.ui_scale();
-        self.open_panel(PanelKind::Window(window), &title, &[]);
         let panel = self.panel.as_mut().unwrap();
         panel.target = None;
         panel.anchor = Some((anchor.0 / scale, anchor.1 / scale));
@@ -1640,7 +1624,7 @@ impl Workspace {
             )
     }
 
-    fn confirm(&mut self, title: &str, method: &str, payload: Value, description: &str) {
+    pub(super) fn confirm(&mut self, title: &str, method: &str, payload: Value, description: &str) {
         let target = self.panel.as_ref().and_then(|p| p.target.clone());
         let mut panel = Panel::new(
             PanelKind::Confirm {
@@ -1902,6 +1886,7 @@ impl Workspace {
                     return;
                 }
                 let target = self.panel.as_ref().and_then(|p| p.target.clone());
+                let tab = self.panel.as_ref().and_then(|p| p.tab.clone());
                 let back = self.settings_back();
                 self.close_panel(tx);
                 match form {
@@ -1932,9 +1917,10 @@ impl Workspace {
                     Form::RenameSession(Some(session)) => {
                         self.session_request(&session, "session.set_label", json!({"label":values[0]}))
                     }
-                    Form::RenameWindow(id) => {
-                        self.request("session.set_window_label", json!({"window_id":id,"label":values[0]}))
-                    }
+                    Form::RenameWindow(id) => match tab {
+                        Some(tab) => self.set_tab_label(&tab, &values[0]),
+                        None => self.request("session.set_window_label", json!({"window_id":id,"label":values[0]})),
+                    },
                     Form::RenamePane(id) => match target {
                         Some(target) => self.send(
                             target.host,
@@ -1993,7 +1979,12 @@ impl Workspace {
             } => {
                 let target = self.panel.as_ref().and_then(|p| p.target.clone());
                 let session = self.panel.as_ref().and_then(|p| p.session.clone());
+                let tab = self.panel.as_ref().and_then(|p| p.tab.clone());
                 self.close_panel(tx);
+                if let Some(tab) = tab {
+                    self.confirmed_tab_close(&tab, &method, payload);
+                    return;
+                }
                 if let Some(session) = session {
                     self.session_request(&session, &method, payload);
                     return;

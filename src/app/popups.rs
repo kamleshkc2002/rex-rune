@@ -86,7 +86,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     // Context menus (a pane's, a tab's, a sidebar session's) share one shape.
     let pane = matches!(
         panel.kind,
-        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window(_)
+        PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window
     );
     let commands = matches!(panel.kind, PanelKind::Picker(false));
     let [vw, vh] = viewport;
@@ -133,7 +133,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Discover => "discover",
         PanelKind::Session => "session-menu",
         PanelKind::Host(_) => "host-menu",
-        PanelKind::Window(_) => "tab-menu",
+        PanelKind::Window => "tab-menu",
         _ => "pane-menu",
     };
     let mut spans: Vec<(f32, f32, Hidden)> = Vec::new();
@@ -185,6 +185,16 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 );
                 y += HEADER - if first { 4. } else { 0. } + 1.;
             }
+        }
+        if entry.separated && !entry.footer {
+            list = list.child(
+                el().key(format!("separator:{i}"))
+                    .h(1.)
+                    .mx(8.)
+                    .my(3.)
+                    .fill(white(0.07)),
+            );
+            y += 8.;
         }
         let action = entry.action.clone();
         let enabled = entry.enabled;

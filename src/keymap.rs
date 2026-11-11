@@ -407,6 +407,13 @@ pub fn defaults() -> KeymapDefault {
                 .args(json!({"direction": direction})),
         );
     }
+    for (keys, direction) in [
+        ("ctrl+shift+pageup", "left"),
+        ("ctrl+shift+pagedown", "right"),
+    ] {
+        bindings
+            .push(Binding::new([keys], "client.tab.move").args(json!({"direction": direction})));
+    }
     for (keys, lines) in [("shift+pageup", -20), ("shift+pagedown", 20)] {
         bindings.push(Binding::new([keys], "pane.scroll").args(json!({"lines": lines})));
     }
@@ -795,7 +802,7 @@ mod tests {
         let layer = defaults();
         assert_eq!(layer.name, "linux");
         assert!(layer.removals.is_empty());
-        assert_eq!(layer.bindings.len(), 33);
+        assert_eq!(layer.bindings.len(), 35);
         for binding in &layer.bindings {
             assert_eq!(normalize(&binding.keys.join(">")).unwrap(), binding.keys);
             assert!(binding.source.is_none() && binding.mode.is_none());
@@ -806,6 +813,8 @@ mod tests {
             ("ctrl+shift+f", "client.search"),
             ("ctrl++", "client.zoom.in"),
             ("ctrl+[Numpad0]", "client.zoom.reset"),
+            ("ctrl+shift+pageup", "client.tab.move"),
+            ("ctrl+shift+pagedown", "client.tab.move"),
         ] {
             assert!(
                 layer

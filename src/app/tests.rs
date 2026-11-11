@@ -8,6 +8,8 @@ mod navigation_tests;
 mod remote_session_tests;
 #[path = "remote_tests.rs"]
 mod remote_tests;
+#[path = "tab_tests.rs"]
+mod tab_tests;
 use super::{
     panel::{Form, Intent, PanelKind, SessionAction},
     placeholder, view,
@@ -704,10 +706,12 @@ fn a_tabs_menu_and_middle_click_act_on_that_tab() {
     let mut rt = runtime(ws);
     secondary_click(&mut rt, "tab:split");
     let panel = rt.state.panel.as_ref().expect("a tab menu");
-    assert!(matches!(&panel.kind, PanelKind::Window(id) if id == "split"));
+    assert!(matches!(&panel.kind, PanelKind::Window));
+    assert_eq!(panel.tab.as_ref().map(|t| t.window.as_str()), Some("split"));
     assert_eq!(panel.title, "dev");
     let labels: Vec<String> = rt.state.entries().into_iter().map(|e| e.label).collect();
-    assert_eq!(labels, ["Rename tab…", "Close tab…", "New tab"]);
+    assert_eq!(labels.first().map(String::as_str), Some("Rename tab…"));
+    assert_eq!(labels.last().map(String::as_str), Some("Close tab…"));
     assert!(has(&rt, "menu-surface"));
     press(&mut rt, Key::Escape);
     assert!(rt.state.panel.is_none());

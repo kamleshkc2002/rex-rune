@@ -21,6 +21,17 @@ pub struct Host {
     pub shell: Option<String>,
 }
 
+/// A tab this client keeps quiet: no activity word or progress bar on it and no desktop
+/// notification from it. Local to this client; the server and other clients never see it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MutedTab {
+    /// The saved host's endpoint.
+    pub endpoint: String,
+    pub session: String,
+    /// The Rex window id, unique on its server.
+    pub window: String,
+}
+
 /// The window corner in-app notices stack in.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -179,6 +190,9 @@ pub struct Settings {
     /// client's last declaration per block across launches, so Follow server then resets
     /// eligible blocks to Rex's colours. Never cleared automatically.
     pub terminal_theme_declared: bool,
+    /// Tabs muted from their menu, until unmuted or closed.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub muted_tabs: Vec<MutedTab>,
     /// Read-only sibling file, never serialized into workspace.json.
     #[serde(skip)]
     pub shortcut_file: shortcuts::Shortcuts,
@@ -216,6 +230,7 @@ impl Default for Settings {
             terminal_theme: TerminalThemeChoice::default(),
             terminal_theme_chosen: false,
             terminal_theme_declared: false,
+            muted_tabs: Vec::new(),
             shortcut_file: shortcuts::Shortcuts::default(),
         }
     }
