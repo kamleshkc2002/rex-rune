@@ -2,7 +2,7 @@
 //! goes back to it (`downloads.rs`).
 use super::{
     dialogs::title,
-    downloads::{Dialog, Row, middle, progress_text, question, state_line, tilde, too_old},
+    downloads::{Dialog, Row, progress_text, question, state_line, tilde, too_old},
     input::global_key,
     popups::overlay,
     theme::*,
@@ -13,17 +13,21 @@ use rex_linux::download::{self, State, Transfer};
 use rune::{El, KeyEvent, LiveRegion, Tx, col, el, row, text};
 use rune_kit::TextField;
 
-/// How many characters of a name the chip and a row show before cutting it in the middle. The
-/// full name is in the tooltip.
-const NAME_CHARS: usize = 44;
-const CHIP_NAME_CHARS: usize = 22;
-
-fn note(message: String, tone: u32) -> El {
+/// A paragraph of the dialog. Text with no break opportunity (a 255-byte name, a long path in
+/// Rex's error) wraps inside the word instead of running through the dialog's edge, and a
+/// paragraph past `lines` is cut with an ellipsis; the accessibility text keeps all of it.
+fn paragraph(message: String, size: f32, tone: u32, lines: usize) -> El {
     text(message)
-        .font(ui(13.))
+        .font(ui(size))
         .color(rgb(tone))
         .wrap()
+        .wrap_anywhere()
+        .max_lines(lines)
         .min_w(0.)
+}
+
+fn note(message: String, tone: u32) -> El {
+    paragraph(message, 13., tone, 6)
 }
 
 fn buttons(left: El, right: Option<El>) -> El {
@@ -87,12 +91,7 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
             );
             if let Some(path) = resolved {
                 b = b.child(
-                    text(format!("{host}: {path}"))
-                        .font(ui(12.))
-                        .color(rgb(muted()))
-                        .wrap()
-                        .min_w(0.)
-                        .key("download-resolved"),
+                    paragraph(format!("{host}: {path}"), 12., muted(), 3).key("download-resolved"),
                 );
             }
             return b.child(buttons(
@@ -146,11 +145,12 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
                     .key("field:1"),
             )
             .child(
-                text("An absolute folder, or one starting with ~/. Leave it empty for your system's Downloads folder.")
-                    .font(ui(12.))
-                    .color(rgb(muted()))
-                    .wrap()
-                    .min_w(0.),
+                paragraph(
+                    "An absolute folder, or one starting with ~/. Leave it empty for your system's Downloads folder.".into(),
+                    12.,
+                    muted(),
+                    3,
+                ),
             );
     } else {
         let folder = tilde(&s.download_folder());
@@ -169,11 +169,11 @@ pub fn dialog(s: &Workspace, d: &Dialog) -> El {
                         .a11y_hidden(),
                 )
                 .child(
-                    text(middle(&folder, 42))
+                    text(folder.clone())
                         .key("save-in-folder")
                         .font(ui(13.))
                         .color(rgb(ink()))
-                        .truncate()
+                        .truncate_middle()
                         .help_when_truncated(folder)
                         .grow(1.)
                         .shrink()
@@ -285,11 +285,12 @@ fn download_row(s: &Workspace, r: &Row<'_>) -> El {
         .min_w(0.)
         .gap(2.)
         .child(
-            text(middle(&name, NAME_CHARS))
+            // Cut by width in the middle, so the extension stays however narrow the column is.
+            text(name.clone())
                 .key(format!("download-name:{id}"))
                 .font(medium(13.))
                 .color(rgb(ink()))
-                .truncate()
+                .truncate_middle()
                 .help(tooltip),
         )
         .child(
@@ -396,30 +397,66 @@ pub fn popover(s: &Workspace, viewport: [f32; 2]) -> El {
             })
             .child(list),
     );
-    let x = (vw - width - MARGIN - 6.).max(8.);
+    // Under the chip that opened it; from Commands, at the bar's right end.
+    let x = match s.panel.as_ref().and_then(|p| p.anchor) {
+        Some((x, _)) => x.min(vw - width - 8.).max(8.),
+        None => (vw - width - MARGIN - 6.).max(8.),
+    };
     overlay()
         .modal_tx(true, |s: &mut Workspace, tx: &mut Tx| s.close_panel(tx))
         .child(surface.absolute(x, TOOLBAR - 4.))
 }
 
-/// The chip's text: `↓ build.log 42%` for one transfer, `↓ 3 files` for several.
-pub fn chip_label(s: &Workspace) -> Option<(String, Option<String>)> {
+/// What the toolbar chip says while transfers are running.
+pub struct ChipText {
+    /// `↓ build.log` for one transfer, `↓ 3 files` for several.
+    pub label: String,
+    /// `↓` or `↓ 3`, for a bar with no room to spare.
+    pub short: String,
+    /// Show `short`: the bar is short of room for the tab strip.
+    pub compact: bool,
+    pub percent: Option<String>,
+}
+
+/// Window width below which the chip is `↓ 42%`, so the tab strip keeps room for the active
+/// tab. The full text stays in its tooltip and accessible name.
+const CHIP_FULL_WIDTH: f32 = 1000.;
+
+/// The chip's text, or `None` when nothing is being received. A transfer still waiting for
+/// Rex or for an answer to a question is not running yet: its dialog is the place for it.
+///
+/// The tab strip gives way to every chip, so: the chip is short in a narrow window and while a
+/// key sequence is pending, and in a narrow window it steps aside for the pending-sequence chip
+/// (a moment's gap, and the strip keeps what little room it has). With the tabs in the sidebar
+/// nothing competes and the chip is always full.
+pub fn chip_label(s: &Workspace) -> Option<ChipText> {
+    let pending = s.bindings.sequence.depth > 0;
+    let narrow = s.viewport[0] < CHIP_FULL_WIDTH;
+    if !s.sidebar_tabs() && narrow && pending {
+        return None;
+    }
+    let compact = !s.sidebar_tabs() && (narrow || pending);
     let rows = s.download_rows();
     let running: Vec<&Row> = rows
         .iter()
-        .filter(|r| !r.transfer.state.is_final())
+        .filter(|r| matches!(r.transfer.state, State::Receiving { .. }))
         .collect();
     match running.as_slice() {
         [] => None,
-        [one] => Some((
-            format!(
-                "↓ {}",
-                middle(&one.transfer.display_name(), CHIP_NAME_CHARS)
-            ),
-            one.transfer
+        [one] => Some(ChipText {
+            label: format!("↓ {}", one.transfer.display_name()),
+            short: "↓".into(),
+            compact,
+            percent: one
+                .transfer
                 .fraction()
                 .map(|f| format!("{}%", (f * 100.).floor() as u32)),
-        )),
-        many => Some((format!("↓ {} files", many.len()), None)),
+        }),
+        many => Some(ChipText {
+            label: format!("↓ {} files", many.len()),
+            short: format!("↓ {}", many.len()),
+            compact,
+            percent: None,
+        }),
     }
 }

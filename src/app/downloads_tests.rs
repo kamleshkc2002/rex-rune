@@ -510,12 +510,23 @@ fn errors_before_any_bytes_stay_in_the_dialog_in_the_servers_words() {
             Failure::Destination("/dl is a symbolic link to /elsewhere".into()),
             "/dl is a symbolic link to /elsewhere",
         ),
-        (Failure::Disconnected, "the host isn't connected"),
+        (Failure::Disconnected, "The host isn't connected."),
         (
             Failure::ServerTooOld,
             "Rex on test-0 is too old to send files; update Rex there.",
         ),
-        (Failure::ConfirmationExpired, "not confirmed in time"),
+        (
+            Failure::ConfirmationExpired,
+            "Not confirmed in time; Rex stops holding a file after a minute.",
+        ),
+        (
+            Failure::LowSpace { free: 0 },
+            "The destination has only 0 MB left.",
+        ),
+        (
+            Failure::NoAnswer,
+            "Rex didn't answer in time; the download was not retried.",
+        ),
     ];
     for (failure, words) in failures {
         let (mut ws, rx, dir) = workspace_13();
@@ -648,7 +659,7 @@ fn the_chip_shows_one_transfer_with_its_percent_several_as_a_count_and_nothing_o
     );
     feed(&mut rt, |list| {
         list.push(transfer(2, "b.txt", &dir, receiving(0, 0)));
-        list.push(transfer(3, "c.txt", &dir, State::Requested));
+        list.push(transfer(3, "c.txt", &dir, receiving(5, 9)));
     });
     assert!(shows(&rt, "↓ 3 files"));
     assert!(!shows(&rt, "42%"));
@@ -662,6 +673,30 @@ fn the_chip_shows_one_transfer_with_its_percent_several_as_a_count_and_nothing_o
     // Finished transfers never bring the chip back.
     feed(&mut rt, |_| {});
     assert!(!has(&rt, "download-chip"));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_transfer_still_waiting_for_rex_or_for_an_answer_has_no_chip() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "a.iso", &dir, State::Requested));
+        list.push(transfer(
+            2,
+            "b.iso",
+            &dir,
+            State::AwaitingConfirmation(Confirmation {
+                reason: Reason::Large,
+                hint: 2_000_000_000,
+                free: None,
+            }),
+        ));
+    });
+    assert!(!has(&rt, "download-chip"), "nothing is being received");
+    feed(&mut rt, |list| list[0].state = receiving(1, 10));
+    assert!(has(&rt, "download-chip"));
+    assert!(shows(&rt, "↓ a.iso"), "only the receiving one counts");
     std::fs::remove_dir_all(dir).ok();
 }
 
@@ -1115,9 +1150,318 @@ fn sizes_read_as_the_dialog_and_popover_write_them() {
     assert_eq!(progress_text(0, 3_000_000_000), "0 of 3 GB");
     assert_eq!(progress_text(5_000_000, 0), "5 MB");
     assert_eq!(progress_text(300, 900), "300 of 900 bytes");
-    let long = format!("{}.tar.gz", "x".repeat(250));
-    let cut = crate::app::downloads::middle(&long, 22);
-    assert_eq!(cut.chars().count(), 22);
-    assert!(cut.ends_with(".tar.gz") && cut.contains('…'));
-    assert_eq!(crate::app::downloads::middle("short.txt", 22), "short.txt");
+}
+
+/// The right edge of the element with `key`, and of the dialog.
+fn right_edges(rt: &Runtime<Workspace>, key: &str) -> (f32, f32) {
+    let rect_of = |wanted: &str| {
+        rt.elements()
+            .into_iter()
+            .find(|e| !e.exiting && e.key.as_deref() == Some(wanted))
+            .unwrap_or_else(|| panic!("missing {wanted}"))
+            .rect
+    };
+    let (one, dialog) = (rect_of(key), rect_of("dialog"));
+    (one[0] + one[2], dialog[0] + dialog[2])
+}
+
+#[test]
+fn text_with_no_break_opportunity_wraps_inside_the_dialog_instead_of_running_through_it() {
+    // The longest name the library allows, a path and an error that echo it, with no space or
+    // hyphen to break at.
+    let long = "L".repeat(250);
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, &format!("~/{long}"));
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    let mut waiting = transfer(id, &long, &dir, State::Requested);
+    waiting.name = None;
+    feed(&mut rt, |list| list.push(waiting));
+    let (text, dialog) = right_edges(&rt, "download-waiting");
+    assert!(
+        text <= dialog,
+        "waiting line ends at {text}, dialog at {dialog}"
+    );
+
+    let mut t = transfer(
+        id,
+        &long,
+        &dir,
+        State::AwaitingConfirmation(Confirmation {
+            reason: Reason::Large,
+            hint: 2_147_483_648,
+            free: Some(41_000_000_000),
+        }),
+    );
+    t.resolved = Some(format!("/home/dev/{long}"));
+    feed(&mut rt, |list| list[0] = t);
+    for key in ["download-question", "download-resolved"] {
+        let (text, dialog) = right_edges(&rt, key);
+        assert!(text <= dialog, "{key} ends at {text}, dialog at {dialog}");
+    }
+    // Wrapped, and not cut to a stub: the name is still there to read before accepting it.
+    let question = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("download-question"))
+        .unwrap();
+    assert!(
+        question.rect[3] > 60.,
+        "wraps onto several lines: {:?}",
+        question.rect
+    );
+    assert!(
+        question.rect[3] < 120.,
+        "but is bounded: {:?}",
+        question.rect
+    );
+
+    // Rex's error echoing a long path, back in the form.
+    press(&mut rt, Key::Escape);
+    let (mut ws, rx, dir2) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, &format!("~/{long}"));
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    let message = format!("not found: /home/dev/{long} does not exist");
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            id,
+            &long,
+            &dir2,
+            State::Failed(Failure::Server(message)),
+        ))
+    });
+    let (text, dialog) = right_edges(&rt, "download-error");
+    assert!(text <= dialog, "error ends at {text}, dialog at {dialog}");
+    let error = rect_of(&rt, "download-error").unwrap();
+    assert!(error[3] > 45., "the error wraps too: {error:?}");
+    std::fs::remove_dir_all(dir).ok();
+    std::fs::remove_dir_all(dir2).ok();
+}
+
+#[test]
+fn a_connection_failure_reads_as_a_sentence_not_the_websocket_stacks_words() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "img-a.iso",
+            &dir,
+            State::Failed(Failure::Connection(
+                "WebSocket protocol error: Connection reset without closing handshake".into(),
+            )),
+        ))
+    });
+    let notice = rt
+        .state
+        .notices
+        .iter()
+        .find(|n| n.sticky)
+        .expect("a notice");
+    assert_eq!(
+        notice.text,
+        "Download of img-a.iso from test-0 failed: the connection to test-0 was lost"
+    );
+    assert!(!notice.text.contains("WebSocket"));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// A session with eight tabs, the last active, in a small window.
+fn crowded_bar(width: f32) -> (Runtime<Workspace>, PathBuf) {
+    let (mut ws, _rx, dir) = workspace_13();
+    let windows: Vec<_> = (0..8)
+        .map(|i| {
+            serde_json::json!({
+                "window_id": format!("t{i}"), "label": format!("tab-number-{i}"),
+                "focused_block_id": format!("block:{i}"),
+                "layers": [{"kind": "tiled", "layout": {"block_id": format!("block:{i}")},
+                            "blocks": [{"block_id": format!("block:{i}")}]}]
+            })
+        })
+        .collect();
+    ws.hosts[0].model.views.insert(
+        "s".into(),
+        serde_json::from_value(serde_json::json!({
+            "revision": 1, "session_id": "s", "active_window_id": "t7", "windows": windows
+        }))
+        .expect("a view"),
+    );
+    (runtime_at(ws, (width, 500.)), dir)
+}
+
+fn rect_of(rt: &Runtime<Workspace>, key: &str) -> Option<[f32; 4]> {
+    rt.elements()
+        .into_iter()
+        .find(|e| !e.exiting && e.key.as_deref() == Some(key))
+        .map(|e| e.rect)
+}
+
+/// Run the app's poll (which scrolls the active tab into view) and let it settle.
+fn settle(rt: &mut Runtime<Workspace>) {
+    for _ in 0..6 {
+        rt.update(|s, tx| {
+            crate::app::poll(s, 0., tx);
+        });
+        for _ in 0..30 {
+            rt.frame(1. / 60.);
+        }
+    }
+}
+
+fn active_tab_is_visible(rt: &Runtime<Workspace>) -> bool {
+    let (strip, tab) = (rect_of(rt, "tabs").unwrap(), rect_of(rt, "tab:t7").unwrap());
+    tab[0] + 40. <= strip[0] + strip[2] && tab[0] + tab[2] >= strip[0] + 40.
+}
+
+#[test]
+fn the_chip_shortens_in_a_narrow_window_and_the_active_tab_stays_in_view() {
+    let (mut rt, dir) = crowded_bar(700.);
+    settle(&mut rt);
+    assert!(active_tab_is_visible(&rt), "without a chip");
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "img-a.iso", &dir, receiving(30, 600)))
+    });
+    settle(&mut rt);
+    let chip = rect_of(&rt, "download-chip").unwrap();
+    assert!(chip[2] < 80., "short in 700 pt: {chip:?}");
+    assert!(
+        shows(&rt, "5%") && !shows(&rt, "img-a.iso"),
+        "{:?}",
+        texts(&rt)
+    );
+    assert_eq!(
+        label_of(&rt, "download-chip"),
+        Some(("button", "Downloads: img-a.iso 5%".to_owned())),
+        "the full text is still its accessible name"
+    );
+    assert!(
+        active_tab_is_visible(&rt),
+        "with a chip: {:?}",
+        rect_of(&rt, "tabs")
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_chip_keeps_its_name_in_a_wide_window() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime_at(ws, (1440., 900.));
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "img-a.iso", &dir, receiving(30, 600)))
+    });
+    assert!(shows(&rt, "↓ img-a.iso"), "{:?}", texts(&rt));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_popover_opens_under_the_chip_and_from_commands_at_the_bars_right_end() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime_at(ws, (1440., 900.));
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "img-a.iso", &dir, receiving(30, 600)))
+    });
+    let chip = rect_of(&rt, "download-chip").unwrap();
+    click(&mut rt, "download-chip");
+    for _ in 0..40 {
+        rt.frame(1. / 60.);
+    }
+    let popover = rect_of(&rt, "downloads-popover").expect("the popover");
+    assert!(
+        (popover[0] - chip[0]).abs() < 1.5,
+        "popover at {popover:?}, chip at {chip:?}"
+    );
+    assert!(popover[1] <= 60., "just under the bar: {popover:?}");
+    press(&mut rt, Key::Escape);
+    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
+    for _ in 0..40 {
+        rt.frame(1. / 60.);
+    }
+    let popover = rect_of(&rt, "downloads-popover").expect("the popover");
+    assert!(
+        popover[0] > 800.,
+        "from Commands, at the right: {popover:?}"
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_long_name_in_a_row_with_both_buttons_is_cut_by_width_inside_the_row() {
+    // What is drawn (the middle cut that keeps the extension) is Rune's `truncate_middle`, which
+    // the headless element list reports whole; the render shows the extension. Here: the name's
+    // box never pushes the buttons out of the popover.
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime_at(ws, (1440., 900.));
+    for name in [
+        "quarterly-report-final-FINAL-v2-reviewed-quarterly-report-final-2026.tar.gz",
+        "ünï-cödé-ファイル-日本語-ファイル-日本語-ファイル-日本語-ファイル-日本語-final.iso",
+    ] {
+        std::fs::write(dir.join("shown.txt"), b"x").unwrap();
+        let done = transfer(
+            1,
+            name,
+            &dir,
+            State::Saved {
+                path: dir.join("shown.txt"),
+                bytes: 1,
+                short_of: None,
+            },
+        );
+        feed(&mut rt, |list| {
+            list.clear();
+            list.push(done)
+        });
+        rt.update(|s, tx| s.perform(Intent::Downloads, tx));
+        for _ in 0..40 {
+            rt.frame(1. / 60.);
+        }
+        let open = rect_of(&rt, "download-open:1").expect("Open");
+        let popover = rect_of(&rt, "downloads-popover").unwrap();
+        let shown = rect_of(&rt, "download-name:1").unwrap();
+        assert!(
+            open[0] + open[2] <= popover[0] + popover[2],
+            "{open:?} {popover:?}"
+        );
+        assert!(
+            shown[0] + shown[2] <= open[0],
+            "{shown:?} ends before {open:?}"
+        );
+        press(&mut rt, Key::Escape);
+    }
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_chip_coming_into_a_wide_enough_bar_scrolls_the_active_tab_back_into_view() {
+    let (mut rt, dir) = crowded_bar(1010.);
+    settle(&mut rt);
+    assert!(active_tab_is_visible(&rt), "without a chip");
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "a-fairly-long-file-name.tar.gz",
+            &dir,
+            receiving(30, 600),
+        ))
+    });
+    settle(&mut rt);
+    let chip = rect_of(&rt, "download-chip").unwrap();
+    assert!(chip[2] > 150., "the full chip at 1010 pt: {chip:?}");
+    assert!(
+        active_tab_is_visible(&rt),
+        "with the chip: tab {:?} in strip {:?}",
+        rect_of(&rt, "tab:t7"),
+        rect_of(&rt, "tabs")
+    );
+    std::fs::remove_dir_all(dir).ok();
 }

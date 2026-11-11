@@ -99,8 +99,9 @@ pub struct Workspace {
     pub title: String,
     #[cfg(test)]
     pub opened_links: Vec<String>,
-    /// (active tab, pane width, sidebar open) when the active tab was last revealed.
-    pub last_tab: (Option<String>, i32, bool),
+    /// (active tab, pane width, sidebar open, chips in the bar) when the active tab was last
+    /// revealed.
+    pub last_tab: (Option<String>, i32, bool, u8),
     pub reveal_tab_again: bool,
     pub tab_strip: TabStrip,
     pub tab_pos: rune::Live<[f32; 2]>,
@@ -238,7 +239,7 @@ impl Workspace {
             title: "Rex".into(),
             #[cfg(test)]
             opened_links: Vec::new(),
-            last_tab: (None, 0, false),
+            last_tab: (None, 0, false, 0),
             reveal_tab_again: false,
             tab_strip: TabStrip::default(),
             tab_pos: rune::Live::new([0.; 2]),

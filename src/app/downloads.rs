@@ -6,7 +6,7 @@
 //! Nothing here starts a download except the dialog's own button, and nothing is opened, shown
 //! in a folder or executed except by a press on that transfer's row.
 use super::{
-    panel::{PaneTarget, PanelKind},
+    panel::{Intent, PaneTarget, PanelKind},
     workspace::{HostId, Workspace},
 };
 use rex_linux::{
@@ -46,6 +46,8 @@ pub struct Downloads {
     openable: HashMap<(HostId, u64), bool>,
     /// Confirmations nobody can answer any more, already cancelled.
     orphans: HashSet<(HostId, u64)>,
+    /// Where the toolbar chip was laid out, for the popover that opens under it.
+    pub chip: [f32; 4],
     #[cfg(test)]
     pub opened: Vec<Opened>,
 }
@@ -134,21 +136,6 @@ pub fn tilde(path: &Path) -> String {
     path.display().to_string()
 }
 
-/// A name cut in the middle to at most `max` characters, so the extension stays visible.
-pub fn middle(name: &str, max: usize) -> String {
-    let chars: Vec<char> = name.chars().collect();
-    if chars.len() <= max || max < 8 {
-        return name.to_owned();
-    }
-    let tail = (max / 3).max(4);
-    let head = max - tail - 1;
-    format!(
-        "{}…{}",
-        chars[..head].iter().collect::<String>(),
-        chars[chars.len() - tail..].iter().collect::<String>()
-    )
-}
-
 /// What a download of `host` that is too old to send files says.
 pub fn too_old(host: &str) -> String {
     format!("Rex on {host} is too old to send files; update Rex there.")
@@ -157,8 +144,38 @@ pub fn too_old(host: &str) -> String {
 pub fn failure_text(host: &str, failure: &Failure) -> String {
     match failure {
         Failure::ServerTooOld => too_old(host),
+        // The library's text here is the WebSocket stack's ("Connection reset without closing
+        // handshake"), which says nothing a person can use.
+        Failure::Connection(_) => format!("the connection to {host} was lost"),
         other => other.to_string(),
     }
+}
+
+/// A failure as the dialog shows it: a sentence. Rex's own words and text that ends in a path
+/// or an error from the system are left as they came; the client's own sentences start with a
+/// capital and end with a full stop, like the rest of the dialog.
+pub fn dialog_failure_text(host: &str, failure: &Failure) -> String {
+    let text = failure_text(host, failure);
+    if matches!(
+        failure,
+        Failure::Server(_)
+            | Failure::Destination(_)
+            | Failure::Disk(_)
+            | Failure::UnexpectedReply(_)
+            | Failure::Closed { .. }
+            | Failure::Protocol(_)
+    ) {
+        return text;
+    }
+    let mut chars = text.chars();
+    let mut sentence: String = chars
+        .next()
+        .map(|c| c.to_uppercase().chain(chars).collect())
+        .unwrap_or_default();
+    if !sentence.ends_with(['.', '!', '?']) {
+        sentence.push('.');
+    }
+    sentence
 }
 
 /// Failures that can only follow received bytes: they belong in a notice, never the dialog.
@@ -213,6 +230,22 @@ pub fn state_line(host: &str, transfer: &Transfer) -> String {
 }
 
 impl Workspace {
+    /// The chip's press: the Downloads popover, under the chip.
+    pub fn open_downloads_from_chip(&mut self, tx: &mut Tx) {
+        self.perform(Intent::Downloads, tx);
+        let chip = self.downloads.chip;
+        if let Some(panel) = &mut self.panel {
+            panel.anchor = Some((chip[0], chip[1] + chip[3]));
+        }
+    }
+
+    /// Which chips share the bar with the tabs (bit 0 downloads, bit 1 a pending key sequence),
+    /// so the active tab is scrolled back into view when one comes or goes.
+    pub fn bar_chips(&self) -> u8 {
+        u8::from(super::downloads_view::chip_label(self).is_some())
+            | u8::from(self.bindings.sequence.depth > 0) << 1
+    }
+
     /// Every host's transfers, running ones first, newest first within each group.
     pub fn download_rows(&self) -> Vec<Row<'_>> {
         let mut rows: Vec<Row> = self
@@ -525,14 +558,16 @@ impl Workspace {
                     return;
                 }
                 let host = self.settings.hosts[index].label.clone();
-                let message = failure_text(&host, failure);
                 // The dialog says it; a fourth transfer is also told in a notice.
                 self.downloads.announced.insert(key);
                 if matches!(failure, Failure::TooManyActive { .. }) {
-                    self.inform(format!("Download from {host} refused: {message}."));
+                    self.inform(format!(
+                        "Download from {host} refused: {}.",
+                        failure_text(&host, failure)
+                    ));
                 }
                 let panel = self.panel.as_mut().unwrap();
-                panel.error = Some(message);
+                panel.error = Some(dialog_failure_text(&host, failure));
                 if let PanelKind::Download(dialog) = &mut panel.kind {
                     dialog.id = None;
                 }
