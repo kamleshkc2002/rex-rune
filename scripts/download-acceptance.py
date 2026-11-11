@@ -29,13 +29,15 @@ least MIN_SAVED saved files. Naming case functions on the command line runs only
 final checks), for development.
 
 Cases: names (spaces, Unicode, leading dash, empty file, symlink, same file twice, modes, Open
-withheld for programs); relative paths after cd; a folder, a FIFO, a missing and an unreadable
-file refused in the server's words; API 12 "too old" with nothing sent; the 1 GiB question; a 1
-GiB file cancelled partway (partial gone, the server's descriptor closed); a file growing during
-the transfer; a fourth concurrent transfer; low space (a yes, and a refusal); a newline in the
-name (core library only: the probe, not the client binary); real X11 input; one transfer over a real ssh:// host; Close and SIGKILL
-mid-transfer; and last, that xdg-open was never called, nothing is executable, no partial is
-left and every saved file's SHA-256 equals its source."""
+offered for a .txt and withheld for programs, scripts, no extension and .svg); relative paths
+after cd; a folder, a FIFO, a missing and an unreadable file refused in the server's words; API 12
+"too old" with nothing sent; the 1 GiB question (held by the server while asked, released by
+Escape with the app still running); a 1 GiB file cancelled partway (partial gone, the server's
+descriptor closed); a file growing during the transfer; a fourth concurrent transfer; low space (a
+yes, and a refusal); a newline in the name (core library only: the probe, not the client binary);
+real X11 input; one transfer over a real ssh:// host; Close and SIGKILL mid-transfer; and last,
+that xdg-open was never called, nothing is executable, no partial is left and every saved file's
+SHA-256 equals its source."""
 import asyncio
 import hashlib
 import importlib.util
@@ -212,6 +214,7 @@ def make_fixtures(home):
     write("with space and ünïcode.txt", "héllo wörld\n".encode())
     write("-rf.txt", b"a name that starts with a dash\n")
     write("--help", b"so does this one\n")
+    write("logo.svg", b"plain words under a svg name\n")
     write("empty.txt", b"")
     write("run.sh", b"#!/bin/sh\necho hi\n", 0o755)
     shutil.copy("/bin/true", home / "prog")
@@ -598,12 +601,12 @@ def state_of(run, name):
 
 
 @case("names: spaces, Unicode, a leading dash, an empty file, a symlink, the same file twice, nothing executable, "
-      "Open withheld for programs")
+      "Open offered for a .txt only (not programs, no extension or .svg)")
 def names(rex13):
     home = rex13.home
     unicode_name = "with space and ünïcode.txt"
     order = [f"~/{unicode_name}", "~/-rf.txt", "--help", "~/empty.txt", "~/link-to-notes", "~/notes.txt",
-             "~/notes.txt", "~/prog", "~/run.sh", "~/sha-check.bin"]
+             "~/notes.txt", "~/prog", "~/run.sh", "~/logo.svg", "~/sha-check.bin"]
     steps, t = [], 2.5
     for path in order:
         steps += download_steps(t, path)
@@ -613,7 +616,7 @@ def names(rex13):
     expect_clean_exit(run)
     sources = {unicode_name: unicode_name, "-rf.txt": "-rf.txt", "--help": "--help", "empty.txt": "empty.txt",
                "link-to-notes": "notes.txt", "notes.txt": "notes.txt", "notes (1).txt": "notes.txt",
-               "prog": "prog", "run.sh": "run.sh", "sha-check.bin": "sha-check.bin"}
+               "prog": "prog", "run.sh": "run.sh", "logo.svg": "logo.svg", "sha-check.bin": "sha-check.bin"}
     for name, source in sources.items():
         saved(run, name, home / source)
     assert (run.downloads / "empty.txt").stat().st_size == 0
@@ -622,12 +625,16 @@ def names(rex13):
     assert all(not (run.downloads / n).stat().st_mode & 0o111 for n in run.listing()), f"executable bits: {modes}"
     assert (home / "prog").stat().st_mode & 0o111 and (home / "run.sh").stat().st_mode & 0o111, "sources are not executable"
     tree = run.tree
-    for name in ("prog", "run.sh"):
+    # Open is an allow list: a .txt gets it; a program, a script, a file with no extension and an
+    # .svg (plain words, whatever is inside) get only Show in folder.
+    for name in ("prog", "run.sh", "--help", "logo.svg"):
         state, ident = state_of(run, name)
         assert state.startswith("Saved to"), (name, state)
         assert f"download-open:{ident}" not in tree, f"Open is offered for {name}"
-    state, ident = state_of(run, "notes.txt")
-    assert f"download-open:{ident}" in tree and f"download-show:{ident}" in tree, "Show in folder / Open missing for notes.txt"
+        assert f"download-show:{ident}" in tree, f"Show in folder is missing for {name}"
+    for name in ("notes.txt", "-rf.txt"):
+        state, ident = state_of(run, name)
+        assert f"download-open:{ident}" in tree and f"download-show:{ident}" in tree, f"Show in folder / Open missing for {name}"
     expect_no_partials(run)
     return f"{len(sources)} files, modes {sorted(set(modes.values()))}, the dialog took each name from the server"
 
@@ -721,18 +728,44 @@ def cancel_midway(rex13):
     return f"partial seen at about {percent}% of 1 GiB, then cancelled; folder empty, records empty, server fd closed"
 
 
-@case("the 1 GiB question: size and free space, Cancel focused; leaving it releases the server's file")
+@case("the 1 GiB question: size and free space, Cancel focused; the server holds the file while it is asked and "
+      "Escape releases it while the app runs")
 def large_question(rex13):
-    run = run_app("large", download_steps(2.5, "~/one-gib.img"), 7.5, server=rex13)
+    # (a) the question as it looks, with the server holding the file while it is on screen.
+    seen = {"held": False}
+
+    def watch_held(run):
+        # The question appears about 3 s in and the snapshot is taken at 9 s: sample until then.
+        seen["held"] = until(lambda: bool(rex13.open_files("one-gib.img")), 7, run.process)
+    run = run_app("large", download_steps(2.5, "~/one-gib.img"), 9.0, server=rex13, watch=watch_held)
     expect_clean_exit(run)
     tree = run.tree
     question = tree.get("download-question", "")
     assert "is 1.1 GB" in question and "free" in question, f"question: {question!r}"
     assert "focused" in tree.get("states:cancel-download", []), "Cancel is not focused"
-    assert until(lambda: not rex13.open_files("one-gib.img"), 5), "the server still holds the file"
+    assert seen["held"], "the server held no descriptor on the file while the question was on screen"
+    assert until(lambda: not rex13.open_files("one-gib.img"), 5), "the server still holds the file after the app left"
     assert run.listing() == []
     expect_no_partials(run)
-    return question.replace(str(run.downloads), "<folder>")
+
+    # (b) Escape on the question releases the server's file while the app is still running.
+    stages = {}
+
+    def watch_escape(run):
+        stages["held"] = until(lambda: bool(rex13.open_files("one-gib.img")), 7, run.process)
+        stages["released"] = until(lambda: not rex13.open_files("one-gib.img"), 12, run.process)
+        stages["running"] = run.process.poll() is None
+        stages["released_at"] = time.monotonic()
+    steps = download_steps(2.5, "~/one-gib.img") + [chord(10.0, "Escape")]
+    run = run_app("large-escape", steps, 16.0, server=rex13, watch=watch_escape)
+    expect_clean_exit(run)
+    assert stages.get("held"), "the server did not hold the file while the question was shown"
+    assert stages.get("released"), "Escape on the question did not release the server's file"
+    assert stages.get("running"), "the file was released only when the app exited, not by Escape"
+    assert "download-question" not in run.tree, "the question is still on screen after Escape"
+    assert run.listing() == [], f"folder not empty: {run.listing()}"
+    expect_no_partials(run)
+    return question.replace(str(run.downloads), "<folder>") + "; held while asked, released by Escape with the app running"
 
 
 @case("a file appended to during the transfer ends within the growth cap, or fails with the growth message; no partial")
