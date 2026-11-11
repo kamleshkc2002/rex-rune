@@ -1,0 +1,1123 @@
+//! Headless checks of the download UI: the action's remote class, the dialog, the chip, the
+//! popover and what a finished transfer may offer. No server: the host is a channel the test
+//! reads, and its model is fed transfers the way the worker would.
+use super::*;
+use crate::app::{
+    actions::{self, Remote},
+    downloads::Opened,
+    panel::PaneAction,
+};
+use rex_linux::{
+    connection::downloads::Request,
+    download::{Confirmation, Failure, Reason, State, Transfer},
+};
+use std::{
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+/// A new empty folder for one test's downloads.
+fn scratch() -> PathBuf {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "rex-download-ui-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+/// Two panes on a host speaking revision 13, saving into a private folder.
+fn workspace_13() -> (Workspace, flume::Receiver<HostCommand>, PathBuf) {
+    let (mut ws, rx) = tabbed_workspace("split");
+    ws.hosts[0].model.protocol.api_revision = 13;
+    let dir = scratch();
+    ws.settings.downloads.directory = Some(dir.display().to_string());
+    (ws, rx, dir)
+}
+
+fn pane_menu_download(ws: &mut Workspace, block: &str) {
+    let target = ws.target(block).expect("a pane");
+    ws.perform(
+        Intent::Pane(target, PaneAction::Download),
+        &mut rune::Tx::default(),
+    );
+}
+
+/// What the host was asked: its downloads, and the answers to their questions.
+enum Asked {
+    Download(Box<Request>),
+    Confirm(u64),
+    Cancel(u64),
+}
+fn asked(rx: &flume::Receiver<HostCommand>) -> Vec<Asked> {
+    rx.try_iter()
+        .filter_map(|c| match c {
+            HostCommand::Download(request) => Some(Asked::Download(request)),
+            HostCommand::DownloadConfirm(id) => Some(Asked::Confirm(id)),
+            HostCommand::DownloadCancel(id) => Some(Asked::Cancel(id)),
+            _ => None,
+        })
+        .collect()
+}
+
+fn transfer(id: u64, name: &str, dir: &Path, state: State) -> Transfer {
+    let mut t = Transfer::new(
+        id,
+        "s".into(),
+        "block:b".into(),
+        format!("~/{name}"),
+        dir.to_owned(),
+        1,
+    );
+    t.name = Some(name.into());
+    t.resolved = Some(format!("/home/dev/{name}"));
+    t.state = state;
+    t
+}
+
+fn receiving(received: u64, hint: u64) -> State {
+    State::Receiving { received, hint }
+}
+
+/// Change the host's list of transfers the way its worker does, then deliver the wake.
+fn feed(rt: &mut Runtime<Workspace>, f: impl FnOnce(&mut Vec<Transfer>)) {
+    rt.update(|s, tx| {
+        let mut model = s.hosts[0].model.clone();
+        f(&mut model.downloads);
+        *s.hosts[0].connection.model.lock().unwrap() = model;
+        s.sync(0, tx);
+    });
+    // Long enough for leaving rows and a growing popover to settle.
+    for _ in 0..40 {
+        rt.frame(1. / 60.);
+    }
+}
+
+fn set_field(rt: &mut Runtime<Workspace>, index: usize, text: &str) {
+    let mut edit = rune::TextEdit::new(text);
+    edit.focused = index == 0;
+    rt.state.panel.as_mut().unwrap().inputs[index] = edit;
+    rt.frame(1. / 60.);
+}
+
+fn open_dialog(ws: Workspace) -> Runtime<Workspace> {
+    runtime(ws)
+}
+
+fn texts(rt: &Runtime<Workspace>) -> Vec<String> {
+    rt.elements()
+        .into_iter()
+        .filter(|e| !e.exiting)
+        .filter_map(|e| e.text)
+        .collect()
+}
+
+fn shows(rt: &Runtime<Workspace>, needle: &str) -> bool {
+    texts(rt).iter().any(|t| t.contains(needle))
+}
+
+fn label_of(rt: &Runtime<Workspace>, key: &str) -> Option<(&'static str, String)> {
+    rt.elements()
+        .into_iter()
+        .find(|e| !e.exiting && e.key.as_deref() == Some(key))
+        .map(|e| (e.role, e.label.unwrap_or_default()))
+}
+
+/// A frame of `cols` columns where `text` is the screen, so a selection can be copied.
+fn screen_with(ws: &mut Workspace, block: &str, text: &[u8], selection: (usize, usize)) {
+    use rex_linux::connection::{Connection, TerminalSender};
+    let (sender, _sent) = flume::unbounded();
+    let connection = Connection {
+        model: Default::default(),
+        commands: TerminalSender::new(sender, "s".into(), block.into()),
+        wake: flume::unbounded().1,
+    };
+    let mut terminal = ghostty_vt::Terminal::new(ghostty_vt::TerminalOptions {
+        cols: 40,
+        rows: 4,
+        ..Default::default()
+    })
+    .unwrap();
+    terminal.vt_write(text);
+    let frame = std::sync::Arc::new(
+        rex_linux::terminal::Renderer::new()
+            .unwrap()
+            .frame(&terminal)
+            .unwrap(),
+    );
+    {
+        let mut m = connection.model.lock().unwrap();
+        m.connected = true;
+        m.control_connected = true;
+        m.frame = Some(frame.clone());
+    }
+    let mut term = crate::app::term::Term::new(connection);
+    term.frame = Some(frame);
+    term.selection = Some(selection);
+    // A different revision than the frame's makes the selection read from the screen.
+    term.selection_revision = 1;
+    let key = ws.term_key(block);
+    ws.terminals.insert(key, term);
+}
+
+#[test]
+fn pane_download_is_never_remote_and_the_allowed_set_stays_exactly_eight() {
+    let spec = actions::find("pane.download").expect("registered");
+    assert!(matches!(spec.remote(), Remote::Never(_)));
+    assert_eq!(spec.title(), "Download file");
+    assert!(spec.accepts(&serde_json::Value::Null));
+    let mut allowed: Vec<_> = actions::SPECS
+        .iter()
+        .filter(|s| matches!(s.remote(), Remote::View { .. }))
+        .map(|s| s.name)
+        .collect();
+    allowed.sort();
+    assert_eq!(allowed.len(), 8, "{allowed:?}");
+    assert!(!allowed.contains(&"pane.download"));
+    // Declared to the server as unavailable remotely, like the other dialogs.
+    let declared = actions::declarations()
+        .into_iter()
+        .find(|a| a.name == "pane.download")
+        .unwrap();
+    assert!(
+        declared
+            .description
+            .unwrap()
+            .contains("Not available remotely")
+    );
+
+    // A client.perform request is refused, with consent on, and starts nothing.
+    let (mut ws, rx, _dir) = workspace_13();
+    ws.settings.hosts[0].remote_control = true;
+    ws.remote_perform(
+        0,
+        remote_tests::pending("pane.download", serde_json::json!({})),
+        &mut rune::Tx::default(),
+    );
+    remote_tests::code(remote_tests::reply(&rx), "not_supported");
+    assert!(ws.panel.is_none(), "no dialog");
+    assert!(asked(&rx).is_empty());
+}
+
+#[test]
+fn a_returned_client_action_cannot_open_the_download_dialog() {
+    let (mut ws, rx, _dir) = workspace_13();
+    let mut model = ws.hosts[0].model.clone();
+    model
+        .client_actions
+        .push(rex_linux::connection::actions::Queued {
+            generation: ws.keymap_generation,
+            session: Some("s".into()),
+            block: Some("block:b".into()),
+            action: rexrs::api::client::ClientAction {
+                action: "pane.download".into(),
+                args: None,
+            },
+        });
+    *ws.hosts[0].connection.model.lock().unwrap() = model;
+    ws.sync(0, &mut rune::Tx::default());
+    assert!(ws.panel.is_none());
+    assert!(asked(&rx).is_empty());
+    assert!(ws.notices.iter().any(|n| n.text.contains("cannot start")));
+}
+
+#[test]
+fn a_key_bound_to_pane_download_opens_the_dialog_for_the_focused_pane() {
+    let (ws, _rx, _dir) = workspace_13();
+    let mut rt = runtime(ws);
+    rt.update(|s, tx| {
+        assert!(actions::run(
+            s,
+            "pane.download",
+            &serde_json::Value::Null,
+            tx
+        ));
+    });
+    rt.frame(1. / 60.);
+    let panel = rt.state.panel.as_ref().expect("the dialog");
+    assert!(matches!(panel.kind, PanelKind::Download(_)));
+    assert_eq!(panel.target.as_ref().unwrap().block, "block:b");
+    assert!(
+        rt.state
+            .shortcut_detail("pane.download", &serde_json::Value::Null)
+            .is_empty(),
+        "no default key"
+    );
+}
+
+#[test]
+fn pane_menu_and_commands_list_download_file_and_commands_list_downloads() {
+    let (mut ws, _rx, _dir) = workspace_13();
+    ws.pane_menu("block:b".into(), None);
+    let labels: Vec<_> = ws.entries().into_iter().map(|e| e.label).collect();
+    assert!(labels.contains(&"Download file…".to_owned()), "{labels:?}");
+    ws.picker(false);
+    let labels: Vec<_> = ws.entries().into_iter().map(|e| e.label).collect();
+    assert!(labels.contains(&"Download file…".to_owned()), "{labels:?}");
+    assert!(labels.contains(&"Downloads".to_owned()), "{labels:?}");
+    // Even a host that cannot send files keeps the action visible.
+    let (mut old, _rx, _dir) = workspace_13();
+    old.hosts[0].model.protocol.api_revision = 12;
+    old.pane_menu("block:b".into(), None);
+    assert!(
+        old.entries()
+            .iter()
+            .any(|e| e.label == "Download file…" && e.enabled)
+    );
+}
+
+#[test]
+fn the_dialog_names_the_host_focuses_its_field_and_escape_closes_it_without_asking() {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    let panel = rt.state.panel.as_ref().unwrap();
+    assert_eq!(panel.title, "Download from test-0");
+    assert_eq!(panel.fields[0].0, "File on test-0");
+    assert!(shows(&rt, "Download from test-0"));
+    assert!(shows(&rt, "Save in"));
+    assert!(shows(&rt, &dir.display().to_string()), "the folder shows");
+    let path = focused(&rt).expect("a focused field");
+    assert!(
+        path.contains("field:0"),
+        "the file field has focus, not {path}"
+    );
+    assert!(has(&rt, "target-outline"), "the captured pane is outlined");
+    assert_eq!(
+        label_of(&rt, "dialog"),
+        Some(("dialog", "Download from test-0".to_owned()))
+    );
+    press(&mut rt, Key::Escape);
+    assert!(rt.state.panel.is_none(), "Escape closes");
+    assert!(asked(&rx).is_empty(), "closing asks nothing");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn only_a_single_line_selection_prefills_the_field() {
+    for (screen, selection, expected) in [
+        (
+            &b"cat /var/log/build.log"[..],
+            (0, 21),
+            "cat /var/log/build.log",
+        ),
+        (b"first line\r\nsecond line", (0, 52), ""),
+        (b"cat /etc/hosts", (3, 14), "/etc/hosts"),
+    ] {
+        let (mut ws, _rx, dir) = workspace_13();
+        screen_with(&mut ws, "block:b", screen, selection);
+        let copied = ws.terminals[&ws.term_key("block:b")].copy_text();
+        pane_menu_download(&mut ws, "block:b");
+        let got = ws.panel.as_ref().unwrap().inputs[0].text.clone();
+        assert_eq!(got, expected, "selection {copied:?}");
+        std::fs::remove_dir_all(dir).ok();
+    }
+    // Without a selection the field starts empty.
+    let (mut ws, _rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    assert_eq!(ws.panel.as_ref().unwrap().inputs[0].text, "");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn enter_sends_exactly_one_download_for_the_captured_pane_and_folder() {
+    let (mut ws, rx, dir) = workspace_13();
+    // The dialog is opened from the pane that is not focused: it keeps that pane.
+    assert_eq!(ws.focused_block().as_deref(), Some("block:b"));
+    pane_menu_download(&mut ws, "block:c");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, "  ~/build.log ");
+    press(&mut rt, Key::Enter);
+    let sent = asked(&rx);
+    let [Asked::Download(request)] = &sent[..] else {
+        panic!("exactly one download, got {} commands", sent.len());
+    };
+    assert_eq!(request.session, "s");
+    assert_eq!(request.block, "block:c", "the pane captured when it opened");
+    assert_eq!(request.path, "~/build.log");
+    assert_eq!(request.directory, dir);
+    // It waits for Rex in the dialog, and a second Enter asks nothing more.
+    assert!(rt.state.panel.is_some());
+    assert!(shows(&rt, "Asking test-0"));
+    press(&mut rt, Key::Enter);
+    assert!(
+        asked(&rx).is_empty(),
+        "Enter while waiting asks and cancels nothing"
+    );
+    assert!(rt.state.panel.is_some());
+    press(&mut rt, Key::Escape);
+    assert!(
+        matches!(&asked(&rx)[..], [Asked::Cancel(_)]),
+        "Escape cancels the request"
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn an_empty_path_is_refused_in_the_dialog_before_anything_is_sent() {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    press(&mut rt, Key::Enter);
+    assert!(asked(&rx).is_empty());
+    assert!(shows(&rt, "Enter the path of a file on test-0."));
+    assert_eq!(
+        label_of(&rt, "download-error").map(|(role, _)| role),
+        Some("alert")
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_large_file_keeps_the_dialog_open_with_cancel_focused_and_both_answers_work() {
+    let confirmation = Confirmation {
+        reason: Reason::Large,
+        hint: 3_200_000_000,
+        free: Some(41_000_000_000),
+    };
+    for answer in ["cancel", "confirm"] {
+        let (mut ws, rx, dir) = workspace_13();
+        pane_menu_download(&mut ws, "block:b");
+        let mut rt = open_dialog(ws);
+        set_field(&mut rt, 0, "/home/dev/build.img");
+        press(&mut rt, Key::Enter);
+        let id = match &asked(&rx)[..] {
+            [Asked::Download(r)] => r.id,
+            _ => panic!("one download"),
+        };
+        let mut t = transfer(
+            id,
+            "build.img",
+            &dir,
+            State::AwaitingConfirmation(confirmation),
+        );
+        t.requested = "/home/dev/build.img".into();
+        feed(&mut rt, |list| list.push(t));
+        assert!(rt.state.panel.is_some(), "the dialog stays open");
+        let question = format!("build.img is 3.2 GB. {} has 41 GB free.", dir.display());
+        assert!(shows(&rt, &question), "{:?}", texts(&rt));
+        assert!(shows(&rt, "/home/dev/build.img"), "the resolved path shows");
+        let path = focused(&rt).expect("a focused button");
+        assert!(
+            path.ends_with("cancel-download"),
+            "Cancel has focus, not {path}"
+        );
+        assert!(asked(&rx).is_empty(), "nothing is answered for the person");
+        if answer == "cancel" {
+            press(&mut rt, Key::Enter);
+            assert!(rt.state.panel.is_none());
+            let sent = asked(&rx);
+            assert!(
+                matches!(&sent[..], [Asked::Cancel(c)] if *c == id),
+                "{} commands",
+                sent.len()
+            );
+        } else {
+            click(&mut rt, "confirm-download");
+            assert!(matches!(&asked(&rx)[..], [Asked::Confirm(c)] if *c == id));
+            // Rex then starts sending: the chip takes over and the dialog goes.
+            feed(&mut rt, |list| list[0].state = receiving(0, 3_200_000_000));
+            assert!(rt.state.panel.is_none());
+            assert!(has(&rt, "download-chip"));
+        }
+        std::fs::remove_dir_all(dir).ok();
+    }
+}
+
+#[test]
+fn escape_on_the_question_cancels_it_and_an_unseen_question_is_cancelled_too() {
+    let confirmation = Confirmation {
+        reason: Reason::LowSpace,
+        hint: 5_000_000_000,
+        free: None,
+    };
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, "/x/y.img");
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            id,
+            "y.img",
+            &dir,
+            State::AwaitingConfirmation(confirmation),
+        ))
+    });
+    assert!(shows(&rt, "y.img is 5 GB."), "free unknown: only the size");
+    press(&mut rt, Key::Escape);
+    assert!(rt.state.panel.is_none());
+    assert!(matches!(&asked(&rx)[..], [Asked::Cancel(c)] if *c == id));
+
+    // A question whose dialog is gone (here: never opened) is cancelled, once.
+    feed(&mut rt, |list| {
+        list[0].state = State::Cancelled;
+        list.push(transfer(
+            99,
+            "z.img",
+            &dir,
+            State::AwaitingConfirmation(confirmation),
+        ))
+    });
+    assert!(matches!(&asked(&rx)[..], [Asked::Cancel(99)]));
+    feed(&mut rt, |_| {});
+    assert!(asked(&rx).is_empty(), "not asked twice");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn an_old_server_says_so_and_nothing_is_sent() {
+    let (mut ws, rx, dir) = workspace_13();
+    ws.hosts[0].model.protocol.api_revision = 12;
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    assert!(shows(
+        &rt,
+        "Rex on test-0 is too old to send files; update Rex there."
+    ));
+    assert!(!has(&rt, "start-download"), "there is nothing to start");
+    assert!(!has(&rt, "field:0"));
+    press(&mut rt, Key::Enter);
+    assert!(rt.state.panel.is_none(), "Enter on Close closes");
+    assert!(asked(&rx).is_empty());
+    rt.update(|s, _| s.start_download());
+    assert!(asked(&rx).is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn errors_before_any_bytes_stay_in_the_dialog_in_the_servers_words() {
+    let failures = [
+        (
+            Failure::Server("No such file or directory: /nope".into()),
+            "No such file or directory: /nope",
+        ),
+        (
+            Failure::Server("/etc is a directory".into()),
+            "/etc is a directory",
+        ),
+        (
+            Failure::Server("Permission denied".into()),
+            "Permission denied",
+        ),
+        (
+            Failure::Destination("/dl is a symbolic link to /elsewhere".into()),
+            "/dl is a symbolic link to /elsewhere",
+        ),
+        (Failure::Disconnected, "the host isn't connected"),
+        (
+            Failure::ServerTooOld,
+            "Rex on test-0 is too old to send files; update Rex there.",
+        ),
+        (Failure::ConfirmationExpired, "not confirmed in time"),
+    ];
+    for (failure, words) in failures {
+        let (mut ws, rx, dir) = workspace_13();
+        pane_menu_download(&mut ws, "block:b");
+        let mut rt = open_dialog(ws);
+        set_field(&mut rt, 0, "~/nope");
+        press(&mut rt, Key::Enter);
+        let id = match &asked(&rx)[..] {
+            [Asked::Download(r)] => r.id,
+            _ => panic!("one download"),
+        };
+        feed(&mut rt, |list| {
+            list.push(transfer(id, "nope", &dir, State::Failed(failure.clone())))
+        });
+        assert!(rt.state.panel.is_some(), "{failure:?} stays in the dialog");
+        assert!(shows(&rt, words), "{failure:?}: {:?}", texts(&rt));
+        assert!(has(&rt, "field:0"), "the form is back, ready to try again");
+        assert_eq!(
+            rt.state.panel.as_ref().unwrap().inputs[0].text,
+            "~/nope",
+            "what was typed is kept"
+        );
+        assert!(
+            rt.state.notices.iter().all(|n| !n.sticky),
+            "no sticky notice for {failure:?}"
+        );
+        // Another try is possible, and a second download is a new request.
+        press(&mut rt, Key::Enter);
+        assert!(matches!(&asked(&rx)[..], [Asked::Download(_)]));
+        std::fs::remove_dir_all(dir).ok();
+    }
+}
+
+#[test]
+fn a_fourth_transfer_is_refused_in_the_dialog_and_in_a_notice() {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    set_field(&mut rt, 0, "~/d");
+    press(&mut rt, Key::Enter);
+    let id = match &asked(&rx)[..] {
+        [Asked::Download(r)] => r.id,
+        _ => panic!("one download"),
+    };
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            id,
+            "d",
+            &dir,
+            State::Failed(Failure::TooManyActive { limit: 3 }),
+        ))
+    });
+    assert!(shows(&rt, "3 downloads from this host are already running"));
+    assert!(
+        rt.state
+            .notices
+            .iter()
+            .any(|n| n.text.contains("refused") && n.text.contains("already running"))
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_failure_after_bytes_started_is_a_sticky_notice_and_a_save_is_one_information_notice() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    std::fs::write(dir.join("build.log"), b"hello").unwrap();
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "build.log",
+            &dir,
+            State::Saved {
+                path: dir.join("build.log"),
+                bytes: 5,
+                short_of: None,
+            },
+        ));
+        list.push(transfer(
+            2,
+            "big.bin",
+            &dir,
+            State::Failed(Failure::Stalled),
+        ));
+        list.push(transfer(3, "gone.bin", &dir, State::Cancelled));
+    });
+    let notices: Vec<_> = rt
+        .state
+        .notices
+        .iter()
+        .map(|n| (n.text.clone(), n.sticky))
+        .collect();
+    assert_eq!(
+        notices,
+        [
+            (
+                format!(
+                    "Saved build.log from test-0 to {}",
+                    crate::app::downloads::tilde(&dir)
+                ),
+                false
+            ),
+            (
+                "Download of big.bin from test-0 failed: no data for 30 seconds".to_owned(),
+                true
+            ),
+        ],
+        "a cancel the person asked for says nothing"
+    );
+    // Told once: later wakes add nothing.
+    feed(&mut rt, |_| {});
+    assert_eq!(rt.state.notices.len(), 2);
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_chip_shows_one_transfer_with_its_percent_several_as_a_count_and_nothing_otherwise() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    assert!(!has(&rt, "download-chip"), "no chip with nothing running");
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "build.log", &dir, receiving(42, 100)));
+    });
+    assert!(has(&rt, "download-chip"));
+    assert!(shows(&rt, "↓ build.log"), "{:?}", texts(&rt));
+    assert!(shows(&rt, "42%"));
+    assert_eq!(
+        label_of(&rt, "download-chip"),
+        Some(("button", "Downloads: build.log 42%".to_owned()))
+    );
+    feed(&mut rt, |list| {
+        list.push(transfer(2, "b.txt", &dir, receiving(0, 0)));
+        list.push(transfer(3, "c.txt", &dir, State::Requested));
+    });
+    assert!(shows(&rt, "↓ 3 files"));
+    assert!(!shows(&rt, "42%"));
+    feed(&mut rt, |list| {
+        list[1].state = State::Cancelled;
+        list[2].state = State::Cancelled;
+    });
+    assert!(shows(&rt, "↓ build.log"), "back to one");
+    feed(&mut rt, |list| list[0].state = State::Cancelled);
+    assert!(!has(&rt, "download-chip"), "gone when nothing runs");
+    // Finished transfers never bring the chip back.
+    feed(&mut rt, |_| {});
+    assert!(!has(&rt, "download-chip"));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_long_name_is_cut_in_the_middle_and_the_chip_keeps_its_percent() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    let long = format!("{}.tar.gz", "very-long-file-name-".repeat(12));
+    assert!(long.len() <= 255);
+    feed(&mut rt, |list| {
+        list.push(transfer(1, &long, &dir, receiving(7, 100)))
+    });
+    let chip = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("download-chip"))
+        .unwrap()
+        .rect;
+    assert!(
+        chip[2] <= 190.5,
+        "the chip stays within its width: {chip:?}"
+    );
+    assert!(shows(&rt, "7%"));
+    assert!(shows(&rt, "…"), "cut in the middle");
+    assert!(
+        shows(&rt, "tar.gz") || shows(&rt, ".gz"),
+        "the ending stays"
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_popover_has_a_row_for_every_state() {
+    let (mut ws, rx, dir) = workspace_13();
+    std::fs::write(dir.join("notes.txt"), b"plain text").unwrap();
+    ws.perform(Intent::Downloads, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    assert!(shows(&rt, "No downloads yet"), "the empty state");
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "notes.txt",
+            &dir,
+            State::Saved {
+                path: dir.join("notes.txt"),
+                bytes: 10,
+                short_of: None,
+            },
+        ));
+        list.push(transfer(
+            2,
+            "online",
+            &dir,
+            receiving(12_400_000, 80_000_000),
+        ));
+        list.push(transfer(
+            3,
+            "sysfs",
+            &dir,
+            State::Saved {
+                path: dir.join("sysfs"),
+                bytes: 6,
+                short_of: Some(4096),
+            },
+        ));
+        list.push(transfer(4, "nope", &dir, State::Cancelled));
+        list.push(transfer(
+            5,
+            "bad",
+            &dir,
+            State::Failed(Failure::Server("Permission denied".into())),
+        ));
+        list.push(transfer(
+            6,
+            "old",
+            &dir,
+            State::Failed(Failure::ServerTooOld),
+        ));
+        list.push(transfer(7, "wait", &dir, State::Requested));
+    });
+    assert!(!shows(&rt, "No downloads yet"));
+    let state = |id: u64| element_text(&rt, &format!("download-state:{id}"));
+    assert_eq!(
+        state(1),
+        [format!(
+            "test-0 · Saved to {}",
+            crate::app::downloads::tilde(&dir)
+        )]
+    );
+    assert_eq!(state(2), ["test-0 · 12.4 of 80 MB"]);
+    assert_eq!(state(3), ["test-0 · Saved 6 bytes; Rex reported 4096"]);
+    assert_eq!(state(4), ["test-0 · Cancelled"]);
+    assert_eq!(state(5), ["test-0 · Failed: Permission denied"]);
+    assert_eq!(
+        state(6),
+        ["test-0 · Failed: Rex on test-0 is too old to send files; update Rex there."]
+    );
+    assert_eq!(state(7), ["test-0 · Waiting for test-0…"]);
+    // Running rows first, each with Cancel; finished rows have none.
+    for (id, cancel) in [
+        (2, true),
+        (7, true),
+        (1, false),
+        (3, false),
+        (4, false),
+        (5, false),
+    ] {
+        assert_eq!(
+            has(&rt, &format!("download-cancel:{id}")),
+            cancel,
+            "row {id}"
+        );
+    }
+    assert!(has(&rt, "download-progress:2"), "a bar while receiving");
+    let ys: Vec<f32> = [7, 2, 6, 5, 4, 3, 1]
+        .iter()
+        .map(|id| {
+            rt.elements()
+                .into_iter()
+                .find(|e| e.key.as_deref() == Some(&format!("download:{id}")))
+                .unwrap()
+                .rect[1]
+        })
+        .collect();
+    assert!(
+        ys.windows(2).all(|w| w[0] < w[1]),
+        "running first, then newest first: {ys:?}"
+    );
+    // The row's tooltip carries the resolved path; every control is named.
+    assert_eq!(
+        label_of(&rt, "download-cancel:2"),
+        Some(("button", "Cancel download of online".to_owned()))
+    );
+    assert_eq!(
+        label_of(&rt, "download-progress:2").map(|(role, _)| role),
+        Some("progressbar")
+    );
+    assert_eq!(
+        label_of(&rt, "downloads-popover").map(|(r, _)| r),
+        Some("dialog")
+    );
+    assert_eq!(
+        label_of(&rt, "downloads-list").map(|(r, _)| r),
+        Some("list")
+    );
+    assert_eq!(
+        label_of(&rt, "download:1").map(|(r, _)| r),
+        Some("listitem")
+    );
+    assert!(asked(&rx).is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn cancel_on_a_row_sends_download_cancel_for_that_transfer() {
+    let (mut ws, rx, dir) = workspace_13();
+    ws.perform(Intent::Downloads, &mut rune::Tx::default());
+    let mut rt = runtime(ws);
+    feed(&mut rt, |list| {
+        list.push(transfer(11, "a", &dir, receiving(1, 10)));
+        list.push(transfer(12, "b", &dir, receiving(1, 10)));
+    });
+    click(&mut rt, "download-cancel:11");
+    let sent = asked(&rx);
+    assert!(
+        matches!(&sent[..], [Asked::Cancel(11)]),
+        "{} commands, popover {}",
+        sent.len(),
+        has(&rt, "downloads-popover")
+    );
+    // The core finishes the cancel; the row then says so and has no Cancel.
+    feed(&mut rt, |list| list[0].state = State::Cancelled);
+    assert!(!has(&rt, "download-cancel:11"));
+    assert!(has(&rt, "download-cancel:12"));
+    assert!(shows(&rt, "Cancelled"));
+    assert!(
+        rt.state
+            .notices
+            .iter()
+            .all(|n| !n.text.contains("Cancelled"))
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn open_is_offered_only_for_files_that_may_be_opened_and_nothing_opens_without_a_click() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    let files: [(&str, &[u8], bool); 5] = [
+        ("notes.txt", b"plain text", true),
+        ("run.sh", b"echo hi\n", false),
+        ("prog", b"\x7fELF\x02\x01\x01", false),
+        ("page", b"<!doctype html><script>alert(1)</script>", false),
+        ("script-no-ext", b"#!/bin/sh\nid\n", false),
+    ];
+    for (name, bytes, _) in &files {
+        std::fs::write(dir.join(name), bytes).unwrap();
+    }
+    feed(&mut rt, |list| {
+        for (i, (name, bytes, _)) in files.iter().enumerate() {
+            list.push(transfer(
+                i as u64 + 1,
+                name,
+                &dir,
+                State::Saved {
+                    path: dir.join(name),
+                    bytes: bytes.len() as u64,
+                    short_of: None,
+                },
+            ));
+        }
+    });
+    // Finishing opened and showed nothing, not even with the popover on screen.
+    rt.update(|s, tx| s.perform(Intent::Downloads, tx));
+    rt.frame(1. / 60.);
+    assert!(
+        rt.state.downloads.opened.is_empty(),
+        "nothing without a click"
+    );
+    for (i, (name, _, may)) in files.iter().enumerate() {
+        let id = i + 1;
+        assert!(
+            has(&rt, &format!("download-show:{id}")),
+            "{name} can be shown"
+        );
+        assert_eq!(has(&rt, &format!("download-open:{id}")), *may, "{name}");
+    }
+    assert!(
+        rt.state.downloads.opened.is_empty(),
+        "nothing is opened by drawing"
+    );
+
+    click(&mut rt, "download-show:2");
+    click(&mut rt, "download-open:1");
+    assert_eq!(
+        rt.state.downloads.opened,
+        [
+            Opened::Folder(dir.join("run.sh")),
+            Opened::File(dir.join("notes.txt"))
+        ]
+    );
+    // Even a forced Open of a file that may not be opened is refused when pressed.
+    let id = rt.state.hosts[0].id;
+    rt.update(|s, _| s.open_download(id, 3));
+    assert_eq!(rt.state.downloads.opened.len(), 2);
+    assert!(
+        rt.state
+            .notices
+            .iter()
+            .any(|n| n.text.contains("doesn't open"))
+    );
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_file_changed_after_it_was_saved_is_looked_at_again_before_it_opens() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    std::fs::write(dir.join("later.txt"), b"plain").unwrap();
+    feed(&mut rt, |list| {
+        list.push(transfer(
+            1,
+            "later.txt",
+            &dir,
+            State::Saved {
+                path: dir.join("later.txt"),
+                bytes: 5,
+                short_of: None,
+            },
+        ))
+    });
+    std::fs::write(dir.join("later.txt"), b"#!/bin/sh\nrm -rf x\n").unwrap();
+    let id = rt.state.hosts[0].id;
+    rt.update(|s, _| s.open_download(id, 1));
+    assert!(rt.state.downloads.opened.is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn commands_downloads_opens_the_popover_with_nothing_running() {
+    let (mut ws, _rx, dir) = workspace_13();
+    ws.picker(false);
+    ws.panel.as_mut().unwrap().inputs[0] = rune::TextEdit::new("downloads");
+    let index = ws
+        .entries()
+        .iter()
+        .position(|e| matches!(e.action, Intent::Downloads))
+        .expect("Downloads in Commands");
+    ws.panel.as_mut().unwrap().selected = index;
+    let mut rt = runtime(ws);
+    press(&mut rt, Key::Enter);
+    assert!(matches!(
+        rt.state.panel.as_ref().map(|p| &p.kind),
+        Some(PanelKind::Downloads)
+    ));
+    assert!(has(&rt, "downloads-popover"));
+    assert!(shows(&rt, "No downloads yet"));
+    press(&mut rt, Key::Escape);
+    assert!(rt.state.panel.is_none());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn the_chip_opens_the_popover_and_a_finishing_transfer_never_moves_focus() {
+    let (ws, _rx, dir) = workspace_13();
+    let mut rt = runtime(ws);
+    feed(&mut rt, |list| {
+        list.push(transfer(1, "a.txt", &dir, receiving(1, 2)))
+    });
+    click(&mut rt, "download-chip");
+    assert!(has(&rt, "downloads-popover"));
+    let before = focused(&rt);
+    assert!(
+        before
+            .as_deref()
+            .is_some_and(|p| p.ends_with("downloads-scroll")),
+        "opens on the list, not on a button: {before:?}"
+    );
+    // Tab to the row's Cancel; when its transfer ends, focus must not slide onto the Show in
+    // folder or Open that replace it, or an Enter meant for Cancel would press one.
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).is_some_and(|p| p.ends_with("download-cancel:1")));
+    feed(&mut rt, |list| {
+        list[0].state = State::Saved {
+            path: dir.join("a.txt"),
+            bytes: 2,
+            short_of: None,
+        }
+    });
+    assert!(has(&rt, "downloads-popover"), "the popover stays");
+    assert!(
+        !has(&rt, "download-chip"),
+        "the chip goes with the transfer"
+    );
+    assert!(has(&rt, "download-show:1"));
+    let now = focused(&rt);
+    assert!(
+        now.as_deref()
+            .is_none_or(|p| !p.contains("download-show") && !p.contains("download-open")),
+        "focus is on {now:?}"
+    );
+    press(&mut rt, Key::Enter);
+    assert!(rt.state.downloads.opened.is_empty(), "Enter opened nothing");
+
+    // The same with a dialog open: Rename keeps its field and its text.
+    press(&mut rt, Key::Escape);
+    rt.update(|s, tx| s.perform(Intent::RenameSession, tx));
+    rt.frame(1. / 60.);
+    let before = focused(&rt);
+    assert!(before.as_deref().is_some_and(|p| p.contains("field:0")));
+    feed(&mut rt, |list| {
+        list.push(transfer(2, "b.txt", &dir, receiving(1, 2)));
+    });
+    feed(&mut rt, |list| {
+        list[1].state = State::Failed(Failure::Stalled)
+    });
+    assert_eq!(focused(&rt), before);
+    assert!(matches!(
+        rt.state.panel.as_ref().map(|p| &p.kind),
+        Some(PanelKind::Form(Form::RenameSession(None)))
+    ));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn change_edits_the_folder_in_the_dialog_and_saves_downloads_directory() {
+    let (mut ws, rx, dir) = workspace_13();
+    pane_menu_download(&mut ws, "block:b");
+    let mut rt = open_dialog(ws);
+    click(&mut rt, "change-folder");
+    let path = focused(&rt).expect("the folder field has focus");
+    assert!(path.contains("field:1"), "{path}");
+    // Escape leaves the field only; the dialog and the folder stay.
+    press(&mut rt, Key::Escape);
+    assert!(rt.state.panel.is_some());
+    assert!(!has(&rt, "field:1"));
+    assert_eq!(
+        rt.state.settings.downloads.directory.as_deref(),
+        Some(dir.display().to_string().as_str())
+    );
+    click(&mut rt, "change-folder");
+    let other = scratch();
+    set_field(&mut rt, 1, &other.display().to_string());
+    press(&mut rt, Key::Enter);
+    assert!(
+        rt.state.panel.is_some(),
+        "Enter in the folder field keeps the dialog"
+    );
+    assert_eq!(
+        rt.state.settings.downloads.directory.as_deref(),
+        Some(other.display().to_string().as_str())
+    );
+    let saved = rex_linux::settings::Settings::load(&rt.state.settings_path).unwrap();
+    assert_eq!(
+        saved.downloads.directory.as_deref(),
+        Some(other.display().to_string().as_str()),
+        "written to workspace.json"
+    );
+    assert!(shows(&rt, &other.display().to_string()));
+    // The next download goes to it.
+    set_field(&mut rt, 0, "/x");
+    press(&mut rt, Key::Enter);
+    assert!(matches!(&asked(&rx)[..], [Asked::Download(r)] if r.directory == other));
+
+    // A relative folder is refused; an empty one goes back to the system's folder.
+    let mut rt2 = {
+        let (mut ws, _rx, d) = workspace_13();
+        pane_menu_download(&mut ws, "block:b");
+        std::fs::remove_dir_all(d).ok();
+        open_dialog(ws)
+    };
+    click(&mut rt2, "change-folder");
+    set_field(&mut rt2, 1, "relative/dir");
+    press(&mut rt2, Key::Enter);
+    assert!(shows(&rt2, "absolute folder"));
+    set_field(&mut rt2, 1, "");
+    press(&mut rt2, Key::Enter);
+    assert_eq!(rt2.state.settings.downloads.directory, None);
+    std::fs::remove_dir_all(dir).ok();
+    std::fs::remove_dir_all(other).ok();
+}
+
+#[test]
+fn the_downloads_directory_survives_a_relaunch() {
+    let (mut ws, _rx, dir) = workspace_13();
+    ws.save();
+    let again = relaunch(&ws);
+    assert_eq!(
+        again.settings.downloads.directory.as_deref(),
+        Some(dir.display().to_string().as_str())
+    );
+    assert_eq!(again.download_folder(), dir);
+    std::fs::remove_file(&ws.settings_path).ok();
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn sizes_read_as_the_dialog_and_popover_write_them() {
+    use crate::app::downloads::{progress_text, size_text};
+    assert_eq!(size_text(0), "0 bytes");
+    assert_eq!(size_text(1), "1 byte");
+    assert_eq!(size_text(999), "999 bytes");
+    assert_eq!(size_text(1_000), "1 kB");
+    assert_eq!(size_text(3_200_000_000), "3.2 GB");
+    assert_eq!(size_text(41_000_000_000), "41 GB");
+    assert_eq!(size_text(41_370_000_000), "41.4 GB");
+    assert_eq!(size_text(80_000_000), "80 MB");
+    assert_eq!(size_text(250_000_000), "250 MB");
+    assert_eq!(size_text(999_990_000), "1 GB");
+    assert_eq!(progress_text(12_400_000, 80_000_000), "12.4 of 80 MB");
+    assert_eq!(progress_text(0, 3_000_000_000), "0 of 3 GB");
+    assert_eq!(progress_text(5_000_000, 0), "5 MB");
+    assert_eq!(progress_text(300, 900), "300 of 900 bytes");
+    let long = format!("{}.tar.gz", "x".repeat(250));
+    let cut = crate::app::downloads::middle(&long, 22);
+    assert_eq!(cut.chars().count(), 22);
+    assert!(cut.ends_with(".tar.gz") && cut.contains('…'));
+    assert_eq!(crate::app::downloads::middle("short.txt", 22), "short.txt");
+}
