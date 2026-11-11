@@ -19,6 +19,7 @@ pub mod activity;
 pub mod clipboard;
 pub mod downloads;
 mod prefetch;
+pub mod server_info;
 
 /// The label new tabs get. A tab that still has it shows its program's terminal title.
 pub const DEFAULT_TAB_LABEL: &str = "Shell";
@@ -232,6 +233,8 @@ pub struct HostModel {
     pub themes_unsupported: bool,
     /// A theme was declared to this server, by `set_theme` or in a new block's layout.
     pub theme_declared: bool,
+    /// What the server says about itself; see [`server_info`].
+    pub server_info: server_info::ServerInfo,
 }
 impl HostModel {
     /// Record a block's owner (none when nobody owns it), in its session's view and its pane.
@@ -377,6 +380,9 @@ pub enum HostCommand {
         outcome: perform::Outcome,
     },
     Keymap(Box<keymap::Declaration>),
+    /// Read the server's version once on each connection from now on, and its status again
+    /// when the server says it changed; see [`server_info`]. Read-only, and a refusal is quiet.
+    Identify,
     Action {
         generation: u64,
         request: Box<rexrs::api::client::Action>,
@@ -1143,7 +1149,10 @@ fn apply_bootstrap(
     state.bootstrap_seq = reply.seq;
     state.list_seq = reply.seq;
     let boot = reply.value;
-    shared.update(|m| m.sessions = boot.attach_all.sessions);
+    shared.update(|m| {
+        m.server_info.bootstrapped(&boot.server_status);
+        m.sessions = boot.attach_all.sessions;
+    });
     for attached in boot
         .attached_sessions
         .into_iter()
@@ -1331,6 +1340,7 @@ async fn run_host(
     let mut retry = 0;
     let mut prefetch = prefetch::Prefetch::default();
     let mut keymap: Option<Box<keymap::Declaration>> = None;
+    let mut server_reads = server_info::Reader::default();
     // An ssh:// host is reached through a forward of its Rex socket; every attempt opens a
     // fresh one, and its end is a disconnect like any other.
     let ssh = crate::ssh::Target::parse(&configured)?;
@@ -1356,6 +1366,7 @@ async fn run_host(
                 m.performs.clear();
                 m.client_id = identity.id.clone();
                 m.protocol.api_revision = control.welcome().api_revision;
+                m.server_info = server_info::ServerInfo::welcomed(control.welcome());
                 m.views.clear();
                 // Reports made while disconnected were missed; queries refill what's shown.
                 m.activity.clear();
@@ -1428,6 +1439,8 @@ async fn run_host(
             query_activity(&mut control, shared, &mut state, &workers).await;
             // Restore terminal sizes and state before a best-effort keymap can wait.
             if let Some(declaration) = &keymap { keymap::refresh(&mut control, shared, declaration).await; }
+            server_reads.reset();
+            server_reads.start(&mut control).await?;
             retry = 0;
             prefetch.reset();
             let mut pace = tokio::time::interval(prefetch::PACE);
@@ -1440,7 +1453,9 @@ async fn run_host(
                     // than MAX_WAIT. They must not gain another five seconds in the UI queue.
                     use futures_util::FutureExt;
                     if let Some(event) = control.next_event().now_or_never() {
-                        handle_event(event?, &mut control, shared, &mut workers, &mut state, keymap.as_deref()).await?;
+                        let event = event?;
+                        if event.name == "tailscale_status_changed" { server_reads.reread_status(&mut control).await?; }
+                        handle_event(event, &mut control, shared, &mut workers, &mut state, keymap.as_deref()).await?;
                         state.prune(&shared.model.lock().expect("host model"));
                         reconcile(&endpoint, shared, &sender, &mut workers);
                         declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
@@ -1474,9 +1489,12 @@ async fn run_host(
                             }
                         }
                     }
+                    reply = server_reads.finished(), if server_reads.in_flight() => server_info::record(shared, reply),
                     event = control.next_event() => {
                         busy_since = Some(Instant::now());
-                        handle_event(event?, &mut control, shared, &mut workers, &mut state, keymap.as_deref()).await?;
+                        let event = event?;
+                        if event.name == "tailscale_status_changed" { server_reads.reread_status(&mut control).await?; }
+                        handle_event(event, &mut control, shared, &mut workers, &mut state, keymap.as_deref()).await?;
                         state.prune(&shared.model.lock().expect("host model"));
                         reconcile(&endpoint, shared, &sender, &mut workers);
                         declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
@@ -1494,6 +1512,11 @@ async fn run_host(
                             continue;
                         }
                         if let HostCommand::PrefetchViews(sessions) = command { prefetch.set_eligible(sessions); continue; }
+                        if let HostCommand::Identify = command {
+                            server_reads.want();
+                            server_reads.start(&mut control).await?;
+                            continue;
+                        }
                         if let HostCommand::Upload { session, block, files } = command {
                             if let Err(error) = upload(&mut control, shared, &endpoint, &session, &block, files).await {
                                 shared.update(|m| m.notice = Some(format!("Upload failed: {error:#}")));
@@ -1567,6 +1590,7 @@ async fn run_host(
                     Ok(HostCommand::PrefetchViews(sessions)) => prefetch.set_eligible(sessions),
                     Ok(HostCommand::Theme(new)) => theme = new,
                     Ok(HostCommand::Keymap(new)) => keymap = Some(new),
+                    Ok(HostCommand::Identify) => server_reads.want(),
                     Ok(HostCommand::Ticket { reply, .. }) => { let _ = reply.send(Err("Host is reconnecting".into())); }
                     Ok(HostCommand::Claim { .. } | HostCommand::PerformReply { .. }) => {}
                     Ok(HostCommand::Download(request)) => downloads::refuse(shared, *request, crate::download::Failure::Disconnected),
@@ -1592,6 +1616,7 @@ async fn run_host(
                 HostCommand::PrefetchViews(sessions) => prefetch.set_eligible(sessions),
                 HostCommand::Theme(new) => theme = new,
                 HostCommand::Keymap(new) => keymap = Some(new),
+                HostCommand::Identify => server_reads.want(),
                 HostCommand::Ticket { reply, .. } => {
                     let _ = reply.send(Err("Host is reconnecting".into()));
                 }
@@ -2009,6 +2034,7 @@ async fn handle_command(
         | HostCommand::Shutdown
         | HostCommand::PrefetchViews(_)
         | HostCommand::Keymap(_)
+        | HostCommand::Identify
         | HostCommand::Download(_)
         | HostCommand::DownloadConfirm(_)
         | HostCommand::DownloadCancel(_)

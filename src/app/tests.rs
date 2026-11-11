@@ -1,5 +1,7 @@
 //! Headless focus and key-routing checks on Rune's runtime (no server: the one host is a
 //! socket that does not exist).
+#[path = "about_tests.rs"]
+mod about_tests;
 #[path = "bindings_integration_tests.rs"]
 mod bindings_integration_tests;
 #[path = "find_tests.rs"]
@@ -12,10 +14,14 @@ mod navigation_tests;
 mod pane_header_tests;
 #[path = "pane_verb_tests.rs"]
 mod pane_verb_tests;
+#[path = "polish_tests.rs"]
+mod polish_tests;
 #[path = "remote_session_tests.rs"]
 mod remote_session_tests;
 #[path = "remote_tests.rs"]
 mod remote_tests;
+#[path = "settings_tests.rs"]
+mod settings_tests;
 use super::{
     panel::{Form, Intent, PanelKind, SessionAction},
     placeholder, view,
@@ -1303,16 +1309,36 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     assert!(
         rt.elements()
             .iter()
-            .any(|e| e.text.as_deref() == Some(env!("CARGO_PKG_VERSION")))
+            .any(|e| e.text.as_deref() == Some(concat!("Version ", env!("CARGO_PKG_VERSION"))))
     );
     assert!(!has(&rt, "about-server"));
+    // The header's two copies come first, then the project links.
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
     press(&mut rt, Key::Tab); // Close
-    press(&mut rt, Key::Tab); // Repository
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy"));
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::version_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-copy-debug"));
+    press(&mut rt, Key::Text(" ".into()));
+    assert_eq!(
+        clipboard.text().as_deref().map(String::as_str),
+        Some(super::about::debug_info(&rt.state).as_str())
+    );
+    press(&mut rt, Key::Tab);
     assert!(focused(&rt).unwrap().ends_with("about-repository"));
     press(&mut rt, Key::Enter);
     press(&mut rt, Key::Tab);
     press(&mut rt, Key::Text(" ".into()));
     press(&mut rt, Key::Tab);
+    press(&mut rt, Key::Enter);
+    press(&mut rt, Key::Tab);
+    assert!(focused(&rt).unwrap().ends_with("about-issues"));
     press(&mut rt, Key::Enter);
     assert_eq!(
         rt.state.opened_links,
@@ -1324,16 +1350,8 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
                 super::about::REPOSITORY,
                 env!("CARGO_PKG_VERSION")
             ),
+            format!("{}/issues", super::about::REPOSITORY),
         ]
-    );
-    let clipboard = rune::clipboard::memory();
-    rt.use_clipboard(&clipboard);
-    press(&mut rt, Key::Tab);
-    assert!(focused(&rt).unwrap().ends_with("about-copy"));
-    press(&mut rt, Key::Enter);
-    assert_eq!(
-        clipboard.text().as_deref().map(String::as_str),
-        Some(super::about::version_info(&rt.state).as_str())
     );
 }
 
@@ -2444,14 +2462,15 @@ fn integrations_list_agents_and_preview_changes_before_making_them() {
     let home = omp_home("list");
     let mut rt = integrations_open(Ok(SKILL_STATUS.into()), omp_at(&home));
     let codex = element_text(&rt, "agent:codex").join(" | ");
-    assert!(codex.contains("Not installed"), "{codex}");
-    assert!(codex.contains("with OpenCode and Pi and OMP"), "{codex}");
+    assert_eq!(codex, "Codex | Not installed | Install…");
     let omp = element_text(&rt, "agent:omp").join(" | ");
-    assert!(omp.contains("OMP"), "{omp}");
-    assert!(omp.contains("Not installed"), "{omp}");
-    assert!(omp.contains("with Codex and OpenCode and Pi"), "{omp}");
-    assert!(omp.contains("Shares Pi's skill directory"), "{omp}");
-    assert!(omp.contains("Install…"), "{omp}");
+    assert_eq!(omp, "OMP | Not installed | Install…");
+    // The skill these agents share is explained once for the group, not on each row.
+    let shared = element_text(&rt, "agents-shared").join(" | ");
+    assert!(
+        shared.starts_with("Codex, OpenCode, Pi and OMP share one skill"),
+        "{shared}"
+    );
     assert!(
         element_text(&rt, "agent:claude")
             .join(" ")
@@ -2543,8 +2562,13 @@ fn omp_mirrors_pis_skill_and_is_only_offered_when_found() {
 
     let rt = integrations_open(Ok(SKILL_STATUS.into()), Default::default());
     let row = element_text(&rt, "agent:omp").join(" | ");
-    assert!(row.contains("Not found on this machine"), "{row}");
-    assert!(!row.contains("Install…"), "{row}");
+    assert_eq!(row, "OMP | Not found", "nothing to install it for");
+    let chip = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("agent-state:omp"))
+        .expect("OMP's state chip");
+    assert_eq!(chip.help.as_deref(), Some("Not found on this machine"));
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 

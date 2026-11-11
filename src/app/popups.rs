@@ -33,9 +33,24 @@ fn dismiss_layer() -> El {
     el().key("popup-dismiss")
         .pin(Some(0.), Some(0.), Some(0.), Some(0.))
         .preserve_focus_on_press(true)
-        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| s.close_panel(tx))
-        .on_secondary_press(|s: &mut Workspace, _, tx| s.close_panel(tx))
+        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| dismiss(s, tx))
+        .on_secondary_press(|s: &mut Workspace, _, tx| dismiss(s, tx))
 }
+
+/// A press outside a list closes it; one opened from a Settings control goes back to Settings.
+fn dismiss(s: &mut Workspace, tx: &mut Tx) {
+    if s.panel
+        .as_ref()
+        .is_some_and(|p| super::settings_kit::under(p).is_some())
+    {
+        s.cancel_panel(tx)
+    } else {
+        s.close_panel(tx)
+    }
+}
+
+/// How far a list opened from a control sits from it.
+const CONTROL_GAP: f32 = 4.;
 
 /// The captured pane's outline, in window points, above any scrim and below the panel.
 pub fn target_outline(s: &Workspace) -> Option<El> {
@@ -90,15 +105,33 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window(_)
     );
     let commands = matches!(panel.kind, PanelKind::Picker(false));
+    // The values of one setting: a short list with the current one checked.
+    let values = matches!(panel.kind, PanelKind::Choice(_) | PanelKind::Chromes);
+    // Lists that mark the current value keep the check's column on every row, so names align.
+    let checks = values || matches!(panel.kind, PanelKind::Themes);
     let [vw, vh] = viewport;
-    let width = (if pane {
+    // The control a Settings popup button opened this list from, `[x, y, w, h]` where layout
+    // put it: the list goes right under it, or right above when there is more room there.
+    let control = panel.anchor_to.as_deref().and_then(rune::memo::layout);
+    let room = control.map(|[_, y, _, h]| {
+        let below = vh - (y + h + CONTROL_GAP) - 8.;
+        let above = y - CONTROL_GAP - 8.;
+        (below, above)
+    });
+    // Add host: machines in columns, each name whole.
+    let discover = matches!(panel.kind, PanelKind::Discover);
+    let width = (if values {
+        220.
+    } else if pane {
         280.
     } else if sessions {
         340.
+    } else if discover {
+        super::discover::LIST_WIDTH
     } else {
         460.
-    } as f32)
-        .min(vw - 16.);
+    })
+    .min(vw - 16.);
     let top = if sessions || pane {
         TOOLBAR - 4.
     } else if vh < 750. {
@@ -117,10 +150,24 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         top,
     ));
     let entries = s.entries();
+    // A machine already added carries a chip, in a column every row of the list keeps.
+    let added_column = discover && entries.iter().any(|e| e.current);
+    let name_limit = super::discover::name_limit(width, added_column);
     let row_height = if commands { 30. } else { 28. };
     let footer_count = entries.iter().filter(|e| e.footer).count();
-    let input_height = if panel.inputs.is_empty() { 32. } else { 40. };
-    let list_max = (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.);
+    // A list under its control needs no title: the control's row names it.
+    let titled = control.is_none() || !panel.inputs.is_empty();
+    let input_height = if !titled {
+        0.
+    } else if panel.inputs.is_empty() {
+        32.
+    } else {
+        40.
+    };
+    let list_max = match room {
+        Some((below, above)) => (below.max(above) - input_height - 42.).clamp(60., 360.),
+        None => (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.),
+    };
 
     // Rows, with their content spans for the overflow hint.
     let mut list = col().key("results").w_full().pr(4.).gap(1.);
@@ -131,6 +178,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Hosts(_) => "hosts",
         PanelKind::Themes => "themes",
         PanelKind::Chromes => "chromes",
+        PanelKind::Choice(_) => "choice",
         PanelKind::Discover => "discover",
         PanelKind::Session => "session-menu",
         PanelKind::Host(_) => "host-menu",
@@ -245,12 +293,24 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     detail: &entry.detail,
                     keys: &entry.keys,
                     height: if entry.footer { 28. } else { row_height },
-                    check: (sessions || entry.current).then_some(entry.current),
+                    // The Add host list marks an added machine with its chip instead.
+                    check: (sessions || checks || (entry.current && !discover))
+                        .then_some(entry.current),
                     followup: entry.followup,
                     enabled,
                     danger: entry.danger,
                     selected: i == panel.selected && enabled,
                     actions,
+                    columns: discover
+                        .then(|| {
+                            s.machine_columns(
+                                &entry.action,
+                                i == panel.selected && enabled,
+                                added_column,
+                            )
+                        })
+                        .flatten()
+                        .map(|columns| (columns, name_limit)),
                 },
                 i,
                 move |s: &mut Workspace, tx: &mut Tx| s.perform(action.clone(), tx),
@@ -380,7 +440,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     )
     .clip_rounded(12.)
     .transition(pop_in());
-    if panel.inputs.is_empty() {
+    if titled && panel.inputs.is_empty() {
         surface = surface.child(
             row().h(26.).px(10.).center_y().child(
                 text(panel.title.clone())
@@ -389,7 +449,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     .truncate(),
             ),
         );
-    } else {
+    } else if titled {
         let placeholder = panel
             .fields
             .first()
@@ -447,11 +507,43 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         + if overflow { 24. } else { 0. };
     let x = ax.clamp(8., (vw - width - 8.).max(8.));
     let y = ay.clamp(8., (vh - estimated - 8.).max(8.));
-    let mut layer = overlay().child(dismiss_layer());
+    // Over Settings when opened from one of its controls: the page stays where it was, inert.
+    let mut layer = match super::settings_kit::under(panel) {
+        Some(_) => super::settings_view::settings_under(s, viewport),
+        None => overlay(),
+    }
+    .child(dismiss_layer());
+    // The page under the list is inert, so the control lost focus when the list opened. The
+    // list holds the keyboard as a modal (its field, or the surface itself when it has none),
+    // and this empty marker, removed with the list, hands focus back to the control: Rune
+    // returns focus that was inside the marker's parent.
+    if let Some(control) = panel.anchor_to.as_ref().filter(|_| control.is_some()) {
+        surface = surface.modal(true, |s: &mut Workspace| s.cancel_panel_quiet());
+        // With a field, the field has the keys; without one the surface takes them itself.
+        if panel.inputs.is_empty() {
+            surface = surface.focusable(true).no_focus_ring().on_key(list_key);
+        }
+        layer = layer.child(
+            el().key("list-focus-return")
+                .absolute(0., 0.)
+                .size(0., 0.)
+                .focus_return(control.clone()),
+        );
+    }
     if let Some(outline) = target_outline(s) {
         layer = layer.child(outline);
     }
-    layer.child(surface.absolute(x, y))
+    let Some(([cx, cy, cw, ch], (below, above))) = control.zip(room) else {
+        return layer.child(surface.absolute(x, y));
+    };
+    // Its trailing edge on the control's; pinned by the edge that touches the control, so
+    // the gap holds whatever the list's height turns out to be.
+    let x = (cx + cw - width).clamp(8., (vw - width - 8.).max(8.));
+    layer.child(if estimated > below && above > below {
+        surface.pin(Some(x), None, None, Some(vh - (cy - CONTROL_GAP)))
+    } else {
+        surface.absolute(x, cy + ch + CONTROL_GAP)
+    })
 }
 
 /// A switcher row renamed in place: its name becomes a field, Enter saves and Esc goes back to

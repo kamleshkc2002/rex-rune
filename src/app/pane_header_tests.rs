@@ -520,12 +520,39 @@ fn reveal_pane_headers_is_a_local_toggle_that_never_resizes_a_terminal() {
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
+/// Opens the Pane headers popup button in Settings and presses the row named `label`.
+fn choose_pane_headers(rt: &mut Runtime<Workspace>, label: &str) {
+    let r = rect(rt, "pane-header");
+    let (x, y) = (r[0] + r[2] / 2., r[1] + r[3] / 2.);
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    settle(rt);
+    assert!(
+        matches!(
+            rt.state.panel.as_ref().map(|p| &p.kind),
+            Some(PanelKind::Choice(_))
+        ),
+        "the control opens its list"
+    );
+    let r = rt
+        .elements()
+        .into_iter()
+        .find(|e| !e.exiting && e.role == "menuitem" && e.label.as_deref() == Some(label))
+        .unwrap_or_else(|| panic!("no {label} row"))
+        .rect;
+    let (x, y) = (r[0] + r[2] / 2., r[1] + r[3] / 2.);
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    settle(rt);
+}
+
 #[test]
 fn the_pane_headers_setting_saves_each_choice_and_a_relaunch_keeps_it() {
     let (mut ws, _host) = tabbed_workspace("split");
     ws.perform(Intent::Settings, &mut rune::Tx::default());
-    let mut rt = runtime(ws);
-    assert!(has(&rt, "pane-header"));
+    let mut rt = runtime_at(ws, (1440., 1000.));
+    settle(&mut rt);
+    assert_eq!(element(&rt, "pane-header").label.as_deref(), Some("Auto"));
     assert_eq!(rt.state.settings.pane_header, PaneHeader::Auto);
     for (label, header) in [
         ("Always", PaneHeader::Always),
@@ -533,34 +560,26 @@ fn the_pane_headers_setting_saves_each_choice_and_a_relaunch_keeps_it() {
         ("Hidden", PaneHeader::Hidden),
         ("Auto", PaneHeader::Auto),
     ] {
-        let r = rt
-            .elements()
-            .into_iter()
-            .find(|e| !e.exiting && e.text.as_deref() == Some(label))
-            .unwrap_or_else(|| panic!("no {label} segment"))
-            .rect;
-        let (x, y) = (r[0] + r[2] / 2., r[1] + r[3] / 2.);
-        rt.pointer_down(x, y);
-        rt.pointer_up(x, y);
-        for _ in 0..4 {
-            rt.frame(1. / 60.);
-        }
+        choose_pane_headers(&mut rt, label);
         assert_eq!(rt.state.settings.pane_header, header);
         assert_eq!(relaunch(&rt.state).settings.pane_header, header);
-        assert!(rt.state.panel.is_some(), "Settings stays open");
+        assert!(
+            matches!(
+                rt.state.panel.as_ref().map(|p| &p.kind),
+                Some(PanelKind::Settings)
+            ),
+            "Settings stays open"
+        );
+        assert_eq!(
+            element(&rt, "pane-header").label.as_deref(),
+            Some(label),
+            "the control shows the choice"
+        );
     }
     // A choice puts away headers that were revealed by hand.
     rt.update(|s, _| s.toggle_pane_headers());
     assert!(rt.state.header_reveal.pinned);
-    let r = rt
-        .elements()
-        .into_iter()
-        .find(|e| !e.exiting && e.text.as_deref() == Some("Hidden"))
-        .unwrap()
-        .rect;
-    rt.pointer_down(r[0] + r[2] / 2., r[1] + r[3] / 2.);
-    rt.pointer_up(r[0] + r[2] / 2., r[1] + r[3] / 2.);
-    rt.frame(1. / 60.);
+    choose_pane_headers(&mut rt, "Hidden");
     assert!(!rt.state.header_reveal.pinned);
     std::fs::remove_file(&rt.state.settings_path).ok();
 }

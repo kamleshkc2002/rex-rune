@@ -60,6 +60,14 @@ pub enum Intent {
     Updates,
     /// Trigger an immediate release metadata check.
     CheckUpdates,
+    /// Open Settings → About.
+    About,
+    /// Copy the client's and the active server's versions.
+    CopyVersionInfo,
+    /// Copy the version info and each host's kind and state, without names or addresses.
+    CopyDebugInfo,
+    /// Take this option of the open `Choice` list (a Settings `select_row`).
+    Choose(usize),
 }
 impl Intent {
     fn shortcut(&self) -> Option<(&'static str, Value)> {
@@ -109,6 +117,7 @@ impl Intent {
                 | Intent::CloseWindow(_)
                 | Intent::Settings
                 | Intent::Updates
+                | Intent::About
                 | Intent::Fonts
                 | Intent::ClientLabel
                 | Intent::ChooseTheme
@@ -194,6 +203,15 @@ pub enum Form {
     EditHost(usize),
 }
 
+/// The options a Settings `select_row` lists in its popup, and what choosing one does.
+#[derive(Clone, Debug)]
+pub struct Choice {
+    pub options: Vec<String>,
+    pub current: Option<usize>,
+    /// Called with the chosen index after the list has closed.
+    pub apply: fn(&mut Workspace, usize, &mut rune::Tx),
+}
+
 /// The sections of Settings, in the order its sidebar lists them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SettingsSection {
@@ -261,6 +279,8 @@ pub enum PanelKind {
     Themes,
     /// The chrome palettes.
     Chromes,
+    /// The values of one setting, from a Settings `select_row`.
+    Choice(Choice),
     /// The Add host list of the tailnet's machines, filtered by the search field.
     Discover,
     /// Confirm forgetting a saved host; its server and programs are untouched.
@@ -295,6 +315,9 @@ pub struct Panel {
     pub session: Option<SessionTarget>,
     pub back: Option<Box<Panel>>,
     pub anchor: Option<(f32, f32)>,
+    /// The key of the control this list was opened from (a Settings `value_popup`): the list
+    /// is placed against it and drawn over the panel in `back`.
+    pub anchor_to: Option<String>,
     /// A switcher row being renamed in place, and its field.
     pub rename: Option<(SessionTarget, TextEdit)>,
 }
@@ -323,6 +346,7 @@ impl Panel {
             session: None,
             back: None,
             anchor: None,
+            anchor_to: None,
             rename: None,
         }
     }
@@ -337,6 +361,7 @@ impl Panel {
                 | PanelKind::Window(_)
                 | PanelKind::Themes
                 | PanelKind::Chromes
+                | PanelKind::Choice(_)
                 | PanelKind::Discover
         )
     }
@@ -584,6 +609,18 @@ impl Workspace {
                 })
                 .collect();
         }
+        if let PanelKind::Choice(choice) = &panel.kind {
+            return choice
+                .options
+                .iter()
+                .enumerate()
+                .map(|(index, option)| {
+                    let mut e = Entry::new(option.clone(), "", "", Intent::Choose(index));
+                    e.current = choice.current == Some(index);
+                    e
+                })
+                .collect();
+        }
         if let PanelKind::Hosts(name) = &panel.kind {
             return self
                 .hosts
@@ -698,6 +735,9 @@ impl Workspace {
                 ("Default shell…", "", Intent::HostShell(self.active)),
                 ("Settings…", "", Intent::Settings),
                 ("Check for updates", "", Intent::CheckUpdates),
+                ("About Rex Linux", "", Intent::About),
+                ("Copy version info", "", Intent::CopyVersionInfo),
+                ("Copy debug info", "", Intent::CopyDebugInfo),
                 ("Add host…", "", Intent::AddHost),
                 ("Edit host…", "", Intent::EditHost(self.active)),
                 ("Reconnect host", "", Intent::Retry),
@@ -756,7 +796,10 @@ impl Workspace {
             }
             if let Some(avail) = self.updates.available() {
                 entries.push(Entry::new(
-                    format!("Update Rex Linux ({})…", avail.version),
+                    format!(
+                        "Update Rex Linux ({})…",
+                        rex_linux::format_version(&avail.version)
+                    ),
                     self.updates.channel.id(),
                     "Workspace",
                     Intent::Updates,

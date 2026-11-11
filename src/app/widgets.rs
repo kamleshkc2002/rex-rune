@@ -131,6 +131,9 @@ pub struct Row<'a> {
     pub selected: bool,
     /// Shown at the end in place of the detail, while the row is highlighted.
     pub actions: Option<El>,
+    /// Columns drawn after the label in place of the detail, with the widest the label may
+    /// be. The label then keeps its own width up to that, and the columns give way first.
+    pub columns: Option<(El, f32)>,
 }
 
 /// The width every list row keeps for its follow-up chevron, drawn or not, so the hints of a
@@ -224,26 +227,36 @@ pub fn list_row(
             el()
         }));
     }
-    e = e.child(
-        text(r.label.to_owned())
-            .font(if r.selected { medium(13.) } else { ui(13.) })
-            .color(fg)
-            .truncate()
-            .grow(1.)
-            .shrink(),
-    );
+    let label = text(r.label.to_owned())
+        .font(if r.selected { medium(13.) } else { ui(13.) })
+        .color(fg)
+        .truncate();
+    let (label, columns) = match r.columns {
+        // A box as wide as the label, so the row never shrinks it; the label is cut only
+        // once it reaches the box's limit.
+        Some((columns, limit)) => (
+            row()
+                .max_w(limit)
+                .child(label.help_when_truncated(r.label.to_owned())),
+            Some(columns),
+        ),
+        None => (label.grow(1.).shrink(), None),
+    };
+    e = e.child(label);
     match r.actions.filter(|_| r.selected) {
         Some(actions) => e
             .child(actions)
             .child(el().pin(Some(0.), Some(0.), Some(0.), Some(0.))),
         None => e
-            .child(if r.keys.is_empty() {
-                text(r.detail.to_owned()).font(ui(11.)).color(detail)
-            } else {
+            .child(match columns {
+                Some(columns) => columns,
+                None if r.keys.is_empty() => text(r.detail.to_owned()).font(ui(11.)).color(detail),
                 // An unavailable row's keys recede with its label.
-                keycaps(r.keys, r.selected)
-                    .key(hint)
-                    .opacity(if r.enabled { 1. } else { 0.5 })
+                None => {
+                    keycaps(r.keys, r.selected)
+                        .key(hint)
+                        .opacity(if r.enabled { 1. } else { 0.5 })
+                }
             })
             .child(el().w(CHEVRON_COLUMN).child(if r.followup {
                 glyph(&RIGHT, 13., detail)

@@ -255,8 +255,9 @@ try:
     print("PASS malformed/unknown/cross-host targets and dangerous actions refused without terminal changes", flush=True)
     desk.key("ctrl+comma")
     perform(active, "client.sidebar.toggle", error="dialog or popup")
-    # Settings is centered at 760x520; the fifth navigation row is Remote Hosts.
-    desk.x("mousemove", "--window", window, 420, 395)
+    # Settings is centered at 816x680 in the 1440x900 window; the fifth navigation row is
+    # Remote Hosts, 102 pt in and 215 pt down from the dialog's corner.
+    desk.x("mousemove", "--window", window, 414, 325)
     desk.x("click", 1)
     time.sleep(.4)
     desk.capture(window, "settings-remote-hosts")

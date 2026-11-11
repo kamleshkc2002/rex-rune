@@ -9,6 +9,8 @@ mod keymap_tests;
 mod navigation_tests;
 #[path = "perform_tests.rs"]
 mod perform_tests;
+#[path = "server_info_tests.rs"]
+mod server_info_tests;
 #[path = "verb_tests.rs"]
 mod verb_tests;
 use futures_util::{SinkExt, StreamExt};

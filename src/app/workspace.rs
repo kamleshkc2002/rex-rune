@@ -109,6 +109,8 @@ pub struct Workspace {
     pub tab_fade: [rune::Live<f32>; 2],
     pub sidebar_fx: ScrollFx,
     pub switcher_fx: ScrollFx,
+    /// The Settings page's scroll thumb.
+    pub settings_fx: ScrollFx,
     pub sidebar_drag_start: Option<f32>,
     scratch: TextEdit,
     next_host: u64,
@@ -246,6 +248,7 @@ impl Workspace {
             tab_fade: [rune::Live::new(0.4), rune::Live::new(1.)],
             sidebar_fx: ScrollFx::default(),
             switcher_fx: ScrollFx::default(),
+            settings_fx: ScrollFx::default(),
             sidebar_drag_start: None,
             scratch: TextEdit::new(""),
             next_host: 0,
@@ -328,6 +331,8 @@ impl Workspace {
         let _ = connection
             .commands
             .send(HostCommand::Keymap(Box::new(self.keymap_declaration())));
+        // About and the copied reports name the server; reading it changes nothing there.
+        let _ = connection.commands.send(HostCommand::Identify);
         let id = HostId(self.next_host);
         self.next_host += 1;
         let receiver = connection.wake.clone();
@@ -1162,7 +1167,10 @@ impl Workspace {
     pub fn perform(&mut self, action: Intent, tx: &mut Tx) {
         // Applying a theme goes back to Settings itself.
         if !action.opens_followup()
-            && !matches!(action, Intent::Theme(_) | Intent::Chrome(_))
+            && !matches!(
+                action,
+                Intent::Theme(_) | Intent::Chrome(_) | Intent::Choose(_)
+            )
             && self.panel.is_some()
         {
             self.close_panel(tx);
@@ -1212,6 +1220,7 @@ impl Workspace {
                     self.panel.as_mut().unwrap().selected = current;
                 }
             }
+            Intent::Choose(index) => self.choose(index, tx),
             Intent::Chrome(chrome) => {
                 self.set_chrome(chrome, tx);
                 match self.settings_back() {
@@ -1310,6 +1319,12 @@ impl Workspace {
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
             }
             Intent::Updates => self.open_updates_settings(),
+            Intent::About => {
+                self.perform(Intent::Settings, tx);
+                self.open_section(SettingsSection::About);
+            }
+            Intent::CopyVersionInfo => self.copy_version_info(tx),
+            Intent::CopyDebugInfo => self.copy_debug_info(tx),
             Intent::CheckUpdates => self.check_updates_now(),
             Intent::EditHost(host) => {
                 let h = self.settings.hosts[host].clone();
@@ -1712,6 +1727,7 @@ impl Workspace {
                     | PanelKind::StartSsh { .. }
                     | PanelKind::Themes
                     | PanelKind::Chromes
+                    | PanelKind::Choice(_)
                     | PanelKind::Discover
             ) && previous
                 .as_ref()

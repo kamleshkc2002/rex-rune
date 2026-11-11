@@ -26,7 +26,7 @@ Some probes connect to the configured Rex server and create sessions there. Of t
 
 - Protocol and model library (`src/lib.rs`, no UI dependency):
   - `transport.rs`, `wire.rs`: Unix/HTTPS WebSockets, data tickets, snapshot framing.
-  - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition.
+  - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition. `connection/server_info.rs`: the server's version and status on `HostModel::server_info`, read-only and once per connection.
   - `terminal.rs`: Ghostty decoding and render frames. `terminal/search.rs`: searching the screen and scrollback with Ghostty's search. `links.rs`: OSC 8 hyperlinks and text URLs in a frame.
   - `layout.rs`: split placement. `settings.rs`: local configuration.
   - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream, `open.rs` the "never Open" list); driven by `HostCommand::Download` in `connection/downloads.rs`. No UI yet.
@@ -38,6 +38,7 @@ Some probes connect to the configured Rex server and create sessions there. Of t
   - `term.rs`: one pane's view state and cell grid. Rows are text segments placed at `column × cell width`; a character joins a segment only if it advances exactly one cell; ligatures and kerning are off; rows are memoized by content.
   - `sprites.rs`: box-drawing and block element characters drawn as shapes on whole device pixels, as Ghostty does, instead of font glyphs.
   - `toolbar.rs`, `sidebar.rs`, `panes.rs`, `popups.rs`, `dialogs.rs`, `widgets.rs`: views on rune-kit, with design tokens pinned onto the kit in `theme.rs`.
+  - `settings_view.rs`: the Settings dialog and its pages. `settings_kit.rs`: what every Settings page is built from (`page`, `section`, `card`, `footnote`, `setting`, `select_row`, `disclosure`, `segmented`, `value_popup`, `stepper`, `button`). A card draws the dividers between its rows; pages never place one. A popup button's list opens over Settings against its control (`Panel::anchor_to`).
   - `tests.rs`: headless UI tests.
 - `src/bin/`: `rex-probe` and `rex-workspace-probe`, live protocol probes.
 - `examples/`: `chrome_spike` (borderless window chrome).
