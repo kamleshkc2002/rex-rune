@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- **`install.sh` no longer prints the post-install summary twice:** `packaging/install/install.sh` now suppresses the duplicate summary from the bundled `scripts/install-desktop.sh` (`REX_INSTALL_QUIET_SUMMARY=1`) and prints the three-line summary (with both the `rex-linux` binary path and the `.desktop` launcher path) once, while running `scripts/install-desktop.sh` directly still prints it once.
+
 ## 0.7.0 - 2026-11-11
 
 File downloads from Rex API 13 servers, Rune bumped to `d70929a` with accessibility on, a fix for window focus (an unfocused window wrote terminal copies to the clipboard), and the first milestone of macOS-app parity: grouped menus, pane header buttons, a find bar, tab management, every command in Commands and a rebuilt Settings.

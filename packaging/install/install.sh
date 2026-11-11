@@ -178,8 +178,8 @@ PY
     tar -xzf "$work/$archive" -C "$work/unpack" --no-same-owner --no-same-permissions || die 'cannot extract tarball'
     package="$work/unpack/$name"
     [ "$("$package/bin/rex-linux" --version)" = "rex-linux $version" ] || die 'downloaded binary cannot run or reports wrong version; old install untouched'
-    bash "$package/install.sh" || die 'desktop installation failed'
-    printf 'Installed the Rex Linux desktop client (rex-linux %s) at %s/rex-linux.\n' "$version" "$bin"
+    REX_INSTALL_QUIET_SUMMARY=1 bash "$package/install.sh" || die 'desktop installation failed'
+    printf 'Installed the Rex Linux desktop client (rex-linux %s) at %s/rex-linux and launcher %s/applications/dev.shuv.rex-linux.desktop.\n' "$version" "$bin" "$data"
     printf '%s\n' 'This does not install or change the Rex server (rex).'
     if rex_path=$(command -v rex 2>/dev/null) && [ -n "$rex_path" ]; then
         printf 'Using your Rex server at %s.\n' "$rex_path"

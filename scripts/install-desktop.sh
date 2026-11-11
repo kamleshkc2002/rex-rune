@@ -119,20 +119,22 @@ if [[ -n "$receipt_version" ]]; then
         "$(json_string "$installed_path")" "$receipt_version" "$digest" > "$temp_receipt"
     mv -f -- "$temp_receipt" "$receipt"
 fi
-version_label="rex-linux"
-if [[ -n "$receipt_version" ]]; then
-    version_label="rex-linux $receipt_version"
-elif version_out="$("$binary" --version 2>/dev/null)" && [[ "$version_out" == rex-linux\ * ]]; then
-    version_label="$version_out"
-fi
-if $copy; then
-    echo "Installed the Rex Linux desktop client ($version_label) at $binary and launcher $desktop."
-else
-    echo "Installed the Rex Linux desktop launcher $desktop for client ($version_label) at $binary."
-fi
-echo "This does not install or change the Rex server (rex)."
-if rex_path="$(command -v rex 2>/dev/null)" && [[ -n "$rex_path" ]]; then
-    echo "Using your Rex server at $rex_path."
-else
-    echo "rex-linux needs a Rex server installed separately; see https://github.com/shuv1337/rex-rune#build-requirements."
+if [[ "${REX_INSTALL_QUIET_SUMMARY:-}" != 1 ]]; then
+    version_label="rex-linux"
+    if [[ -n "$receipt_version" ]]; then
+        version_label="rex-linux $receipt_version"
+    elif version_out="$("$binary" --version 2>/dev/null)" && [[ "$version_out" == rex-linux\ * ]]; then
+        version_label="$version_out"
+    fi
+    if $copy; then
+        echo "Installed the Rex Linux desktop client ($version_label) at $binary and launcher $desktop."
+    else
+        echo "Installed the Rex Linux desktop launcher $desktop for client ($version_label) at $binary."
+    fi
+    echo "This does not install or change the Rex server (rex)."
+    if rex_path="$(command -v rex 2>/dev/null)" && [[ -n "$rex_path" ]]; then
+        echo "Using your Rex server at $rex_path."
+    else
+        echo "rex-linux needs a Rex server installed separately; see https://github.com/shuv1337/rex-rune#build-requirements."
+    fi
 fi
