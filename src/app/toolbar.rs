@@ -1,5 +1,6 @@
 //! The 52pt bar on the window ground: sidebar toggle, identity chip, tab track, drag space,
-//! Commands, New tab and Settings, a divider, and Close.
+//! Commands, New tab and Settings, a divider, and Close. Tooltips name each control's shortcut
+//! from the effective keymap (`keycaps.rs`), never from a literal.
 use super::{
     activity::{program_icon, progress_bar, tab_activity, tab_name, tab_progress, tab_word},
     panel::Intent,
@@ -41,7 +42,10 @@ fn identity(s: &Workspace) -> El {
             .gap(9.)
             .center_y()
             .hover(white(0.08))
-            .help(format!("{session} · {host} · Switch session · Ctrl K"))
+            .help(format!(
+                "{session} · {host} · {}",
+                s.shortcut_help("Switch session", "session.switch")
+            ))
             .on_press_tx(|s: &mut Workspace, tx: &mut Tx| {
                 s.picker(true);
                 tx.blur();
@@ -292,7 +296,7 @@ pub fn toolbar(s: &Workspace) -> El {
         .child(chrome_button(
             "toggle-sidebar",
             &SIDEBAR,
-            "Toggle sidebar · Ctrl Shift B",
+            &s.shortcut_help("Toggle sidebar", "client.sidebar.toggle"),
             30.,
             |s, tx| s.perform(Intent::Sidebar, tx),
         ))
@@ -326,7 +330,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "commands",
                     &COMMAND,
                     "Commands",
-                    "Commands, sessions and tabs · Ctrl Shift P",
+                    &s.shortcut_help("Commands, sessions and tabs", "client.palette.toggle"),
                     36.,
                     false,
                     |s, _| s.picker(false),
@@ -335,7 +339,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "new-tab",
                     &PLUS,
                     "New tab",
-                    "New tab · Ctrl Shift T",
+                    &s.shortcut_help("New tab", "client.tab.new"),
                     36.,
                     false,
                     |s, tx| s.perform(Intent::NewWindow, tx),
@@ -344,7 +348,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "settings",
                     &SETTINGS,
                     "Settings",
-                    "Settings · Ctrl ,",
+                    &s.shortcut_help("Settings", "client.settings"),
                     36.,
                     false,
                     |s, tx| s.perform(Intent::Settings, tx),

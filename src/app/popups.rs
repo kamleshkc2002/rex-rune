@@ -2,9 +2,10 @@
 //! an outside press dismisses and is consumed.
 use super::{
     input::{list_key, rename_key},
+    keycaps::keycap,
     panel::{Intent, PanelKind},
     theme::*,
-    widgets::{Row, glyph, list_row, row_action},
+    widgets::{Row, SEPARATOR, glyph, list_row, row_action, separator},
     workspace::Workspace,
 };
 use rune::{El, ScrollSpec, TextEdit, Tx, col, el, row, text};
@@ -58,7 +59,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
         .into_iter()
         .find(|p| p.block == target.block)?;
     let [ax, ay, aw, ah] = s.area;
-    let bleed = super::panes::full_bleed(current);
+    let bleed = super::pane_header::full_bleed(s, current);
     let ([x, y, w, h], radius) = if bleed {
         ([0., 0., aw, ah], 0.)
     } else {
@@ -91,7 +92,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let commands = matches!(panel.kind, PanelKind::Picker(false));
     let [vw, vh] = viewport;
     let width = (if pane {
-        260.
+        280.
     } else if sessions {
         340.
     } else {
@@ -140,8 +141,13 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let mut y = 0.;
     let mut group = String::new();
     let mut list_rows = 0;
+    // The menu group of the row above, under the same header. A filtered list is flat: its
+    // rows are matches, not a menu.
+    let mut section = None;
+    let grouped = s.query().is_empty();
     for (i, entry) in entries.iter().enumerate() {
         if !entry.footer && entry.group != group {
+            section = None;
             group = entry.group.clone();
             if !group.is_empty() {
                 let first = y == 0.;
@@ -185,6 +191,13 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 );
                 y += HEADER - if first { 4. } else { 0. } + 1.;
             }
+        }
+        if !entry.footer {
+            if grouped && section.is_some_and(|above| above != entry.section) {
+                list = list.child(separator());
+                y += SEPARATOR + 1.;
+            }
+            section = Some(entry.section);
         }
         let action = entry.action.clone();
         let enabled = entry.enabled;
@@ -230,10 +243,12 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     surface: surface_id,
                     label: &entry.label,
                     detail: &entry.detail,
+                    keys: &entry.keys,
                     height: if entry.footer { 28. } else { row_height },
                     check: (sessions || entry.current).then_some(entry.current),
                     followup: entry.followup,
                     enabled,
+                    danger: entry.danger,
                     selected: i == panel.selected && enabled,
                     actions,
                 },
@@ -399,7 +414,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         .text_style(ui(13.))
                         .height(32.)
                         .plain()
-                        .trailing(text("esc").font(medium(10.5)).color(rgb(muted())))
+                        .trailing(keycap("Esc", false))
                         .on_edit(|s: &mut Workspace| s.edit_input(0))
                         .on_change(|s: &mut Workspace, _: &mut Tx| s.query_changed())
                         .on_key(list_key)
@@ -464,7 +479,7 @@ fn rename_row(edit: &TextEdit, height: f32, current: bool, surface: &str) -> El 
                 .text_style(medium(13.))
                 .height(height - 2.)
                 .plain()
-                .trailing(text("enter").font(medium(10.5)).color(rgb(muted())))
+                .trailing(keycap("Enter", false))
                 .on_edit(|s: &mut Workspace| s.rename_input())
                 .on_key(rename_key)
                 .width(None)

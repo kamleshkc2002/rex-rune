@@ -85,6 +85,8 @@ pub struct Workspace {
     pub window_focused: bool,
     /// The pane a file drag from another app is over.
     pub drop_hover: Option<String>,
+    /// Pane headers brought out by the pointer or by Reveal pane headers.
+    pub header_reveal: super::pane_header::Reveal,
     /// The pane area in window points, for divider drags and target outlines.
     pub area: [f32; 4],
     pub viewport: [f32; 2],
@@ -227,6 +229,7 @@ impl Workspace {
             handle,
             window_focused: true,
             drop_hover: None,
+            header_reveal: Default::default(),
             area: [0.; 4],
             viewport: [1440., 900.],
             sidebar,
@@ -661,22 +664,7 @@ impl Workspace {
     }
 
     pub fn shortcut_detail(&self, action: &str, args: &Value) -> String {
-        let empty = |args: &Value| args.is_null() || args.as_object().is_some_and(|a| a.is_empty());
-        self.effective_bindings()
-            .iter()
-            .find(|b| {
-                let bound = b.binding.args.as_ref().unwrap_or(&Value::Null);
-                b.binding.action == action && (bound == args || (empty(bound) && empty(args)))
-            })
-            .and_then(|b| b.chords.as_ref())
-            .map(|chords| {
-                chords
-                    .iter()
-                    .map(|c| c.keycaps().join(" "))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            })
-            .unwrap_or_default()
+        super::keycaps::spell(&self.shortcut_chords(action, args))
     }
 
     fn announce_keymap_problems(&mut self, index: usize) {
@@ -737,6 +725,7 @@ impl Workspace {
             term.cache_images(self.images.as_ref());
             term.resize_if_owner(font);
         }
+        self.place_find(key);
     }
 
     pub fn update_title(&mut self, tx: &mut Tx) {
@@ -948,8 +937,13 @@ impl Workspace {
     /// focused terminal.
     pub fn close_search(&mut self, key: &(HostId, String), tx: &mut Tx) {
         if let Some(term) = self.terminals.get_mut(key)
-            && term.search.take().is_some()
+            && let Some(edit) = term.search.take()
         {
+            // Find next and Find previous bring the bar back on this text, in its home corner.
+            term.find.corner = Default::default();
+            if !edit.text.is_empty() {
+                term.find.last = edit.text.clone();
+            }
             term.send(Command::Search(String::new()));
         }
         tx.blur();
@@ -1446,6 +1440,10 @@ impl Workspace {
         let panel = self.panel.as_mut().unwrap();
         panel.target = Some(target);
         panel.anchor = anchor;
+        // The rows' availability is the target's (Copy needs its selection), known only now.
+        if let Some(first) = self.entries().iter().position(|e| e.enabled) {
+            self.panel.as_mut().unwrap().selected = first;
+        }
     }
 
     /// A sidebar session row's right-click menu, at the pointer (window points).
@@ -1611,6 +1609,12 @@ impl Workspace {
                 let key = (self.hosts[target.host].id, target.block);
                 self.terminal_command(&key, Command::Reconnect);
             }
+            PaneAction::Copy
+            | PaneAction::Paste
+            | PaneAction::SelectAll
+            | PaneAction::CopyId
+            | PaneAction::Clear
+            | PaneAction::Reset => self.pane_verb(target, action, tx),
         }
     }
 

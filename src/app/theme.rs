@@ -195,6 +195,33 @@ pub fn on_accent() -> u32 {
     palette().on_accent
 }
 
+/// How much of its tone the `SELECTION` fill is.
+pub const SELECTION_FILL: f32 = 0.18;
+
+/// `SELECTION`, the keyboard-selected row of a list, as (fill, outline): a tint of `ACCENT`
+/// under a 1 pt outline in it, so selection is never fill alone and never reads as a hover. A
+/// destructive row tints in `DANGER` instead. Text on it is `INK`.
+pub fn selection(destructive: bool) -> (Color, Color) {
+    let tone = rgb(if destructive { danger() } else { accent() });
+    (tone.alpha(SELECTION_FILL), tone)
+}
+
+/// Terminal search marks, drawn over the cells as the selection is: every match is `ACCENT` at
+/// `SEARCH_MATCH`, and the selected one at `SEARCH_CURRENT` with its text in `ON_ACCENT`.
+pub const SEARCH_MATCH: f32 = 0.4;
+pub const SEARCH_CURRENT: f32 = 0.8;
+pub const SEARCH_RADIUS: f32 = 2.5;
+
+/// A keycap's chip: white at this opacity over its surface, and `KEYCAP_LIT` on a selected row.
+pub const KEYCAP_FILL: f32 = 0.07;
+pub const KEYCAP_LIT: f32 = 0.12;
+
+/// A keycap's text: halfway from `MUTED` to `INK`, so that 10.5 pt keys meet 4.5:1 on their
+/// chip in every palette. `MUTED` alone does not on the lighter popovers.
+pub fn keycap_ink() -> u32 {
+    mix(ink(), muted(), 0.5)
+}
+
 pub const TOOLBAR: f32 = 52.;
 pub const GUTTER: f32 = 8.;
 pub const MARGIN: f32 = 10.;
@@ -328,6 +355,9 @@ icon!(
     r#"path d="M10.5 14.5h5.5""#
 );
 icon!(CHEVRON, "rex-chevron", r#"path d="m7 8.5 3 3 3-3""#);
+// The find bar's steps: wider than the disclosure chevron, to sit beside the close cross.
+icon!(STEP_UP, "rex-step-up", r#"path d="m6 12 4-4 4 4""#);
+icon!(STEP_DOWN, "rex-step-down", r#"path d="m6 8 4 4 4-4""#);
 icon!(RIGHT, "rex-right", r#"path d="m8.5 6.5 3.5 3.5-3.5 3.5""#);
 icon!(LEFT, "rex-left", r#"path d="m11.5 6.5-3.5 3.5 3.5 3.5""#);
 icon!(CHECK, "rex-check", r#"path d="m5.5 10.5 3 3 6-7""#);
@@ -359,13 +389,12 @@ icon!(
     "rex-command",
     r#"path d="M12.5 5v10a2.5 2.5 0 1 0 2.5-2.5H5a2.5 2.5 0 1 0 2.5 2.5V5a2.5 2.5 0 1 0-2.5 2.5h10a2.5 2.5 0 1 0-2.5-2.5""#
 );
+// A gear: eight teeth around a hub. Sliders read as view options, not Settings.
 icon!(
     SETTINGS,
     "rex-settings",
-    r#"path d="M4 6.5h5M13 6.5h3""#,
-    r#"circle cx="11" cy="6.5" r="2""#,
-    r#"path d="M4 13.5h3M11 13.5h5""#,
-    r#"circle cx="9" cy="13.5" r="2""#
+    r#"path d="M8.69 4.55L9.02 2.56A7.5 7.5 0 0 1 10.98 2.56L11.31 4.55A5.6 5.6 0 0 1 12.93 5.23L14.57 4.05A7.5 7.5 0 0 1 15.95 5.43L14.77 7.07A5.6 5.6 0 0 1 15.45 8.69L17.44 9.02A7.5 7.5 0 0 1 17.44 10.98L15.45 11.31A5.6 5.6 0 0 1 14.77 12.93L15.95 14.57A7.5 7.5 0 0 1 14.57 15.95L12.93 14.77A5.6 5.6 0 0 1 11.31 15.45L10.98 17.44A7.5 7.5 0 0 1 9.02 17.44L8.69 15.45A5.6 5.6 0 0 1 7.07 14.77L5.43 15.95A7.5 7.5 0 0 1 4.05 14.57L5.23 12.93A5.6 5.6 0 0 1 4.55 11.31L2.56 10.98A7.5 7.5 0 0 1 2.56 9.02L4.55 8.69A5.6 5.6 0 0 1 5.23 7.07L4.05 5.43A7.5 7.5 0 0 1 5.43 4.05L7.07 5.23A5.6 5.6 0 0 1 8.69 4.55Z""#,
+    r#"circle cx="10" cy="10" r="2.4""#
 );
 icon!(
     MONITOR,
@@ -387,6 +416,36 @@ icon!(
     "rex-sidebar",
     r#"rect x="3" y="4" width="14" height="12" rx="3""#,
     r#"path d="M8 4v12""#
+);
+// The pane header's actions: a pane cut in two side by side, cut in two one over the other,
+// grown to its tab's corners, and brought back from them.
+icon!(
+    SPLIT_RIGHT,
+    "rex-split-right",
+    r#"rect x="3" y="4.5" width="14" height="11" rx="2""#,
+    r#"path d="M10 4.5v11""#
+);
+icon!(
+    SPLIT_DOWN,
+    "rex-split-down",
+    r#"rect x="3" y="4.5" width="14" height="11" rx="2""#,
+    r#"path d="M3 10h14""#
+);
+icon!(
+    ZOOM,
+    "rex-zoom",
+    r#"path d="M11.5 4.5h4v4""#,
+    r#"path d="m15.5 4.5-4.25 4.25""#,
+    r#"path d="M8.5 15.5h-4v-4""#,
+    r#"path d="m4.5 15.5 4.25-4.25""#
+);
+icon!(
+    RESTORE,
+    "rex-restore",
+    r#"path d="M11.5 4.5v4h4""#,
+    r#"path d="m11.5 8.5 4-4""#,
+    r#"path d="M8.5 15.5v-4h-4""#,
+    r#"path d="m8.5 11.5-4 4""#
 );
 icon!(MINUS, "rex-minus", r#"path d="M6 10h8""#);
 
@@ -533,6 +592,28 @@ mod tests {
             let name = chrome.name();
             assert!(contrast(p.muted, p.card) >= 4.5, "{name}: muted on card");
             assert!(contrast(p.ink, p.popover) >= 4.5, "{name}: ink on popover");
+            // Keycaps: on a popover's rows, and on the sidebar's search chip (itself 8% white
+            // over the card).
+            let keys = mix(p.ink, p.muted, 0.5);
+            for (surface, under, lift) in [("popover", p.popover, 0.), ("sidebar", p.card, 0.08)] {
+                let chip = mix(0xffffff, under, KEYCAP_FILL + lift);
+                assert!(
+                    contrast(keys, chip) >= 4.5,
+                    "{name}: keycaps on the {surface}"
+                );
+            }
+            // A selected row keeps its label and its keycaps in ink on either tint, and its
+            // outline stands clear of the popover around it.
+            for (kind, tone) in [("selection", p.accent), ("destructive selection", p.danger)] {
+                let fill = mix(tone, p.popover, SELECTION_FILL);
+                assert!(contrast(p.ink, fill) >= 4.5, "{name}: ink on the {kind}");
+                let chip = mix(0xffffff, fill, KEYCAP_LIT);
+                assert!(
+                    contrast(p.ink, chip) >= 4.5,
+                    "{name}: keycaps on the {kind}"
+                );
+                assert!(contrast(tone, p.popover) >= 3., "{name}: {kind} outline");
+            }
             // Trouble always carries a word; Gruvbox's brightest red is 4.3:1 on its ground.
             for (word, color) in [("warning", p.warning), ("danger", p.danger)] {
                 for surface in [p.card, p.popover] {

@@ -2,6 +2,7 @@
 //! (keyboard session navigation is the Ctrl K switcher, so arrows never switch sessions).
 use super::{
     activity::{program_icon, progress_bar, tab_activity, tab_name, tab_progress, tab_word},
+    keycaps::keycaps,
     panel::Intent,
     panes::divider_handle,
     theme::*,
@@ -436,9 +437,18 @@ pub fn sidebar(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
                 text("Find a session")
                     .font(ui(12.5))
                     .color(rgb(muted()))
-                    .grow(1.),
+                    .truncate()
+                    .grow(1.)
+                    .shrink(),
             )
-            .child(text("⌃K").font(medium(10.5)).color(rgb(muted()))),
+            // The switcher's shortcut as it is bound now; nothing when it is unbound.
+            .child(
+                keycaps(
+                    &s.shortcut_chords("session.switch", &serde_json::Value::Null),
+                    false,
+                )
+                .key("session-search-keys"),
+            ),
     );
     let mut panel = col()
         .w_full()

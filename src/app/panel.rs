@@ -82,6 +82,12 @@ impl Intent {
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
+                PaneAction::Copy => ("pane.copy", Value::Null),
+                PaneAction::Paste => ("pane.paste", Value::Null),
+                PaneAction::SelectAll => ("pane.select_all", Value::Null),
+                PaneAction::CopyId => ("pane.copy_id", Value::Null),
+                PaneAction::Clear => ("pane.clear", Value::Null),
+                PaneAction::Reset => ("pane.reset", Value::Null),
                 _ => return None,
             },
             _ => return None,
@@ -155,6 +161,18 @@ pub enum PaneAction {
     Rename,
     Close,
     Reconnect,
+    /// The pane's selected text to the clipboard.
+    Copy,
+    /// The clipboard into the pane, as Ctrl Shift V does for the focused one.
+    Paste,
+    /// Select the pane's screen and scrollback.
+    SelectAll,
+    /// The pane's block ID to the clipboard, for `rex` commands that name a block.
+    CopyId,
+    /// `terminal.clear`: screen and scrollback, keeping the current line.
+    Clear,
+    /// `terminal.reset`: the terminal's starting state; the program keeps running.
+    Reset,
 }
 
 #[derive(Clone, Debug)]
@@ -333,6 +351,13 @@ pub struct Entry {
     pub followup: bool,
     pub enabled: bool,
     pub footer: bool,
+    /// The group of a menu the row belongs to. A hairline separates one group from the next;
+    /// it is drawn by the popup, so a group that is filtered away leaves no stray line.
+    pub section: u8,
+    /// A destructive row (Close…, Remove…): drawn in `DANGER`, last, after a separator.
+    pub danger: bool,
+    /// The shortcut `detail` spells, as keycaps (`shortcut_details` fills both).
+    pub keys: super::keycaps::Chords,
     /// Drawn before the group header: the host's kind in the switcher.
     pub group_icon: Option<&'static rune::Icon>,
     /// A create button at the right of the group header, with its help text.
@@ -354,16 +379,31 @@ impl Entry {
             current: false,
             enabled: true,
             footer: false,
+            section: 0,
+            danger: false,
+            keys: Vec::new(),
             group_icon: None,
             group_create: None,
         }
     }
+
+    /// Puts the row in a menu's group `section`.
+    pub fn in_section(mut self, section: u8) -> Self {
+        self.section = section;
+        self
+    }
+
+    /// Marks the row destructive.
+    pub fn destructive(mut self) -> Self {
+        self.danger = true;
+        self
+    }
 }
 
 impl Workspace {
-    /// A sidebar session's menu: Switch (unless current), Rename, Move up and down within its
-    /// host, and Close. An offline host keeps Switch and offers Retry and Edit host… in place
-    /// of the rest.
+    /// A sidebar session's menu, in groups: Switch (unless current); Rename, Move up and down
+    /// within its host; Close, last and destructive. An offline host keeps Switch and offers
+    /// Retry and Edit host… before Close, with the rest unavailable.
     fn session_entries(&self, target: &SessionTarget) -> Vec<Entry> {
         let host = &self.hosts[target.host].model;
         let current = self.active == target.host && host.selected.as_ref() == Some(&target.session);
@@ -392,60 +432,71 @@ impl Workspace {
                 SessionAction::MoveDown,
                 position.is_some_and(|p| p + 1 < host.sessions.len()),
             ),
-            ("Close session…", SessionAction::Close, true),
         ] {
-            let mut entry = Entry::new(label, "", "", Intent::Session(target.clone(), action));
+            let mut entry =
+                Entry::new(label, "", "", Intent::Session(target.clone(), action)).in_section(1);
             entry.enabled = enabled && host.connected;
             entries.push(entry);
         }
         if !host.connected {
-            entries.push(Entry::new(
-                "Retry connection",
-                "",
-                "",
-                Intent::RetryHost(target.host),
-            ));
-            entries.push(Entry::new(
-                "Edit host…",
-                "",
-                "",
-                Intent::EditHost(target.host),
-            ));
+            entries.push(
+                Entry::new("Retry connection", "", "", Intent::RetryHost(target.host))
+                    .in_section(2),
+            );
+            entries.push(
+                Entry::new("Edit host…", "", "", Intent::EditHost(target.host)).in_section(2),
+            );
         }
+        let mut close = Entry::new(
+            "Close session…",
+            "",
+            "",
+            Intent::Session(target.clone(), SessionAction::Close),
+        )
+        .in_section(3)
+        .destructive();
+        close.enabled = host.connected;
+        entries.push(close);
         entries
     }
 
-    /// A sidebar host header's menu: New session, Default shell…, Retry while offline, then
-    /// Edit host… and Remove host… (not for the only host).
+    /// A sidebar host header's menu, in groups: New session; Retry while offline and Start
+    /// personal server… when it applies; Default shell… and Edit host…; Remove host…, last and
+    /// destructive (not for the only host).
     fn host_entries(&self, host: usize) -> Vec<Entry> {
         let connected = self.hosts[host].model.connected;
         let mut create = Entry::new("New session", "", "", Intent::CreateOn(host, None));
         create.enabled = connected;
-        let shell = Entry::new(
-            "Default shell…",
-            self.shell(host).unwrap_or_default(),
-            "",
-            Intent::HostShell(host),
-        );
-        let mut entries = vec![create, shell];
+        let mut entries = vec![create];
         if !connected {
-            entries.push(Entry::new(
-                "Retry connection",
-                "",
-                "",
-                Intent::RetryHost(host),
-            ));
+            entries.push(
+                Entry::new("Retry connection", "", "", Intent::RetryHost(host)).in_section(1),
+            );
         }
         if self.can_start_ssh(host) {
-            entries.push(Entry::new(
-                "Start personal server…",
-                "Review first",
-                "",
-                Intent::StartSsh(host),
-            ));
+            entries.push(
+                Entry::new(
+                    "Start personal server…",
+                    "Review first",
+                    "",
+                    Intent::StartSsh(host),
+                )
+                .in_section(1),
+            );
         }
-        entries.push(Entry::new("Edit host…", "", "", Intent::EditHost(host)));
-        let mut remove = Entry::new("Remove host…", "", "", Intent::RemoveHost(host));
+        entries.push(
+            Entry::new(
+                "Default shell…",
+                self.shell(host).unwrap_or_default(),
+                "",
+                Intent::HostShell(host),
+            )
+            .in_section(2),
+        );
+        entries.push(Entry::new("Edit host…", "", "", Intent::EditHost(host)).in_section(2));
+        let mut remove = Entry::new("Remove host…", "", "", Intent::RemoveHost(host))
+            .in_section(3)
+            .destructive();
         remove.enabled = self.settings.hosts.len() > 1;
         entries.push(remove);
         entries
@@ -562,10 +613,13 @@ impl Workspace {
         }
         if let PanelKind::Window(id) = &panel.kind {
             let connected = self.model().connected;
+            // Close is last and destructive, after a separator.
             let mut entries = vec![
                 Entry::new("Rename tab…", "", "", Intent::RenameWindow(id.clone())),
-                Entry::new("Close tab…", "", "", Intent::CloseWindow(id.clone())),
                 Entry::new("New tab", "", "", Intent::NewWindow),
+                Entry::new("Close tab…", "", "", Intent::CloseWindow(id.clone()))
+                    .in_section(1)
+                    .destructive(),
             ];
             for e in &mut entries {
                 e.enabled = connected;
@@ -609,6 +663,16 @@ impl Workspace {
                     "",
                     Intent::ClientAction(super::actions::SEARCH, Value::Null),
                 ),
+                (
+                    "Find next",
+                    "",
+                    Intent::ClientAction(super::find::NEXT, Value::Null),
+                ),
+                (
+                    "Find previous",
+                    "",
+                    Intent::ClientAction(super::find::PREVIOUS, Value::Null),
+                ),
                 ("New session", "", Intent::NewSession),
                 ("New tab", "", Intent::NewWindow),
                 ("Rename session…", "", Intent::RenameSession),
@@ -620,6 +684,15 @@ impl Workspace {
                     },
                     "",
                     Intent::Sidebar,
+                ),
+                (
+                    if self.header_reveal.pinned {
+                        "Hide pane headers"
+                    } else {
+                        "Reveal pane headers"
+                    },
+                    "",
+                    Intent::ClientAction("client.pane_headers.toggle", Value::Null),
                 ),
                 ("Remote control", "", Intent::RemoteControl(self.active)),
                 ("Default shell…", "", Intent::HostShell(self.active)),
@@ -636,6 +709,19 @@ impl Workspace {
                 }
                 if matches!(entry.action, Intent::EditHost(_)) {
                     entry.label = format!("Edit host {host_name}…");
+                }
+                if matches!(
+                    entry.action,
+                    Intent::ClientAction("client.pane_headers.toggle", _)
+                ) {
+                    entry.enabled =
+                        self.header_reveal.pinned || super::pane_header::can_reveal(self);
+                }
+                if matches!(
+                    entry.action,
+                    Intent::ClientAction(super::find::NEXT | super::find::PREVIOUS, _)
+                ) {
+                    entry.enabled = self.can_find();
                 }
                 if matches!(entry.action, Intent::RemoteControl(_)) {
                     entry.label = format!(
@@ -691,12 +777,11 @@ impl Workspace {
                     "Workspace",
                     Intent::RenameWindow(id.clone()),
                 ));
-                entries.push(Entry::new(
-                    "Close tab…",
-                    "",
-                    "Workspace",
-                    Intent::CloseWindow(id),
-                ));
+                entries.push(
+                    Entry::new("Close tab…", "", "Workspace", Intent::CloseWindow(id))
+                        .in_section(1)
+                        .destructive(),
+                );
             }
         }
         if !sessions_only
@@ -713,24 +798,31 @@ impl Workspace {
             let zoomed = model
                 .window()
                 .is_some_and(|w| w.zoomed_block_id.as_ref() == Some(&target.block));
-            for (label, key, action) in [
-                ("Split right", "", PaneAction::Split("horizontal")),
-                ("Split down", "", PaneAction::Split("vertical")),
+            // Clipboard, layout, the pane itself, its terminal, then Close: last and
+            // destructive.
+            for (label, section, action) in [
+                ("Copy", 0, PaneAction::Copy),
+                ("Paste", 0, PaneAction::Paste),
+                ("Select all", 0, PaneAction::SelectAll),
+                ("Split right", 1, PaneAction::Split("horizontal")),
+                ("Split down", 1, PaneAction::Split("vertical")),
                 (
                     if zoomed { "Restore pane" } else { "Zoom pane" },
-                    "",
+                    1,
                     PaneAction::Zoom,
                 ),
-                ("Rename pane…", "", PaneAction::Rename),
-                ("Reconnect terminal", "", PaneAction::Reconnect),
-                ("Close pane…", "", PaneAction::Close),
+                ("Rename pane…", 2, PaneAction::Rename),
+                ("Copy pane ID", 2, PaneAction::CopyId),
+                ("Clear terminal", 3, PaneAction::Clear),
+                ("Reset terminal", 3, PaneAction::Reset),
+                ("Reconnect terminal", 3, PaneAction::Reconnect),
+                ("Close pane…", 4, PaneAction::Close),
             ] {
-                entries.push(Entry::new(
-                    label,
-                    key,
-                    &group,
-                    Intent::Pane(target.clone(), action),
-                ));
+                let mut entry = Entry::new(label, "", &group, Intent::Pane(target.clone(), action))
+                    .in_section(section);
+                entry.danger = matches!(action, PaneAction::Close);
+                entry.enabled = self.pane_verb_available(&target, action);
+                entries.push(entry);
             }
         }
         // A typed switcher query names a new session wherever it is created.
@@ -863,11 +955,15 @@ impl Workspace {
             if entry.detail.starts_with("Mouse ") {
                 continue;
             }
-            if matches!(&entry.action, Intent::CreateOn(host,None) if *host==self.active) {
-                entry.detail = self.shortcut_detail("session.new", &Value::Null);
-            }
-            if let Some((name, args)) = entry.action.shortcut() {
-                entry.detail = self.shortcut_detail(name, &args);
+            let shortcut = match &entry.action {
+                Intent::CreateOn(host, None) if *host == self.active => {
+                    Some(("session.new", Value::Null))
+                }
+                action => action.shortcut(),
+            };
+            if let Some((name, args)) = shortcut {
+                entry.keys = self.shortcut_chords(name, &args);
+                entry.detail = super::keycaps::spell(&entry.keys);
             }
         }
     }

@@ -46,6 +46,13 @@ enum Handler {
     RenameSession,
     ClosePane,
     SendKey,
+    SelectAll,
+    CopyPaneId,
+    ClearTerminal,
+    ResetTerminal,
+    PaneHeaders,
+    FindNext,
+    FindPrevious,
 }
 
 pub struct Spec {
@@ -92,6 +99,13 @@ specs! {
     "session.rename" => RenameSession,
     "pane.close" => ClosePane,
     "pane.send_key" => SendKey,
+    "pane.select_all" => SelectAll,
+    "pane.copy_id" => CopyPaneId,
+    "pane.clear" => ClearTerminal,
+    "pane.reset" => ResetTerminal,
+    "client.pane_headers.toggle" => PaneHeaders,
+    super::find::NEXT => FindNext,
+    super::find::PREVIOUS => FindPrevious,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -137,6 +151,19 @@ impl Spec {
                 Remote::Never("Use rex do session.select on the target host instead.")
             }
             Reconnect => Remote::Never("Only the person at this computer can reconnect terminals."),
+            SelectAll => {
+                Remote::Never("Only the person at this computer can select terminal text.")
+            }
+            CopyPaneId => Remote::Never("Remote actions cannot change this computer's clipboard."),
+            ClearTerminal | ResetTerminal => Remote::Never(
+                "Only the person at this computer can clear or reset terminals from here.",
+            ),
+            PaneHeaders => {
+                Remote::Never("Only the person at this computer can show or hide pane headers.")
+            }
+            FindNext | FindPrevious => {
+                Remote::Never("Only the person at this computer can search a terminal.")
+            }
         }
     }
     pub fn global(&self) -> bool {
@@ -155,6 +182,8 @@ impl Spec {
                     | Handler::Scroll
                     | Handler::NextGlobal
                     | Handler::PreviousGlobal
+                    | Handler::FindNext
+                    | Handler::FindPrevious
             )
     }
 
@@ -192,6 +221,13 @@ impl Spec {
             Handler::RenameSession => "Rename session",
             Handler::ClosePane => "Close pane",
             Handler::SendKey => "Send key",
+            Handler::SelectAll => "Select all",
+            Handler::CopyPaneId => "Copy pane ID",
+            Handler::ClearTerminal => "Clear terminal",
+            Handler::ResetTerminal => "Reset terminal",
+            Handler::PaneHeaders => "Reveal pane headers",
+            Handler::FindNext => "Find next",
+            Handler::FindPrevious => "Find previous",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -201,7 +237,8 @@ impl Spec {
             | Handler::Sidebar
             | Handler::ZoomIn
             | Handler::ZoomOut
-            | Handler::ZoomReset => "Interface",
+            | Handler::ZoomReset
+            | Handler::PaneHeaders => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -222,12 +259,18 @@ impl Spec {
             | Handler::ZoomPane
             | Handler::FocusPane
             | Handler::PaneActions
-            | Handler::Reconnect => "Panes",
+            | Handler::Reconnect
+            | Handler::CopyPaneId
+            | Handler::ClearTerminal
+            | Handler::ResetTerminal => "Panes",
             Handler::Copy
             | Handler::Paste
+            | Handler::SelectAll
             | Handler::Scroll
             | Handler::SendKey
-            | Handler::Search => "Text and view",
+            | Handler::Search
+            | Handler::FindNext
+            | Handler::FindPrevious => "Text and view",
         }
     }
     fn schema(&self) -> Option<Value> {
@@ -322,8 +365,11 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::Palette => s.picker(false),
         Handler::Settings => s.perform(Intent::Settings, tx),
         Handler::Sidebar => s.perform(Intent::Sidebar, tx),
+        Handler::PaneHeaders => s.toggle_pane_headers(),
         Handler::Close => s.close_focused(tx),
         Handler::Search => s.open_search(),
+        Handler::FindNext => s.find_step(true),
+        Handler::FindPrevious => s.find_step(false),
         Handler::NewTab => s.perform(Intent::NewWindow, tx),
         Handler::NextTab => s.request("session.focus_next_window", json!({})),
         Handler::PreviousTab => s.request("session.focus_previous_window", json!({})),
@@ -401,6 +447,21 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::ClosePane => {
             if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
                 s.perform(Intent::Pane(target, super::panel::PaneAction::Close), tx);
+            }
+        }
+        Handler::SelectAll
+        | Handler::CopyPaneId
+        | Handler::ClearTerminal
+        | Handler::ResetTerminal => {
+            use super::panel::PaneAction;
+            let verb = match spec.handler {
+                Handler::SelectAll => PaneAction::SelectAll,
+                Handler::CopyPaneId => PaneAction::CopyId,
+                Handler::ClearTerminal => PaneAction::Clear,
+                _ => PaneAction::Reset,
+            };
+            if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
+                s.perform(Intent::Pane(target, verb), tx);
             }
         }
         Handler::SendKey => {
