@@ -112,8 +112,9 @@ fn every_page_is_cards_with_a_rule_between_each_pair_of_rows_and_one_trailing_ed
                 );
             }
             // Controls end on one x: in each row, the last switch, stepper, popup button,
-            // segmented control or button. Rows of actions under a card start at its edge,
-            // and the copy buttons of About's header are centred with it.
+            // segmented control or button, and the actions under the agents' card. Remote
+            // Hosts' action under its cards starts at their edge, and the copy buttons of
+            // About's header are centred with it.
             let edge = |e: &rune::ElementInfo| e.rect[0] + e.rect[2];
             let mut controls: Vec<&rune::ElementInfo> = elements
                 .iter()
@@ -123,14 +124,7 @@ fn every_page_is_cards_with_a_rule_between_each_pair_of_rows_and_one_trailing_ed
                         && matches!(e.role, "switch" | "combobox" | "radiogroup" | "button")
                         && e.rect[2] < 300.
                         && !e.key.as_deref().is_some_and(|k| {
-                            matches!(
-                                k,
-                                "settings-add-host"
-                                    | "agents-refresh"
-                                    | "agents-setup-all"
-                                    | "about-copy"
-                                    | "about-copy-debug"
-                            )
+                            matches!(k, "settings-add-host" | "about-copy" | "about-copy-debug")
                         })
                 })
                 .collect();

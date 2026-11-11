@@ -3,11 +3,11 @@
 //! its tailnet address) is attached to directly; any other is reached by forwarding its Rex
 //! socket over SSH as a user you name (Tailscale SSH needs no keys).
 use super::panel::{Entry, Form, Intent, PanelKind};
-use super::theme::SERVER;
+use super::theme::*;
 use super::workspace::Workspace;
 use rex_linux::settings::Host;
 use rex_linux::tailnet::{self, ListenerDescription, Machine, Probe};
-use rune::Tx;
+use rune::{El, Span, Tx, el, row, text};
 use std::time::{Duration, Instant};
 
 /// One machine of the tailnet in the Add host list.
@@ -17,6 +17,67 @@ pub struct Candidate {
     /// What checking the machine for a Rex server found; none while that is being checked, and
     /// for machines that are offline.
     pub probe: Option<Probe>,
+}
+
+/// What the Add host list says about a machine after its name. [`MachineWords::detail`] is
+/// all of it as one line; the list draws the parts in columns (`Workspace::machine_columns`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct MachineWords {
+    /// The labels of the saved hosts that already reach the machine.
+    pub added: Vec<String>,
+    /// What checking it found, in reading order; `true` marks trouble.
+    pub status: Vec<(String, bool)>,
+    /// Its operating system as words, or empty when unknown.
+    pub os: String,
+    /// What the machine calls itself, when that isn't its name on the tailnet.
+    pub host_name: Option<String>,
+    /// The group it is listed under, which already says that it is offline.
+    pub group: &'static str,
+}
+
+impl MachineWords {
+    /// Every part in one line, as a tooltip or a screen reader gets it.
+    pub fn detail(&self) -> String {
+        let mut words: Vec<String> = Vec::new();
+        if let Some(added) = self.added_as() {
+            words.push(added);
+        }
+        words.extend(self.status.iter().map(|(word, _)| word.clone()));
+        if !self.os.is_empty() {
+            words.push(self.os.clone());
+        }
+        words.extend(self.host_name.clone());
+        words.join(" · ")
+    }
+
+    /// `Added as <labels>`, for a machine a saved host already reaches.
+    pub fn added_as(&self) -> Option<String> {
+        (!self.added.is_empty()).then(|| format!("Added as {}", self.added.join(", ")))
+    }
+}
+
+/// The groups of the Add host list, in the order it shows them.
+const REX_SERVERS: &str = "Rex servers";
+const TAILNET: &str = "Tailnet";
+const OFFLINE: &str = "Offline";
+
+/// The Add host list, and what its rows keep for their columns.
+pub const LIST_WIDTH: f32 = 520.;
+/// The operating system's column: wide enough for "Windows" and "Android".
+const OS_COLUMN: f32 = 52.;
+/// The "Added" chip's column, kept only while a listed machine is already added.
+const ADDED_COLUMN: f32 = 50.;
+/// The least a row keeps for what follows the name, before the name itself is cut.
+const STATUS_FLOOR: f32 = 56.;
+
+/// How wide a machine's name may be in a list `width` wide before it is cut: the columns
+/// after it keep their places, and its status keeps [`STATUS_FLOOR`].
+pub fn name_limit(width: f32, added_column: bool) -> f32 {
+    // The surface's padding, the scroller's, the row's own, then the chevron and the gaps.
+    let row = width - 10. - 4. - 18.;
+    let after = 14. + 8. + OS_COLUMN + 8. + STATUS_FLOOR + 8.;
+    let added = if added_column { ADDED_COLUMN + 8. } else { 0. };
+    (row - after - added).max(80.)
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -181,9 +242,143 @@ impl Workspace {
         }
     }
 
+    /// What the Add host list says about candidate `c`: the saved hosts that reach it, what
+    /// the check for a Rex server found, its system and its own name.
+    pub fn machine_words(&self, c: &Candidate) -> MachineWords {
+        let m = &c.machine;
+        let added = self
+            .saved_hosts_for(m)
+            .into_iter()
+            .map(|h| self.settings.hosts[h].label.clone())
+            .collect();
+        let method = if m.ssh { "Tailscale SSH" } else { "SSH" };
+        let status = match (&c.probe, m.online) {
+            (
+                Some(Probe::Rex {
+                    endpoint,
+                    listeners,
+                    reason,
+                }),
+                _,
+            ) => {
+                let access = if listeners.is_empty() {
+                    "listener details unavailable"
+                } else {
+                    "view listeners"
+                };
+                // Trouble leads, so a row short of room cuts the address, not the reason.
+                match reason {
+                    Some(reason) => vec![(reason.clone(), true), (endpoint.clone(), false)],
+                    None => vec![(endpoint.clone(), false), (access.to_owned(), false)],
+                }
+            }
+            (_, false) => vec![("Offline".to_owned(), false)],
+            (None, true) => vec![("Checking for Rex…".to_owned(), false)],
+            (Some(Probe::Nothing), true) => vec![(method.to_owned(), false)],
+            (Some(Probe::Unknown(_)), true) => {
+                vec![
+                    ("Rex check failed".to_owned(), true),
+                    (method.to_owned(), false),
+                ]
+            }
+        };
+        let group = if Self::found_rex(c).is_some() {
+            REX_SERVERS
+        } else if m.online {
+            TAILNET
+        } else {
+            OFFLINE
+        };
+        MachineWords {
+            added,
+            status,
+            os: m.os_name().to_owned(),
+            host_name: m.host_name.clone(),
+            group,
+        }
+    }
+
+    /// The columns of a machine's row in the Add host list, after its name: what it calls
+    /// itself, then, from the trailing edge, what the check found (cut with "…" when the row
+    /// is short of room, trouble in `WARNING`), its system and, in a list with a machine
+    /// already added, the "Added" chip. None for a row that isn't a machine's.
+    pub fn machine_columns(
+        &self,
+        action: &Intent,
+        selected: bool,
+        added_column: bool,
+    ) -> Option<El> {
+        let (Intent::AddMachine(index) | Intent::MachineForm(index)) = action else {
+            return None;
+        };
+        let words = self.machine_words(self.discovery.candidates.get(*index)?);
+        let tone = if selected {
+            rgb(ink()).alpha(0.75)
+        } else {
+            rgb(muted())
+        };
+        // What the machine calls itself gets only the room the other columns leave, and
+        // fades out rather than ending in an ellipsis that would read as the status's.
+        let mut columns = row().grow(1.).shrink().gap(8.).center_y().child(
+            match &words.host_name {
+                Some(host_name) => text(host_name.clone())
+                    .font(ui(11.))
+                    .color(tone)
+                    .truncate_fade(),
+                None => el(),
+            }
+            .grow(1.),
+        );
+        // The group's heading already says a machine is offline.
+        let mut line = String::new();
+        let mut trouble = Vec::new();
+        for (word, is_trouble) in words.status.iter().filter(|_| words.group != OFFLINE) {
+            if !line.is_empty() {
+                line.push_str(" · ");
+            }
+            if *is_trouble {
+                trouble.push(Span::new(line.len(), line.len() + word.len()).color(rgb(warning())));
+            }
+            line.push_str(word);
+        }
+        if !line.is_empty() {
+            columns = columns.child(
+                text(line.clone())
+                    .key(format!("machine-status:{index}"))
+                    .font(ui(11.))
+                    .color(tone)
+                    .spans(trouble)
+                    .truncate()
+                    .help_when_truncated(line),
+            );
+        }
+        columns = columns.child(
+            row()
+                .w(OS_COLUMN)
+                .child(text(words.os.clone()).font(ui(11.)).color(tone).truncate()),
+        );
+        if added_column {
+            columns = columns.child(row().w(ADDED_COLUMN).justify_end().children(
+                words.added_as().map(|added| {
+                    row()
+                        .key(format!("machine-added:{index}"))
+                        .h(18.)
+                        .px(7.)
+                        .center()
+                        .radius(6.)
+                        .continuous_corners()
+                        .fill(white(0.08))
+                        .help(added)
+                        .child(text("Added").font(medium(10.5)).color(tone))
+                }),
+            ));
+        }
+        Some(columns)
+    }
+
     /// The Add host list: Rex servers first, then the rest of the tailnet, then machines that
-    /// are offline; the footer takes an endpoint by hand. A machine already added stays listed,
-    /// marked, so another login to it can be added.
+    /// are offline, each group under its icon; the footer takes an endpoint by hand. A machine
+    /// already added stays listed, marked, so another login to it can be added.
     pub fn discovery_entries(&self, lower: &str) -> Vec<Entry> {
         let mut rex = Vec::new();
         let mut online = Vec::new();
@@ -205,64 +400,25 @@ impl Workspace {
             {
                 continue;
             }
-            let saved = self.saved_hosts_for(m);
+            let words = self.machine_words(c);
             let found = Self::found_rex(c);
             let found_saved =
                 found.is_some_and(|e| self.settings.hosts.iter().any(|h| h.endpoint == e));
-            let mut words: Vec<String> = Vec::new();
-            if !saved.is_empty() {
-                let labels: Vec<&str> = saved
-                    .iter()
-                    .map(|&h| self.settings.hosts[h].label.as_str())
-                    .collect();
-                words.push(format!("Added as {}", labels.join(", ")));
-            }
-            let method = if m.ssh { "Tailscale SSH" } else { "SSH" };
-            words.push(match (&c.probe, m.online) {
-                (
-                    Some(Probe::Rex {
-                        endpoint,
-                        listeners,
-                        reason,
-                    }),
-                    _,
-                ) => {
-                    let access = if listeners.is_empty() {
-                        "listener details unavailable"
-                    } else {
-                        "view listeners"
-                    };
-                    format!("{endpoint} · {}", reason.as_deref().unwrap_or(access))
-                }
-                (_, false) => "Offline".into(),
-                (None, true) => "Checking for Rex…".into(),
-                (Some(Probe::Nothing), true) => method.into(),
-                (Some(Probe::Unknown(_)), true) => format!("Rex check failed · {method}"),
-            });
-            if !m.os.is_empty() {
-                words.push(m.os_name().to_owned());
-            }
-            if let Some(host_name) = &m.host_name {
-                words.push(host_name.clone());
-            }
             let action = if found.is_some() && !found_saved {
                 Intent::AddMachine(i)
             } else {
                 Intent::MachineForm(i)
             };
-            let group = if found.is_some() {
-                "Rex servers"
-            } else if m.online {
-                "Tailnet"
-            } else {
-                "Offline"
-            };
-            let mut e = Entry::new(&m.name, words.join(" · "), group, action);
-            e.group_icon = (group == "Rex servers").then_some(&SERVER);
-            e.current = !saved.is_empty();
-            match group {
-                "Rex servers" => rex.push(e),
-                "Tailnet" => online.push(e),
+            let mut e = Entry::new(&m.name, words.detail(), words.group, action);
+            e.group_icon = Some(match words.group {
+                REX_SERVERS => &SERVER,
+                TAILNET => &NETWORK,
+                _ => &MOON,
+            });
+            e.current = !words.added.is_empty();
+            match words.group {
+                REX_SERVERS => rex.push(e),
+                TAILNET => online.push(e),
                 _ => offline.push(e),
             }
         }

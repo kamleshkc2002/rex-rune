@@ -9,7 +9,7 @@
 //!   (the whole row is a button that opens a form or a sub-page) and [`row_frame`] for a row
 //!   with its own content.
 //! - Controls: [`segmented`] and [`segmented_fixed`], [`value_popup`], [`stepper`],
-//!   [`button`], and the [`value`] and [`mono_value`] read-outs.
+//!   [`button`], and the [`value`], [`mono_value`] and [`state_chip`] read-outs.
 //!
 //! A popup opened from a [`value_popup`] is a list panel drawn over Settings and placed
 //! against the control (`Panel::anchor_to`, read by `popups::list_popup`).
@@ -152,6 +152,45 @@ pub fn mono_value(value: impl Into<String>) -> El {
         .font(mono(12.))
         .color(rgb(muted()))
         .selectable(true)
+}
+
+/// How a [`state_chip`] reads.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ChipTone {
+    /// In place and as it should be: a check and plain words.
+    Good,
+    /// Not there, with nothing wrong: an outline and `MUTED` words.
+    Off,
+    /// Needs the user: `WARNING`, always with the word.
+    Attention,
+}
+
+/// What something is now, in a word or two on a small rounded rectangle. A read-out and
+/// never a button, which is why it isn't a capsule; `why` is its tooltip, for a word that
+/// needs a sentence.
+pub fn state_chip(key: &str, label: &str, tone: ChipTone, why: &str) -> El {
+    let (ink_color, chip) = match tone {
+        ChipTone::Good => (rgb(ink()), row().fill(white(0.07))),
+        ChipTone::Off => (rgb(muted()), row().border(1., white(0.1))),
+        ChipTone::Attention => (rgb(warning()), row().fill(rgb(warning()).alpha(0.12))),
+    };
+    let mut chip = chip
+        .key(key.to_owned())
+        .role("status")
+        .label(label.to_owned())
+        .h(20.)
+        .px(7.)
+        .gap(3.)
+        .center()
+        .radius(6.)
+        .continuous_corners();
+    if !why.is_empty() {
+        chip = chip.help(why.to_owned());
+    }
+    if tone == ChipTone::Good {
+        chip = chip.child(el().ml(-3.).child(glyph(&CHECK, 13., rgb(accent()))));
+    }
+    chip.child(text(label.to_owned()).font(medium(11.)).color(ink_color))
 }
 
 /// Return presses a focused control as Space does: Settings has no default button to take it.

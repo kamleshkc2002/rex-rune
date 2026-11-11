@@ -364,13 +364,12 @@ icon!(
     "rex-command",
     r#"path d="M12.5 5v10a2.5 2.5 0 1 0 2.5-2.5H5a2.5 2.5 0 1 0 2.5 2.5V5a2.5 2.5 0 1 0-2.5 2.5h10a2.5 2.5 0 1 0-2.5-2.5""#
 );
+// Settings: a gear, eight teeth around a hub.
 icon!(
     SETTINGS,
     "rex-settings",
-    r#"path d="M4 6.5h5M13 6.5h3""#,
-    r#"circle cx="11" cy="6.5" r="2""#,
-    r#"path d="M4 13.5h3M11 13.5h5""#,
-    r#"circle cx="9" cy="13.5" r="2""#
+    r#"path d="M8.95 4.7 9.27 2.28h1.46l.32 2.42 1.95.81 1.94-1.48 1.03 1.03L14.49 7l.81 1.95 2.42.32v1.46l-2.42.32-.81 1.95 1.48 1.94-1.03 1.03L13 14.49l-1.95.81-.32 2.42H9.27l-.32-2.42L7 14.49l-1.94 1.48-1.03-1.03L5.51 13l-.81-1.95-2.42-.32V9.27l2.42-.32L5.51 7 4.03 5.06l1.03-1.03L7 5.51Z""#,
+    r#"circle cx="10" cy="10" r="2.25""#
 );
 icon!(
     MONITOR,
@@ -386,6 +385,22 @@ icon!(
     r#"rect x="3.5" y="11" width="13" height="5" rx="1.5""#,
     r#"path d="M6.5 6.5h.01""#,
     r#"path d="M6.5 13.5h.01""#
+);
+// Add host's groups: the machines of a tailnet, and the ones that are away.
+icon!(
+    NETWORK,
+    "rex-network",
+    r#"circle cx="10" cy="5" r="2""#,
+    r#"circle cx="4.75" cy="14.5" r="2""#,
+    r#"circle cx="15.25" cy="14.5" r="2""#,
+    r#"path d="m9 6.75-3.25 6""#,
+    r#"path d="m11 6.75 3.25 6""#,
+    r#"path d="M6.75 14.5h6.5""#
+);
+icon!(
+    MOON,
+    "rex-moon",
+    r#"path d="M16 11.75A6.5 6.5 0 1 1 8.25 4 5.25 5.25 0 0 0 16 11.75Z""#
 );
 icon!(
     SIDEBAR,

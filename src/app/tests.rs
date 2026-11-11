@@ -6,6 +6,8 @@ mod about_tests;
 mod bindings_integration_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
+#[path = "polish_tests.rs"]
+mod polish_tests;
 #[path = "remote_session_tests.rs"]
 mod remote_session_tests;
 #[path = "remote_tests.rs"]
@@ -2452,14 +2454,15 @@ fn integrations_list_agents_and_preview_changes_before_making_them() {
     let home = omp_home("list");
     let mut rt = integrations_open(Ok(SKILL_STATUS.into()), omp_at(&home));
     let codex = element_text(&rt, "agent:codex").join(" | ");
-    assert!(codex.contains("Not installed"), "{codex}");
-    assert!(codex.contains("with OpenCode and Pi and OMP"), "{codex}");
+    assert_eq!(codex, "Codex | Not installed | Install…");
     let omp = element_text(&rt, "agent:omp").join(" | ");
-    assert!(omp.contains("OMP"), "{omp}");
-    assert!(omp.contains("Not installed"), "{omp}");
-    assert!(omp.contains("with Codex and OpenCode and Pi"), "{omp}");
-    assert!(omp.contains("Shares Pi's skill directory"), "{omp}");
-    assert!(omp.contains("Install…"), "{omp}");
+    assert_eq!(omp, "OMP | Not installed | Install…");
+    // The skill these agents share is explained once for the group, not on each row.
+    let shared = element_text(&rt, "agents-shared").join(" | ");
+    assert!(
+        shared.starts_with("Codex, OpenCode, Pi and OMP share one skill"),
+        "{shared}"
+    );
     assert!(
         element_text(&rt, "agent:claude")
             .join(" ")
@@ -2551,8 +2554,13 @@ fn omp_mirrors_pis_skill_and_is_only_offered_when_found() {
 
     let rt = integrations_open(Ok(SKILL_STATUS.into()), Default::default());
     let row = element_text(&rt, "agent:omp").join(" | ");
-    assert!(row.contains("Not found on this machine"), "{row}");
-    assert!(!row.contains("Install…"), "{row}");
+    assert_eq!(row, "OMP | Not found", "nothing to install it for");
+    let chip = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("agent-state:omp"))
+        .expect("OMP's state chip");
+    assert_eq!(chip.help.as_deref(), Some("Not found on this machine"));
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 

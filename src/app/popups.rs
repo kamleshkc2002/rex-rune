@@ -117,16 +117,20 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         let above = y - CONTROL_GAP - 8.;
         (below, above)
     });
+    // Add host: machines in columns, each name whole.
+    let discover = matches!(panel.kind, PanelKind::Discover);
     let width = (if values {
         220.
     } else if pane {
         260.
     } else if sessions {
         340.
+    } else if discover {
+        super::discover::LIST_WIDTH
     } else {
         460.
-    } as f32)
-        .min(vw - 16.);
+    })
+    .min(vw - 16.);
     let top = if sessions || pane {
         TOOLBAR - 4.
     } else if vh < 750. {
@@ -145,6 +149,9 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         top,
     ));
     let entries = s.entries();
+    // A machine already added carries a chip, in a column every row of the list keeps.
+    let added_column = discover && entries.iter().any(|e| e.current);
+    let name_limit = super::discover::name_limit(width, added_column);
     let row_height = if commands { 30. } else { 28. };
     let footer_count = entries.iter().filter(|e| e.footer).count();
     // A list under its control needs no title: the control's row names it.
@@ -272,11 +279,23 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     label: &entry.label,
                     detail: &entry.detail,
                     height: if entry.footer { 28. } else { row_height },
-                    check: (sessions || checks || entry.current).then_some(entry.current),
+                    // The Add host list marks an added machine with its chip instead.
+                    check: (sessions || checks || (entry.current && !discover))
+                        .then_some(entry.current),
                     followup: entry.followup,
                     enabled,
                     selected: i == panel.selected && enabled,
                     actions,
+                    columns: discover
+                        .then(|| {
+                            s.machine_columns(
+                                &entry.action,
+                                i == panel.selected && enabled,
+                                added_column,
+                            )
+                        })
+                        .flatten()
+                        .map(|columns| (columns, name_limit)),
                 },
                 i,
                 move |s: &mut Workspace, tx: &mut Tx| s.perform(action.clone(), tx),

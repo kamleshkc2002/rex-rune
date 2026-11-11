@@ -12,6 +12,13 @@
 - **About page:** a centred header with the app icon, version, install channel and the active server's version replaces the version rows; commit and build date share one row. Versions are printed one way everywhere (`0.6.0`, no `v` on Settings → Updates).
 
 - **Settings layout:** Settings is a wider dialog (816×680, clamped to the window) whose pages are grouped into headed cards with a divider between every row, one-sentence helpers and controls aligned to one edge. The window palette, terminal theme and notice position are popup buttons whose lists open over Settings beside the control instead of replacing it; font family, client label and each host's default shell are rows that open their form; pane density and tab position are segmented controls with glyphs. Long pages fade at the scrolled edge and show a scroll thumb. Settings and saved preferences are unchanged.
+- **Add host list:** a machine's name stays whole and what the check found is cut with an ellipsis instead (its tooltip has the rest), so a long name no longer collapses to `…` or pushes text past the list. Rows line up in columns (status, system, chevron); **Rex check failed** and a refused hello are in the warning colour and come first; a machine that is already added has an **Added** chip in place of the check mark before its name; and every group (Rex servers, Tailnet, Offline) has an icon. The list is 520 pt wide.
+- **Integrations page:** each agent is one row with its mark, a state chip (Installed, Update available, Not installed, Not found, Conflict, Unreadable) and the actions that state allows. The skill several agents share is explained once under the list instead of on every row, **Check again** and **Set up all detected…** are right-aligned with the primary last, and the footnotes are shorter. Previews, per-agent actions and the session-naming default (off) are unchanged.
+- **Settings button:** the toolbar's Settings glyph is a gear instead of two sliders.
+
+### Fixed
+
+- DESIGN.md described a **Take control** strip for panes another client had sized; the client never had one. It now says what happens: the window claims its panes when it comes forward and typing or pasting claims a pane, with **Retry** on a reconnecting pane.
 
 ## 0.6.0 - 2026-11-10
 

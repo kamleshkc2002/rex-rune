@@ -4,9 +4,12 @@
 //! passes `--autostart=false` so it can never start a server.
 use super::{
     panel::PanelKind,
-    settings_kit::{self, CONTROL, card, footnote, page, row_frame, setting},
+    settings_kit::{
+        self, CONTROL, ChipTone, INSET, card, footnote, mono_footnote, page, row_frame, setting,
+        state_chip,
+    },
     theme::*,
-    widgets::{Pill, pill},
+    widgets::{Pill, glyph, pill},
     workspace::Workspace,
 };
 use rune::{El, Tx, col, row, text};
@@ -483,46 +486,73 @@ fn wait(e: El, busy: bool) -> El {
     if busy { e.opacity(0.45).inert() } else { e }
 }
 
+/// The agent names' column, so every row's state chip starts at one x.
+const NAME_COLUMN: f32 = 104.;
+
+/// What an agent's chip says, how it reads, and the sentence behind the word when the word
+/// alone doesn't say what is wrong.
+pub fn agent_state(harness: &Harness) -> (&'static str, ChipTone, &'static str) {
+    match harness.installed() {
+        Installed::Yes => ("Installed", ChipTone::Good, ""),
+        Installed::Outdated => ("Update available", ChipTone::Attention, ""),
+        Installed::No if !harness.detected => {
+            ("Not found", ChipTone::Off, "Not found on this machine")
+        }
+        Installed::No => ("Not installed", ChipTone::Off, ""),
+        Installed::Conflict => (
+            "Conflict",
+            ChipTone::Attention,
+            "Another skill named rex is installed",
+        ),
+        Installed::Unreadable => (
+            "Unreadable",
+            ChipTone::Attention,
+            "Rex can't read this agent's settings",
+        ),
+    }
+}
+
+/// One agent: its mark and name, a chip for its state and the actions that state allows.
 fn agent_row(s: &Workspace, harness: &Harness) -> El {
     let id = harness.id.clone();
     let installed = harness.installed();
-    let (state, tone) = match installed {
-        Installed::Yes => ("Installed", muted()),
-        Installed::Outdated => ("Update available", warning()),
-        Installed::No if !harness.detected => ("Not found on this machine", muted()),
-        Installed::No => ("Not installed", muted()),
-        Installed::Conflict => ("Another skill named rex is installed", warning()),
-        Installed::Unreadable => ("Can't read its settings", warning()),
-    };
-    let mut detail = col().gap(2.).min_w(0.).grow(1.).child(
-        text(agent_name(&id).to_owned())
-            .font(ui(13.))
-            .color(rgb(ink())),
-    );
-    detail = detail.child(text(state).font(ui(11.5)).color(rgb(tone)));
-    let shared = s.sharing(&id);
-    if !shared.is_empty()
-        && let Some(path) = harness.skill_path()
-    {
-        detail = detail.child(
-            text(format!(
-                "Shares its skill at {} with {}.",
-                home_relative(path),
-                shared.join(" and ")
-            ))
-            .font(ui(11.5))
-            .color(rgb(muted()))
-            .wrap(),
-        );
-    }
-    if id == "omp" {
-        detail = detail.child(
-            text(
-                "Shares Pi's skill directory: installing or removing it here does the same for Pi.",
-            )
-            .font(ui(11.5))
-            .color(rgb(muted()))
-            .wrap(),
+    let (state, tone, why) = agent_state(harness);
+    // An agent that isn't on this machine steps back; there is nothing to do for it.
+    let absent = installed == Installed::No && !harness.detected;
+    let name = agent_name(&id).to_owned();
+    let mut line = row()
+        .gap(10.)
+        .center_y()
+        .grow(1.)
+        .min_w(0.)
+        .child(glyph(
+            super::activity::program_icon(Some(&id)),
+            16.,
+            rgb(muted()),
+        ))
+        .child(
+            row().w(NAME_COLUMN).child(
+                text(name.clone())
+                    .font(ui(13.))
+                    .color(rgb(if absent { muted() } else { ink() }))
+                    .truncate()
+                    .help_when_truncated(name),
+            ),
+        )
+        .child(state_chip(
+            &format!("agent-state:{id}"),
+            state,
+            tone,
+            if tone == ChipTone::Attention { "" } else { why },
+        ));
+    // Trouble says what is wrong beside its word, not only in a tooltip.
+    if tone == ChipTone::Attention && !why.is_empty() {
+        line = line.child(
+            text(why)
+                .font(ui(11.5))
+                .color(rgb(muted()))
+                .truncate()
+                .help_when_truncated(why),
         );
     }
     let mut actions = row().gap(8.).center_y();
@@ -568,10 +598,43 @@ fn agent_row(s: &Workspace, harness: &Harness) -> El {
             busy,
         ));
     }
-    row_frame(true)
+    row_frame(false)
         .key(format!("agent:{id}"))
-        .child(detail)
+        .child(line)
         .child(actions)
+}
+
+/// `A`, `A and B`, `A, B and C`.
+fn list_of(names: &[&str]) -> String {
+    match names {
+        [] => String::new(),
+        [one] => (*one).to_owned(),
+        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
+    }
+}
+
+/// The skill directories two or more agents on this machine read, each with the agents that
+/// read it, in the order the agents are listed. A change to one of them changes the skill
+/// for all.
+pub fn shared_skills(harnesses: &[Harness]) -> Vec<(String, Vec<&str>)> {
+    let mut shared: Vec<(String, Vec<&str>)> = Vec::new();
+    let known = AGENTS
+        .iter()
+        .filter_map(|(id, _)| harnesses.iter().find(|h| h.id == *id));
+    let others = harnesses
+        .iter()
+        .filter(|h| !AGENTS.iter().any(|(id, _)| *id == h.id));
+    for harness in known.chain(others).filter(|h| h.detected) {
+        let Some(path) = harness.skill_path() else {
+            continue;
+        };
+        match shared.iter_mut().find(|(p, _)| p == path) {
+            Some((_, agents)) => agents.push(agent_name(&harness.id)),
+            None => shared.push((path.to_owned(), vec![agent_name(&harness.id)])),
+        }
+    }
+    shared.retain(|(_, agents)| agents.len() > 1);
+    shared
 }
 
 /// "Set up all detected", or nothing if every detected agent is set up. `rex` doesn't detect
@@ -599,7 +662,7 @@ pub fn setup_all(harnesses: &[Harness]) -> Option<AgentChange> {
 
 pub fn section(s: &Workspace) -> El {
     let note = footnote(
-        "On this machine, Rex can teach coding agents to use the rex command (a skill) and, where the agent supports it, tell each agent session which Rex session and terminal it runs in (a hook). Every change is shown before it's made.",
+        "Installs a Rex skill and, where the agent has them, session hooks. Every change is shown first.",
     );
     let refresh = pill(
         "agents-refresh",
@@ -631,7 +694,14 @@ pub fn section(s: &Workspace) -> El {
             let others = harnesses
                 .iter()
                 .filter(|h| !AGENTS.iter().any(|(id, _)| *id == h.id));
-            let mut all = row().gap(8.).px(2.).child(refresh);
+            // The page's actions end where its rows' controls do, the one for every agent
+            // last.
+            let mut all = row()
+                .w_full()
+                .justify_end()
+                .gap(8.)
+                .px(INSET)
+                .child(refresh);
             if let Some(change) = setup_all(harnesses) {
                 all = all.child(wait(
                     pill(
@@ -644,21 +714,33 @@ pub fn section(s: &Workspace) -> El {
                     s.integrations.busy,
                 ));
             }
-            vec![
+            let mut blocks = vec![
                 card(known.chain(others).map(|harness| agent_row(s, harness))),
                 all,
                 note,
-            ]
+            ];
+            // Said once for the group, not on every row that shares.
+            for (path, agents) in shared_skills(harnesses) {
+                blocks.push(
+                    footnote(format!(
+                        "{} share one skill, so a change to one changes it for all of them:",
+                        list_of(&agents)
+                    ))
+                    .key("agents-shared"),
+                );
+                blocks.push(mono_footnote(home_relative(&path)).mt(-6.));
+            }
+            blocks
         }
     };
     page([
-        settings_kit::section("Agents", agents),
+        settings_kit::section("Coding agents", agents),
         settings_kit::section(
-            "Sessions",
+            "Agent behavior",
             [
                 card([setting(
                     "Let agents name sessions",
-                    "Agents rename the Rex session after their task.",
+                    "Agents name the session after the task they are working on.",
                     Switch::new(s.settings.agent_session_naming)
                         .label("Let agents name sessions")
                         .hide_label()
@@ -666,7 +748,9 @@ pub fn section(s: &Workspace) -> El {
                         .build(kit())
                         .key("agent-naming"),
                 )]),
-                footnote("Applies the next time Rex sets up your agents."),
+                footnote(
+                    "Applies to new agent sessions, after Rex updates the agents it has set up.",
+                ),
             ],
         ),
     ])
