@@ -17,6 +17,38 @@ use futures_util::{SinkExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{WebSocketStream, tungstenite::Message};
 
+#[test]
+fn startup_size_prefers_cli_then_saved_size_then_default_and_keeps_the_minimum() {
+    use clap::Parser;
+    let options = Options::parse_from(["rex-linux"]);
+    let legacy: crate::settings::Settings = serde_json::from_str("{}").unwrap();
+    assert_eq!(options.window_size, None);
+    assert_eq!(options.startup_size(&legacy), (1440., 900.));
+    assert!(
+        serde_json::to_value(&legacy)
+            .unwrap()
+            .get("window_size")
+            .is_none()
+    );
+    let mut settings = crate::settings::Settings {
+        window_size: Some([1100., 750.]),
+        ..legacy
+    };
+    assert_eq!(options.startup_size(&settings), (1100., 750.));
+    for (arg, expected) in [
+        ("1280x720", (1280., 720.)),
+        ("320x200", (640., 480.)),
+        ("invalid", (1100., 750.)),
+        ("infx900", (1100., 750.)),
+        ("NaNx900", (1100., 750.)),
+    ] {
+        let options = Options::parse_from(["rex-linux", "--window-size", arg]);
+        assert_eq!(options.startup_size(&settings), expected, "{arg}");
+    }
+    settings.window_size = Some([320., 200.]);
+    assert_eq!(options.startup_size(&settings), (640., 480.));
+}
+
 const SESSION: &str = "session:00000000-0000-0000-0000-000000000001";
 
 fn ticket(session: &str, block: &str, expires_in_ms: u64) -> session::DataTicket {

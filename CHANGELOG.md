@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- **Rex icon in desktop notifications:** embeds the 128 px icon as the freedesktop `image-data` hint, so notifications show it without an installed icon file. Harvested from [Matt Porter (@ohporter)](https://github.com/ohporter/rex-rune/commit/f73baf449b84a52a44eee2ee741cfb23ef34fb1d).
+- **Remember window size:** reopen at the last non-maximized size, saved once resizing settles for one second; `--window-size` still overrides it and the 640×480 minimum still applies. Adapted from [Matt Porter (@ohporter)](https://github.com/ohporter/rex-rune/commit/97d7e3195585ca1b17031054484a33a5956e3533) onto the current Settings.
+
 ### Fixed
 
 - **`install.sh` no longer prints the post-install summary twice:** `packaging/install/install.sh` now suppresses the duplicate summary from the bundled `scripts/install-desktop.sh` (`REX_INSTALL_QUIET_SUMMARY=1`) and prints the three-line summary (with both the `rex-linux` binary path and the `.desktop` launcher path) once, while running `scripts/install-desktop.sh` directly still prints it once.
