@@ -354,11 +354,27 @@ fn font_size_actions_step_one_point_within_range_and_say_so_once() {
 }
 
 #[test]
-fn ctrl_alt_keys_size_the_terminal_font_and_ctrl_keys_still_zoom_the_interface() {
+fn font_size_keys_are_the_users_to_bind_and_ctrl_keys_still_zoom_the_interface() {
     let mut rt = runtime(workspace());
+    // No default: Ctrl Alt = / + / - / 0 are the terminal program's keys, as they were.
+    for name in ['=', '+', '-', '0'] {
+        key(&mut rt, Key::Command(name), mods(true, true, false));
+    }
+    assert_eq!(rt.state.settings.font_size, 15.);
+    assert!(rt.state.notices.is_empty());
+
+    // Bound in shortcuts.json they size the font, a point at a time.
+    rt.update(|s, _| {
+        s.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(&json!([
+            {"keys":"ctrl+alt+=","action":font_size::INCREASE},
+            {"keys":"ctrl+alt+-","action":font_size::DECREASE},
+            {"keys":"ctrl+alt+0","action":font_size::RESET}
+        ]));
+        s.local_keymap = actions::resolve(&s.settings.shortcut_file.overrides);
+        s.keymap_generation += 1;
+    });
     key(&mut rt, Key::Command('='), mods(true, true, false));
-    assert_eq!(rt.state.settings.font_size, 16.);
-    key(&mut rt, Key::Command('+'), mods(true, true, false));
+    key(&mut rt, Key::Command('='), mods(true, true, false));
     assert_eq!(rt.state.settings.font_size, 17.);
     key(&mut rt, Key::Command('-'), mods(true, true, false));
     assert_eq!(rt.state.settings.font_size, 16.);
@@ -396,11 +412,11 @@ fn commands_lists_font_size_rows_and_disables_a_step_that_changes_nothing() {
     assert_eq!(
         state(&ws),
         [
-            (true, "Ctrl Alt +".to_owned()),
-            (true, "Ctrl Alt -".to_owned()),
-            (false, "Ctrl Alt 0".to_owned()),
+            (true, String::new()),
+            (true, String::new()),
+            (false, String::new()),
         ],
-        "at the default there is nothing to reset"
+        "at the default there is nothing to reset, and none has a key until one is bound"
     );
     ws.settings.font_size = 48.;
     assert_eq!(state(&ws).map(|s| s.0), [false, true, true]);
@@ -465,10 +481,48 @@ fn the_new_actions_are_registered_bindable_and_never_remote() {
             .find(|b| b.binding.action == action && b.binding.source.as_deref() == Some("settings"))
             .map(|b| actions::binding_title(&b.binding))
     };
-    assert_eq!(
-        title("pane.split").as_deref(),
-        Some("Split pane · best fit")
-    );
+    assert_eq!(title("pane.split").as_deref(), Some("Split best fit"));
     assert_eq!(title("pane.focus_next").as_deref(), Some("Focus next pane"));
     assert_eq!(title("client.help").as_deref(), Some("Rex help"));
+}
+
+#[test]
+fn a_bindings_title_is_the_name_commands_gives_its_row() {
+    use rexrs::api::client::Binding;
+    let (mut ws, _rx) = tabbed_workspace("split");
+    ws.picker(false);
+    let rows: Vec<String> = ws
+        .commands()
+        .into_iter()
+        .map(|c| c.entry.label.trim_end_matches('…').to_owned())
+        .collect();
+    let direction = |d: &str| Some(json!({"direction": d}));
+    for (action, args, title) in [
+        ("pane.split", direction("right"), "Split right"),
+        ("pane.split", direction("down"), "Split down"),
+        ("pane.split", direction("best_fit"), "Split best fit"),
+        ("pane.focus", direction("left"), "Focus pane left"),
+        ("pane.focus", direction("down"), "Focus pane down"),
+        ("client.tab.move", direction("left"), "Move tab left"),
+        ("client.tab.move", direction("right"), "Move tab right"),
+        ("client.close", None, "Close pane or tab"),
+        ("client.search", None, "Search terminal"),
+        ("pane.focus_next", None, "Focus next pane"),
+    ] {
+        let mut binding = Binding::new(["f5"], action);
+        binding.args = args;
+        assert_eq!(actions::binding_title(&binding), title);
+        assert!(
+            rows.iter().any(|row| row == title),
+            "Commands has no row named {title:?}"
+        );
+    }
+    // What Commands has no row for still reads as one phrase.
+    let mut goto = Binding::new(["f5"], "client.tab.goto");
+    goto.args = Some(json!({"index": 3}));
+    assert_eq!(actions::binding_title(&goto), "Go to tab 3");
+    let mut send = Binding::new(["f5"], "pane.send_key");
+    send.args = Some(json!({"key": "ctrl+b"}));
+    assert_eq!(actions::binding_title(&send), "Send key · ctrl+b");
+    std::fs::remove_file(&ws.settings_path).ok();
 }

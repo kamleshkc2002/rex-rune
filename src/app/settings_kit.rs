@@ -113,12 +113,17 @@ pub fn row_frame(helper: bool) -> El {
 }
 
 /// A row's words: its label and, when the label alone doesn't say it, one helper sentence.
+/// The words give way to the trailing slot: a label too long for what is left (a host's
+/// name, an endpoint) is cut short with its whole text as a tooltip, and never runs under
+/// the control.
 pub fn words(label: &str, detail: &str) -> El {
-    let mut words = col()
-        .grow(1.)
-        .min_w(0.)
-        .gap(1.)
-        .child(text(label.to_owned()).font(ui(13.)).color(rgb(ink())));
+    let mut words = col().grow(1.).shrink().min_w(0.).gap(1.).child(
+        text(label.to_owned())
+            .font(ui(13.))
+            .color(rgb(ink()))
+            .truncate()
+            .help_when_truncated(label.to_owned()),
+    );
     if !detail.is_empty() {
         words = words.child(
             text(detail.to_owned())

@@ -96,8 +96,16 @@ fn identity(s: &Workspace) -> El {
     ))
 }
 
+/// The session's tabs on their track. With no tab to show (no session on screen, or one whose
+/// view hasn't arrived) there is no track: an empty one would be a sliver of chip.
 fn tab_track(s: &Workspace) -> El {
     let model = s.model();
+    let tabs = model
+        .view()
+        .is_some_and(|view| view.windows.iter().any(|tab| tab.window_id.is_some()));
+    if !tabs {
+        return el();
+    }
     let session = model.selected.clone().unwrap_or_default();
     let mut names = row()
         .key("tab-names")

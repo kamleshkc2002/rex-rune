@@ -549,7 +549,8 @@ pub fn sidebar(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
                     .child(text("Add host").font(ui(12.)).color(rgb(muted()))),
             )
             .child(
-                text(format!("{total} sessions"))
+                text(session_count(total))
+                    .key("sidebar-session-count")
                     .font(ui(11.))
                     .color(rgb(muted()))
                     .pr(6.),
@@ -590,4 +591,13 @@ pub fn sidebar_edge(s: &Workspace) -> El {
         s.sidebar.reset_width();
         s.save();
     })
+}
+
+/// How many sessions the saved hosts have between them, for the footer.
+fn session_count(total: usize) -> String {
+    if total == 1 {
+        "1 session".to_owned()
+    } else {
+        format!("{total} sessions")
+    }
 }

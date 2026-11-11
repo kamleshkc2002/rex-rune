@@ -3297,6 +3297,15 @@ fn font_family_row_says_a_saved_font_waits_for_the_next_launch() {
         &rt,
         "JetBrainsMono Nerd Font isn't installed, so terminals use IBM Plex Mono (bundled)."
     ));
+    // The row's helper is one short sentence; what is drawn now is the footnote's.
+    let helper = rt
+        .elements()
+        .into_iter()
+        .filter_map(|e| e.text)
+        .find(|t| t.contains("reopen the client"))
+        .expect("the row's helper");
+    assert_eq!(helper, "Applies when you reopen the client.");
+    assert!(has(&rt, "font-drawn"));
 
     click(&mut rt, "font-change");
     rt.state.panel.as_mut().unwrap().inputs[0].text = "MonoLisaCode Variable".into();

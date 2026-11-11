@@ -110,7 +110,9 @@ fn header(
         .w_full()
         .h(CARD_HEADER)
         .pl(14.)
-        .pr(4.)
+        // The trailing buttons stay clear of the card's 12 pt corner, where a hover fill
+        // 4 pt from the edge all but touched the curve of the border.
+        .pr(8.)
         .gap(8.)
         .center_y()
         .preserve_focus_on_press(true)
@@ -577,15 +579,16 @@ fn pane_card(
                         cell: m.cell,
                         lowered: find::lowered(s, window, block, t),
                     };
-                    c.child(find::bar(
-                        s,
-                        block,
-                        &key,
-                        edit,
-                        t,
-                        pane,
-                        (side, above, side),
-                    ))
+                    c.child(find::apron(block, t, pane, (side, above), fill))
+                        .child(find::bar(
+                            s,
+                            block,
+                            &key,
+                            edit,
+                            t,
+                            pane,
+                            (side, above, side),
+                        ))
                 }
                 None => c,
             }

@@ -46,13 +46,24 @@ fn settings_is_816_wide_and_shrinks_with_a_small_window() {
         "{dialog:?}"
     );
 
-    let rt = settings_at(SettingsSection::Interface, 1., (640., 480.));
-    let dialog = rect(&rt, "dialog");
-    assert!(
-        close(dialog[2], 640. * 0.92) && close(dialog[3], 480. * 0.88),
-        "{dialog:?}"
-    );
-    std::fs::remove_file(&rt.state.settings_path).ok();
+    // A small window, and a larger one at a zoom that leaves as little room: the dialog
+    // takes what is under the toolbar, 12 pt clear of it and of the window's bottom edge.
+    for (scale, size) in [(1., (640., 480.)), (1.3, (1280., 800.))] {
+        let rt = settings_at(SettingsSection::Interface, scale, size);
+        let (dialog, toolbar) = (rect(&rt, "dialog"), rect(&rt, "toolbar"));
+        // Rects are in window pixels; the dialog is laid out in points of the zoom.
+        let (width, height) = (size.0 / scale, size.1 / scale);
+        assert!(
+            close(dialog[2], (width * 0.92).min(816.) * scale)
+                && close(dialog[3], (height - 52. - 24.) * scale),
+            "{dialog:?} at {scale}"
+        );
+        assert!(
+            close(dialog[1], toolbar[1] + toolbar[3] + 12. * scale),
+            "{dialog:?} starts under {toolbar:?} at {scale}"
+        );
+        std::fs::remove_file(&rt.state.settings_path).ok();
+    }
 }
 
 /// Every element of `role` under the element at `index`.
@@ -410,6 +421,144 @@ fn a_long_page_scrolls_with_a_thumb_and_a_short_one_has_none() {
         rt.state.settings_fx.thumb.get(),
         [0.; 4],
         "nothing to scroll"
+    );
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+/// The drawn text `words`, and where.
+fn text_rects(rt: &Runtime<Workspace>, words: &str) -> Vec<[f32; 4]> {
+    rt.elements()
+        .into_iter()
+        .filter(|e| !e.exiting && e.text.as_deref() == Some(words))
+        .map(|e| e.rect)
+        .collect()
+}
+
+#[test]
+fn a_long_row_label_is_cut_short_before_its_value() {
+    let label = "unix:///home/someone/.cache/a-rather-long-directory/run/rex/server.sock";
+    assert!(label.len() >= 60);
+    let mut ws = workspace_hosts(2);
+    ws.settings.hosts[1].label = label.into();
+    ws.perform(Intent::Settings, &mut rune::Tx::default());
+    ws.open_section(SettingsSection::Terminal);
+    let mut rt = runtime_at(ws, (1280., 800.));
+    settle(&mut rt);
+
+    let row = rect(&rt, "host-shell:1");
+    let name = text_rects(&rt, label);
+    assert_eq!(name.len(), 1, "the label is drawn once");
+    let name = name[0];
+    // The row's value: the "Server default" on this row, not the one on the row above.
+    let value = text_rects(&rt, "Server default")
+        .into_iter()
+        .find(|v| v[1] >= row[1] && v[1] + v[3] <= row[1] + row[3])
+        .expect("the row's value");
+    assert!(
+        name[0] + name[2] <= value[0] - 8.,
+        "the label ends before the value: {name:?} then {value:?}"
+    );
+    assert!(
+        name[0] >= row[0] && value[0] + value[2] <= row[0] + row[2],
+        "both are inside the row: {name:?} {value:?} in {row:?}"
+    );
+    // A short label takes only its own width and the value keeps the same trailing edge.
+    let short = rect(&rt, "host-shell:0");
+    let other = text_rects(&rt, "Server default")
+        .into_iter()
+        .find(|v| v[1] >= short[1] && v[1] + v[3] <= short[1] + short[3])
+        .expect("the first row's value");
+    assert!(close(other[0] + other[2], value[0] + value[2]));
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
+fn a_shortcut_row_names_its_action_on_the_left_and_shows_keycaps_on_the_right() {
+    let rt = settings_at(SettingsSection::Shortcuts, 1., (1440., 1000.));
+    let elements = rt.elements();
+    let rows: Vec<_> = elements
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| {
+            !e.exiting
+                && e.key
+                    .as_deref()
+                    .is_some_and(|k| k.starts_with("shortcut-") && !k.contains("-keys-"))
+        })
+        .collect();
+    assert!(rows.len() > 20, "the default bindings: {}", rows.len());
+    for (_, row) in &rows {
+        let key = row.key.as_deref().unwrap();
+        let keys = rect(&rt, &key.replacen("shortcut-", "shortcut-keys-", 1));
+        assert!(
+            close(keys[0] + keys[2], row.rect[0] + row.rect[2] - 12.),
+            "{key}: keys end at the card's inset: {keys:?} in {:?}",
+            row.rect
+        );
+        assert!(
+            keys[0] > row.rect[0] + row.rect[2] / 2.,
+            "{key}: keys are on the right"
+        );
+    }
+    // The first row: its title starts at the inset and ends before its keys.
+    let (_, first) = rows[0];
+    let title = text_rects(&rt, "Next tab")[0];
+    let keys = rect(&rt, "shortcut-keys-Navigate-0");
+    assert!(close(title[0], first.rect[0] + 12.) && title[0] + title[2] < keys[0]);
+    // The keys are the keycaps menus and Commands draw: 17 pt chips with a hairline, on a
+    // 7% white fill, never the kit's tinted Keybind.
+    let chip = crate::app::theme::white(crate::app::theme::KEYCAP_FILL);
+    let caps: Vec<_> = elements
+        .iter()
+        .filter(|e| !e.exiting && e.fill == chip && close(e.rect[3], 17.))
+        .collect();
+    assert!(caps.len() >= rows.len(), "a chip a key: {}", caps.len());
+    // Named as Commands and the menus name them.
+    for title in [
+        "Split right",
+        "Split down",
+        "Move tab left",
+        "Move tab right",
+        "Close pane or tab",
+        "Focus adjacent pane",
+    ] {
+        assert_eq!(text_rects(&rt, title).len(), 1, "{title}");
+    }
+    for old in [
+        "Split pane · down",
+        "Move tab · left",
+        "Close focused pane or tab",
+    ] {
+        assert!(text_rects(&rt, old).is_empty(), "{old}");
+    }
+    // The numpad twins fold into the row's one helper line, and the pointer's row is words.
+    assert_eq!(text_rects(&rt, "Also on the numpad").len(), 3);
+    assert_eq!(text_rects(&rt, "Mouse Back / Forward").len(), 1);
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+/// `scripts/remote-control-acceptance.py` clicks Remote Hosts in Settings by window
+/// coordinates, under a real pointer in a 1440 by 900 window. Nothing else runs that script
+/// here, so this holds its click to the row it means.
+#[test]
+fn the_acceptance_scripts_settings_click_lands_on_remote_hosts() {
+    let script = include_str!("../../scripts/remote-control-acceptance.py");
+    let line = script
+        .lines()
+        .find(|l| l.contains(r#"desk.x("mousemove", "--window", window, "#))
+        .expect("the script's Settings click");
+    let numbers: Vec<f32> = line
+        .trim_end_matches(')')
+        .rsplit(", ")
+        .take(2)
+        .map(|n| n.trim().parse().expect("a coordinate"))
+        .collect();
+    let (x, y) = (numbers[1], numbers[0]);
+    let rt = settings_at(SettingsSection::Interface, 1., (1440., 900.));
+    let row = rect(&rt, "settings-section:hosts");
+    assert!(
+        x > row[0] + 8. && x < row[0] + row[2] - 8. && y > row[1] + 4. && y < row[1] + row[3] - 4.,
+        "({x}, {y}) is well inside Remote Hosts at {row:?}"
     );
     std::fs::remove_file(&rt.state.settings_path).ok();
 }

@@ -703,6 +703,14 @@ fn offered() -> Vec<InspectResponseAction> {
         InspectResponseAction::new("com.example.terminal.zoom")
             .kind("block")
             .title("Zoom Pane"),
+        // What a stock server offers every terminal. The Pane group's own rows do the same
+        // through `terminal.clear` and `terminal.reset`.
+        InspectResponseAction::new("com.superlogical.terminal.clear")
+            .kind("block")
+            .title("Clear Terminal"),
+        InspectResponseAction::new("com.superlogical.terminal.reset")
+            .kind("block")
+            .title("Reset Terminal"),
         // This client's own actions come back in the list too.
         InspectResponseAction::new("client.settings")
             .kind("client")
@@ -738,6 +746,19 @@ fn the_hosts_own_actions_are_listed_after_its_commands() {
             ("server:com.example.notes.pin", "Pin note", ""),
         ]
     );
+    // The stock server's Clear Terminal and Reset Terminal are the Pane group's rows, once.
+    let all = ws.commands();
+    for (id, label) in [
+        ("pane.clear", "Clear terminal"),
+        ("pane.reset", "Reset terminal"),
+    ] {
+        let rows: Vec<_> = all
+            .iter()
+            .filter(|c| c.entry.label.eq_ignore_ascii_case(label))
+            .map(|c| (c.id.as_ref(), c.group))
+            .collect();
+        assert_eq!(rows, [(id, commands::Group::Pane)], "{label}");
+    }
     let mut headings: Vec<String> = ws.entries().into_iter().map(|e| e.group).collect();
     headings.dedup();
     assert_eq!(
@@ -837,14 +858,40 @@ fn the_list_shows_about_twenty_rows_and_scrolls_to_the_rest() {
         "the whole list is there to scroll to: {content:?}"
     );
     let words = texts(&rt);
+    // A heading's words are small capitals and the name in it keeps its case, so it is read
+    // by its accessible name.
+    let headings = |rt: &Runtime<Workspace>| -> Vec<String> {
+        rt.elements()
+            .into_iter()
+            .filter(|e| !e.exiting && e.role == "heading")
+            .filter_map(|e| e.label)
+            .collect()
+    };
     for heading in ["Session · s-label", "Tab · dev", "View", "App"] {
-        assert!(words.iter().any(|w| w == heading), "{heading}");
+        assert!(headings(&rt).iter().any(|w| w == heading), "{heading}");
+    }
+    for (caps, name) in [("Session ·", "s-label"), ("Tab ·", "dev")] {
+        assert!(
+            words.iter().any(|w| w == caps) && words.iter().any(|w| w == name),
+            "{caps} is drawn apart from {name}, which keeps its case"
+        );
     }
     assert!(
         words
             .iter()
-            .any(|w| w == "More below: Tab · Pane · Host · View · App"),
+            .any(|w| w == "More below: Pane · Host · View · App"),
         "the hint names the groups further down: {words:?}"
+    );
+    let new_tab = rt
+        .state
+        .entries()
+        .iter()
+        .position(|e| e.label == "New tab")
+        .expect("a New tab row");
+    let row = rect(&rt, &format!("entry:{new_tab}"));
+    assert!(
+        row[1] + row[3] <= viewport[1] + viewport[3],
+        "Tab's first row is on screen, so Tab is not named as below: {row:?}"
     );
 
     // Down from the last row on screen scrolls the next one into view.
@@ -881,7 +928,7 @@ fn the_list_shows_about_twenty_rows_and_scrolls_to_the_rest() {
     }
     let words = texts(&rt);
     assert!(words.iter().any(|w| w == "Commands"));
-    assert!(!words.iter().any(|w| w == "Session · s-label"));
+    assert!(!headings(&rt).iter().any(|w| w == "Session · s-label"));
     let short = rect(&rt, "results-scroll");
     assert!(short[3] < 250., "six rows need no scrolling: {short:?}");
     std::fs::remove_file(&rt.state.settings_path).ok();

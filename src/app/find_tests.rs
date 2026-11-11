@@ -443,15 +443,48 @@ fn overlap(a: [f32; 4], b: [f32; 4]) -> bool {
     a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3]
 }
 
+/// `block`'s bar and the apron under it, once the apron is seen to be whole rows of the
+/// grid with the bar inside it: no row shows in part above or below the bar.
+fn bar_on_rows(rt: &Runtime<Workspace>, block: &str) -> ([f32; 4], [f32; 4]) {
+    let key = rt.state.term_key(block);
+    let corner = rt.state.terminals[&key].find.corner;
+    let (bar, grid) = (
+        rect(rt, &format!("search:{block}")),
+        rect(rt, &format!("grid:{block}")),
+    );
+    let apron = rect(rt, &format!("find-apron:{block}:{corner:?}"));
+    let ch = term::metrics(rt.state.settings.font_size).cell.1;
+    let whole = |y: f32| {
+        let rows = (y - grid[1]) / ch;
+        (rows - rows.round()).abs() < 0.01
+    };
+    assert!(whole(apron[1]), "{apron:?} starts on a row of {grid:?}");
+    let bottom = apron[1] + apron[3];
+    assert!(
+        whole(bottom) || (bottom - (grid[1] + grid[3])).abs() < 0.01,
+        "{apron:?} ends on a row of {grid:?}, or with it"
+    );
+    assert!(
+        apron[0] <= bar[0]
+            && apron[1] < bar[1]
+            && bar[0] + bar[2] <= apron[0] + apron[2]
+            && bar[1] + bar[3] < bottom,
+        "{bar:?} is inside {apron:?}"
+    );
+    (bar, apron)
+}
+
 #[test]
 fn the_bar_leaves_the_corner_the_selected_match_is_in() {
     let (mut rt, mut pane) = single(right_prompt);
     let grid = rect(&rt, "grid:block:a");
     let key = pane.key.clone();
     let corner = |rt: &Runtime<Workspace>| rt.state.terminals[&key].find.corner;
-    let home = |bar: [f32; 4]| {
+    // Home: 6 pt from the right edge, on the terminal's first rows.
+    let home = |rt: &Runtime<Workspace>| {
+        let (bar, apron) = bar_on_rows(rt, "block:a");
         (bar[0] + bar[2] - (grid[0] + grid[2] - find::INSET)).abs() < 0.01
-            && (bar[1] - (grid[1] + find::INSET)).abs() < 0.01
+            && (apron[1] - grid[1]).abs() < 0.01
     };
     let prompt = cells(&rt, 0, prompt_column(&rt), 4);
     assert!(
@@ -459,21 +492,23 @@ fn the_bar_leaves_the_corner_the_selected_match_is_in() {
         "the right prompt is in the pane"
     );
     ctrl_shift(&mut rt, 'f');
-    assert!(
-        home(rect(&rt, "search:block:a")),
-        "6 pt inside the top-right"
-    );
+    assert!(home(&rt), "in the top-right");
 
     // The newest match is the one at the left, six rows down: the bar has no reason to move.
     type_text(&mut rt, "shuv");
     pane.work(&mut rt);
     assert_eq!(count(&rt).unwrap().0, "1/2");
     assert_eq!(corner(&rt), find::Corner::TopRight);
-    let bar = rect(&rt, "search:block:a");
-    assert!(home(bar));
+    assert!(home(&rt));
+    let (bar, apron) = bar_on_rows(&rt, "block:a");
+    let unselected = cells(&rt, 0, prompt_column(&rt), 4);
     assert!(
-        overlap(bar, cells(&rt, 0, prompt_column(&rt), 4)),
+        overlap(bar, unselected),
         "the right prompt's match is under the bar while it is not the selected one"
+    );
+    assert!(
+        apron[1] <= unselected[1] && unselected[1] + unselected[3] <= apron[1] + apron[3],
+        "and its whole row is hidden there, not a sliver of it left above the bar"
     );
 
     // The older match is in the right prompt on the first row, where the bar is. The bar
@@ -482,15 +517,19 @@ fn the_bar_leaves_the_corner_the_selected_match_is_in() {
     assert_eq!(pane.work(&mut rt), ["step older=true"]);
     assert_eq!(count(&rt).unwrap().0, "2/2");
     assert_eq!(corner(&rt), find::Corner::BottomRight);
-    let bar = rect(&rt, "search:block:a");
+    let (bar, apron) = bar_on_rows(&rt, "block:a");
     assert!(
-        !overlap(bar, cells(&rt, 0, prompt_column(&rt), 4)),
-        "{bar:?}"
+        !overlap(apron, cells(&rt, 0, prompt_column(&rt), 4)),
+        "{apron:?}"
+    );
+    assert!(
+        !has(&rt, "find-apron:block:a:TopRight"),
+        "nothing is left hiding the corner the bar came from"
     );
     assert!(
         (bar[0] + bar[2] - (grid[0] + grid[2] - find::INSET)).abs() < 0.01
-            && (bar[1] + bar[3] - (grid[1] + grid[3] - find::INSET)).abs() < 0.01,
-        "6 pt inside the bottom-right: {bar:?} in {grid:?}"
+            && (apron[1] + apron[3] - (grid[1] + grid[3])).abs() < 0.01,
+        "in the bottom-right, on the last rows: {bar:?} in {grid:?}"
     );
     assert!(
         field_focused(&rt),
@@ -515,7 +554,7 @@ fn the_bar_leaves_the_corner_the_selected_match_is_in() {
     assert_eq!(corner(&rt), find::Corner::TopRight);
     run(&mut rt, find::NEXT);
     pane.work(&mut rt);
-    assert!(home(rect(&rt, "search:block:a")));
+    assert!(home(&rt));
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
@@ -578,7 +617,9 @@ fn a_split_panes_bar_is_under_its_header_and_inside_its_card() {
         rect(&rt, "pane-header:block:b"),
     );
     assert!(bar[1] >= header[1] + header[3], "below the header row");
-    assert!((bar[1] - (grid[1] + find::INSET)).abs() < 0.01);
+    let (_, apron) = bar_on_rows(&rt, "block:b");
+    assert!((apron[1] - grid[1]).abs() < 0.01, "on the first rows");
+    assert!(apron[0] + apron[2] <= grid[0] + grid[2] + 0.01);
     assert!((bar[0] + bar[2] - (grid[0] + grid[2] - find::INSET)).abs() < 0.01);
     assert_eq!(bar[2], find::WIDTH.min(grid[2] - 2. * find::INSET));
     // The match is at the left of the first row, clear of the bar.
@@ -596,7 +637,8 @@ fn a_reconnecting_panes_bar_sits_under_the_floating_strip() {
     type_text(&mut rt, "left");
     pane.work(&mut rt);
     let grid = rect(&rt, "grid:block:a");
-    assert!((rect(&rt, "search:block:a")[1] - (grid[1] + find::INSET)).abs() < 0.01);
+    let (_, apron) = bar_on_rows(&rt, "block:a");
+    assert!((apron[1] - grid[1]).abs() < 0.01, "on the first rows");
 
     // The connection goes: the strip floats in the corner, and the bar starts under it.
     pane.model.lock().unwrap().connected = false;
@@ -604,6 +646,11 @@ fn a_reconnecting_panes_bar_sits_under_the_floating_strip() {
     let (strip, bar) = (rect(&rt, "strip"), rect(&rt, "search:block:a"));
     assert!(!overlap(strip, bar), "{strip:?} and {bar:?}");
     assert!(bar[1] >= strip[1] + strip[3]);
+    let (_, apron) = bar_on_rows(&rt, "block:a");
+    assert!(
+        apron[1] >= strip[1] + strip[3],
+        "its rows start under the strip"
+    );
     assert_eq!(
         rt.state.terminals[&pane.key].find.corner,
         find::Corner::TopRight

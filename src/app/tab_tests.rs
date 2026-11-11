@@ -390,6 +390,46 @@ fn muted_tabs_are_saved_until_they_close_and_old_settings_still_load() {
 }
 
 #[test]
+fn a_muted_tab_is_forgotten_when_its_session_ends() {
+    let (mut ws, _rx) = three_tabs("a");
+    let mut tx = rune::Tx::default();
+    let target = ws.current_tab("b").unwrap();
+    ws.perform(Intent::Window(target, TabAction::Mute), &mut tx);
+
+    // Offline, the host's list says nothing: a reconnect must not wipe what was muted.
+    let (sessions, view) = {
+        let model = &mut ws.hosts[0].model;
+        model.connected = false;
+        (
+            std::mem::take(&mut model.sessions),
+            model.views.remove("s").unwrap(),
+        )
+    };
+    ws.sync_tabs(0, &mut tx);
+    assert!(ws.tab_muted(0, "b"));
+
+    // Connected with the session still listed and its view not loaded: still nothing.
+    ws.hosts[0].model.connected = true;
+    ws.hosts[0].model.sessions = sessions;
+    ws.sync_tabs(0, &mut tx);
+    assert!(ws.tab_muted(0, "b"));
+
+    // The session ended, which drops its view with it, so only the list can say so.
+    drop(view);
+    ws.hosts[0].model.sessions.clear();
+    ws.sync_tabs(0, &mut tx);
+    assert!(!ws.tab_muted(0, "b"));
+    assert!(ws.settings.muted_tabs.is_empty());
+    assert!(
+        Settings::load(&ws.settings_path)
+            .unwrap()
+            .muted_tabs
+            .is_empty()
+    );
+    std::fs::remove_file(&ws.settings_path).ok();
+}
+
+#[test]
 fn close_other_tabs_asks_once_and_closes_only_the_tabs_it_named() {
     let (ws, rx) = three_tabs("a");
     let mut rt = runtime(ws);
@@ -725,4 +765,55 @@ fn commands_lists_the_tab_actions_for_the_tab_on_screen() {
         json!({"session_id":"s","window_id":"c","before_window_id":"b"})
     );
     std::fs::remove_file(&ws.settings_path).ok();
+}
+
+#[test]
+fn a_host_with_no_session_on_screen_draws_no_tab_track() {
+    // No session chosen: an empty track would be a sliver of chip beside the identity.
+    let mut rt = runtime(workspace());
+    assert!(!has(&rt, "tab-track"));
+    assert!(has(&rt, "identity"));
+    std::fs::remove_file(&rt.state.settings_path).ok();
+
+    let (ws, _rx) = three_tabs("a");
+    rt = runtime(ws);
+    assert!(has(&rt, "tab-track") && has(&rt, "tab:a"));
+    // The session's view goes (its session ended): the track goes with its tabs.
+    rt.update(|s, _| {
+        s.hosts[0].model.views.clear();
+    });
+    for _ in 0..4 {
+        rt.frame(1. / 60.);
+    }
+    assert!(!has(&rt, "tab-track"));
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
+fn the_sidebar_footer_counts_one_session_in_the_singular() {
+    let count = |rt: &Runtime<Workspace>| {
+        rt.elements()
+            .into_iter()
+            .find(|e| !e.exiting && e.key.as_deref() == Some("sidebar-session-count"))
+            .and_then(|e| e.text)
+            .expect("the footer's count")
+    };
+    let (mut ws, _rx) = three_tabs("a");
+    ws.sidebar.toggle();
+    let mut rt = runtime(ws);
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
+    assert_eq!(count(&rt), "1 session");
+    rt.update(|s, _| s.hosts[0].model.sessions.push(session("t")));
+    for _ in 0..4 {
+        rt.frame(1. / 60.);
+    }
+    assert_eq!(count(&rt), "2 sessions");
+    rt.update(|s, _| s.hosts[0].model.sessions.clear());
+    for _ in 0..4 {
+        rt.frame(1. / 60.);
+    }
+    assert_eq!(count(&rt), "0 sessions");
+    std::fs::remove_file(&rt.state.settings_path).ok();
 }

@@ -262,7 +262,7 @@ impl Spec {
             Handler::Palette => "Commands",
             Handler::Settings => "Settings",
             Handler::Sidebar => "Toggle sidebar",
-            Handler::Close => "Close focused pane or tab",
+            Handler::Close => "Close pane or tab",
             Handler::Search => "Search terminal",
             Handler::NewTab => "New tab",
             Handler::NextTab => "Next tab",
@@ -688,6 +688,8 @@ pub fn effective<'a>(
     result
 }
 
+/// What a binding runs, as Commands and the menus name it: an action that takes a direction
+/// or a place reads as their row for it (`Split down`, `Focus pane left`, `Move tab right`).
 pub fn binding_title(binding: &rexrs::api::client::Binding) -> String {
     let title = find(&binding.action)
         .map(|s| s.title())
@@ -695,22 +697,26 @@ pub fn binding_title(binding: &rexrs::api::client::Binding) -> String {
     let Some(args) = &binding.args else {
         return title.into();
     };
-    let detail = match binding.action.as_str() {
-        // `best_fit` reads as two words.
-        "pane.split" | "pane.focus" | "client.tab.move" => args["direction"]
+    // `best_fit` reads as two words.
+    let direction = || {
+        args["direction"]
             .as_str()
             .unwrap_or_default()
-            .replace('_', " "),
+            .replace('_', " ")
+    };
+    match binding.action.as_str() {
+        "pane.split" => format!("Split {}", direction()),
+        "pane.focus" => format!("Focus pane {}", direction()),
+        "client.tab.move" => format!("Move tab {}", direction()),
         "pane.scroll" => {
             let lines = args["lines"].as_i64().unwrap_or_default();
             let direction = if lines < 0 { "up" } else { "down" };
-            return format!("Scroll {direction} · {} lines", lines.unsigned_abs());
+            format!("Scroll {direction} · {} lines", lines.unsigned_abs())
         }
-        "client.tab.goto" => format!("tab {}", args["index"]),
-        "pane.send_key" => args["key"].as_str().unwrap_or_default().to_owned(),
-        _ => return title.into(),
-    };
-    format!("{title} · {detail}")
+        "client.tab.goto" => format!("Go to tab {}", args["index"]),
+        "pane.send_key" => format!("{title} · {}", args["key"].as_str().unwrap_or_default()),
+        _ => title.into(),
+    }
 }
 
 pub fn declarations() -> Vec<rexrs::api::client::InspectResponseAction> {

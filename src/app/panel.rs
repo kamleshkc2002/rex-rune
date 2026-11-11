@@ -407,6 +407,9 @@ pub struct Entry {
     pub danger: bool,
     /// The shortcut `detail` spells, as keycaps (`shortcut_details` fills both).
     pub keys: super::keycaps::Chords,
+    /// The part of `group` that is a name someone chose (a host, a session, a tab, a pane):
+    /// the heading draws it in its own case, and the words around it in small capitals.
+    pub group_name: Option<String>,
     /// Drawn before the group header: the host's kind in the switcher.
     pub group_icon: Option<&'static rune::Icon>,
     /// A create button at the right of the group header, with its help text.
@@ -431,9 +434,16 @@ impl Entry {
             section: 0,
             danger: false,
             keys: Vec::new(),
+            group_name: None,
             group_icon: None,
             group_create: None,
         }
+    }
+
+    /// Names the part of the group's heading that keeps its case.
+    pub fn group_named(mut self, name: impl Into<String>) -> Self {
+        self.group_name = Some(name.into());
+        self
     }
 
     /// Puts the row in a menu's group `section`.
@@ -764,6 +774,7 @@ impl Workspace {
                         Intent::Select(index, session.session_id.clone()),
                     );
                     if sessions_only {
+                        e.group_name = Some(label.clone());
                         e.group_icon = Some(self.host_icon(index));
                         e.group_create = create.clone();
                     }
@@ -793,6 +804,7 @@ impl Workspace {
                     } else {
                         Entry::new("Retry connection", "", group, Intent::RetryHost(index))
                     };
+                    e.group_name = Some(label.clone());
                     e.group_icon = Some(self.host_icon(index));
                     e.group_create = create;
                     entries.push(e);
@@ -806,15 +818,17 @@ impl Workspace {
         {
             for tab in &view.windows {
                 if let Some(id) = &tab.window_id {
+                    let place = format!(
+                        "{host_name} / {}",
+                        view.label.as_deref().unwrap_or("Session")
+                    );
                     let mut e = Entry::new(
                         super::activity::tab_name(model, tab),
                         "Tab",
-                        format!(
-                            "Tabs · {host_name} / {}",
-                            view.label.as_deref().unwrap_or("Session")
-                        ),
+                        format!("Tabs · {place}"),
                         Intent::Tab(id.clone()),
-                    );
+                    )
+                    .group_named(place);
                     e.current = view.active_window_id.as_ref() == Some(id);
                     entries.push(e);
                 }

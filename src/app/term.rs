@@ -3,7 +3,9 @@
 use super::{
     keys,
     sprites::Sprite,
-    theme::{MIDNIGHT, Palette, SEARCH_CURRENT, SEARCH_MATCH, SEARCH_RADIUS, mix, rgb},
+    theme::{
+        MIDNIGHT, Palette, SEARCH_CURRENT, SEARCH_MATCH, SEARCH_OUTLINE, SEARCH_RADIUS, mix, rgb,
+    },
 };
 use ghostty_vt::style::Underline;
 use rex_linux::{
@@ -800,17 +802,19 @@ fn row_pass(
             start = end;
         }
         for &(a, b, selected) in marks.search {
-            let alpha = if selected {
-                SEARCH_CURRENT
+            let mark = el()
+                .absolute(a as f32 * cw, 0.)
+                .size((b + 1 - a) as f32 * cw, ch)
+                .radius(SEARCH_RADIUS);
+            let tone = rgb(colors.search_match);
+            // An unselected match keeps the terminal's own text, so its tint stays light
+            // enough for dim text and an outline carries the mark.
+            row = row.child(if selected {
+                mark.fill(tone.alpha(SEARCH_CURRENT))
             } else {
-                SEARCH_MATCH
-            };
-            row = row.child(
-                el().absolute(a as f32 * cw, 0.)
-                    .size((b + 1 - a) as f32 * cw, ch)
-                    .radius(SEARCH_RADIUS)
-                    .fill(rgb(colors.search_match).alpha(alpha)),
-            );
+                mark.fill(tone.alpha(SEARCH_MATCH))
+                    .border(1., tone.alpha(SEARCH_OUTLINE))
+            });
         }
         if let Some((a, b)) = sel {
             row = row.child(

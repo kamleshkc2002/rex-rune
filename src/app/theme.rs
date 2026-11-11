@@ -206,9 +206,13 @@ pub fn selection(destructive: bool) -> (Color, Color) {
     (tone.alpha(SELECTION_FILL), tone)
 }
 
-/// Terminal search marks, drawn over the cells as the selection is: every match is `ACCENT` at
-/// `SEARCH_MATCH`, and the selected one at `SEARCH_CURRENT` with its text in `ON_ACCENT`.
-pub const SEARCH_MATCH: f32 = 0.4;
+/// Terminal search marks, drawn over the cells as the selection is: every match is a tint of
+/// `ACCENT` at `SEARCH_MATCH` under a 1 pt outline in it at `SEARCH_OUTLINE`, and the selected
+/// one is `ACCENT` at `SEARCH_CURRENT` with its text in `ON_ACCENT`. The tint is light because
+/// a match keeps the terminal's own text colour, dim ones included: the outline is what marks
+/// it.
+pub const SEARCH_MATCH: f32 = 0.18;
+pub const SEARCH_OUTLINE: f32 = 0.7;
 pub const SEARCH_CURRENT: f32 = 0.8;
 pub const SEARCH_RADIUS: f32 = 2.5;
 

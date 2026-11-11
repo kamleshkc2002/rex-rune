@@ -6,6 +6,10 @@
 //! for the first corner that keeps the match in view; it then stays there, so stepping through
 //! matches moves it as seldom as possible. Closing the bar sends it home.
 //!
+//! The bar takes whole rows and whole columns of the terminal: an apron in the terminal's
+//! own background hides the cells it only partly covers, so no sliver of a row shows above,
+//! below or beside it. The apron hides content and never recolours it.
+//!
 //! Find next and Find previous also run with the bar closed: they bring it back on the last
 //! text searched in that terminal, without taking the keyboard from the program.
 use super::{
@@ -28,12 +32,12 @@ pub const PREVIOUS: &str = "client.search.previous";
 /// The bar: at most this wide, narrower in a pane that is.
 pub const WIDTH: f32 = 320.;
 pub const HEIGHT: f32 = 34.;
-/// From the bar to the terminal's edges.
+/// From the bar to the terminal's left or right edge.
 pub const INSET: f32 = 6.;
-/// How near the selected match may come to the bar before the bar leaves: its shadow's reach.
-const CLEAR: f32 = 4.;
-/// Where a top bar starts while the exception strip floats in the pane's top-right corner:
-/// under the strip (8 pt down, 22 pt tall).
+/// The least the apron shows around the bar, above, below and on its open side.
+const CLEAR: f32 = 3.;
+/// Where a top bar's rows start while the exception strip floats in the pane's top-right
+/// corner: at the first row under the strip (8 pt down, 22 pt tall).
 const UNDER_STRIP: f32 = 30.;
 const ICON: f32 = 14.;
 
@@ -88,36 +92,63 @@ impl Pane {
         WIDTH.min(self.size.0 - 2. * INSET).max(0.)
     }
 
-    /// How far below the grid's top a top bar is.
-    fn top(&self) -> f32 {
-        INSET + if self.lowered { UNDER_STRIP } else { 0. }
+    fn cell(&self) -> (f32, f32) {
+        (self.cell.0.max(1.), self.cell.1.max(1.))
     }
 
-    /// The bar's rect in `corner`.
+    /// The whole rows and columns the bar takes in `corner`, as a rect: enough rows for the
+    /// bar with `CLEAR` above and below it, from the pane's edge to the first column boundary
+    /// at least `CLEAR` past the bar. A top one starts at the first row, or at the first row
+    /// under a floating strip; a bottom one ends with the last row and runs on to the pane's
+    /// edge.
+    pub fn apron(&self, corner: Corner) -> [f32; 4] {
+        let (cw, ch) = self.cell();
+        let band = ((HEIGHT + 2. * CLEAR) / ch).ceil() * ch;
+        let (y, height) = if corner.top() {
+            let start = if self.lowered {
+                (UNDER_STRIP / ch).ceil() * ch
+            } else {
+                0.
+            };
+            (start, band)
+        } else {
+            let rows = (self.size.1 / ch).floor().max(1.);
+            let start = (rows * ch - band).max(0.);
+            (start, self.size.1 - start)
+        };
+        let reach = INSET + self.width() + CLEAR;
+        let (x, width) = if corner.right() {
+            let start = ((self.size.0 - reach) / cw).floor().max(0.) * cw;
+            (start, self.size.0 - start)
+        } else {
+            (0., ((reach / cw).ceil() * cw).min(self.size.0))
+        };
+        [x, y, width.max(0.), height.max(0.)]
+    }
+
+    /// The bar's rect in `corner`: centred on its apron's rows.
     pub fn bar(&self, corner: Corner) -> [f32; 4] {
+        let ch = self.cell().1;
+        let band = ((HEIGHT + 2. * CLEAR) / ch).ceil() * ch;
         let width = self.width();
         let x = if corner.right() {
             self.size.0 - INSET - width
         } else {
             INSET
         };
-        let y = if corner.top() {
-            self.top()
-        } else {
-            self.size.1 - INSET - HEIGHT
-        };
+        let y = self.apron(corner)[1] + (band - HEIGHT) / 2.;
         [x, y, width, HEIGHT]
     }
 
-    /// Whether the bar in `corner` is over, or within `CLEAR` of, any of `pieces`: the
-    /// selected match as (row in the pane, first column, last column), a piece a row.
+    /// Whether the bar in `corner` hides any of `pieces`: the selected match as (row in the
+    /// pane, first column, last column), a piece a row. What its apron covers is hidden.
     fn covers(&self, corner: Corner, pieces: &[(usize, usize, usize)]) -> bool {
-        let [x, y, w, h] = self.bar(corner);
-        let (cw, ch) = self.cell;
+        let [x, y, w, h] = self.apron(corner);
+        let (cw, ch) = self.cell();
         pieces.iter().any(|&(row, first, last)| {
             let (left, right) = (first as f32 * cw, (last + 1) as f32 * cw);
             let (top, bottom) = (row as f32 * ch, (row + 1) as f32 * ch);
-            left < x + w + CLEAR && right > x - CLEAR && top < y + h + CLEAR && bottom > y - CLEAR
+            left < x + w && right > x && top < y + h && bottom > y
         })
     }
 
@@ -246,6 +277,22 @@ fn button(key: String, icon: &'static Icon, label: &str, help: String, run: Opti
         .child(glyph(icon, ICON, rgb(muted())).group_color(rgb(ink())))
 }
 
+/// The apron behind `block`'s bar, a child of the pane's card drawn under the bar: the bar's
+/// whole rows and columns in `fill`, the terminal's own background. It is terminal area, not
+/// chrome, so it changes corner at once while the bar springs, and a press on it is the
+/// terminal's. `inset` is from the card's left and top edges to the grid.
+pub fn apron(block: &str, t: &Term, pane: Pane, inset: (f32, f32), fill: u32) -> El {
+    let corner = t.find.corner;
+    let [x, y, width, height] = pane.apron(corner);
+    el().key(format!("find-apron:{block}:{corner:?}"))
+        .absolute(inset.0 + x, inset.1 + y)
+        .size(width, height)
+        .fill(rgb(fill))
+        .inert()
+        .motion(STILL)
+        .transition(no_presence())
+}
+
 /// The bar over `block`'s terminal, a child of the pane's card. `pane` is the terminal's grid,
 /// and `inset` is from the card's edges to that grid, as (left and right, top, bottom).
 pub fn bar(
@@ -302,7 +349,7 @@ pub fn bar(
     let (above, below) = if corner.top() {
         (Some(top + y), None)
     } else {
-        (None, Some(bottom + INSET))
+        (None, Some(bottom + (pane.size.1 - y - HEIGHT).max(0.)))
     };
     let (left, right) = if corner.right() {
         (None, Some(side + INSET))
@@ -394,9 +441,9 @@ mod tests {
     #[test]
     fn the_bar_keeps_its_corner_until_the_selected_match_is_under_it() {
         let pane = pane();
-        assert_eq!(pane.bar(Corner::TopRight), [314., 6., 320., 34.]);
-        // Nothing selected on screen, a match at the left, and one below the bar.
-        for pieces in [vec![], vec![(0, 0, 5)], vec![(3, 70, 75)]] {
+        assert_eq!(pane.bar(Corner::TopRight), [314., 3., 320., 34.]);
+        // Nothing selected on screen, a match at the left, and one below the bar's rows.
+        for pieces in [vec![], vec![(0, 0, 5)], vec![(2, 70, 75)]] {
             assert_eq!(
                 pane.settle(Corner::TopRight, &pieces),
                 Corner::TopRight,
@@ -406,10 +453,10 @@ mod tests {
         // On the first row at the right: under the bar, so the bar goes below.
         let under = [(0, 60, 63)];
         assert_eq!(pane.settle(Corner::TopRight, &under), Corner::BottomRight);
-        assert_eq!(pane.bar(Corner::BottomRight), [314., 440., 320., 34.]);
-        // A row the bar only comes within 4 pt of counts too: row 2 starts at 40 pt.
+        assert_eq!(pane.bar(Corner::BottomRight), [314., 443., 320., 34.]);
+        // The second row is the bar's too, though the bar ends 3 pt short of its bottom.
         assert_eq!(
-            pane.settle(Corner::TopRight, &[(2, 60, 63)]),
+            pane.settle(Corner::TopRight, &[(1, 60, 63)]),
             Corner::BottomRight
         );
         // It stays below while matches there are clear of it, wherever the next match is.
@@ -427,8 +474,55 @@ mod tests {
     }
 
     #[test]
-    fn a_match_that_wraps_or_a_short_pane_sends_the_bar_to_the_left() {
-        // Three rows: the two right corners overlap the same rows.
+    fn the_bar_takes_whole_rows_and_columns() {
+        // 8 by 20 pt cells: two rows hold the 34 pt bar, from a column boundary to the edge.
+        let pane = pane();
+        assert_eq!(pane.apron(Corner::TopRight), [304., 0., 336., 40.]);
+        assert_eq!(pane.apron(Corner::TopLeft), [0., 0., 336., 40.]);
+        assert_eq!(pane.apron(Corner::BottomRight), [304., 440., 336., 40.]);
+        // Cells that don't divide the pane: the apron still starts on a row and a column, a
+        // bottom one runs past the last whole row to the pane's edge, and the bar sits
+        // inside it with room on every side.
+        let odd = Pane {
+            size: (643., 487.),
+            cell: (9., 21.),
+            lowered: false,
+        };
+        for corner in Corner::ALL {
+            let [ax, ay, aw, ah] = odd.apron(corner);
+            let [bx, by, bw, bh] = odd.bar(corner);
+            assert_eq!(ay % 21., 0., "{corner:?} starts on a row");
+            assert_eq!(ax % 9., 0., "{corner:?} starts on a column");
+            if corner.top() {
+                assert_eq!(ah % 21., 0., "{corner:?} ends on a row");
+            } else {
+                assert_eq!(ay + ah, 487., "{corner:?} runs to the pane's edge");
+            }
+            if corner.right() {
+                assert_eq!(ax + aw, 643.);
+                assert!(bx - ax >= CLEAR);
+            } else {
+                assert_eq!((ax + aw) % 9., 0., "{corner:?} ends on a column");
+                assert!(ax + aw - (bx + bw) >= CLEAR);
+            }
+            assert!(
+                by - ay >= CLEAR && ay + ah - (by + bh) >= CLEAR,
+                "{corner:?}"
+            );
+        }
+        // Small and large cells alike.
+        for cell in [(5., 12.), (29., 68.)] {
+            let pane = Pane { cell, ..pane };
+            let [_, ay, _, ah] = pane.apron(Corner::TopRight);
+            let [_, by, _, bh] = pane.bar(Corner::TopRight);
+            assert_eq!((ay, ah % cell.1), (0., 0.));
+            assert!(by - ay >= CLEAR && ay + ah - (by + bh) >= CLEAR);
+        }
+    }
+
+    #[test]
+    fn a_match_that_wraps_or_a_short_pane_sends_the_bar_elsewhere() {
+        // Three rows: the two right corners share the middle one.
         let short = Pane {
             size: (640., 60.),
             ..pane()
@@ -443,7 +537,16 @@ mod tests {
             pane().settle(Corner::TopRight, &wrapped),
             Corner::BottomRight
         );
-        assert_eq!(short.settle(Corner::TopRight, &wrapped), Corner::TopRight);
+        assert_eq!(
+            short.settle(Corner::TopRight, &wrapped),
+            Corner::BottomRight
+        );
+        // With every corner over the match the bar stays where it is.
+        let everywhere = [(1, 0, 79)];
+        assert_eq!(
+            short.settle(Corner::TopRight, &everywhere),
+            Corner::TopRight
+        );
     }
 
     #[test]
@@ -452,13 +555,16 @@ mod tests {
             size: (200., 480.),
             ..pane()
         };
-        assert_eq!(narrow.bar(Corner::TopRight), [6., 6., 188., 34.]);
-        assert_eq!(narrow.bar(Corner::TopLeft), [6., 6., 188., 34.]);
+        assert_eq!(narrow.bar(Corner::TopRight), [6., 3., 188., 34.]);
+        assert_eq!(narrow.bar(Corner::TopLeft), [6., 3., 188., 34.]);
+        assert_eq!(narrow.apron(Corner::TopRight), [0., 0., 200., 40.]);
         let lowered = Pane {
             lowered: true,
             ..pane()
         };
-        assert_eq!(lowered.bar(Corner::TopRight), [314., 36., 320., 34.]);
+        // The first row boundary under the strip is at 40 pt.
+        assert_eq!(lowered.apron(Corner::TopRight), [304., 40., 336., 40.]);
+        assert_eq!(lowered.bar(Corner::TopRight), [314., 43., 320., 34.]);
         // Row 0 is clear of a lowered bar; row 2 (40 to 60 pt) is under it.
         assert_eq!(
             lowered.settle(Corner::TopRight, &[(0, 60, 63)]),

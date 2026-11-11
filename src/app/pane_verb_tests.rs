@@ -121,6 +121,47 @@ fn clipboard_text(clipboard: &rune::clipboard::MemoryClipboard) -> String {
 }
 
 #[test]
+fn zoom_cannot_run_on_the_only_pane_of_a_tab_in_the_menu_or_commands() {
+    let (ws, _host) = tabbed_workspace("single");
+    let mut rt = runtime(ws);
+    rt.update(|s, _| s.pane_menu("block:a".into(), Some((300., 200.))));
+    rt.frame(1. / 60.);
+    assert!(
+        !enabled(&rt, "Zoom pane"),
+        "the only pane has the whole tab"
+    );
+    for label in ["Split right", "Rename pane…", "Close pane…"] {
+        assert!(enabled(&rt, label), "{label}");
+    }
+    press(&mut rt, Key::Escape);
+    let zoom = |rt: &Runtime<Workspace>, label: &str| {
+        rt.state
+            .entries()
+            .into_iter()
+            .find(|e| e.label == label)
+            .unwrap_or_else(|| panic!("no {label} in Commands"))
+            .enabled
+    };
+    rt.update(|s, _| s.picker(false));
+    assert!(!zoom(&rt, "Zoom pane"), "Commands agrees with the menu");
+    press(&mut rt, Key::Escape);
+    std::fs::remove_file(&rt.state.settings_path).ok();
+
+    // A zoomed pane can always be restored, in a tab of two.
+    let (mut ws, _host) = tabbed_workspace("split");
+    let view = ws.hosts[0].model.views.get_mut("s").unwrap();
+    view.windows[1].zoomed_block_id = Some("block:b".into());
+    let mut rt = runtime(ws);
+    rt.update(|s, _| s.pane_menu("block:b".into(), Some((300., 200.))));
+    rt.frame(1. / 60.);
+    assert!(enabled(&rt, "Restore pane"));
+    press(&mut rt, Key::Escape);
+    rt.update(|s, _| s.picker(false));
+    assert!(zoom(&rt, "Restore pane"));
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
 fn the_pane_menu_lists_the_verbs_in_groups_and_marks_what_cannot_run() {
     let (mut ws, _host) = tabbed_workspace("split");
     let (sender, _sent) = flume::unbounded();
@@ -156,6 +197,7 @@ fn the_pane_menu_lists_the_verbs_in_groups_and_marks_what_cannot_run() {
     for label in ["Paste", "Select all", "Clear terminal", "Reset terminal"] {
         assert!(enabled(&rt, label), "{label} on a live terminal");
     }
+    assert!(enabled(&rt, "Zoom pane"), "one pane of two can be zoomed");
     assert_eq!(
         rt.state.panel.as_ref().unwrap().selected,
         1,

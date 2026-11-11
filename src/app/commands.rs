@@ -809,8 +809,9 @@ impl Workspace {
         commands
     }
 
-    /// A group's heading: its name and, where it acts on one, what is on screen.
-    fn group_heading(&self, group: Group) -> String {
+    /// A group's heading, its name and, where it acts on one, what is on screen; then that
+    /// subject alone, which the heading draws in its own case.
+    fn group_heading(&self, group: Group) -> (String, Option<String>) {
         let model = self.model();
         let subject = match group {
             Group::Session => self.session_on_screen().map(|s| s.label),
@@ -824,8 +825,8 @@ impl Workspace {
             Group::View | Group::App => None,
         };
         match subject.filter(|s| !s.is_empty()) {
-            Some(subject) => format!("{} · {subject}", group.title()),
-            None => group.title().to_owned(),
+            Some(subject) => (format!("{} · {subject}", group.title()), Some(subject)),
+            None => (group.title().to_owned(), None),
         }
     }
 
@@ -838,7 +839,8 @@ impl Workspace {
             return commands
                 .into_iter()
                 .map(|mut command| {
-                    command.entry.group = self.group_heading(command.group);
+                    (command.entry.group, command.entry.group_name) =
+                        self.group_heading(command.group);
                     command.entry
                 })
                 .collect();

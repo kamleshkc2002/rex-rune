@@ -19,26 +19,73 @@ const COMMAND_ROWS: f32 = 20.;
 enum Hidden {
     Session,
     Offline(String),
-    /// A command under its group's heading, by the group's name.
-    Command(String),
+    /// A command under its group's heading: the group's name, and where the bottom of that
+    /// heading is in the list.
+    Command(String, f32),
     Other,
 }
 
-/// What Commands says is below the fold: the groups still to come, in order.
-fn groups_below(hidden: &[&Hidden]) -> String {
+/// What Commands says is below the fold, whose bottom edge is `bottom` in the list: the
+/// groups still to come, in order. A group whose heading is already on screen (or above) is
+/// not below, though its last rows may be: it is named only when nothing else is.
+fn groups_below(hidden: &[&Hidden], bottom: f32) -> String {
     let mut groups: Vec<&str> = Vec::new();
+    let mut started = None;
     for row in hidden {
-        if let Hidden::Command(group) = row
-            && groups.last() != Some(&group.as_str())
-        {
+        let Hidden::Command(group, heading) = row else {
+            continue;
+        };
+        if *heading <= bottom + 1. {
+            started = Some(group.as_str());
+        } else if groups.last() != Some(&group.as_str()) {
             groups.push(group);
         }
     }
-    if groups.is_empty() {
-        "More results below".into()
-    } else {
-        format!("More below: {}", groups.join(" · "))
+    match (groups.is_empty(), started) {
+        (false, _) => format!("More below: {}", groups.join(" · ")),
+        (true, Some(group)) => format!("More {group} commands below"),
+        (true, None) => "More results below".into(),
     }
+}
+
+/// A group's heading: its words in small capitals, and `name`, the part of it someone chose
+/// (a host, a session, a tab), in the case they gave it. The name gives way first.
+fn heading_words(group: &str, name: Option<&str>) -> El {
+    let caps = |words: &str| {
+        text(words.to_owned())
+            .font(label_caps())
+            .text_case(rune::TextCase::Uppercase)
+            .color(rgb(muted()))
+    };
+    let words = row()
+        .role("heading")
+        .label(group.to_owned())
+        .gap(4.)
+        .center_y()
+        .grow(1.)
+        .shrink()
+        .min_w(0.);
+    let Some((at, name)) = name
+        .filter(|name| !name.is_empty())
+        .and_then(|name| Some((group.find(name)?, name)))
+    else {
+        return words.child(caps(group).truncate().shrink());
+    };
+    let (before, after) = (
+        group[..at].trim_end(),
+        group[at + name.len()..].trim_start(),
+    );
+    words
+        .children((!before.is_empty()).then(|| caps(before)))
+        .child(
+            text(name.to_owned())
+                .font(medium(11.))
+                .color(rgb(muted()))
+                .truncate()
+                .shrink()
+                .help_when_truncated(group.to_owned()),
+        )
+        .children((!after.is_empty()).then(|| caps(after)))
 }
 
 /// A transparent full-window layer that eats presses outside the popup and closes it.
@@ -214,6 +261,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let mut spans: Vec<(f32, f32, Hidden)> = Vec::new();
     let mut y = 0.;
     let mut group = String::new();
+    // Where the heading of the group being listed ends.
+    let mut heading_bottom = 0.;
     let mut list_rows = 0;
     // The menu group of the row above, under the same header. A filtered list is flat: its
     // rows are matches, not a menu.
@@ -235,13 +284,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         .center_y()
                         .children(entry.group_icon.map(|i| glyph(i, 13., rgb(muted()))))
                         .child(
-                            text(group.clone())
-                                .font(label_caps())
-                                .text_case(rune::TextCase::Uppercase)
-                                .color(rgb(muted()))
-                                .truncate()
-                                .grow(1.)
-                                .shrink(),
+                            heading_words(&group, entry.group_name.as_deref())
+                                .key(format!("group-heading:{i}")),
                         )
                         .children(entry.group_create.clone().map(|(action, help)| {
                             el().key(format!("group-create:{i}"))
@@ -264,6 +308,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         })),
                 );
                 y += HEADER - if first { 4. } else { 0. } + 1.;
+                heading_bottom = y;
             }
         }
         if !entry.footer {
@@ -361,9 +406,10 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         Hidden::Offline(s.settings.hosts[*host].label.clone())
                     }
                     // The heading's first words: "Tab" of "Tab · shell".
-                    _ if headed => {
-                        Hidden::Command(entry.group.split(" · ").next().unwrap_or_default().into())
-                    }
+                    _ if headed => Hidden::Command(
+                        entry.group.split(" · ").next().unwrap_or_default().into(),
+                        heading_bottom,
+                    ),
                     _ => Hidden::Other,
                 },
             ));
@@ -421,7 +467,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 return if sessions {
                     "More sessions below".into()
                 } else {
-                    groups_below(&hidden)
+                    groups_below(&hidden, bottom)
                 };
             }
             let sessions_below = hidden
@@ -613,4 +659,30 @@ fn rename_row(edit: &TextEdit, height: f32, current: bool, surface: &str) -> El 
                 .grow(1.)
                 .shrink(),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_hint_names_only_groups_whose_heading_is_still_below() {
+        let row = |group: &str, heading: f32| Hidden::Command(group.into(), heading);
+        // The list's bottom edge is at 600 pt. Tab's heading ended at 180 pt, so its hidden
+        // rows are not a group below; Pane's and Host's headings are further down.
+        let rows = [
+            row("Tab", 180.),
+            row("Tab", 180.),
+            row("Pane", 660.),
+            row("Pane", 660.),
+            row("Host", 1400.),
+        ];
+        let hidden: Vec<&Hidden> = rows.iter().collect();
+        assert_eq!(groups_below(&hidden, 600.), "More below: Pane · Host");
+        // Only the rest of a group whose heading is on screen: it is named as that.
+        assert_eq!(groups_below(&hidden[..2], 600.), "More Tab commands below");
+        // A heading the fold cuts through is not on screen yet.
+        assert_eq!(groups_below(&hidden[2..4], 650.), "More below: Pane");
+        assert_eq!(groups_below(&[&Hidden::Other], 600.), "More results below");
+    }
 }

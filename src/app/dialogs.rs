@@ -22,13 +22,15 @@ fn modal(s: &Workspace, viewport: [f32; 2], body: El) -> El {
 
 /// A centered dialog surface over a dark scrim; `surface` sets its own size and padding.
 pub fn modal_frame(s: &Workspace, surface: El) -> El {
-    modal_layer(s, surface, false)
+    modal_layer(s, surface, false, 0.)
 }
 
 /// [`modal_frame`], or with `under` the same layer and dialog drawn but inert, for a list
 /// opened from one of the dialog's controls to sit on: the dialog keeps its place, its scroll
-/// position and its rects, and takes no input until the list closes.
-pub fn modal_layer(s: &Workspace, surface: El, under: bool) -> El {
+/// position and its rects, and takes no input until the list closes. `top` keeps the dialog
+/// that far below the window's top edge: it is centred in what is left, under the scrim,
+/// which still covers the whole window.
+pub fn modal_layer(s: &Workspace, surface: El, under: bool, top: f32) -> El {
     // Padding, dividers and disabled controls must not pass a press to the dismiss scrim.
     // Children still handle their own input; empty space leaves the keyboard focus alone.
     let name = s
@@ -46,7 +48,7 @@ pub fn modal_layer(s: &Workspace, surface: El, under: bool) -> El {
     if under {
         panel = panel.inert();
     }
-    let mut layer = overlay().center();
+    let mut layer = overlay().center().pt(top);
     // The list over it has the keyboard: a focus trap here would take focus for the layer
     // itself and keep the list's keys (handled with nothing focused) from reaching it.
     if !under {

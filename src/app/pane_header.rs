@@ -63,6 +63,13 @@ fn single(window: &Window) -> bool {
     window.zoomed_block_id.is_none() && layout::placements(window, None).0.len() == 1
 }
 
+/// Whether Zoom has anything to do in this tab: it zooms one pane of several, or restores
+/// the zoomed one. The only pane of a tab already has the whole of it. The header's button,
+/// the pane menu and Commands all follow this.
+pub fn can_zoom(window: &Window) -> bool {
+    !single(window)
+}
+
 /// Whether this tab's panes carry a header row above their terminal.
 pub fn rows(s: &Workspace, window: &Window) -> bool {
     match s.settings.pane_header {
@@ -209,7 +216,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
             false,
             on(PaneAction::Zoom),
         )
-    } else if single(window) {
+    } else if !can_zoom(window) {
         // The only pane already has the whole tab.
         button(
             format!("pane-zoom:{block}"),

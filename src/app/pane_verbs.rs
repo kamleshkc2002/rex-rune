@@ -1,12 +1,14 @@
 //! The terminal verbs of the pane menu and Commands: Copy, Paste, Select all, Copy pane ID,
-//! Clear terminal and Reset terminal. Each acts on the pane the menu was opened for, which
+//! Clear terminal and Reset terminal, and when each of the menu's rows can run. Each acts on the pane the menu was opened for, which
 //! need not be the focused one; the matching `pane.*` actions name the focused pane.
 use super::{
+    pane_header,
     panel::{PaneAction, PaneTarget},
     term::Term,
     workspace::Workspace,
 };
 use rex_linux::connection::Command;
+use rexrs::api::session::Window;
 use rune::Tx;
 
 impl Workspace {
@@ -15,8 +17,27 @@ impl Workspace {
         self.terminals.get(&(host, target.block.clone()))
     }
 
+    /// The tab `target` is in, as its session's view has it.
+    fn pane_window(&self, target: &PaneTarget) -> Option<&Window> {
+        let view = self
+            .hosts
+            .get(target.host)?
+            .model
+            .views
+            .get(&target.session)?;
+        view.windows.iter().find(|window| {
+            window
+                .layers
+                .iter()
+                .flat_map(|layer| &layer.blocks)
+                .any(|block| block.block_id.as_deref() == Some(&target.block))
+        })
+    }
+
     /// Whether a pane menu row can run now: Copy needs a selection, Select all something to
-    /// select, and Paste, Clear and Reset a live terminal. Every other row always can.
+    /// select, Paste, Clear and Reset a live terminal, and Zoom a tab with more than this one
+    /// pane (or a zoomed pane to restore), as the header's button does. Every other row
+    /// always can.
     pub fn pane_verb_available(&self, target: &PaneTarget, action: PaneAction) -> bool {
         let term = self.pane_term(target);
         match action {
@@ -25,6 +46,7 @@ impl Workspace {
             PaneAction::Paste | PaneAction::Clear | PaneAction::Reset => {
                 term.is_some_and(|t| t.status().live)
             }
+            PaneAction::Zoom => self.pane_window(target).is_some_and(pane_header::can_zoom),
             _ => true,
         }
     }

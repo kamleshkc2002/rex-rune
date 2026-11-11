@@ -2,11 +2,12 @@
 //! built from `settings_kit` (sections, cards, rows and their controls).
 use super::{
     dialogs::modal_layer,
+    keycaps::{Chords, keycaps, spell},
     panel::{Intent, SettingsSection},
     settings_kit::{
         NAV_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, Segment, button, card, disclosure, footnote,
         mono_footnote, page, row_frame, section, segmented, select_row, setting, stepper,
-        unavailable, value, value_popup,
+        unavailable, value, value_popup, words,
     },
     theme::*,
     widgets::{Pill, glyph},
@@ -14,10 +15,12 @@ use super::{
 };
 use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity, PaneHeader};
 use rune::{Cursor, El, ScrollPos, ScrollSpec, Tx, col, el, row, text};
-use rune_kit::{IconButton, Keybind, Switch};
+use rune_kit::{IconButton, Switch};
 
 /// The page's header row, above its scroll region.
 const HEADER: f32 = 56.;
+/// The least space between the dialog and the toolbar above it, and the window's bottom edge.
+const CLEARANCE: f32 = 12.;
 /// The page's inset from the section list and from the dialog's trailing edge.
 const PAGE_INSET: f32 = 20.;
 
@@ -261,15 +264,19 @@ fn notifications(s: &Workspace) -> El {
 fn terminal(s: &Workspace) -> El {
     let saved = &s.settings.font_family;
     let active = s.terminal_family.unwrap_or("IBM Plex Mono (bundled)");
-    let font = if *saved != s.launch_saved_font {
-        format!("{saved} is saved and applies when you reopen the client. Active: {active}.")
+    // The row's helper is one sentence. What terminals are drawn in now goes under the card,
+    // and only while that isn't the family the row names.
+    let drawn = if *saved != s.launch_saved_font {
+        Some(format!(
+            "{saved} is saved and applies when you reopen the client. Until then terminals use {active}."
+        ))
     } else if s.terminal_family.is_none() {
-        format!(
+        Some(format!(
             "{} isn't installed, so terminals use {active}.",
             s.launch_font
-        )
+        ))
     } else {
-        format!("Active: {active}. Changes apply when you reopen the client.")
+        None
     };
     let fallbacks = if s.settings.font_fallbacks.is_empty() {
         "Automatic".to_owned()
@@ -288,10 +295,14 @@ fn terminal(s: &Workspace) -> El {
     page([
         section(
             "Typography",
-            [card([
-                disclosure("font-change", "Font family", &font, saved, |s, tx| {
-                    s.perform(Intent::Fonts, tx)
-                }),
+            std::iter::once(card([
+                disclosure(
+                    "font-change",
+                    "Font family",
+                    "Applies when you reopen the client.",
+                    saved,
+                    |s, tx| s.perform(Intent::Fonts, tx),
+                ),
                 setting(
                     "Font size",
                     "From 8 to 48 pt, for every terminal.",
@@ -307,7 +318,8 @@ fn terminal(s: &Workspace) -> El {
                     "For glyphs the font lacks, before the system's own fallbacks.",
                     value(fallbacks).truncate().max_w(260.),
                 ),
-            ])],
+            ]))
+            .chain(drawn.map(|words| footnote(words).key("font-drawn"))),
         ),
         section(
             "Layout",
@@ -585,7 +597,6 @@ pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
 ];
 
 fn shortcuts(s: &Workspace) -> El {
-    let k = kit();
     let mut sections = Vec::new();
     let effective = s.effective_bindings();
     for name in SHORTCUT_CATEGORIES {
@@ -593,62 +604,49 @@ fn shortcuts(s: &Workspace) -> El {
         if list.is_empty() {
             continue;
         }
+        // A row reads as a menu row does: what it runs on the left, in the name Commands and
+        // the menus use, and its keys on the right as the same keycaps.
         let rows = list.iter().enumerate().map(|(index, display)| {
             let binding = display.binding;
-            let mut caps = col().gap(3.);
-            for (depth, chord) in binding.chords.as_ref().unwrap().iter().enumerate() {
-                if depth > 0 {
-                    caps = caps.child(text("then").font(ui(10.5)).color(rgb(muted())));
-                }
-                let names = if display.arrows {
-                    vec!["Ctrl".into(), "Alt".into(), "Arrows".into()]
-                } else {
-                    chord.keycaps()
-                };
-                let keys: Vec<_> = names.iter().map(String::as_str).collect();
-                caps = caps.child(Keybind::new(&keys).build(k));
-            }
-            if display.also_numpad {
-                caps = caps.child(text("also numpad").font(ui(10.5)).color(rgb(muted())));
-            }
+            let chords: Chords = if display.arrows {
+                vec![vec!["Ctrl".into(), "Alt".into(), "Arrows".into()]]
+            } else {
+                let chords = binding.chords.as_ref().unwrap();
+                chords.iter().map(|chord| chord.keycaps()).collect()
+            };
             let source = match binding.binding.source.as_deref() {
                 Some("linux") => None,
                 Some("settings") => Some("shortcuts.json"),
                 Some(source) => Some(source),
                 None => Some("Server"),
             };
-            let mut label = col().grow(1.).min_w(0.).gap(2.).child(
-                text(if display.arrows {
-                    "Focus adjacent pane".into()
-                } else {
-                    super::actions::binding_title(&binding.binding)
-                })
-                .font(ui(12.5))
-                .color(rgb(ink()))
-                .wrap(),
-            );
-            if let Some(source) = source {
-                label = label.child(text(source).font(ui(10.5)).color(rgb(muted())).wrap());
-            }
-            row_frame(false)
+            let title = if display.arrows {
+                "Focus adjacent pane".into()
+            } else {
+                super::actions::binding_title(&binding.binding)
+            };
+            let numpad = display.also_numpad.then_some("Also on the numpad");
+            let detail: Vec<&str> = source.into_iter().chain(numpad).collect();
+            let detail = detail.join(" · ");
+            row_frame(!detail.is_empty())
                 .key(format!("shortcut-{name}-{index}"))
-                .gap(12.)
-                .child(el().w(190.).child(caps))
-                .child(label)
+                .child(words(&title, &detail))
+                .child(
+                    keycaps(&chords, false)
+                        .key(format!("shortcut-keys-{name}-{index}"))
+                        .label(spell(&chords)),
+                )
         });
         sections.push(section(name, [card(rows)]));
     }
+    // The pointer's buttons are not keys: plain words, as in Commands.
     sections.push(section(
         "Pointer",
-        [card([row_frame(false)
-            .gap(12.)
-            .child(
-                el().w(190.)
-                    .child(Keybind::new(&["Mouse", "Back / Forward"]).build(k)),
-            )
-            .child(
-                text("Navigation history").font(ui(12.5)).color(rgb(ink())),
-            )])],
+        [card([setting(
+            "Back and forward in history",
+            "",
+            value("Mouse Back / Forward"),
+        )])],
     ));
     let diagnostics = &s.effective_keymap().diagnostics;
     if !diagnostics.is_empty() || s.model().keymap_error.is_some() {
@@ -796,7 +794,8 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
         SettingsSection::About => super::about::section(s),
     };
     let width = PANEL_WIDTH.min(viewport[0] * 0.92);
-    let height = PANEL_HEIGHT.min(viewport[1] * 0.88);
+    // Under the toolbar, which stays whole above it, with a margin at both ends.
+    let height = PANEL_HEIGHT.min((viewport[1] - TOOLBAR - 2. * CLEARANCE).max(0.));
     let nav_width = NAV_WIDTH.min(width * 0.3);
     let (page_width, page_height) = (width - nav_width - 1., height - HEADER);
     let thumb = s.settings_fx.thumb.clone();
@@ -857,12 +856,12 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
 }
 
 pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
-    modal_layer(s, surface(s, viewport), false)
+    modal_layer(s, surface(s, viewport), false, TOOLBAR)
 }
 
 /// Settings under a list opened from one of its controls: drawn where it was, taking no input.
 pub fn settings_under(s: &Workspace, viewport: [f32; 2]) -> El {
-    modal_layer(s, surface(s, viewport), true)
+    modal_layer(s, surface(s, viewport), true, TOOLBAR)
 }
 
 #[cfg(test)]

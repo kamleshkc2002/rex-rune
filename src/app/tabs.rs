@@ -196,22 +196,28 @@ impl Workspace {
     }
 
     /// After host `index` changed: forget muted tabs that closed (their session's view is
-    /// loaded and no longer lists them) or whose host was removed, and leave a panel whose
-    /// tab closed.
+    /// loaded and no longer lists them), whose session ended (the host is connected and no
+    /// longer lists it) or whose host was removed, and leave a panel whose tab closed.
     pub(super) fn sync_tabs(&mut self, index: usize, tx: &mut Tx) {
         if !self.settings.muted_tabs.is_empty() {
             let hosts = &self.settings.hosts;
             let endpoint = &hosts[index].endpoint;
-            let views = &self.hosts[index].model.views;
+            let model = &self.hosts[index].model;
+            // A host is connected only once it has listed its sessions; offline, its list
+            // says nothing about what ended.
+            let listed = model.connected;
             let before = self.settings.muted_tabs.len();
             self.settings.muted_tabs.retain(|m| {
-                let closed = m.endpoint == *endpoint
-                    && views.get(&m.session).is_some_and(|v| {
+                let here = m.endpoint == *endpoint;
+                let closed = here
+                    && model.views.get(&m.session).is_some_and(|v| {
                         !v.windows
                             .iter()
                             .any(|w| w.window_id.as_ref() == Some(&m.window))
                     });
-                !closed && hosts.iter().any(|h| h.endpoint == m.endpoint)
+                let ended =
+                    here && listed && !model.sessions.iter().any(|s| s.session_id == m.session);
+                !closed && !ended && hosts.iter().any(|h| h.endpoint == m.endpoint)
             });
             if self.settings.muted_tabs.len() != before {
                 self.save();

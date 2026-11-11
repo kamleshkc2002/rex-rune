@@ -66,9 +66,10 @@ fn a_split_panes_header_ends_in_its_four_buttons() {
             assert!(x + w <= right + 0.01, "{name} is left of what follows it");
             right = x;
         }
+        let inset = header[0] + header[2] - rect(&rt, &format!("pane-close:{block}"))[0] - 24.;
         assert!(
-            header[0] + header[2] - rect(&rt, &format!("pane-close:{block}"))[0] - 24. <= 6.,
-            "Close ends the row"
+            (inset - 8.).abs() < 0.01,
+            "Close ends the row, 8 pt in so its hover fill clears the card's corner: {inset}"
         );
     }
     let labels: Vec<_> = BUTTONS
