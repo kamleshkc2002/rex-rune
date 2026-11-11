@@ -317,7 +317,7 @@ There is no fixed maximum size. The disk and the confirmation are the limits.
 
 ### Tests
 
-- **Unit:** the name table (traversal, control characters, direction overrides, dots, long names, empty); unique names; refusing a symlinked destination; partial-file records and cleanup; every row of the limits table with injected free space; the Open deny list.
+- **Unit:** the name table (traversal, control characters, direction overrides, dots, long names, empty); unique names; refusing a symlinked destination; partial-file records and cleanup; every row of the limits table with injected free space; the Open allow list.
 - **Mock server:** the request (`ref` format, no `if_none_match`); a reply with no ticket; an unexpected `not_modified`; a stream shorter and longer than the hint; a close that is not normal; a stall; cancel closes the socket and removes the partial file; a reconnect mid-transfer fails the transfer and sends nothing again; revision 12 never sends the request.
 - **Headless UI:** dialog focus and Escape; the selection prefill; the large-file state with Cancel focused; the old-server message; the chip appears and goes; a finished row's actions; nothing is opened without a click; `pane.download` is in the never-remote class and the allowed set is still exactly eight.
 - **Live** (private API 13 server, built binary, Xvfb): names with spaces, Unicode and a newline; a leading dash; `~` and a relative path after `cd`; a symlink; a folder and a FIFO refused; an empty file; a 1 GiB sparse file cancelled halfway; a file appended to during the transfer; the same file twice gives `name (1)`; an API 12 server shows the message; one transfer through a real `ssh://` host, as the remote-control acceptance does.
