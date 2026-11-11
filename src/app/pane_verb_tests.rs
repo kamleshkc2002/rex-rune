@@ -603,6 +603,9 @@ fn a_rebound_verb_shows_its_keys_in_the_menu() {
 
 /// Draws the window to `REX_TEST_SNAP_DIR/<name>.png` at 2×, when that directory is named.
 /// One painter for a run: the glyph atlas uploads each glyph once.
+/// With the directory named, run the draw tests one at a time (`-- draw --test-threads=1`):
+/// the find bar's draws in the app's own fonts, and text is measured process-wide, so tests
+/// running beside it measure in whichever fonts were loaded last.
 pub(super) struct Camera {
     dir: std::path::PathBuf,
     gpu: rune::render::Gpu,

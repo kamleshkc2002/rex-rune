@@ -72,7 +72,7 @@ fn interface(s: &Workspace) -> El {
             [card([
                 setting(
                     "Pane density",
-                    "Compact removes pane gaps and, with Auto headers, pane headers.",
+                    "Compact joins panes edge to edge, with no gaps.",
                     segmented(
                         "pane-density",
                         &[
@@ -573,18 +573,22 @@ fn shortcut_rows<'a>(
         .collect()
 }
 
+/// The headings of the Shortcuts page, in order. Every action's `category()` is one of them
+/// (a test checks), and an action this client does not know is listed under Server.
+pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
+    "Navigate",
+    "Create and close",
+    "Panes",
+    "Text and view",
+    "Interface",
+    "Server",
+];
+
 fn shortcuts(s: &Workspace) -> El {
     let k = kit();
     let mut sections = Vec::new();
     let effective = s.effective_bindings();
-    for name in [
-        "Navigate",
-        "Create and close",
-        "Panes",
-        "Text and view",
-        "Interface",
-        "Server",
-    ] {
+    for name in SHORTCUT_CATEGORIES {
         let list = shortcut_rows(&effective, name);
         if list.is_empty() {
             continue;

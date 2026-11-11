@@ -711,7 +711,10 @@ impl Workspace {
                 Command::new(
                     "app.update",
                     G,
-                    format!("Update Rex Linux ({})…", update.version),
+                    format!(
+                        "Update Rex Linux ({})…",
+                        rex_linux::format_version(&update.version)
+                    ),
                     Intent::Updates,
                 )
                 .detail(self.updates.channel.id())

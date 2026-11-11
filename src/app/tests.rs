@@ -26,6 +26,8 @@ mod remote_tests;
 mod settings_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
+#[path = "wiring_tests.rs"]
+mod wiring_tests;
 #[path = "workspace_fixes_tests.rs"]
 mod workspace_fixes_tests;
 use super::{

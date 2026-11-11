@@ -33,7 +33,9 @@ Some probes connect to the configured Rex server and create sessions there. Of t
   - `ssh.rs`: `ssh://` endpoints, a Rex socket forwarded with `ssh -L`. `tailnet.rs`: the machines in `tailscale status --json` and the check for a Rex server on each.
 - `src/main.rs` and `src/app/`: the Rune front end (behind the default `ui` feature).
   - `workspace.rs`: workspace state and behavior (hosts, sessions, tabs, panes, requests, preferences, notices). Host and terminal workers wake the UI through `rune::AppHandle::update`.
-  - `panel.rs`: popup and dialog state and the switcher, Commands and pane-menu lists. `discover.rs`: the Add host list of the tailnet's machines.
+  - `panel.rs`: popup and dialog state and the switcher and pane-menu lists. `commands.rs`: every Commands row in one table, grouped by what it acts on; an action without a row there needs a stated reason, and `command_tests.rs` pins the ids. `discover.rs`: the Add host list of the tailnet's machines.
+  - `actions.rs`: the named actions and their `Spec::remote()` decisions. `keycaps.rs`: the one formatter for shortcut hints, read from the effective keymap. `wiring_tests.rs` checks what every action owes: a Commands row, a heading and title on Settings → Shortcuts, a remote decision and its keys as a hint.
+  - `pane_verbs.rs`: the pane menu's Copy, Paste, Select all, Copy pane ID, Clear and Reset. `pane_header.rs`: a pane header's buttons and where the Pane headers setting puts a header. `find.rs`: the find bar, its placement and Find next / Find previous.
   - `tabs.rs`: the tab menu on toolbar pills and sidebar rows, moving a tab in its session's order, muting it on this client, closing the other tabs and its default title.
   - `splits.rs`: which side a new split goes on (right, left, down, up or best fit) and focus through a tab's panes. `font_size.rs`: terminal font size actions. `help.rs`: Rex help.
   - `input.rs`, `keys.rs`: workspace shortcuts first, then every other key to the focused pane's PTY; Rune key events to Rex `client.key` payloads; IME.

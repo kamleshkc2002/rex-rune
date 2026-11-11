@@ -866,9 +866,6 @@ impl Workspace {
 
     pub(super) fn shortcut_details(&self, entries: &mut [Entry]) {
         for entry in entries {
-            if entry.detail.starts_with("Mouse ") {
-                continue;
-            }
             let shortcut = match &entry.action {
                 Intent::CreateOn(host, None) if *host == self.active => {
                     Some(("session.new", Value::Null))
@@ -876,8 +873,13 @@ impl Workspace {
                 action => action.shortcut(),
             };
             if let Some((name, args)) = shortcut {
-                entry.keys = self.shortcut_chords(name, &args);
-                entry.detail = super::keycaps::spell(&entry.keys);
+                let keys = self.shortcut_chords(name, &args);
+                // A pointer hint (Mouse Back) stays until the action is given a key.
+                if keys.is_empty() && entry.detail.starts_with("Mouse ") {
+                    continue;
+                }
+                entry.detail = super::keycaps::spell(&keys);
+                entry.keys = keys;
             }
         }
     }
