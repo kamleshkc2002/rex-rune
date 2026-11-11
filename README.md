@@ -451,7 +451,7 @@ A program in a terminal copies to your desktop clipboard by writing an OSC 52 se
 
 Some programs send OSC 52 only when an `SSH_*` variable is set, or prefer the clipboard of the machine they run on. Neither is the client: **Rex Linux cannot set environment variables in a terminal on a remote server, because the Rex server owns the terminal's environment** (the session and block options have no environment field; an `env` option is accepted and ignored). What the sources and tests showed:
 
-- **OpenAI Codex CLI** (read from the source of `rust-v0.167.1`; Codex itself was not run): it always tries the native clipboard first, so on a server that has `DISPLAY` or `WAYLAND_DISPLAY` the text lands in the server's own clipboard whatever else is set. It additionally sends OSC 52 when `SSH_TTY` or `SSH_CONNECTION` (any value), `TMUX`/`TMUX_PANE` or `HERDR_ENV=1` is set, even if the native copy succeeded, and falls back to OSC 52 alone only if the native copy fails.
+- **OpenAI Codex CLI** (read from the source of `rust-v0.167.1`; Codex itself was not run): it always tries the native clipboard first, so on a server that has `DISPLAY` or `WAYLAND_DISPLAY` the text lands in the server's own clipboard whatever else is set. It additionally sends OSC 52 when `SSH_TTY` or `SSH_CONNECTION` (any value) or `HERDR_ENV=1` is set, even if the native copy succeeded; under `TMUX`/`TMUX_PANE` it forwards through tmux instead (`tmux load-buffer -w`, then a passthrough sequence), which reaches Rex with tmux's default `set-clipboard`. It falls back to OSC 52 alone only if the native copy fails.
 - **Neovim 0.10.x** enables its OSC 52 provider only when `SSH_TTY` is set (any value) and the `clipboard` option is empty (the default); without both there is no provider (checked with 0.10.4). **Neovim 0.11 and later** don't check `SSH_TTY` and, when the `clipboard` option is empty (the default), use OSC 52 on their own, which Rex advertises (checked with 0.12.6), but they pick `xclip`, `xsel` or `wl-copy` first when `DISPLAY` or `WAYLAND_DISPLAY` is set, whatever `SSH_TTY` says. **LazyVim** sets `clipboard` to empty only when `SSH_CONNECTION` is set, and that is what turns its OSC 52 provider on (checked live: `SSH_TTY` alone does not).
 - `rex server start` hands `DISPLAY` and `WAYLAND_DISPLAY` from the shell that starts the server on to every terminal.
 
@@ -467,10 +467,10 @@ Workarounds on the machine that runs the Rex server (checked live):
   fi
   ```
 
-  It worked in a default login bash, `rex run`, splits, a nested `bash` and a zsh login shell; it does nothing for a `--shell=none` terminal. To keep it off machines with a desktop session, add `&& [ -z "$DISPLAY$WAYLAND_DISPLAY" ]` to the condition.
+  It worked in a default login bash, `rex run`, splits, a nested `bash` and a zsh login shell; it does nothing for a `--shell=none` terminal. To keep it off machines with a desktop session, add `&& [ -z "$DISPLAY$WAYLAND_DISPLAY" ]` to the condition (this variant was not checked); with that guard, Codex on a machine that has a display keeps copying only to that machine's clipboard.
 - Or start a new server with `rex server start --env SSH_TTY=/dev/tty`. It applies to every terminal of that server and only when a new server is launched.
 
-Both make every terminal on that server look like an SSH session, local clients included: prompts such as Starship show the host and an SSH mark (checked with Starship), some dotfiles branch on `SSH_*`, and by its source Codex then also treats the session as remote. Neither workaround sets `SSH_CONNECTION`, which LazyVim needs, and neither stops a program that prefers the server's own clipboard (Neovim 0.11 and later) from using it while `DISPLAY` or `WAYLAND_DISPLAY` is set there.
+Both make every terminal on that server look like an SSH session, local clients included: prompts such as Starship show the host and an SSH mark (checked with Starship), some dotfiles branch on `SSH_*`, and by its source Codex then also treats the session as remote: it turns off right-click paste, reading text from the clipboard and primary-selection copy. Neither workaround sets `SSH_CONNECTION`, which LazyVim needs, and neither stops a program that prefers the server's own clipboard (Neovim 0.11 and later) from using it while `DISPLAY` or `WAYLAND_DISPLAY` is set there.
 
 ## Development
 

@@ -2784,7 +2784,7 @@ fn terminal_copies_reach_the_clipboard_once_and_only_in_the_foreground() {
 #[test]
 fn native_window_focus_gates_terminal_copies_and_the_cursor() {
     use rex_linux::connection::{Connection, TerminalSender, clipboard::ClipboardCopy};
-    let (mut ws, _rx) = tabbed_workspace("single");
+    let (mut ws, rx) = tabbed_workspace("single");
     let (sender, _sent) = flume::unbounded();
     let connection = Connection {
         model: Default::default(),
@@ -2876,12 +2876,24 @@ fn native_window_focus_gates_terminal_copies_and_the_cursor() {
         "an unfocused window leaves the clipboard alone"
     );
 
+    // Commands sent before the refocus don't count for the claim below.
+    while rx.try_recv().is_ok() {}
     rt.window_focus(true);
     for _ in 0..30 {
         rt.frame(1. / 60.);
     }
     assert!(rt.state.window_focused);
     assert!(cursor_filled(&rt), "the cursor is solid again on focus");
+    assert_eq!(
+        text(&clipboard).as_deref(),
+        Some("sentinel"),
+        "a copy dropped while unfocused stays dropped after refocus"
+    );
+    assert!(
+        rx.try_iter()
+            .any(|command| matches!(command, HostCommand::Claim { .. })),
+        "a refocused window claims the size of the terminals it shows again"
+    );
     copy(&mut rt, "after refocus");
     assert_eq!(
         text(&clipboard).as_deref(),
