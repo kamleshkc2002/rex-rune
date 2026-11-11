@@ -17,7 +17,7 @@ folder, state directory and artifact (the directory is printed; it is deleted wh
 passed and kept when any failed or was skipped, or with --keep). A stub xdg-open on
 PATH logs every call; the run fails if it is ever called. A stub xdg-mime answers the file-type
 question the client asks before offering Open (by file name, as GNOME and KDE do) and logs it;
-the run fails if it is ever asked anything but `query filetype <absolute path>`. Every REX_* and display variable is
+the run fails if it is ever asked anything but `query filetype <absolute path>` or `query default <type>`. Every REX_* and display variable is
 scrubbed and an endpoint under /run/user is refused, so nothing can reach another server.
 Processes are stopped by PID.
 
@@ -33,7 +33,8 @@ final checks), for development.
 Cases: names (spaces, Unicode, leading dash, empty file, symlink, same file twice, modes, Open
 offered for a .txt and withheld for programs, scripts, no extension and .svg); a zip with a jar
 signature saved as report.zip and as notes.txt, which get no Open (and are never even sent to
-the file-type question), next to a plain zip, which does; relative paths
+the file-type question), next to a plain zip, which does, and a csv of a type the stub desktop has
+no default program for, which does not; relative paths
 after cd; a folder, a FIFO, a missing and an unreadable file refused in the server's words; API 12
 "too old" with nothing sent; the 1 GiB question (held by the server while asked, released by
 Escape with the app still running); a 1 GiB file cancelled partway (partial gone, the server's
@@ -85,18 +86,29 @@ os.environ.update(HOME=str(work / "home"), XDG_CONFIG_HOME=str(work / "home/conf
 XDG_LOG = work / "xdg-open.log"
 (work / "bin/xdg-open").write_text(f"#!/bin/sh\nprintf '%s\\n' \"$*\" >> {XDG_LOG}\n")
 # The desktop's file-type answer, by name (what GNOME and KDE do), so that only the client's own
-# checks of the first bytes can refuse a hostile file with an ordinary name. Logs every call.
+# checks of the first bytes can refuse a hostile file with an ordinary name. It has a default
+# program for text/plain, text/markdown and application/zip only (not for text/csv), as a desktop
+# with no default for a type would not: `xdg-open` then hands the file to $BROWSER. Logs every call.
 XDG_MIME_LOG = work / "xdg-mime.log"
 (work / "bin/xdg-mime").write_text(f"""#!/bin/sh
 printf '%s\\n' "$*" >> {XDG_MIME_LOG}
-[ "$1" = query ] && [ "$2" = filetype ] || exit 2
-case "$3" in
-  *.txt|*.TXT) echo text/plain ;;
-  *.md) echo text/markdown ;;
-  *.zip) echo application/zip ;;
-  *.svg) echo image/svg+xml ;;
-  *.sh) echo application/x-shellscript ;;
-  *) echo application/octet-stream ;;
+[ "$1" = query ] || exit 2
+case "$2" in
+  filetype)
+    case "$3" in
+      *.txt|*.TXT) echo text/plain ;;
+      *.md) echo text/markdown ;;
+      *.csv) echo text/csv ;;
+      *.zip) echo application/zip ;;
+      *.svg) echo image/svg+xml ;;
+      *.sh) echo application/x-shellscript ;;
+      *) echo application/octet-stream ;;
+    esac ;;
+  default)
+    case "$3" in
+      text/plain|text/markdown|application/zip) echo stub-viewer.desktop ;;
+    esac ;;
+  *) exit 2 ;;
 esac
 """)
 for stub in ("tailscale", "xdg-open", "xdg-mime"):
@@ -270,6 +282,8 @@ def make_fixtures(home):
     write("jar/report.zip", JAR_ZIP)
     write("jar/notes.txt", JAR_ZIP)
     write("jar/plain.zip", PLAIN_ZIP)
+    # An ordinary file of a type the (stub) desktop has no default program for.
+    write("jar/table.csv", b"id,name\n1,x\n")
     (home / "adir").mkdir()
     os.mkfifo(home / "fifo")
     os.symlink("notes.txt", home / "link-to-notes")
@@ -686,11 +700,11 @@ def names(rex13):
     return f"{len(sources)} files, modes {sorted(set(modes.values()))}, the dialog took each name from the server"
 
 
-@case("Open: a jar-signature zip saved as report.zip or notes.txt gets Show in folder only, a plain zip gets Open")
+@case("Open: a jar-signature zip saved as report.zip or notes.txt, and a csv the desktop has no program for, get Show in folder only; a plain zip gets Open")
 def open_needs_more_than_a_name(rex13):
     home = rex13.home
     asked_before = XDG_MIME_LOG.read_text() if XDG_MIME_LOG.exists() else ""
-    order = ["~/jar/report.zip", "~/jar/notes.txt", "~/jar/plain.zip"]
+    order = ["~/jar/report.zip", "~/jar/notes.txt", "~/jar/plain.zip", "~/jar/table.csv"]
     steps, t = [], 2.5
     for path in order:
         steps += download_steps(t, path)
@@ -698,22 +712,26 @@ def open_needs_more_than_a_name(rex13):
     steps += popover_steps(t)
     run = run_app("open-jar", steps, t + 3, server=rex13)
     expect_clean_exit(run)
-    for name, source in (("report.zip", "jar/report.zip"), ("notes.txt", "jar/notes.txt"), ("plain.zip", "jar/plain.zip")):
+    for name, source in (("report.zip", "jar/report.zip"), ("notes.txt", "jar/notes.txt"), ("plain.zip", "jar/plain.zip"), ("table.csv", "jar/table.csv")):
         saved(run, name, home / source)
-    assert run.listing() == ["notes.txt", "plain.zip", "report.zip"], run.listing()
+    assert run.listing() == ["notes.txt", "plain.zip", "report.zip", "table.csv"], run.listing()
     tree = run.tree
-    for name in ("report.zip", "notes.txt"):
+    for name in ("report.zip", "notes.txt", "table.csv"):
         state, ident = state_of(run, name)
         assert state.startswith("Saved to"), (name, state)
         assert f"download-show:{ident}" in tree, f"Show in folder is missing for {name}"
-        assert f"download-open:{ident}" not in tree, f"Open is offered for the jar saved as {name}"
+        assert f"download-open:{ident}" not in tree, f"Open is offered for {name}"
     state, ident = state_of(run, "plain.zip")
     assert f"download-open:{ident}" in tree and f"download-show:{ident}" in tree, "a plain zip lost Open or Show in folder"
     asked = XDG_MIME_LOG.read_text()[len(asked_before):].splitlines()
-    assert len(asked) == 1 and asked[0].startswith("query filetype ") and asked[0].endswith("/plain.zip"), \
-        f"the file-type question was asked for something other than the plain zip: {asked}"
+    # The plain zip: its type, then a default program for it. The csv: its type, then none.
+    # The jar under two names is refused by its first bytes before the desktop is asked.
+    assert len(asked) == 4 and asked[0].startswith("query filetype ") and asked[0].endswith("/plain.zip") \
+        and asked[1] == "query default application/zip" and asked[2].startswith("query filetype ") \
+        and asked[2].endswith("/table.csv") and asked[3] == "query default text/csv", \
+        f"the desktop was asked something other than the plain zip's and the csv's type and default: {asked}"
     expect_no_partials(run)
-    return "report.zip and notes.txt (jar bytes) refused by their first bytes before the desktop was asked; plain.zip asked once and offered Open"
+    return "report.zip and notes.txt (jar bytes) refused by their first bytes before the desktop was asked; plain.zip offered Open; table.csv has no default program, so no Open"
 
 
 @case("~ and a relative path follow the shell's cd and the foreground program's directory")
@@ -1071,8 +1089,8 @@ def final_checks():
     opened = XDG_LOG.read_text() if XDG_LOG.exists() else ""
     assert opened == "", f"xdg-open was called: {opened!r}"
     asked = XDG_MIME_LOG.read_text().splitlines() if XDG_MIME_LOG.exists() else []
-    stray = [line for line in asked if not re.fullmatch(r"query filetype /.+", line)]
-    assert not stray, f"xdg-mime was asked something other than `query filetype <absolute path>`: {stray}"
+    stray = [line for line in asked if not re.fullmatch(r"query filetype /.+|query default [a-z]+/[a-z0-9.+-]+", line)]
+    assert not stray, f"xdg-mime was asked something other than `query filetype <absolute path>` or `query default <type>`: {stray}"
     for line in asked:
         assert not re.search(r"/(prog|run\.sh|--help|logo\.svg|report\.zip)$", line), f"the file-type question was asked for {line}"
     problems = []
@@ -1093,7 +1111,7 @@ def final_checks():
         checked += 1
     if not FILTER:
         assert checked >= MIN_SAVED, f"only {checked} saved files compared with their sources; expected at least {MIN_SAVED}"
-    return f"{checked} saved files compared with their sources; xdg-open stub log empty; {len(asked)} file-type questions, all `query filetype <path>`; {len(DOWNLOAD_DIRS)} folders scanned"
+    return f"{checked} saved files compared with their sources; xdg-open stub log empty; {len(asked)} xdg-mime questions, all `query filetype <path>` or `query default <type>`; {len(DOWNLOAD_DIRS)} folders scanned"
 
 
 def main():

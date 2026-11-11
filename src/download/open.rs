@@ -9,18 +9,22 @@
 //! 2. the first bytes: they fit the name and are not a program, page, SVG, launcher or jar
 //!    ([`content_allows`]; the text types have no magic, so there they only rule things out);
 //! 3. the desktop's own answer to "what type is this file": `xdg-mime query filetype`, run the
-//!    way `xdg-open` runs it, is one of the types allowed for that extension ([`type_allowed`]).
+//!    way `xdg-open` runs it, is one of the types allowed for that extension ([`type_allowed`]),
+//!    and the desktop has a default program for that type.
 //!
 //! The third is what decides the program, because `xdg-open` picks the handler from that same
-//! answer, which on some desktops comes from the name and on others from the content alone.
-//! It fails closed: no `xdg-mime`, no answer in [`TYPE_TIMEOUT`], a failure or an unlisted type
-//! means no Open. Everything else gets only **Show in folder**.
+//! answer, which on some desktops comes from the name and on others from the content alone. It
+//! also needs a default program for that type (`xdg-mime query default`): without one `xdg-open`
+//! ignores the type and gives the file to `$BROWSER` or mailcap, which type it their own way.
+//! It fails closed: no `xdg-mime`, no answer in [`TYPE_TIMEOUT`], a failure, an unlisted type or
+//! no default program means no Open. Everything else gets only **Show in folder**.
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     io::Read,
-    os::unix::fs::OpenOptionsExt,
+    os::unix::{fs::OpenOptionsExt, process::CommandExt},
     path::Path,
-    process::{Command, Stdio},
+    process::{Child, Command, Stdio},
+    sync::mpsc,
     time::{Duration, Instant},
 };
 
@@ -40,7 +44,7 @@ pub const SNIFF_BYTES: usize = 4096;
 /// How many of those a text type must show as UTF-8 without a NUL.
 const TEXT_BYTES: usize = 512;
 
-/// How long `xdg-mime` may take to name a file's type.
+/// How long `xdg-mime` may take to name a file's type and say it has a default program, both.
 pub const TYPE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Starts that make a file a program, script, web page, SVG or XML document or desktop launcher
@@ -309,51 +313,89 @@ pub fn may_open_on_desktop(path: &Path) -> bool {
     may_open_with(path, desktop_type)
 }
 
-/// The type the desktop gives a file: `xdg-mime query filetype <path>`, which is what `xdg-open`
-/// asks to choose its handler, run in this process's own environment so both see the same
-/// desktop. `None` when there is no `xdg-mime`, it fails, says nothing or more than one word, or
-/// takes longer than [`TYPE_TIMEOUT`]. `path` must be absolute.
+/// The type the desktop gives a file, when it also has a program for that type: `xdg-mime query
+/// filetype <path>`, which is what `xdg-open` asks to choose its handler, then `xdg-mime query
+/// default <that type>`, run in this process's own environment so both see the same desktop.
+/// Without a default program for the type `xdg-open` ignores the type and hands the file to
+/// `$BROWSER` or mailcap, which type it by their own rules, so that is no answer. `None` when
+/// there is no `xdg-mime`, it fails, says nothing or more than one word, there is no default
+/// program, or both together take longer than [`TYPE_TIMEOUT`]. `path` must be absolute.
 pub fn desktop_type(path: &Path) -> Option<String> {
-    type_from(Command::new("xdg-mime"), path, TYPE_TIMEOUT)
+    type_from(|| Command::new("xdg-mime"), path, TYPE_TIMEOUT)
 }
 
 /// [`desktop_type`] with the program and the time it gets given, so tests can stand in for
-/// `xdg-mime`. `command` is run with `query filetype <path>` added.
-fn type_from(mut command: Command, path: &Path, timeout: Duration) -> Option<String> {
+/// `xdg-mime`. `program` makes the command, to which `query filetype <path>` and then `query
+/// default <type>` are added.
+fn type_from(program: impl Fn() -> Command, path: &Path, timeout: Duration) -> Option<String> {
     if !path.is_absolute() {
         return None;
     }
+    let deadline = Instant::now() + timeout;
+    let answer = ask(
+        program(),
+        ["query".as_ref(), "filetype".as_ref(), path.as_os_str()],
+        deadline,
+    )?;
+    // `xdg-open` drops anything after a semicolon from the answer, so does this.
+    let mime = answer.split(';').next()?.trim();
+    // What is asked next must read as a type and not as an option.
+    if mime.is_empty() || mime.contains(char::is_whitespace) || mime.starts_with('-') {
+        return None;
+    }
+    let default = ask(
+        program(),
+        ["query".as_ref(), "default".as_ref(), mime.as_ref()],
+        deadline,
+    )?;
+    (!default.is_empty()).then(|| mime.to_owned())
+}
+
+/// Run `command` with `args` and return what it printed (trimmed, at most 1 KiB) if it exited
+/// successfully before `deadline`. The command gets a process group of its own and the group is
+/// killed afterwards, so a child that outlives it, or keeps its output open, can neither hold this
+/// up past the deadline nor go on running; the output is read on a thread for the same reason.
+fn ask(mut command: Command, args: [&OsStr; 3], deadline: Instant) -> Option<String> {
     let mut child = command
-        .args(["query", "filetype"])
-        .arg(path)
+        .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
+        .process_group(0)
         .spawn()
         .ok()?;
-    let start = Instant::now();
+    let group = child.id() as libc::pid_t;
+    let answer = collect(&mut child, deadline);
+    // SAFETY: plain signal to the process group this function made.
+    unsafe { libc::kill(-group, libc::SIGKILL) };
+    let _ = child.wait();
+    answer
+}
+
+fn collect(child: &mut Child, deadline: Instant) -> Option<String> {
+    let stdout = child.stdout.take()?;
+    let (sender, receiver) = mpsc::channel();
+    std::thread::Builder::new()
+        .name("rex-xdg-mime-output".into())
+        .spawn(move || {
+            let mut out = Vec::new();
+            let _ = stdout.take(1024).read_to_end(&mut out);
+            let _ = sender.send(out);
+        })
+        .ok()?;
+    let left = |at: Instant| deadline.checked_duration_since(at);
+    let out = receiver.recv_timeout(left(Instant::now())?).ok()?;
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
-            Ok(None) if start.elapsed() < timeout => std::thread::sleep(Duration::from_millis(10)),
-            _ => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return None;
+            Ok(None) if left(Instant::now()).is_some() => {
+                std::thread::sleep(Duration::from_millis(10))
             }
+            _ => return None,
         }
     };
-    let mut out = String::new();
-    child
-        .stdout
-        .take()?
-        .take(1024)
-        .read_to_string(&mut out)
-        .ok()?;
-    // `xdg-open` drops anything after a semicolon from the answer, so does this.
-    let answer = out.trim().split(';').next()?.trim();
-    (status.success() && !answer.is_empty() && !answer.contains(char::is_whitespace))
-        .then(|| answer.to_owned())
+    let out = String::from_utf8(out).ok()?;
+    status.success().then(|| out.trim().to_owned())
 }
 
 /// The `xdg-open` call for one absolute path, which is its only argument. `None` for a relative
@@ -1095,67 +1137,128 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
-    /// A shell command standing in for `xdg-mime`; `query filetype <path>` become its $1 to $3.
-    fn stand_in(script: &str) -> Command {
-        let mut command = Command::new("sh");
-        command.args(["-c", script, "xdg-mime"]);
-        command
+    /// A shell command standing in for `xdg-mime`; `query filetype <path>` or `query default
+    /// <type>` become its $1 to $3.
+    fn stand_in(script: &'static str) -> impl Fn() -> Command {
+        move || {
+            let mut command = Command::new("sh");
+            command.args(["-c", script, "xdg-mime"]);
+            command
+        }
+    }
+
+    /// A stand-in that answers both questions: the type, and a default program for it.
+    fn typed(mime: &str, default: &str) -> String {
+        format!("case $2 in filetype) {mime};; default) {default};; esac")
     }
 
     #[test]
     fn xdg_mime_is_run_with_the_absolute_path_and_every_odd_answer_is_no_type() {
         let path = Path::new("/tmp/some dir/-n (1).txt");
-        let ask = |script: &str| type_from(stand_in(script), path, Duration::from_secs(5));
-        assert_eq!(ask("echo text/plain").as_deref(), Some("text/plain"));
+        let five = Duration::from_secs(5);
+        let ask = |script: &str| {
+            let script: &'static str = Box::leak(script.to_owned().into_boxed_str());
+            type_from(stand_in(script), path, five)
+        };
+        let both = |mime: &str, default: &str| ask(&typed(mime, default));
         assert_eq!(
-            ask("echo 'text/plain; charset=utf-8'").as_deref(),
+            both("echo text/plain", "echo app.desktop").as_deref(),
+            Some("text/plain")
+        );
+        assert_eq!(
+            both("echo 'text/plain; charset=utf-8'", "echo app.desktop").as_deref(),
             Some("text/plain"),
             "what follows a semicolon is dropped, as xdg-open drops it"
         );
-        // The arguments are `query`, `filetype` and then the path whole.
+        // The arguments are `query`, `filetype` and then the path whole; then `query`,
+        // `default` and the type just reported.
         assert_eq!(
-            ask("printf '%s|%s|%s|%s' \"$#\" \"$1\" \"$2\" \"$3\" | tr ' ' _").as_deref(),
-            Some("3|query|filetype|/tmp/some_dir/-n_(1).txt")
+            ask("case $2 in filetype) test \"$#|$1|$3\" = '3|query|/tmp/some dir/-n (1).txt' && echo text/plain;; default) echo app.desktop;; esac")
+                .as_deref(),
+            Some("text/plain")
         );
-        // Nothing, a failure, more than one word or line.
+        assert_eq!(
+            ask("case $2 in filetype) echo 'text/plain;x';; default) test \"$#|$1|$3\" = '3|query|text/plain' && echo app.desktop;; esac")
+                .as_deref(),
+            Some("text/plain")
+        );
+        // No program for the type: `xdg-open` would hand the file to $BROWSER or mailcap.
+        assert_eq!(both("echo text/plain", "exit 0"), None);
+        assert_eq!(both("echo text/plain", "echo"), None);
+        assert_eq!(both("echo text/plain", "echo app.desktop; exit 1"), None);
+        assert_eq!(both("echo text/plain", "exit 1"), None);
+        // Nothing, a failure, more than one word or line, something that reads as an option.
         assert_eq!(ask("exit 0"), None);
-        assert_eq!(ask("echo"), None);
-        assert_eq!(ask("echo text/plain; exit 1"), None);
-        assert_eq!(ask("echo text/plain; echo text/html"), None);
-        assert_eq!(ask("echo text/plain text/html"), None);
-        assert_eq!(ask("echo ';'"), None);
+        assert_eq!(both("echo", "echo app.desktop"), None);
+        assert_eq!(both("echo text/plain; exit 1", "echo app.desktop"), None);
+        assert_eq!(
+            both("echo text/plain; echo text/html", "echo app.desktop"),
+            None
+        );
+        assert_eq!(both("echo text/plain text/html", "echo app.desktop"), None);
+        assert_eq!(both("echo ';'", "echo app.desktop"), None);
+        assert_eq!(both("echo -h", "echo app.desktop"), None);
         // No such program.
         assert_eq!(
-            type_from(
-                Command::new("/nonexistent/xdg-mime"),
-                path,
-                Duration::from_secs(5)
-            ),
+            type_from(|| Command::new("/nonexistent/xdg-mime"), path, five),
             None
         );
         // A relative path is never passed on.
         assert_eq!(
-            type_from(
-                stand_in("echo text/plain"),
-                Path::new("n.txt"),
-                Duration::from_secs(5)
-            ),
+            type_from(stand_in("echo text/plain"), Path::new("n.txt"), five),
             None
         );
-        // Too slow: gives up at the timeout, and says nothing even though it would answer.
-        let started = Instant::now();
-        let slow = type_from(
-            stand_in("sleep 5; echo text/plain"),
-            path,
+        assert!(TYPE_TIMEOUT <= Duration::from_secs(3));
+    }
+
+    #[test]
+    fn the_time_bound_holds_when_xdg_mime_is_slow_or_leaves_a_child_holding_its_output() {
+        let path = Path::new("/tmp/n.txt");
+        let bound = Duration::from_millis(300);
+        let within = |script: &'static str| {
+            let started = Instant::now();
+            let answer = type_from(stand_in(script), path, bound);
+            (answer, started.elapsed())
+        };
+        // Too slow: gives up at the bound, and says nothing even though it would answer.
+        let (answer, took) = within("sleep 5; echo text/plain");
+        assert_eq!(answer, None);
+        assert!(took < Duration::from_secs(3), "{took:?}");
+        // The question and the default question share one bound, not one each.
+        let (answer, took) = within("sleep 0.2; echo text/plain");
+        assert_eq!(answer, None, "a second 0.2 s step is past the bound");
+        assert!(took < Duration::from_secs(3), "{took:?}");
+        // It exits at once but a child it started still holds its output open.
+        let (answer, took) = within("sleep 30 & echo text/plain");
+        assert_eq!(answer, None);
+        assert!(took < Duration::from_secs(3), "{took:?}");
+        // The same on the second question, and one that holds it with no answer yet.
+        let (answer, took) =
+            within("case $2 in filetype) echo text/plain;; default) sleep 30 & echo a;; esac");
+        assert_eq!(answer, None);
+        assert!(took < Duration::from_secs(3), "{took:?}");
+        let (answer, took) = within("sleep 30");
+        assert_eq!(answer, None);
+        assert!(took < Duration::from_secs(3), "{took:?}");
+    }
+
+    #[test]
+    fn a_child_xdg_mime_leaves_behind_is_killed_with_it() {
+        let dir = std::env::temp_dir().join(format!("rex-open-group-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("late");
+        let script: &'static str = Box::leak(
+            format!("(sleep 1; touch '{}') & sleep 30", marker.display()).into_boxed_str(),
+        );
+        let answer = type_from(
+            stand_in(script),
+            Path::new("/tmp/n.txt"),
             Duration::from_millis(200),
         );
-        assert_eq!(slow, None);
-        assert!(
-            started.elapsed() < Duration::from_secs(4),
-            "{:?}",
-            started.elapsed()
-        );
-        assert!(TYPE_TIMEOUT <= Duration::from_secs(3));
+        assert_eq!(answer, None);
+        std::thread::sleep(Duration::from_millis(1600));
+        assert!(!marker.exists(), "a leftover child ran on after the bound");
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
