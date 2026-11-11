@@ -394,6 +394,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 .child(
                     TextInput::new(&panel.inputs[0])
                         .placeholder(placeholder)
+                        .active_descendant(Some(format!("entry:{}", panel.selected)))
                         .leading_icon(&SEARCH)
                         .leading_icon_size(14.)
                         .text_style(ui(13.))

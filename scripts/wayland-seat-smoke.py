@@ -3,7 +3,19 @@
 
 Briefly opens a native window with an isolated config and a fresh Rex fixture.
 No input is injected. This verifies seat/resource selection, not physical input
-or IME behavior. Requires wayland-info, rex and the built debug binary.
+or IME behavior. Requires wayland-info, rex and a built client.
+
+Environment:
+  WAYLAND_DISPLAY  the compositor to open the window on. The window appears there for a few
+                   seconds, so point it at a disposable compositor (for example a headless
+                   `labwc` with WLR_BACKENDS=headless) unless you want it on your desktop.
+                   A headless compositor has no keyboard or pointer, so the client gets no input
+                   resources to check: run tools/vptr in it first (see mouse-check.py).
+  REX_SERVER       required: a disposable Rex server you started (unix:// socket). Autostart is
+                   off, and the script exits rather than fall back to the default server.
+  REX_BIN          the client to test (default target/debug/rex-linux).
+The client runs with its own HOME and XDG directories, no update check, and a `tailscale` that
+finds no tailnet.
 """
 import json
 import os
@@ -13,14 +25,18 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux"))
 
 
 def api(method, **payload):
     return json.loads(subprocess.check_output(
-        ["rex", "api", "call", method, json.dumps(payload)], text=True))
+        ["rex", "--autostart=false", "--server", os.environ["REX_SERVER"],
+         "api", "call", method, json.dumps(payload)], text=True, timeout=15))
 
 
 def run():
+    if not os.environ.get("REX_SERVER"):
+        raise SystemExit("Set REX_SERVER explicitly to a disposable Rex server")
     assert os.environ.get("WAYLAND_DISPLAY"), "Requires a running Wayland desktop"
     inventory = subprocess.check_output(["wayland-info"], text=True, timeout=15)
     seats = [(int(number), name) for number, name in re.findall(
@@ -34,11 +50,20 @@ def run():
     app = None
     try:
         with tempfile.TemporaryDirectory(prefix="rex-wayland-seat-") as directory:
+            home = Path(directory) / "home"
+            stub = Path(directory) / "bin"
+            home.mkdir()
+            stub.mkdir()
+            (stub / "tailscale").write_text("#!/bin/sh\nexit 1\n")
+            (stub / "tailscale").chmod(0o755)
+            env = {k: v for k, v in os.environ.items()
+                   if not k.startswith(("XDG_CONFIG", "XDG_STATE", "XDG_CACHE", "XDG_DATA"))}
+            env.update(HOME=str(home), WAYLAND_DEBUG="client", REX_LINUX_NO_UPDATE_CHECK="1",
+                       PATH=f"{stub}{os.pathsep}{env.get('PATH', '')}")
             app = subprocess.Popen([
-                str(ROOT / "target/debug/rex-linux"), "--session", session,
+                BINARY, "--session", session,
                 "--config", str(Path(directory) / "workspace.json"),
-            ], env=dict(os.environ, WAYLAND_DEBUG="client"), stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE, text=True)
+            ], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
             try:
                 _, trace = app.communicate(timeout=3)
                 raise AssertionError(f"Native window exited early ({app.returncode})")

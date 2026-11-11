@@ -291,6 +291,15 @@ fn pane_card(
             let menu_block = block.to_owned();
             let mut grid = el()
                 .key(format!("grid:{block}"))
+                .label({
+                    // An untitled pane is already called "Terminal".
+                    let name = s.pane_name(block);
+                    if name == "Terminal" {
+                        name
+                    } else {
+                        format!("Terminal {name}")
+                    }
+                })
                 .grow(1.)
                 .w_full()
                 .min_h(0.)

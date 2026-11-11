@@ -4,7 +4,12 @@ private Rex server whose fixture sessions run in a throwaway home with a plain b
 user, host or path from the machine running it appears in the image.
 
 Needs a `rex` server binary, labwc, wlr-randr, grim, xkbcli, bat, eza, cargo, a release build
-(`cargo build --release`) and the `vptr` helper (`cargo build --release` in tools/vptr, or SHOT_VPTR). Writes docs/screenshot.png (or SHOT_OUT).
+(`cargo build --release`, or REX_BIN names another build) and the `vptr` helper (`cargo build
+--release` in tools/vptr, or SHOT_VPTR). Writes docs/screenshot.png (or SHOT_OUT).
+
+Everything runs on a private socket (every `rex` call names it, autostart off). The client sees a
+`tailscale` that finds no tailnet and does no update check, so nothing of the machine's tailnet can
+appear in the image.
 """
 import json
 import os
@@ -16,6 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = Path(os.environ.get("SHOT_OUT", ROOT / "docs/screenshot.png"))
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
 W, H, SCALE = 2160, 1350, 1.5
 # `cargo test` in the fixture shell prints only the suites that ran tests, one line per result.
 CARGO = r"""cargo() { command cargo "$@" 2>/dev/null | grep -E '^(running [1-9]|\.+$|test result: ok\. [1-9])' | sed -E 's/; 0 ignored.*finished in/ in/'; }"""
@@ -39,10 +45,10 @@ def main():
         return p
 
     def api(method, **payload):
-        return json.loads(subprocess.check_output(["rex", "-S", endpoint, "api", "call", method, json.dumps(payload)], text=True))
+        return json.loads(subprocess.check_output(["rex", "--autostart=false", "-S", endpoint, "api", "call", method, json.dumps(payload)], text=True))
 
     def send(block, text):
-        subprocess.check_call(["rex", "-S", endpoint, "send", "-b", block, text + "\r"], stdout=subprocess.DEVNULL)
+        subprocess.check_call(["rex", "--autostart=false", "-S", endpoint, "send", "-b", block, text + "\r"], stdout=subprocess.DEVNULL)
 
     base = {k: v for k, v in os.environ.items() if k not in ("WAYLAND_DISPLAY", "DISPLAY", "WAYLAND_SOCKET")}
     real_home = Path.home()
@@ -98,8 +104,13 @@ def main():
         config.write_text(json.dumps({
             "hosts": [{"label": "workstation", "endpoint": endpoint}],
             "last_host": endpoint, "sessions": {endpoint: main_sid}, "font_size": 14}))
-        spawn([str(ROOT / "target/release/rex-linux"), "--endpoint", endpoint, "--session", main_sid,
-               "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"], env=env)
+        stub = work / "bin"
+        stub.mkdir()
+        (stub / "tailscale").write_text("#!/bin/sh\nexit 1\n")
+        (stub / "tailscale").chmod(0o755)
+        spawn([str(APP), "--endpoint", endpoint, "--session", main_sid,
+               "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"],
+              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_LINUX_NO_UPDATE_CHECK="1"))
         # Run the fixture commands only once the client has attached and sized the panes.
         time.sleep(4)
         send(left, "eza --tree --color=always src")

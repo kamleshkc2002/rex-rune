@@ -4641,3 +4641,81 @@ fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failure
     let _ = std::fs::remove_file(state_path.with_extension("lock"));
     let _ = std::fs::remove_file(&rt.state.settings_path);
 }
+
+/// The first node of Rune's accessibility tree (as `--tree` writes it) that `want` accepts.
+fn a11y_find(
+    node: &serde_json::Value,
+    want: &dyn Fn(&serde_json::Value) -> bool,
+) -> Option<serde_json::Value> {
+    if want(node) {
+        return Some(node.clone());
+    }
+    node["children"]
+        .as_array()?
+        .iter()
+        .find_map(|c| a11y_find(c, want))
+}
+
+fn a11y_has_state(node: &serde_json::Value, state: &str) -> bool {
+    node["states"]
+        .as_array()
+        .is_some_and(|s| s.iter().any(|v| v == state))
+}
+
+#[test]
+fn the_active_toolbar_tab_is_selected_for_assistive_technology() {
+    let (ws, _rx) = tabbed_workspace("split");
+    let rt = runtime(ws);
+    let tree = rt.accessibility_json();
+    let tab = |key: &str| {
+        a11y_find(&tree, &|n| n["key"] == key).unwrap_or_else(|| panic!("no {key} in the tree"))
+    };
+    let (split, single) = (tab("tab:split"), tab("tab:single"));
+    assert_eq!(split["role"], "tab");
+    assert_eq!(split["name"], "dev");
+    assert!(a11y_has_state(&split, "selected"), "{split}");
+    assert!(!a11y_has_state(&single, "selected"), "{single}");
+}
+
+#[test]
+fn a_dialog_is_named_by_its_title() {
+    let mut ws = workspace();
+    ws.panel = Some(super::panel::Panel::new(
+        PanelKind::Settings,
+        "Settings",
+        &[],
+    ));
+    let rt = runtime(ws);
+    let tree = rt.accessibility_json();
+    let dialog = a11y_find(&tree, &|n| n["key"] == "dialog").expect("the dialog surface");
+    assert_eq!(dialog["role"], "dialog");
+    assert_eq!(dialog["name"], "Settings");
+}
+
+#[test]
+fn the_switcher_names_its_highlighted_row_to_assistive_technology() {
+    let mut ws = workspace();
+    let _rx = capture_host(&mut ws, 0);
+    ws.hosts[0].model.connected = true;
+    ws.hosts[0].model.sessions = vec![session("a"), session("b")];
+    ws.picker(true);
+    let mut rt = runtime(ws);
+    let highlighted = |rt: &Runtime<Workspace>| {
+        a11y_find(&rt.accessibility_json(), &|n| {
+            n.get("activeDescendant").is_some()
+        })
+        .map(|n| n["activeDescendant"].clone())
+    };
+    let first = rt.state.panel.as_ref().unwrap().selected;
+    assert_eq!(
+        highlighted(&rt),
+        Some(serde_json::json!(format!("entry:{first}")))
+    );
+    press(&mut rt, Key::Down);
+    assert_eq!(rt.state.panel.as_ref().unwrap().selected, first + 1);
+    assert_eq!(
+        highlighted(&rt),
+        Some(serde_json::json!(format!("entry:{}", first + 1))),
+        "moving the highlight moves the active descendant"
+    );
+}

@@ -24,15 +24,15 @@ fn modal(s: &Workspace, viewport: [f32; 2], body: El) -> El {
 pub fn modal_frame(s: &Workspace, surface: El) -> El {
     // Padding, dividers and disabled controls must not pass a press to the dismiss scrim.
     // Children still handle their own input; empty space leaves the keyboard focus alone.
+    let name = s
+        .panel
+        .as_ref()
+        .map(|p| p.title.clone())
+        .unwrap_or_default();
     let surface = surface
         .key("dialog")
         .role("dialog")
-        .label(
-            s.panel
-                .as_ref()
-                .map(|p| p.title.clone())
-                .unwrap_or_default(),
-        )
+        .label(name)
         .preserve_focus_on_press(true)
         .on_press(|_: &mut Workspace| {});
     let panel = glass(surface, 16., true).transition(pop_in());

@@ -3,6 +3,7 @@
 
 Starts a disposable server, HOME and Xvfb; never reads or writes your desktop's
 clipboard. Requires rex, Xvfb, openbox, xdotool and xclip; set REX_BIN to the client.
+REX_SERVER is set for you to the private server; any inherited value is discarded.
 """
 import importlib.util
 import os
@@ -68,7 +69,8 @@ try:
     sid, block = accept.session("clipboard-private")
     desk = accept.Desktop()
     log = (work / "client.log").open("w")
-    app, window = desk.launch(sid, work / "workspace.json", log=log)
+    config = accept.pin_layout(work / "workspace.json")
+    app, window = desk.launch(sid, config, log=log)
     subprocess.run(["xclip", "-selection", "clipboard"], input=b"unchanged clipboard sentinel", env=desk.env,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=3)
     emit(repr("Pi copy: 世界 🦀\nsecond line"))
@@ -91,7 +93,8 @@ try:
         "text": "printf '\\033[2J\\033[Halpha beta-gamma 世界\\n'"}})
     desk.key("Return")
     time.sleep(.6)
-    desk.x("mousemove", "--window", window, 83, 70)
+    # "alpha beta-gamma": the word starts at column 6; click inside its third letter.
+    desk.x("mousemove", "--window", window, *accept.cell_point(8, 0))
     desk.x("click", "--repeat", "2", "--delay", "100", "1")
     desk.key("ctrl+shift+c")
     wait(lambda: clipboard() == b"beta-gamma", "double-click did not select and copy the terminal word")

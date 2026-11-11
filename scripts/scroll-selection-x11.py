@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Verify scroll-anchored text selection and native clipboard contents.
 
-Requires rex, Xvfb, openbox, xdotool and ImageMagick's import. Set REX_BIN.
-No daily sessions, display or settings are used.
+Requires rex, Xvfb, openbox, xdotool, xclip and ImageMagick's import. Set REX_BIN to the client.
+Starts its own private Rex servers, HOME and display (REX_SERVER is set for you, never read), so no
+daily sessions, display, clipboard or settings are used. Pointer positions come from
+rune-acceptance-x11.py's grid_origin, with the pane padding pinned in the private workspace.json.
 """
 import importlib.util
 import json
@@ -66,10 +68,14 @@ try:
     view = api("session.view", session_id=sid)
     block = next(w["focused_block_id"] for w in view["windows"] if w["window_id"] == view["active_window_id"])
     config = work / "workspace.json"
-    config.write_text(json.dumps({"hosts": [
+    accept.pin_layout(config, hosts=[
         {"label": "Elphael-private", "endpoint": "unix://" + str(work / "rex-0.sock")},
         {"label": "Erdtree-private", "endpoint": "unix://" + str(work / "rex-1.sock")}],
-        "sidebar_open": False, "vertical_tabs": False, "sidebar_width": 280}))
+        sidebar_open=False, vertical_tabs=False, sidebar_width=280)
+    # Ghostty starts a selection in the cell under the pointer only before 60% of its width: start
+    # just inside the first column of a row (never a fixed x, which the pane padding moves).
+    left = accept.cell_point(0, 0, fx=0.2)[0]
+    row = lambda n: accept.cell_point(0, n)[1]
     assert shutil.which("xclip"), "xclip required"
     desk = accept.Desktop()
     log = (work / "client.log").open("w")
@@ -83,9 +89,9 @@ try:
     desk.x("click","--repeat",4,"--delay",80,4)
     time.sleep(.4)
     # A full visible line includes wide and combining characters.
-    desk.x("mousemove","--window",window,14,110)
+    desk.x("mousemove","--window",window,left,row(2))
     desk.x("mousedown",1)
-    desk.x("mousemove","--window",window,420,110)
+    desk.x("mousemove","--window",window,420,row(2))
     desk.x("mouseup",1)
     desk.key("ctrl+shift+c")
     time.sleep(.2)
@@ -99,7 +105,7 @@ try:
     assert clipboard()==selected, "scrolling discarded or shifted the selection: "+repr(clipboard())
     desk.capture(window,"selection-after-scroll")
     print("PASS Unicode selection stays anchored while the viewport scrolls",flush=True)
-    desk.x("mousemove","--window",window,14,490)
+    desk.x("mousemove","--window",window,left,row(21))
     desk.x("mousedown",1)
     desk.x("mousemove","--window",window,30,54)
     time.sleep(.8)
@@ -143,9 +149,9 @@ finally:
     time.sleep(.3)
     desk.x("keydown","Shift_L")
     before=events.read_bytes()
-    desk.x("mousemove","--window",window,14,70)
+    desk.x("mousemove","--window",window,left,row(0))
     desk.x("mousedown",1)
-    desk.x("mousemove","--window",window,490,70)
+    desk.x("mousemove","--window",window,490,row(0))
     desk.x("mouseup",1)
     desk.key("ctrl+shift+c"); time.sleep(.2)
     assert "TUI-before-scroll" in clipboard(), repr(clipboard())
@@ -155,9 +161,9 @@ finally:
     wait(lambda:b"[<64;" in events.read_bytes(),"ordinary TUI wheel reporting stopped working")
     time.sleep(.3)
     desk.x("keydown","Shift_L")
-    desk.x("mousemove","--window",window,14,70)
+    desk.x("mousemove","--window",window,left,row(0))
     desk.x("mousedown",1)
-    desk.x("mousemove","--window",window,490,70)
+    desk.x("mousemove","--window",window,490,row(0))
     desk.x("mouseup",1)
     desk.key("ctrl+shift+c"); time.sleep(.2)
     assert "TUI-after-scroll" in clipboard(), repr(clipboard())
