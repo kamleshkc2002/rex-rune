@@ -1,224 +1,110 @@
 //! Whether a finished download may be offered an "Open" action. Nothing here opens or runs
 //! anything; it only answers the question, in one place.
+//!
+//! The rule is an allow list: **Open** is offered for a short list of document, text, image and
+//! archive types whose final extension is on [`OPENABLE_EXTENSIONS`] and whose first bytes fit
+//! the name ([`content_allows`]). Everything else, including every unknown type and every file
+//! with no extension, gets only **Show in folder**.
 use std::{io::Read, os::unix::fs::OpenOptionsExt, path::Path};
 
-/// Extensions of files that can run or script something when opened, compared without case (in
-/// Unicode: `.des\u{212a}top` with a Kelvin sign is `.desktop` to the system's glob matching).
-/// An entry with a dot inside matches a longer ending (`pkg.tar.zst`).
-const RISKY_EXTENSIONS: &[&str] = &[
-    // Launchers and scripts.
-    "desktop",
-    "kdelnk",
-    "directory",
-    "sh",
-    "bash",
-    "zsh",
-    "fish",
-    "csh",
-    "ksh",
-    "command",
-    "run",
-    "py",
-    "py2",
-    "py3",
-    "pyw",
-    "pyi",
-    "pyz",
-    "pyzw",
-    "pyc",
-    "pyo",
-    "pl",
-    "pm",
-    "perl",
-    "rb",
-    "php",
-    "lua",
-    "js",
-    "mjs",
-    "cjs",
-    "vbs",
-    "vbe",
-    "jse",
-    "wsf",
-    "wsc",
-    "sct",
-    "ps1",
-    "psm1",
-    "bat",
-    "cmd",
-    "reg",
-    "hta",
-    "jnlp",
-    // Programs and installers.
-    "jar",
-    "appimage",
-    "deb",
-    "rpm",
-    "pkg.tar.zst",
-    "pkg.tar.xz",
-    "pkg.tar.gz",
-    "flatpak",
-    "flatpakref",
-    "flatpakrepo",
-    "snap",
-    "apk",
-    "msi",
-    "exe",
-    "com",
-    "scr",
-    "dll",
-    "so",
-    "dmg",
-    "pkg",
-    "swf",
-    "lnk",
-    // Documents that run script in a browser.
-    "html",
-    "htm",
-    "xhtml",
-    "xht",
-    "xml",
-    "xsl",
-    "xslt",
-    "shtml",
-    "svg",
-    "svgz",
-    "mht",
-    "mhtml",
+/// The final extensions that may be opened (compared in Unicode lowercase, so `x.PDF` is `pdf`;
+/// the Kelvin sign in `.des\u{212a}top` is a `k`, as the system's glob matching treats it). For
+/// `x.tar.gz` only `gz` counts. Nothing else is on the list: no markup (`svg`, `html`, `xml`),
+/// PostScript, Office documents, audio, video, scripts or packages.
+pub const OPENABLE_EXTENSIONS: &[&str] = &[
+    "txt", "text", "log", "md", "markdown", "csv", "tsv", "json", "pdf", "png", "jpg", "jpeg",
+    "gif", "webp", "zip", "tar", "gz", "tgz", "xz", "zst", "bz2", "7z",
 ];
 
-/// How many bytes of a file's start decide [`risky_content`].
+/// How many bytes of a file's start decide [`content_allows`].
 pub const SNIFF_BYTES: usize = 512;
 
-/// Text that makes a file a web page, an SVG or XML document, a desktop launcher or a script
-/// wherever the system's type detection (shared-mime-info) looks for it, whatever the file is
-/// called. Compared without case, anywhere in the first [`SNIFF_BYTES`] bytes (the database looks
-/// within the first 32 to 256 bytes, so this is a superset).
-const RISKY_MARKERS: &[&[u8]] = &[
-    // text/html, application/hta, application/xhtml+xml and image/svg+xml.
+/// Starts that make a file a program, script, web page, SVG or XML document or desktop launcher
+/// whatever it is called, compared without case after an optional UTF-8 byte order mark and
+/// leading white space.
+const REFUSED_STARTS: &[&[u8]] = &[
+    b"#!",
+    b"%!ps",
     b"<!doctype",
     b"<html",
     b"<head",
     b"<body",
-    b"<title",
     b"<script",
     b"<svg",
     b"<?xml",
-    b"<hta:application",
-    b"//w3c//dtd xhtml ",
-    b"xhtml1/dtd/xhtml1-strict.dtd",
-    // application/x-desktop.
-    b"[desktop entry]",
-    b"[desktop action",
-    b"[kde desktop entry]",
-    // Script and program types that are denied by name: jnlp, wsc and sct, xslt, php, perl.
-    b"<jnlp",
-    b"<scriptlet",
-    b"<xsl:stylesheet",
-    b"<?php",
-    b"use strict",
-    b"use warnings",
-    b"use diagnostics",
-    b"use test::",
-    b"\n=pod",
-    b"\n=head1 name",
-    b"\n=head1 description",
-    b"begin {",
-    // Flatpak references and repositories (application/vnd.flatpak.ref and .repo) are installed
-    // by the software centre.
-    b"[flatpak ref]",
-    b"[flatpak repo]",
-    // A shell archive (text/x-shellscript) has its marker at offset 10.
-    b"# this is a shell archive",
-];
-
-/// What a file may start with, after a byte order mark and white space, to be taken for one of
-/// these (the database wants them at offset 0): `<!--` and `<h1` make text/html, `# Config File`
-/// and `# KDE Config File` make application/x-desktop, `eval "exec /...` is how Python, Perl,
-/// Ruby and Lua scripts start without a `#!` line, and `#@~^` is an encoded VBScript or JScript.
-const RISKY_STARTS: &[&[u8]] = &[
     b"<!--",
     b"<h1",
-    b"# config file",
-    b"# kde config file",
-    b"eval \"exec /",
-    b"#@~^",
-    // A registry file (text/x-ms-regedit).
-    b"regedit",
-    b"windows registry editor version 5.00",
+    b"<title",
+    b"[desktop entry]",
+    b"[kde desktop entry]",
+    b"[desktop action",
 ];
 
-/// First bytes of programs that have no ELF header: the old a.out forms (application/
-/// x-executable), MZ (DOS and Windows programs), Java classes, Python byte code, and the
-/// installers and launchers denied by name: RPM packages, Flatpak bundles, Windows shortcuts
-/// (.lnk), Windows registry files in UTF-16 and Flash movies. The OLE magic (.msi) is left out
-/// on purpose: it is also every old Word and Excel document.
-const RISKY_MAGIC: &[&[u8]] = &[
-    b"MZ",
-    b"\x1c\x52",
-    b"\x10\x01",
-    b"\x11\x01",
-    b"\x83\x01",
-    b"\xca\xfe\xba\xbe",
-    b"\x99\x4e\x0d\x0a",
-    b"\xed\xab\xee\xdb",
-    b"xdg-app\0\x01\0\x89\xe5",
-    b"flatpak\0\x01\0\x89\xe5",
-    b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46",
-    b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
-    b"FWS",
-    b"CWS",
-    b"ZWS",
-];
-
-/// Whether the name alone rules out opening.
-pub fn risky_name(name: &str) -> bool {
-    let lower = name.to_lowercase();
-    RISKY_EXTENSIONS.iter().any(|extension| {
-        lower
-            .strip_suffix(extension)
-            .is_some_and(|rest| rest.ends_with('.') && rest.len() > 1)
-    })
+/// The final extension of a file name, lowercased, or `None` for a name without one (a name
+/// that only starts with a dot, such as `.txt`, has none either).
+fn extension(name: &str) -> Option<String> {
+    let dot = name.rfind('.').filter(|&i| i > 0)?;
+    Some(name[dot + 1..].to_lowercase())
 }
 
-/// Whether the first bytes of the file are an ELF program or a `#!` script, or hold the markers
-/// of a web page, SVG or XML document or desktop launcher (a hostile host can give those any
-/// name or none, and the browser would run their script).
-pub fn risky_content(head: &[u8]) -> bool {
+/// Whether the file's start is what the type's own name promises (`None`: a text type, which has
+/// no magic bytes to require).
+fn magic_matches(extension: &str, head: &[u8]) -> Option<bool> {
+    let matches = match extension {
+        "pdf" => head.starts_with(b"%PDF-"),
+        "png" => head.starts_with(b"\x89PNG\r\n\x1a\n"),
+        "jpg" | "jpeg" => head.starts_with(b"\xff\xd8\xff"),
+        "gif" => head.starts_with(b"GIF87a") || head.starts_with(b"GIF89a"),
+        "webp" => head.starts_with(b"RIFF") && head.get(8..12) == Some(b"WEBP"),
+        "zip" => head.starts_with(b"PK\x03\x04") || head.starts_with(b"PK\x05\x06"),
+        "gz" => head.starts_with(b"\x1f\x8b"),
+        "xz" => head.starts_with(b"\xfd7zXZ\0"),
+        "zst" => head.starts_with(b"\x28\xb5\x2f\xfd"),
+        "bz2" => head.starts_with(b"BZh"),
+        "7z" => head.starts_with(b"7z\xbc\xaf\x27\x1c"),
+        _ => return None,
+    };
+    Some(matches)
+}
+
+/// Whether the first bytes of a file with this (lowercase, allow-listed) extension are fine: not
+/// a program, script, web page, SVG or XML document or desktop launcher under any name, and, for
+/// the types that have magic bytes, the type's own.
+pub fn content_allows(extension: &str, head: &[u8]) -> bool {
     let start = head
         .strip_prefix(b"\xef\xbb\xbf")
         .unwrap_or(head)
         .trim_ascii_start();
-    head.starts_with(b"\x7fELF")
-        || head.starts_with(b"#!")
-        || RISKY_MAGIC.iter().any(|magic| head.starts_with(magic))
-        // A Debian package: an ar archive whose first member is `debian-binary`.
-        || (head.starts_with(b"!<arch>") && head.get(8..).is_some_and(|rest| rest.starts_with(b"debian")))
-        || RISKY_STARTS.iter().any(|marker| {
+    let refused = head.starts_with(b"\x7fELF")
+        || head.starts_with(b"MZ")
+        || REFUSED_STARTS.iter().any(|marker| {
             start.len() >= marker.len() && start[..marker.len()].eq_ignore_ascii_case(marker)
-        })
-        || RISKY_MARKERS.iter().any(|marker| {
-            head.windows(marker.len())
-                .any(|window| window.eq_ignore_ascii_case(marker))
-        })
+        });
+    !refused && magic_matches(extension, head).unwrap_or(true)
 }
 
-/// Whether the app may offer to open this finished download: its name and its first
-/// [`SNIFF_BYTES`] bytes are both unremarkable. A file that can't be read is not offered.
+/// Whether the app may offer to open this finished download: a regular file (not reached through
+/// a symlink) whose final extension is on [`OPENABLE_EXTENSIONS`] and whose first
+/// [`SNIFF_BYTES`] bytes pass [`content_allows`]. A file that can't be read is not offered.
 pub fn may_open(path: &Path) -> bool {
-    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+    let Some(extension) = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(extension)
+        .filter(|e| OPENABLE_EXTENSIONS.contains(&e.as_str()))
+    else {
         return false;
     };
-    if risky_name(name) {
-        return false;
-    }
     let Ok(mut file) = std::fs::OpenOptions::new()
         .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC | libc::O_NONBLOCK)
         .open(path)
     else {
         return false;
     };
+    if !file.metadata().is_ok_and(|m| m.is_file()) {
+        return false;
+    }
     let mut head = [0u8; SNIFF_BYTES];
     let mut filled = 0;
     while filled < head.len() {
@@ -228,202 +114,168 @@ pub fn may_open(path: &Path) -> bool {
             Err(_) => return false,
         }
     }
-    !risky_content(&head[..filled])
+    content_allows(&extension, &head[..filled])
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const PDF: &[u8] = b"%PDF-1.7\n";
+    const PNG: &[u8] = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR";
+    const ELF: &[u8] = b"\x7fELF\x02\x01\x01";
+
+    /// A file name for each allowed type, with a start that fits it.
+    fn allowed_cases() -> Vec<(String, Vec<u8>)> {
+        let body = |extension: &str| -> Vec<u8> {
+            match extension {
+                "pdf" => PDF.to_vec(),
+                "png" => PNG.to_vec(),
+                "jpg" | "jpeg" => b"\xff\xd8\xff\xe0\0\x10JFIF".to_vec(),
+                "gif" => b"GIF89a\x01\0".to_vec(),
+                "webp" => b"RIFF\x24\0\0\0WEBPVP8 ".to_vec(),
+                "zip" => b"PK\x03\x04\x14\0".to_vec(),
+                "gz" => b"\x1f\x8b\x08\0".to_vec(),
+                "xz" => b"\xfd7zXZ\0\0\x04".to_vec(),
+                "zst" => b"\x28\xb5\x2f\xfd\x20".to_vec(),
+                "bz2" => b"BZh91AY".to_vec(),
+                "7z" => b"7z\xbc\xaf\x27\x1c\0\x04".to_vec(),
+                _ => b"plain words, 1,2,3\n".to_vec(),
+            }
+        };
+        OPENABLE_EXTENSIONS
+            .iter()
+            .map(|e| (format!("file.{e}"), body(e)))
+            .collect()
+    }
+
     #[test]
-    fn the_deny_list_by_name() {
-        for risky in [
-            "launcher.desktop",
-            "run.sh",
-            "RUN.SH",
-            "tool.py",
-            "app.jar",
-            "App-1.2.AppImage",
-            "thing.appimage",
-            "pkg.deb",
-            "pkg.rpm",
-            "foo-1.0-1-x86_64.pkg.tar.zst",
-            "page.html",
-            "page.HTM",
-            "image.svg",
-            "setup.exe",
-            "x.bat",
-            "x.ps1",
-            "x.kdelnk",
-            "t.py3",
-            "t.PY2",
-            "stubs.pyi",
-            "Mod.pm",
-            "x.perl",
-            "x.jse",
-            "x.sct",
-            "x.wsc",
-            "weird.name.sh",
-            "a.tar.sh",
-            // Added after review: XML, XSLT, zipapps and byte code.
-            "page.xht",
-            "data.xml",
-            "POM.XML",
-            "style.xsl",
-            "style.xslt",
-            "app.pyz",
-            "app.pyzw",
-            "mod.pyc",
-            "mod.pyo",
-            // Compared in Unicode lower case: the Kelvin sign is a K to the system's globs.
-            "x.des\u{212A}top",
-            "x.DES\u{212A}TOP",
-            "x.\u{212A}delnk",
-        ] {
-            assert!(risky_name(risky), "{risky}");
-        }
-        for fine in [
-            "notes.txt",
-            "photo.png",
-            "doc.pdf",
-            "archive.tar.gz",
-            "data.json",
-            "build.log",
-            "sh",
-            ".sh",
-            "html",
-            "script.shx",
-            "ashes",
-            "x.pkg.tar.bz2",
-            "README",
-            "movie.mkv",
-        ] {
-            assert!(!risky_name(fine), "{fine}");
+    fn the_allow_list_is_exactly_the_agreed_types() {
+        assert_eq!(
+            OPENABLE_EXTENSIONS,
+            [
+                "txt", "text", "log", "md", "markdown", "csv", "tsv", "json", "pdf", "png", "jpg",
+                "jpeg", "gif", "webp", "zip", "tar", "gz", "tgz", "xz", "zst", "bz2", "7z"
+            ]
+        );
+        // Lowercase, no dots: the extension is lowercased before it is looked up.
+        for extension in OPENABLE_EXTENSIONS {
+            assert_eq!(*extension, extension.to_lowercase());
+            assert!(!extension.contains('.'));
         }
     }
 
     #[test]
-    fn the_deny_list_by_content() {
-        assert!(risky_content(b"\x7fELF\x02\x01"));
-        assert!(risky_content(b"#!/bin/sh\n"));
-        assert!(risky_content(b"#!"));
-        assert!(!risky_content(b"# comment\n"));
-        assert!(!risky_content(b"PK\x03\x04"));
-        assert!(!risky_content(b"\x7fEL"));
-        assert!(!risky_content(b""));
-        // Markup under any name: whitespace, a byte order mark or other text in front, any case.
-        for markup in [
-            &b"<!DOCTYPE html><script>alert(1)</script>"[..],
+    fn extension_is_the_final_one_in_unicode_lowercase() {
+        for (name, want) in [
+            ("notes.txt", Some("txt")),
+            ("x.tar.gz", Some("gz")),
+            ("x.PDF", Some("pdf")),
+            ("x.des\u{212a}top", Some("desktop")),
+            ("x.txt.", Some("")),
+            ("x.txt ", Some("txt ")),
+            ("a.b.c", Some("c")),
+            ("README", None),
+            (".txt", None),
+            ("", None),
+        ] {
+            assert_eq!(extension(name).as_deref(), want, "{name:?}");
+        }
+    }
+
+    #[test]
+    fn the_content_check_refuses_programs_and_markup_and_wants_magic() {
+        // A text type passes unless a refused start matches.
+        for fine in [
+            &b""[..],
+            b"Dear Sir,\nthe invoice is attached.\n",
+            b"# comment\n",
+            b"a < b and b > c",
+            b"{\"html\": true}",
+            b"id,name\n1,x\n",
+            b"M",
+            b"MY NOTES",
+            b"\xef\xbb\xbfhello",
+            // A refused marker later in the text, or only inside a sentence, is not a start.
+            b"Notes\n<!-- a comment later in a note -->",
+            b"a heading <h1> inside a sentence",
+            b"%PDF-1.7 mentioned in text",
+        ] {
+            assert!(
+                content_allows("txt", fine),
+                "{}",
+                String::from_utf8_lossy(fine)
+            );
+        }
+        for refused in [
+            ELF,
+            b"#!/bin/sh\n",
+            b"#!",
+            b"\n  #!/bin/sh",
+            b"\xef\xbb\xbf#!/bin/sh\n",
+            b"MZ\x90\x00",
+            b"%!PS-Adobe-3.0 EPSF-3.0\n",
+            b"<!DOCTYPE html><script>alert(1)</script>",
             b"<html><body>x",
             b"\n\n  \t<HTML>",
             b"\xef\xbb\xbf<!doctype html>",
-            b"<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\">",
+            b"<head>",
+            b"<BODY>",
+            b"<Script>x()</Script>",
             b"<svg onload=\"x()\"></svg>",
-            b"some text first\n<Script>x()</Script>",
-            b"[Desktop Entry]\nExec=sh\n",
-            b"# comment\n[Desktop Entry]\nType=Application",
-            b"[KDE Desktop Entry]\n",
-        ] {
-            assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
-        }
-        // What shared-mime-info also takes for a web page, launcher or script, found by reading
-        // its database (text/html, xhtml, svg, x-desktop, x-shellscript, x-executable and the
-        // script types denied by name).
-        for markup in [
-            // text/html: a comment or a heading at the start, a title in the first 256 bytes.
-            &b"<!-- saved page -->\n<p>hi</p>"[..],
-            b"<!--",
+            b"<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\">",
+            b"<!-- saved page -->\n<p>hi</p>",
             b"\xef\xbb\xbf  <!-- x",
             b"<H1>Index</H1>",
-            b"<h1",
-            b"Some text\n<TITLE>Report</TITLE>",
-            b"<hta:application id=x>",
-            // xhtml and svg by their document types.
-            b"x //W3C//DTD XHTML 1.0 Strict//EN",
-            b"x http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd",
-            b"<!-- Created with Inkscape -->",
-            // x-desktop and the KDE configuration files of the same type.
-            b"# Config File\nExec=x",
-            b"# KDE Config File\n[Desktop Entry]",
-            b"  \n# kde config file",
-            // Other text that runs: jnlp, scriptlets, stylesheets, php, perl, a shell archive.
-            b"<jnlp spec=\"1.0\">",
-            b"<scriptlet>",
-            b"<xsl:stylesheet version=\"1.0\">",
-            b"<?php echo 1;",
-            b"use strict;\nuse warnings;\n",
-            b"use Test::More;",
-            b"x\n=pod\n",
-            b"x\n=head1 NAME\n",
-            b"BEGIN { exit }",
-            b"#!/bin/sh\n",
-            b"# This is a shell archive (produced by GNU sharutils)",
-            b"\n# This is a shell archive",
-            // Scripts that start with an eval line, and encoded script.
-            b"eval \"exec /usr/bin/perl -S $0 $*\"\n",
-            b"eval \"exec /usr/bin/python3 $0\"",
-            b"#@~^AAAA",
-            // Programs without an ELF header: a.out, DOS and Windows, Java, Python byte code.
-            b"MZ\x90\x00",
-            b"\x1c\x52abc",
-            b"\x10\x01abc",
-            b"\x11\x01abc",
-            b"\x83\x01abc",
-            b"\xca\xfe\xba\xbe\x00\x00",
-            b"\x99\x4e\x0d\x0a\x00",
-            // Installers and launchers that are denied by name: Flatpak, deb, rpm, bundles,
-            // Windows shortcuts, registry files, Flash movies.
-            b"[Flatpak Ref]\nTitle=x\n",
-            b"[Flatpak Repo]\nTitle=x\n",
-            b"!<arch>\ndebian-binary   1\n",
-            b"\xed\xab\xee\xdb\x03\x00",
-            b"xdg-app\0\x01\0\x89\xe5",
-            b"flatpak\0\x01\0\x89\xe5",
-            b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46x",
-            b"Windows Registry Editor Version 5.00\r\n",
-            b"REGEDIT4\r\n",
-            b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
-            b"FWS\x09\0",
+            b"<TITLE>Report</TITLE>",
+            b"[Desktop Entry]\nExec=sh\n",
+            b"[KDE Desktop Entry]\n",
+            b"[Desktop Action Gallery]\n",
         ] {
-            assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
+            for extension in ["txt", "md", "json", "csv", "log"] {
+                assert!(
+                    !content_allows(extension, refused),
+                    "{extension}: {}",
+                    String::from_utf8_lossy(refused)
+                );
+            }
         }
-        // Their look-alikes that are ordinary files. The markers that the database wants at the
-        // start of a file only count there.
-        for fine in [
-            &b"Notes\n<!-- a comment later in a note -->"[..],
-            b"a heading <h1> inside a sentence",
-            b"# configuration",
-            b"% a comment\neval \"exec /x\" is how it was done",
-            b"M",
-            b"MY NOTES",
-            b"\xff\xd8\xff\xe0JFIF",
-            b"PK\x03\x04",
-            b"{\"title\": 1}",
-            // Other archives, and the OLE magic of documents.
-            b"!<arch>\nlibfoo.o/",
-            b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",
+        // A type with magic bytes needs them.
+        for (extension, magic) in [
+            ("pdf", PDF),
+            ("png", PNG),
+            ("jpg", b"\xff\xd8\xff\xdb"),
+            ("jpeg", b"\xff\xd8\xff\xe1"),
+            ("gif", b"GIF87a"),
+            ("gif", b"GIF89a"),
+            ("webp", b"RIFF\0\0\0\0WEBP"),
+            ("zip", b"PK\x03\x04"),
+            ("zip", b"PK\x05\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"),
+            ("gz", b"\x1f\x8b"),
+            ("xz", b"\xfd7zXZ\0"),
+            ("zst", b"\x28\xb5\x2f\xfd"),
+            ("bz2", b"BZh"),
+            ("7z", b"7z\xbc\xaf\x27\x1c"),
         ] {
-            assert!(!risky_content(fine), "{}", String::from_utf8_lossy(fine));
+            assert!(content_allows(extension, magic), "{extension}");
+            // The same bytes under another name's rule, and text, are refused.
+            assert!(!content_allows(extension, b"just some text"), "{extension}");
+            assert!(!content_allows(extension, b""), "{extension}");
+            assert!(!content_allows(extension, &magic[..1]), "{extension}");
+            assert!(!content_allows(extension, ELF), "{extension}");
+            assert!(!content_allows(extension, b"<html>"), "{extension}");
         }
-        // Plain text, data and documents are fine.
-        for fine in [
-            &b"Dear Sir,\nthe invoice is attached.\n"[..],
-            b"%PDF-1.7\n",
-            b"\x89PNG\r\n\x1a\n",
-            b"a < b and b > c",
-            b"{\"html\": true}",
-        ] {
-            assert!(!risky_content(fine), "{}", String::from_utf8_lossy(fine));
-        }
-        // `may_open` reads only SNIFF_BYTES; markup beyond them is not seen.
-        let mut late = vec![b'a'; SNIFF_BYTES];
-        late.extend_from_slice(b"<html>");
-        assert!(!risky_content(&late[..SNIFF_BYTES]));
-        assert!(risky_content(&late[6..SNIFF_BYTES + 6]));
+        assert!(!content_allows("png", PDF));
+        assert!(!content_allows("pdf", PNG));
+        assert!(!content_allows("webp", b"RIFF\0\0\0\0WAVE"));
+        assert!(!content_allows("zip", b"PK\x01\x02"));
+        // Tar has no magic bytes at the start: only the refused starts apply.
+        assert!(content_allows("tar", b"anything.txt\0\0"));
+        assert!(!content_allows("tar", ELF));
     }
 
     #[test]
-    fn may_open_checks_the_name_then_the_file() {
+    fn may_open_allows_the_listed_types_and_nothing_else() {
         let dir = std::env::temp_dir().join(format!("rex-open-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let file = |name: &str, bytes: &[u8]| {
@@ -431,33 +283,105 @@ mod tests {
             std::fs::write(&path, bytes).unwrap();
             path
         };
-        assert!(may_open(&file("notes.txt", b"hello")));
-        assert!(may_open(&file("empty", b"")));
-        assert!(!may_open(&file("run.sh", b"echo")));
-        assert!(!may_open(&file("innocent.txt", b"#!/bin/sh\nrm -rf ~\n")));
-        assert!(!may_open(&file("program", b"\x7fELF\x02\x01\x01")));
-        // Markup is refused whatever the name: none, an unknown extension, a numbered copy.
-        for name in ["invoice", "report.dat", "logo.dat", "invoice (1)", "lead"] {
-            for body in [
-                &b"<!DOCTYPE html><script>alert(1)</script>"[..],
-                b"  \n<html>",
-                b"<?xml version=\"1.0\"?><svg>",
-            ] {
-                assert!(!may_open(&file(name, body)), "{name}");
-            }
+        for (name, bytes) in allowed_cases() {
+            assert!(may_open(&file(&name, &bytes)), "{name}");
         }
-        // A comment first and the script 600 bytes later, beyond what is read: the comment
-        // alone makes it a web page to the system.
-        let mut late = b"<!--".to_vec();
-        late.extend_from_slice(&[b' '; 600]);
-        late.extend_from_slice(b"<script>alert(1)</script>");
-        assert!(!may_open(&file("report.dat", &late)));
-        assert!(!may_open(&file("report (1).dat", b"# KDE Config File\n")));
-        assert!(!may_open(&file("sheet.dat", b"<xsl:stylesheet>")));
-        assert!(!may_open(&file("style.xsl", b"plain")));
-        assert!(!may_open(&file("launcher.des\u{212a}top", b"plain")));
-        assert!(may_open(&file("report.txt", &[b' '; 600])));
+        for (name, bytes) in [
+            ("notes.txt", &b"hello"[..]),
+            ("empty.txt", b""),
+            ("x.PDF", PDF),
+            ("Report.Txt", b"words"),
+            ("x.tar.gz", b"\x1f\x8b\x08\0"),
+            ("backup.tar", b"name\0\0\0"),
+            ("a.b.c.md", b"# Title\n"),
+            ("report.txt", &[b' '; 600]),
+            // A refused start beyond what is read is not seen.
+            (
+                "long.txt",
+                &[b"x".repeat(SNIFF_BYTES).as_slice(), b"<html>"].concat(),
+            ),
+            ("bom.txt", b"\xef\xbb\xbfhello"),
+            // A name that the sanitizer leaves with a space inside.
+            ("my notes (1).txt", b"hello"),
+        ] {
+            assert!(may_open(&file(name, bytes)), "{name}");
+        }
+        // Not on the list, whatever the bytes: Show in folder only.
+        for name in [
+            "invoice.eps",
+            "x.rdp",
+            "x.remmina",
+            "x.svg",
+            "x.svgz",
+            "x.html",
+            "x.htm",
+            "x.xml",
+            "x.desktop",
+            "x.sh",
+            "run.sh",
+            "tool.py",
+            "app.jar",
+            "App.AppImage",
+            "pkg.deb",
+            "foo.pkg.tar.zst",
+            "setup.exe",
+            "x.url",
+            "x.docx",
+            "x.odt",
+            "x.ps",
+            "song.mp3",
+            "movie.mkv",
+            "x.lnk",
+            "README",
+            "empty",
+            "invoice (1)",
+            ".txt",
+            "x.",
+            "x.dat",
+            // Compared in Unicode lowercase: the Kelvin sign is a k, so this is .desktop.
+            "x.des\u{212a}top",
+            "x.DES\u{212a}TOP",
+            // As the sanitizer never leaves them, but may_open still refuses them.
+            "x.txt.",
+            "x.txt ",
+            "x.txt\u{a0}",
+        ] {
+            assert!(!may_open(&file(name, b"plain words")), "{name}");
+            assert!(!may_open(&file(name, PDF)), "{name}");
+        }
+        // The name says one thing and the file another.
+        assert!(!may_open(&file(
+            "x.pdf",
+            b"<!DOCTYPE html><script>alert(1)</script>"
+        )));
+        assert!(!may_open(&file("x.pdf", b"just text")));
+        assert!(!may_open(&file("x.png", ELF)));
+        assert!(!may_open(&file("x.png", PDF)));
+        assert!(!may_open(&file("x.zip", b"")));
+        assert!(!may_open(&file("x.txt", b"#!/bin/sh\nrm -rf ~\n")));
+        assert!(!may_open(&file("x.md", b"<!-- note -->\n# Title\n")));
+        assert!(!may_open(&file("x.md", b"<h1>Title</h1>")));
+        assert!(!may_open(&file("x.json", b"<?xml version=\"1.0\"?>")));
+        assert!(!may_open(&file("x.csv", b"[Desktop Entry]\nExec=x")));
+        assert!(!may_open(&file("x.log", ELF)));
+        assert!(!may_open(&file("x.txt", b"MZ\x90\0")));
+        assert!(!may_open(&file("x.txt", b"%!PS-Adobe-3.0\n")));
+        // Missing, a directory with an allowed name, and a symlink are not opened.
         assert!(!may_open(&dir.join("missing.txt")));
+        let folder = dir.join("folder.txt");
+        std::fs::create_dir(&folder).unwrap();
+        assert!(!may_open(&folder), "a directory is not a regular file");
+        // Not a regular file either: a FIFO that already holds more text than is read.
+        let fifo = dir.join("pipe.txt");
+        let c_path = std::ffi::CString::new(fifo.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) }, 0);
+        let mut writer = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&fifo)
+            .unwrap();
+        std::io::Write::write_all(&mut writer, &[b'a'; 600]).unwrap();
+        assert!(!may_open(&fifo), "a FIFO is not a regular file");
         let link = dir.join("link.txt");
         std::os::unix::fs::symlink(dir.join("notes.txt"), &link).unwrap();
         assert!(!may_open(&link), "a symlink is never followed");

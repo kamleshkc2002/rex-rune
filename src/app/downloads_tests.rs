@@ -885,12 +885,24 @@ fn cancel_on_a_row_sends_download_cancel_for_that_transfer() {
 fn open_is_offered_only_for_files_that_may_be_opened_and_nothing_opens_without_a_click() {
     let (ws, _rx, dir) = workspace_13();
     let mut rt = runtime(ws);
-    let files: [(&str, &[u8], bool); 5] = [
+    let files: [(&str, &[u8], bool); 12] = [
         ("notes.txt", b"plain text", true),
         ("run.sh", b"echo hi\n", false),
         ("prog", b"\x7fELF\x02\x01\x01", false),
         ("page", b"<!doctype html><script>alert(1)</script>", false),
         ("script-no-ext", b"#!/bin/sh\nid\n", false),
+        // Allow list: a plain type with a name of its own, Show in folder only for the rest.
+        ("Report.PDF", b"%PDF-1.7\n", true),
+        ("plain", b"no extension, plain words", false),
+        ("invoice.eps", b"%!PS-Adobe-3.0 EPSF-3.0\n", false),
+        ("logo.svg", b"plain words under a svg name", false),
+        (
+            "fake.pdf",
+            b"<!doctype html><script>alert(1)</script>",
+            false,
+        ),
+        ("fake.png", b"\x7fELF\x02\x01\x01", false),
+        ("shell.txt", b"#!/bin/sh\nid\n", false),
     ];
     for (name, bytes, _) in &files {
         std::fs::write(dir.join(name), bytes).unwrap();
