@@ -5,7 +5,9 @@ on Wayland driven by a virtual pointer and keyboard (`vptr`, a tiny wlroots clie
 wf-recorder at 60 fps.
 
 Nothing touches the user's desktop or their Rex server: the server listens on a private socket
-and every `rex` call names it with autostart off. REX_BIN selects the client (default
+and every `rex` call names it with autostart off. The fixture shells do run with your real
+environment (HOME, shell startup files and prompt, and your `~/.config/rex`), so the recording
+can show your user name, host name and paths: check the clip before publishing it. REX_BIN selects the client (default
 target/release/rex-linux), which runs with a `tailscale` that finds no tailnet and no update
 check. `DEMO_PROBE=1` skips the recording and
 writes screenshots at the interesting moments instead, for calibrating coordinates.

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Layout the pointer steps assume, pinned into the client's private workspace.json rather than
 # inherited from its defaults: the toolbar is 52 pt, a single pane is full-bleed, and the grid
 # starts PANE_PADDING in from the left and below the toolbar. Cells are 9 x 20 px at font size 15.
-PANE_PADDING, TOOLBAR, FONT_SIZE, CELL = 8, 52, 15, (9, 20)
+PANE_PADDING, TOOLBAR, FONT_SIZE, CELL = 8, 52, 15, (9, 21)
 
 
 def cell_point(column, row, fx=0.5, fy=0.5):

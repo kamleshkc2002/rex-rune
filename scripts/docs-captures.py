@@ -92,7 +92,7 @@ SCREENS = [
         "script": PALETTE_ADD_HOST,
         "at": 3.6,
         "annotations": [
-            ({"key": "popup-search"}, "Search the machines on your tailnet"),
+            ({"key": "popup-search"}, "Search; machines on your tailnet are listed here when Tailscale answers"),
             ({"text": "Enter an endpoint…"}, "Or type an endpoint by hand"),
         ],
     },

@@ -13,7 +13,9 @@ Covers:
 Environment: REX_BIN is the client to test (default target/debug/rex-linux). REX_SERVER must name a
 disposable Rex server (a unix:// socket you started yourself); nothing here starts, stops or
 autostarts one, and the script refuses to run without it. It creates and destroys only its own Rex
-sessions. Writes captures to REX_CAPTURE_OUT (default in the system temporary directory).
+sessions. Writes captures to REX_CAPTURE_OUT (default in the system temporary directory). The
+captures show the shell prompt of that server, so start it with a throwaway HOME and a plain PS1
+if the images will be shared.
 
 The scripts that import this module share its helpers: `api`, `Desktop` (Xvfb, openbox and a
 `tailscale` that finds no tailnet, so the Add host list never shows or probes a real one) and
@@ -37,7 +39,7 @@ PANE_PADDING = 8
 TOOLBAR_HEIGHT = 52
 # JetBrainsMono at font_size 15: 9 px per column and 20 px per row at scale 1.
 FONT_SIZE = 15
-CELL = (9, 20)
+CELL = (9, 21)
 
 
 def pin_layout(config, **settings):
