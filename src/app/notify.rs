@@ -11,6 +11,28 @@ const DEST: &str = "org.freedesktop.Notifications";
 const PATH: &str = "/org/freedesktop/Notifications";
 /// Clicks are remembered for this many recent notifications.
 const REMEMBERED: usize = 64;
+/// The picture each notification shows. GNOME draws only a small, plain app icon without one.
+const IMAGE: &[u8] = include_bytes!("../../resources/icons/128x128/apps/dev.shuv.rex-linux.png");
+
+/// `IMAGE` as the spec's `image-data` hint, `(iiibiiay)`: width, height, row stride, alpha,
+/// bits per sample, channels and RGBA bytes. Sent with every notification, so it needs no
+/// installed icon file.
+fn image_data() -> Option<Variant<'static>> {
+    let image = image::load_from_memory_with_format(IMAGE, image::ImageFormat::Png)
+        .ok()?
+        .into_rgba8();
+    let (width, height) = image.dimensions();
+    let (width, height) = (width as i32, height as i32);
+    Some(Variant::from((
+        width,
+        height,
+        width * 4,
+        true,
+        8i32,
+        4i32,
+        image.into_raw(),
+    )))
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NoteTarget {
@@ -62,11 +84,15 @@ async fn run(notes: flume::Receiver<Note>, handle: AppHandle<Workspace>) -> zbus
     let mut targets: HashMap<u32, NoteTarget> = HashMap::new();
     let mut order: VecDeque<u32> = VecDeque::new();
     let mut tokens: HashMap<u32, String> = HashMap::new();
+    let image = image_data();
     loop {
         tokio::select! {
             note = notes.recv_async() => {
                 let Ok(note) = note else { return Ok(()) };
-                let hints = HashMap::from([("desktop-entry", Variant::from("dev.shuv.rex-linux"))]);
+                let mut hints = HashMap::from([("desktop-entry", Variant::from("dev.shuv.rex-linux"))]);
+                if let Some(image) = &image {
+                    hints.insert("image-data", image.try_clone()?);
+                }
                 let id: u32 = proxy
                     .call(
                         "Notify",
@@ -112,5 +138,26 @@ async fn run(notes: flume::Receiver<Note>, handle: AppHandle<Workspace>) -> zbus
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_notification_picture_matches_the_freedesktop_image_data_format() {
+        let image = super::image_data().expect("embedded Rex icon decodes");
+        let (width, height, stride, alpha, bits, channels, pixels): (
+            i32,
+            i32,
+            i32,
+            bool,
+            i32,
+            i32,
+            Vec<u8>,
+        ) = image.try_into().expect("image-data is (iiibiiay)");
+        assert_eq!((width, height, stride), (128, 128, 128 * 4));
+        assert_eq!((alpha, bits, channels), (true, 8, 4));
+        assert_eq!(pixels.len(), (stride * height) as usize);
+        assert!(pixels.chunks_exact(4).any(|pixel| pixel[3] != 0));
     }
 }
