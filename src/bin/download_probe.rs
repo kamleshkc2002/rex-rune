@@ -12,12 +12,16 @@
 use anyhow::{Context, Result, bail, ensure};
 use rex_linux::{
     connection::{HostCommand, HostConnection, HostModel, downloads::Request},
-    download::{Config, Failure, Records, State, next_id},
+    download::{Config, Failure, Limits, Reason, Records, State, next_id},
 };
 use sha2::{Digest, Sha256};
 use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -91,6 +95,10 @@ impl Probe {
     }
 
     fn start(&self, path: &Path, dest: &Path) -> u64 {
+        self.start_with(path, dest, |_| {})
+    }
+
+    fn start_with(&self, path: &Path, dest: &Path, configure: impl FnOnce(&mut Config)) -> u64 {
         let id = next_id();
         let mut request =
             Request::new(id, &self.session, &self.block, path.to_str().unwrap(), dest);
@@ -98,6 +106,7 @@ impl Probe {
             records: Records::at(self.work.join("state/downloads.json")),
             ..Config::default()
         };
+        configure(&mut request.config);
         self.host
             .commands
             .send(HostCommand::Download(Box::new(request)))
@@ -439,6 +448,170 @@ async fn run() -> Result<()> {
     }
     .await;
     probe.report("cancel at the question, 17 times", result);
+
+    // Free space is injected (the probe cannot fill a disk): an 8 MiB reserve and a 1 MiB floor,
+    // and a destination that reports `looks` in turn (when the transfer is admitted, when the
+    // question is answered, then while it runs); the last one repeats.
+    let low_space = |looks: &'static [u64]| {
+        move |config: &mut Config| {
+            config.limits = Limits {
+                reserve: 8 * MIB,
+                low_floor: MIB,
+                ..Limits::default()
+            };
+            let seen = AtomicU64::new(0);
+            config.space = Some(Arc::new(move || -> std::io::Result<u64> {
+                let look = seen.fetch_add(1, Ordering::Relaxed) as usize;
+                Ok(looks[look.min(looks.len() - 1)])
+            }));
+        }
+    };
+
+    // The 64 MiB file does not fit in 32 MiB free: refused at once, no question, and the
+    // reservation is freed on the server.
+    let result = async {
+        let dest = probe.work.join("dest-low-refused");
+        std::fs::create_dir_all(&dest)?;
+        let id = probe.start_with(&source.join("big-64MiB.bin"), &dest, low_space(&[32 * MIB]));
+        let state = probe.finish(id).await?;
+        ensure!(
+            state == State::Failed(Failure::LowSpace { free: 32 * MIB }),
+            "{state:?}"
+        );
+        ensure!(
+            std::fs::read_dir(&dest)?.next().is_none(),
+            "something was written"
+        );
+        let mut detail = "refused without a question".to_owned();
+        if probe.server_pid.is_some() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let open = probe.open_files("big-64MiB.bin").unwrap_or(usize::MAX);
+            ensure!(open == 0, "the server still has the file open ({open})");
+            detail.push_str(", server holds no descriptor");
+        }
+        Ok(detail)
+    }
+    .await;
+    probe.report("low space: bigger than the free space", result);
+
+    // 65 MiB free, an 8 MiB reserve and a 1 MiB floor: it fits but eats the reserve. It is asked
+    // about, and after a yes it is saved whole although the destination then reports less than
+    // the reserve (2 MiB free, over the floor).
+    let result = async {
+        let dest = probe.work.join("dest-low-yes");
+        std::fs::create_dir_all(&dest)?;
+        let id = probe.start_with(
+            &source.join("big-64MiB.bin"),
+            &dest,
+            low_space(&[65 * MIB, 65 * MIB, 2 * MIB]),
+        );
+        let State::AwaitingConfirmation(question) = probe
+            .wait("the question", |m| {
+                m.downloads
+                    .iter()
+                    .find(|t| t.id == id)
+                    .filter(|t| matches!(t.state, State::AwaitingConfirmation(_)))
+                    .map(|t| t.state.clone())
+            })
+            .await?
+        else {
+            unreachable!()
+        };
+        ensure!(
+            question.reason == Reason::LowSpace
+                && question.hint == 64 * MIB
+                && question.free == Some(65 * MIB),
+            "{question:?}"
+        );
+        probe
+            .host
+            .commands
+            .send(HostCommand::DownloadConfirm(id))
+            .unwrap();
+        let State::Saved { path, bytes, .. } = probe.finish(id).await? else {
+            bail!("not saved: {:?}", probe.state(id));
+        };
+        let (want, got) = (sha256(&source.join("big-64MiB.bin"))?, sha256(&path)?);
+        ensure!(
+            want == got && bytes == 64 * MIB,
+            "{bytes} bytes, sha256 {got}"
+        );
+        Ok(format!(
+            "asked (LowSpace, 64 MiB of 65 MiB free), yes, saved {bytes} bytes intact"
+        ))
+    }
+    .await;
+    probe.report("low space: a yes uses the reserve", result);
+
+    // 64.5 MiB free: the 64 MiB file fits, but not with the 1 MiB floor left over, so even a yes
+    // could not help: refused at once, no question.
+    let result = async {
+        let dest = probe.work.join("dest-low-floor");
+        std::fs::create_dir_all(&dest)?;
+        let free = 64 * MIB + MIB / 2;
+        let id = probe.start_with(
+            &source.join("big-64MiB.bin"),
+            &dest,
+            low_space(&[64 * MIB + MIB / 2]),
+        );
+        let state = probe.finish(id).await?;
+        ensure!(
+            state == State::Failed(Failure::LowSpace { free }),
+            "{state:?}"
+        );
+        ensure!(
+            std::fs::read_dir(&dest)?.next().is_none(),
+            "something was written"
+        );
+        Ok("refused: no room for the floor".to_owned())
+    }
+    .await;
+    probe.report("low space: the floor must fit too", result);
+
+    // Asked with 65 MiB free; by the yes the disk is down to 40 MiB: the yes is checked again, the
+    // transfer fails and the reservation is freed.
+    let result = async {
+        let dest = probe.work.join("dest-low-stale");
+        std::fs::create_dir_all(&dest)?;
+        let id = probe.start_with(
+            &source.join("big-64MiB.bin"),
+            &dest,
+            low_space(&[65 * MIB, 40 * MIB]),
+        );
+        probe
+            .wait("the question", |m| {
+                m.downloads
+                    .iter()
+                    .find(|t| t.id == id)
+                    .filter(|t| matches!(t.state, State::AwaitingConfirmation(_)))
+                    .map(|_| ())
+            })
+            .await?;
+        probe
+            .host
+            .commands
+            .send(HostCommand::DownloadConfirm(id))
+            .unwrap();
+        let state = probe.finish(id).await?;
+        ensure!(
+            state == State::Failed(Failure::LowSpace { free: 40 * MIB }),
+            "{state:?}"
+        );
+        ensure!(
+            std::fs::read_dir(&dest)?.next().is_none(),
+            "something was written"
+        );
+        let mut detail = "the stale yes was refused".to_owned();
+        if probe.server_pid.is_some() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let open = probe.open_files("big-64MiB.bin").unwrap_or(usize::MAX);
+            ensure!(open == 0, "the server still has the file open ({open})");
+            detail.push_str(", server holds no descriptor");
+        }
+        Ok(detail)
+    }
+    .await;
+    probe.report("low space: a yes that waited is checked again", result);
 
     // A file whose reported size is wrong: Rex ends the stream at its end, so it is saved and
     // says it was short (sysfs reports 4096 for a few bytes).

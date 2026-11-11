@@ -8,7 +8,7 @@
 //! tickets goes away, so a reconnect can't carry one over.
 use super::{Client, Shared};
 use crate::download::{
-    self, Config, Event, Failure, FreeSpace, MIN_API_REVISION, Transfer, name,
+    self, Admission, Config, Event, Failure, FreeSpace, MIN_API_REVISION, Reason, Transfer, name,
     store::Destination,
     stream::{self, Job, Outcome, Stop},
 };
@@ -105,12 +105,14 @@ impl Downloads {
 
     /// Reserves the file and starts receiving it. A refusal or failure is recorded on the
     /// transfer and returns `Ok`; an `Err` means the control connection itself failed.
+    /// `new_ref` makes the data reference (`download::new_ref`; a parameter so a test can fail it).
     pub(super) async fn start(
         &mut self,
         control: &mut Client,
         shared: &Shared,
         endpoint: &str,
         request: Request,
+        new_ref: fn() -> Result<String>,
     ) -> Result<()> {
         let id = request.id;
         let running = download::active(&shared.model.lock().expect("host model").downloads);
@@ -140,7 +142,15 @@ impl Downloads {
             }
         };
         // No `if_none_match`: there is no cache, so Rex never has a reason to say not modified.
-        let begin = DownloadBegin::new(download::new_ref()?, request.path.clone())
+        let reference = match new_ref() {
+            Ok(reference) => reference,
+            Err(error) => {
+                let message = format!("Couldn't make a reference for the download: {error:#}");
+                update(shared, id, Event::Failed(Failure::Connection(message)));
+                return Ok(());
+            }
+        };
+        let begin = DownloadBegin::new(reference, request.path.clone())
             .on(request.session.clone(), request.block.clone());
         let reply = match tokio::time::timeout(Duration::from_secs(8), control.call(begin)).await {
             Err(_) => {
@@ -236,7 +246,7 @@ impl Task {
             ticket,
             reply,
             destination,
-            config,
+            mut config,
             signals,
         } = self;
         let hint = u64::try_from(reply.size).unwrap_or(0);
@@ -246,17 +256,15 @@ impl Task {
             .space
             .clone()
             .unwrap_or_else(|| Arc::new(destination.clone()));
-        let free = space.free().ok();
-        if let Some(free) = free
-            && free < config.limits.reserve
-        {
-            update(&shared, id, Event::Failed(Failure::LowSpace { free }));
-            stream::release(&endpoint, &ticket).await;
-            return;
-        }
-        let confirmation = match free {
-            Some(free) => config.limits.confirmation(hint, free),
-            None => config.limits.confirmation_without_space(hint),
+        let confirmation = match config.limits.admission(hint, space.free().ok()) {
+            Admission::Start => None,
+            Admission::Ask(question) => Some(question),
+            // No answer could make it fit: don't ask, and free Rex's reservation.
+            Admission::Refuse(failure) => {
+                update(&shared, id, Event::Failed(failure));
+                stream::release(&endpoint, &ticket).await;
+                return;
+            }
         };
         update(
             &shared,
@@ -289,7 +297,24 @@ impl Task {
                     return;
                 }
             }
+            // The question may have waited a while: look at the disk again before the yes counts.
+            if let Some(question) = confirmation
+                && let Err(failure) =
+                    config
+                        .limits
+                        .recheck(question.reason, hint, space.free().ok())
+            {
+                update(&shared, id, Event::Failed(failure));
+                stream::release(&endpoint, &ticket).await;
+                return;
+            }
             update(&shared, id, Event::Confirmed);
+        }
+        if confirmation.is_some_and(|question| question.reason == Reason::LowSpace) {
+            // A yes to "this leaves less than the reserve" lets this transfer use the reserve down
+            // to the floor. The growth cap, the stall timer and a real disk-full error still
+            // stop it.
+            config.limits.reserve = config.limits.reserve.min(config.limits.low_floor);
         }
         let stop = async {
             loop {

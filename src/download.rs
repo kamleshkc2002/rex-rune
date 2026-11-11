@@ -75,6 +75,10 @@ pub struct Limits {
     /// Abort when the destination has less than this left; also kept free by the confirmation
     /// rule: 256 MiB.
     pub reserve: u64,
+    /// What a yes to the low-space question still keeps free: 16 MiB. The transfer may eat into
+    /// the reserve but never below this, so a server that sends more than it said cannot fill
+    /// the disk to nothing. A file that cannot fit with this left over is refused up front.
+    pub low_floor: u64,
     /// The stream may exceed the hint by this much, or by the hint itself again if that is more:
     /// 64 MiB.
     pub growth: u64,
@@ -91,6 +95,7 @@ impl Default for Limits {
         Self {
             confirm_at: GIB,
             reserve: 256 * MIB,
+            low_floor: 16 * MIB,
             growth: 64 * MIB,
             stall: Duration::from_secs(30),
             per_host: 3,
@@ -102,9 +107,12 @@ impl Default for Limits {
 /// Why a download needs a yes before its stream is opened.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Reason {
-    /// The size hint is [`Limits::confirm_at`] or more.
+    /// The size hint is [`Limits::confirm_at`] or more. The destination has room for it and the
+    /// reserve: a free-space check during the transfer still stops it.
     Large,
-    /// The hint is more than the free space less [`Limits::reserve`].
+    /// The file fits in the free space but not with [`Limits::reserve`] left over. A yes means
+    /// this transfer may use the reserve down to [`Limits::low_floor`]; below that, the growth
+    /// cap, the stall timer and a full disk stop it.
     LowSpace,
 }
 
@@ -118,11 +126,48 @@ pub struct Confirmation {
     pub free: Option<u64>,
 }
 
+/// What to do with a reserved file, from its size hint and the destination's free space.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Admission {
+    /// Open the stream.
+    Start,
+    /// Ask first: no stream is open until the person says yes.
+    Ask(Confirmation),
+    /// It cannot succeed: do not ask, free Rex's reservation and fail with this.
+    Refuse(Failure),
+}
+
 impl Limits {
-    /// Whether a file of `hint` bytes needs confirming with `free` bytes available. A hint that
-    /// is both large and too big for the space is reported as [`Reason::LowSpace`].
+    /// Decides what happens to a file of `hint` bytes when `free` bytes are available (`None`
+    /// when the filesystem wouldn't say):
+    /// - a hint above the free space less [`Limits::low_floor`]: refused with
+    ///   [`Failure::LowSpace`], since no answer could make it fit with the floor left over;
+    /// - less free space than the reserve, or a hint above the free space less the reserve: a
+    ///   [`Reason::LowSpace`] question;
+    /// - a hint of [`Limits::confirm_at`] or more: a [`Reason::Large`] question;
+    /// - otherwise it starts. Unknown free space asks only the large-file question.
+    pub fn admission(&self, hint: u64, free: Option<u64>) -> Admission {
+        let Some(free) = free else {
+            return self
+                .confirmation_without_space(hint)
+                .map_or(Admission::Start, Admission::Ask);
+        };
+        if free
+            .checked_sub(self.low_floor)
+            .is_none_or(|room| hint > room)
+        {
+            return Admission::Refuse(Failure::LowSpace { free });
+        }
+        self.confirmation(hint, free)
+            .map_or(Admission::Start, Admission::Ask)
+    }
+
+    /// Whether a file of `hint` bytes that fits in `free` bytes needs confirming. A hint that is
+    /// both large and over the free space less the reserve is reported as [`Reason::LowSpace`].
+    /// [`Limits::admission`] is what decides; it refuses a hint that doesn't fit at all. With
+    /// less free space than the reserve every file is a [`Reason::LowSpace`] question.
     pub fn confirmation(&self, hint: u64, free: u64) -> Option<Confirmation> {
-        let reason = if hint > free.saturating_sub(self.reserve) {
+        let reason = if free < self.reserve || hint > free - self.reserve {
             Reason::LowSpace
         } else if hint >= self.confirm_at {
             Reason::Large
@@ -145,6 +190,28 @@ impl Limits {
             hint,
             free: None,
         })
+    }
+
+    /// Looks again at a transfer whose question was answered yes while `confirmed` was asked,
+    /// since the answer may have waited a long while and the disk may have filled meanwhile.
+    /// Fails with what [`Limits::admission`] now refuses with; and with [`Failure::LowSpace`]
+    /// when a [`Reason::Large`] yes meets space that now needs the low-space question (the
+    /// person answered a different question). Otherwise the transfer goes on.
+    pub(crate) fn recheck(
+        &self,
+        confirmed: Reason,
+        hint: u64,
+        free: Option<u64>,
+    ) -> Result<(), Failure> {
+        match self.admission(hint, free) {
+            Admission::Refuse(failure) => Err(failure),
+            Admission::Ask(Confirmation {
+                reason: Reason::LowSpace,
+                free: Some(free),
+                ..
+            }) if confirmed == Reason::Large => Err(Failure::LowSpace { free }),
+            _ => Ok(()),
+        }
     }
 
     /// The most bytes a stream may carry for a hint: the larger of twice the hint and the hint
@@ -185,6 +252,15 @@ impl Meter {
 
     pub fn stalled(&self, now: Instant) -> bool {
         now >= self.deadline()
+    }
+
+    /// Whether `n` more bytes may be written: not if they would take the stream past its growth
+    /// cap. Asked before writing, so a hostile server never makes the client write past it.
+    pub fn admit(&self, n: u64) -> Result<(), Failure> {
+        if self.received.saturating_add(n) > self.cap {
+            return Err(Failure::TooMuchData { limit: self.cap });
+        }
+        Ok(())
     }
 
     /// Counts `n` bytes that arrived and were written. Fails when the stream passes its growth
@@ -273,7 +349,8 @@ pub enum Failure {
     Connection(String),
     /// The control connection ended, or was replaced by a reconnect, so Rex ended the stream.
     ConnectionLost,
-    /// The destination has less than the reserve left.
+    /// The destination has less than the reserve left, or (before the stream is opened) less
+    /// room than the file needs.
     LowSpace { free: u64 },
     /// The stream went past the growth cap.
     TooMuchData { limit: u64 },
@@ -536,12 +613,14 @@ pub fn active(list: &[Transfer]) -> usize {
 }
 
 /// Server text for display: control characters become spaces, direction controls and other
-/// invisible format characters (the set file names are cleaned of) are removed, and the whole is
-/// cut to a length that fits a notice. Rex's messages repeat the whole path, which can be
+/// invisible format characters (the set file names are cleaned of) are removed, and a text over
+/// 300 characters is shortened in the middle, keeping its start and its end (the end of a path
+/// is its file name) around an ellipsis. Rex's messages repeat the whole path, which can be
 /// thousands of characters. Cleaning text that was already cleaned changes nothing.
 pub fn display_text(text: &str) -> String {
     const LIMIT: usize = 300;
-    let cleaned: String = text
+    const HEAD: usize = 100;
+    let cleaned: Vec<char> = text
         .chars()
         .filter_map(|c| match c {
             c if c.is_control() => Some(' '),
@@ -549,11 +628,13 @@ pub fn display_text(text: &str) -> String {
             c => Some(c),
         })
         .collect();
-    if cleaned.chars().count() <= LIMIT {
-        return cleaned;
+    if cleaned.len() <= LIMIT {
+        return cleaned.into_iter().collect();
     }
-    let mut short: String = cleaned.chars().take(LIMIT).collect();
+    let tail = LIMIT - HEAD - 1;
+    let mut short: String = cleaned[..HEAD].iter().collect();
     short.push('…');
+    short.extend(&cleaned[cleaned.len() - tail..]);
     short
 }
 

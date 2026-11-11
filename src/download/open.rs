@@ -2,8 +2,9 @@
 //! anything; it only answers the question, in one place.
 use std::{io::Read, os::unix::fs::OpenOptionsExt, path::Path};
 
-/// Extensions of files that can run or script something when opened, compared without case. An
-/// entry with a dot inside matches a longer ending (`pkg.tar.zst`).
+/// Extensions of files that can run or script something when opened, compared without case (in
+/// Unicode: `.des\u{212a}top` with a Kelvin sign is `.desktop` to the system's glob matching).
+/// An entry with a dot inside matches a longer ending (`pkg.tar.zst`).
 const RISKY_EXTENSIONS: &[&str] = &[
     // Launchers and scripts.
     "desktop",
@@ -22,6 +23,10 @@ const RISKY_EXTENSIONS: &[&str] = &[
     "py3",
     "pyw",
     "pyi",
+    "pyz",
+    "pyzw",
+    "pyc",
+    "pyo",
     "pl",
     "pm",
     "perl",
@@ -71,6 +76,10 @@ const RISKY_EXTENSIONS: &[&str] = &[
     "html",
     "htm",
     "xhtml",
+    "xht",
+    "xml",
+    "xsl",
+    "xslt",
     "shtml",
     "svg",
     "svgz",
@@ -81,25 +90,90 @@ const RISKY_EXTENSIONS: &[&str] = &[
 /// How many bytes of a file's start decide [`risky_content`].
 pub const SNIFF_BYTES: usize = 512;
 
-/// Text that makes a file a web page, an SVG or XML document, or a desktop launcher wherever the
-/// system's type detection looks for it, whatever the file is called. Compared without case,
-/// anywhere in the first [`SNIFF_BYTES`] bytes.
+/// Text that makes a file a web page, an SVG or XML document, a desktop launcher or a script
+/// wherever the system's type detection (shared-mime-info) looks for it, whatever the file is
+/// called. Compared without case, anywhere in the first [`SNIFF_BYTES`] bytes (the database looks
+/// within the first 32 to 256 bytes, so this is a superset).
 const RISKY_MARKERS: &[&[u8]] = &[
+    // text/html, application/hta, application/xhtml+xml and image/svg+xml.
     b"<!doctype",
     b"<html",
     b"<head",
     b"<body",
+    b"<title",
     b"<script",
     b"<svg",
     b"<?xml",
+    b"<hta:application",
+    b"//w3c//dtd xhtml ",
+    b"xhtml1/dtd/xhtml1-strict.dtd",
+    // application/x-desktop.
     b"[desktop entry]",
     b"[desktop action",
     b"[kde desktop entry]",
+    // Script and program types that are denied by name: jnlp, wsc and sct, xslt, php, perl.
+    b"<jnlp",
+    b"<scriptlet",
+    b"<xsl:stylesheet",
+    b"<?php",
+    b"use strict",
+    b"use warnings",
+    b"use diagnostics",
+    b"use test::",
+    b"\n=pod",
+    b"\n=head1 name",
+    b"\n=head1 description",
+    b"begin {",
+    // Flatpak references and repositories (application/vnd.flatpak.ref and .repo) are installed
+    // by the software centre.
+    b"[flatpak ref]",
+    b"[flatpak repo]",
+    // A shell archive (text/x-shellscript) has its marker at offset 10.
+    b"# this is a shell archive",
+];
+
+/// What a file may start with, after a byte order mark and white space, to be taken for one of
+/// these (the database wants them at offset 0): `<!--` and `<h1` make text/html, `# Config File`
+/// and `# KDE Config File` make application/x-desktop, `eval "exec /...` is how Python, Perl,
+/// Ruby and Lua scripts start without a `#!` line, and `#@~^` is an encoded VBScript or JScript.
+const RISKY_STARTS: &[&[u8]] = &[
+    b"<!--",
+    b"<h1",
+    b"# config file",
+    b"# kde config file",
+    b"eval \"exec /",
+    b"#@~^",
+    // A registry file (text/x-ms-regedit).
+    b"regedit",
+    b"windows registry editor version 5.00",
+];
+
+/// First bytes of programs that have no ELF header: the old a.out forms (application/
+/// x-executable), MZ (DOS and Windows programs), Java classes, Python byte code, and the
+/// installers and launchers denied by name: RPM packages, Flatpak bundles, Windows shortcuts
+/// (.lnk), Windows registry files in UTF-16 and Flash movies. The OLE magic (.msi) is left out
+/// on purpose: it is also every old Word and Excel document.
+const RISKY_MAGIC: &[&[u8]] = &[
+    b"MZ",
+    b"\x1c\x52",
+    b"\x10\x01",
+    b"\x11\x01",
+    b"\x83\x01",
+    b"\xca\xfe\xba\xbe",
+    b"\x99\x4e\x0d\x0a",
+    b"\xed\xab\xee\xdb",
+    b"xdg-app\0\x01\0\x89\xe5",
+    b"flatpak\0\x01\0\x89\xe5",
+    b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46",
+    b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
+    b"FWS",
+    b"CWS",
+    b"ZWS",
 ];
 
 /// Whether the name alone rules out opening.
 pub fn risky_name(name: &str) -> bool {
-    let lower = name.to_ascii_lowercase();
+    let lower = name.to_lowercase();
     RISKY_EXTENSIONS.iter().any(|extension| {
         lower
             .strip_suffix(extension)
@@ -111,8 +185,18 @@ pub fn risky_name(name: &str) -> bool {
 /// of a web page, SVG or XML document or desktop launcher (a hostile host can give those any
 /// name or none, and the browser would run their script).
 pub fn risky_content(head: &[u8]) -> bool {
+    let start = head
+        .strip_prefix(b"\xef\xbb\xbf")
+        .unwrap_or(head)
+        .trim_ascii_start();
     head.starts_with(b"\x7fELF")
         || head.starts_with(b"#!")
+        || RISKY_MAGIC.iter().any(|magic| head.starts_with(magic))
+        // A Debian package: an ar archive whose first member is `debian-binary`.
+        || (head.starts_with(b"!<arch>") && head.get(8..).is_some_and(|rest| rest.starts_with(b"debian")))
+        || RISKY_STARTS.iter().any(|marker| {
+            start.len() >= marker.len() && start[..marker.len()].eq_ignore_ascii_case(marker)
+        })
         || RISKY_MARKERS.iter().any(|marker| {
             head.windows(marker.len())
                 .any(|window| window.eq_ignore_ascii_case(marker))
@@ -181,6 +265,20 @@ mod tests {
             "x.wsc",
             "weird.name.sh",
             "a.tar.sh",
+            // Added after review: XML, XSLT, zipapps and byte code.
+            "page.xht",
+            "data.xml",
+            "POM.XML",
+            "style.xsl",
+            "style.xslt",
+            "app.pyz",
+            "app.pyzw",
+            "mod.pyc",
+            "mod.pyo",
+            // Compared in Unicode lower case: the Kelvin sign is a K to the system's globs.
+            "x.des\u{212A}top",
+            "x.DES\u{212A}TOP",
+            "x.\u{212A}delnk",
         ] {
             assert!(risky_name(risky), "{risky}");
         }
@@ -228,6 +326,85 @@ mod tests {
         ] {
             assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
         }
+        // What shared-mime-info also takes for a web page, launcher or script, found by reading
+        // its database (text/html, xhtml, svg, x-desktop, x-shellscript, x-executable and the
+        // script types denied by name).
+        for markup in [
+            // text/html: a comment or a heading at the start, a title in the first 256 bytes.
+            &b"<!-- saved page -->\n<p>hi</p>"[..],
+            b"<!--",
+            b"\xef\xbb\xbf  <!-- x",
+            b"<H1>Index</H1>",
+            b"<h1",
+            b"Some text\n<TITLE>Report</TITLE>",
+            b"<hta:application id=x>",
+            // xhtml and svg by their document types.
+            b"x //W3C//DTD XHTML 1.0 Strict//EN",
+            b"x http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd",
+            b"<!-- Created with Inkscape -->",
+            // x-desktop and the KDE configuration files of the same type.
+            b"# Config File\nExec=x",
+            b"# KDE Config File\n[Desktop Entry]",
+            b"  \n# kde config file",
+            // Other text that runs: jnlp, scriptlets, stylesheets, php, perl, a shell archive.
+            b"<jnlp spec=\"1.0\">",
+            b"<scriptlet>",
+            b"<xsl:stylesheet version=\"1.0\">",
+            b"<?php echo 1;",
+            b"use strict;\nuse warnings;\n",
+            b"use Test::More;",
+            b"x\n=pod\n",
+            b"x\n=head1 NAME\n",
+            b"BEGIN { exit }",
+            b"#!/bin/sh\n",
+            b"# This is a shell archive (produced by GNU sharutils)",
+            b"\n# This is a shell archive",
+            // Scripts that start with an eval line, and encoded script.
+            b"eval \"exec /usr/bin/perl -S $0 $*\"\n",
+            b"eval \"exec /usr/bin/python3 $0\"",
+            b"#@~^AAAA",
+            // Programs without an ELF header: a.out, DOS and Windows, Java, Python byte code.
+            b"MZ\x90\x00",
+            b"\x1c\x52abc",
+            b"\x10\x01abc",
+            b"\x11\x01abc",
+            b"\x83\x01abc",
+            b"\xca\xfe\xba\xbe\x00\x00",
+            b"\x99\x4e\x0d\x0a\x00",
+            // Installers and launchers that are denied by name: Flatpak, deb, rpm, bundles,
+            // Windows shortcuts, registry files, Flash movies.
+            b"[Flatpak Ref]\nTitle=x\n",
+            b"[Flatpak Repo]\nTitle=x\n",
+            b"!<arch>\ndebian-binary   1\n",
+            b"\xed\xab\xee\xdb\x03\x00",
+            b"xdg-app\0\x01\0\x89\xe5",
+            b"flatpak\0\x01\0\x89\xe5",
+            b"\x4c\0\0\0\x01\x14\x02\0\0\0\0\0\xc0\0\0\0\0\0\0\x46x",
+            b"Windows Registry Editor Version 5.00\r\n",
+            b"REGEDIT4\r\n",
+            b"\xff\xfeW\0i\0n\0d\0o\0w\0s\0 \0R\0e\0g\0i\0s\0t\0r\0y\0",
+            b"FWS\x09\0",
+        ] {
+            assert!(risky_content(markup), "{}", String::from_utf8_lossy(markup));
+        }
+        // Their look-alikes that are ordinary files. The markers that the database wants at the
+        // start of a file only count there.
+        for fine in [
+            &b"Notes\n<!-- a comment later in a note -->"[..],
+            b"a heading <h1> inside a sentence",
+            b"# configuration",
+            b"% a comment\neval \"exec /x\" is how it was done",
+            b"M",
+            b"MY NOTES",
+            b"\xff\xd8\xff\xe0JFIF",
+            b"PK\x03\x04",
+            b"{\"title\": 1}",
+            // Other archives, and the OLE magic of documents.
+            b"!<arch>\nlibfoo.o/",
+            b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",
+        ] {
+            assert!(!risky_content(fine), "{}", String::from_utf8_lossy(fine));
+        }
         // Plain text, data and documents are fine.
         for fine in [
             &b"Dear Sir,\nthe invoice is attached.\n"[..],
@@ -269,6 +446,17 @@ mod tests {
                 assert!(!may_open(&file(name, body)), "{name}");
             }
         }
+        // A comment first and the script 600 bytes later, beyond what is read: the comment
+        // alone makes it a web page to the system.
+        let mut late = b"<!--".to_vec();
+        late.extend_from_slice(&[b' '; 600]);
+        late.extend_from_slice(b"<script>alert(1)</script>");
+        assert!(!may_open(&file("report.dat", &late)));
+        assert!(!may_open(&file("report (1).dat", b"# KDE Config File\n")));
+        assert!(!may_open(&file("sheet.dat", b"<xsl:stylesheet>")));
+        assert!(!may_open(&file("style.xsl", b"plain")));
+        assert!(!may_open(&file("launcher.des\u{212a}top", b"plain")));
+        assert!(may_open(&file("report.txt", &[b' '; 600])));
         assert!(!may_open(&dir.join("missing.txt")));
         let link = dir.join("link.txt");
         std::os::unix::fs::symlink(dir.join("notes.txt"), &link).unwrap();

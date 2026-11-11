@@ -5,7 +5,7 @@
 //! then a Close with status 1000. That whole shape is success; every other ending, including a
 //! 1000 without the empty message, is a failure and the partial file is deleted. The size Rex
 //! reported is a hint: a normal end short of it still saves the file.
-use super::{Config, Destination, Failure, FreeSpace, Meter};
+use super::{Config, Destination, Failure, FreeSpace, Meter, Partial};
 use crate::{transport, wire};
 use futures_util::{SinkExt, StreamExt};
 use std::{
@@ -16,8 +16,20 @@ use std::{
 };
 use tokio_tungstenite::tungstenite::{
     Message,
-    protocol::{CloseFrame, frame::coding::CloseCode},
+    error::CapacityError,
+    protocol::{CloseFrame, WebSocketConfig, frame::coding::CloseCode},
 };
+
+/// The most a single message or frame of a download stream may be. Rex sends at most 32 KiB at a
+/// time; the library's default of 64 MiB a message would let a hostile server make the client
+/// hold that much for every transfer.
+pub const MAX_MESSAGE: usize = 1 << 20;
+
+fn socket_limits() -> WebSocketConfig {
+    WebSocketConfig::default()
+        .max_message_size(Some(MAX_MESSAGE))
+        .max_frame_size(Some(MAX_MESSAGE))
+}
 
 /// Why a transfer is being stopped from outside.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -88,6 +100,23 @@ pub async fn release(endpoint: &str, ticket: &str) {
     .await;
 }
 
+/// Writes one data message to the partial file and counts it. A message that would take the
+/// stream past its growth cap is refused before anything is written: a hostile server never
+/// makes the client write more than the cap, or more than one message past the free-space check.
+pub(super) async fn write_chunk(
+    partial: &mut Partial,
+    meter: &mut Meter,
+    bytes: &[u8],
+    space: &dyn FreeSpace,
+) -> Result<(), Failure> {
+    meter.admit(bytes.len() as u64)?;
+    partial
+        .write(bytes)
+        .await
+        .map_err(|error| Failure::Disk(format!("Writing the file failed: {error}")))?;
+    meter.wrote(bytes.len() as u64, Instant::now(), space)
+}
+
 /// Receives the file. `stop` ends it from outside, deleting the partial file; `progress` is
 /// called with the bytes written so far after every chunk.
 pub async fn receive(
@@ -103,9 +132,14 @@ pub async fn receive(
 
     // Open the stream promptly: an unopened ticket holds the file and a slot on the server.
     let connected = async {
-        let mut socket = transport::socket(job.endpoint, "/api/data", super::PROTOCOL)
-            .await
-            .map_err(|e| Failure::Connection(format!("{e:#}")))?;
+        let mut socket = transport::socket_with_config(
+            job.endpoint,
+            "/api/data",
+            super::PROTOCOL,
+            Some(socket_limits()),
+        )
+        .await
+        .map_err(|e| Failure::Connection(format!("{e:#}")))?;
         wire::handshake(&mut socket, job.ticket)
             .await
             .map_err(
@@ -166,6 +200,11 @@ pub async fn receive(
                     reason: String::new(),
                 };
             }
+            Ok(Some(Err(tokio_tungstenite::tungstenite::Error::Capacity(
+                CapacityError::MessageTooLong { .. },
+            )))) => {
+                break Failure::Protocol("a message larger than 1 MiB".into());
+            }
             Ok(Some(Err(error))) => break Failure::Connection(error.to_string()),
             Ok(Some(Ok(message))) => message,
         };
@@ -178,10 +217,7 @@ pub async fn receive(
                     ended = true;
                     continue;
                 }
-                if let Err(error) = partial.write(&bytes).await {
-                    break Failure::Disk(format!("Writing the file failed: {error}"));
-                }
-                if let Err(failure) = meter.wrote(bytes.len() as u64, Instant::now(), &*space) {
+                if let Err(failure) = write_chunk(&mut partial, &mut meter, &bytes, &*space).await {
                     break failure;
                 }
                 progress(meter.received());
