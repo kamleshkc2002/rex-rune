@@ -566,7 +566,9 @@ The `scripts/` directory holds integration checks; each script's docstring lists
 - `docs-captures.py`: regenerates the documentation screenshots through Rune's `--script`/`--snap`/`--tree` tooling, headless, against two private servers; the sidebar is opened by the saved config, the Add host list sees no tailnet and the `cargo test -q` pane prints fixed text, so reruns are reproducible.
 - `demo-record.py`: records a demo video of the app on a private headless compositor (uses the `tools/vptr` virtual-pointer helper).
 
-See [AGENTS.md](AGENTS.md) for the code layout and contributor conventions, and [DESIGN.md](DESIGN.md) / [PRODUCT.md](PRODUCT.md) for the design system and product intent.
+## Contributing
+
+This repository does not accept pull requests from outside contributors. If you hit a bug, have a feature idea, or have a change on a fork branch or commit you want considered, open an issue and link to it. Maintainers harvest changes from forks, cherry-pick or rewrite what fits, and credit the author with a `Co-authored-by:` trailer and in [CHANGELOG.md](CHANGELOG.md). See [AGENTS.md](AGENTS.md) for the code layout and contributor conventions, and [DESIGN.md](DESIGN.md) / [PRODUCT.md](PRODUCT.md) for the design system and product intent.
 
 ## Vendored dependencies
 
