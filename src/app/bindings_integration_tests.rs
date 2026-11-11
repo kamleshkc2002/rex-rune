@@ -742,7 +742,9 @@ fn repeating_pane_focus_and_context_changes() {
     assert!(requests(&rx).is_empty());
     key(&mut rt, Code::KeyB, ctrl(Key::Command('b')), false, false);
     key(&mut rt, Code::KeyB, ctrl(Key::Command('b')), true, false);
-    rt.state.window_focus(false);
+    rt.window_focus(false);
+    rt.frame(0.);
+    assert!(!rt.state.window_focused);
     assert_eq!(rt.state.bindings.sequence.depth, 0);
 }
 

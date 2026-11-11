@@ -2732,10 +2732,15 @@ fn terminal_copies_reach_the_clipboard_once_and_only_in_the_foreground() {
         ("block:a", "s", true, true, "sentinel"),
     ] {
         let (mut ws, _rx) = tabbed_workspace("single");
-        ws.window_focused = focused;
         ws.hosts[0].model.visible = true;
         *ws.hosts[0].connection.model.lock().unwrap() = ws.hosts[0].model.clone();
         let mut rt = runtime(ws);
+        if !focused {
+            // The event Rune sends when the window loses focus, not a poke at the field.
+            rt.window_focus(false);
+            rt.frame(1. / 60.);
+            assert!(!rt.state.window_focused);
+        }
         let clipboard = rune::clipboard::memory();
         clipboard.set_text("sentinel");
         rt.use_clipboard(&clipboard);
@@ -2774,6 +2779,128 @@ fn terminal_copies_reach_the_clipboard_once_and_only_in_the_foreground() {
         );
         std::fs::remove_file(&rt.state.settings_path).ok();
     }
+}
+
+#[test]
+fn native_window_focus_gates_terminal_copies_and_the_cursor() {
+    use rex_linux::connection::{Connection, TerminalSender, clipboard::ClipboardCopy};
+    let (mut ws, rx) = tabbed_workspace("single");
+    let (sender, _sent) = flume::unbounded();
+    let connection = Connection {
+        model: Default::default(),
+        commands: TerminalSender::new(sender, "s".into(), "block:a".into()),
+        wake: flume::unbounded().1,
+    };
+    let mut terminal = ghostty_vt::Terminal::new(ghostty_vt::TerminalOptions {
+        cols: 40,
+        rows: 4,
+        ..Default::default()
+    })
+    .unwrap();
+    terminal.vt_write(b"$ ");
+    {
+        let mut m = connection.model.lock().unwrap();
+        m.connected = true;
+        m.control_connected = true;
+        m.frame = Some(std::sync::Arc::new(
+            rex_linux::terminal::Renderer::new()
+                .unwrap()
+                .frame(&terminal)
+                .unwrap(),
+        ));
+    }
+    let key = ws.term_key("block:a");
+    let mut term = super::term::Term::new(connection.clone());
+    term.refresh();
+    ws.terminals.insert(key, term);
+    ws.hosts[0].model.visible = true;
+    // A sync keeps the terminals the host's model lists.
+    ws.hosts[0]
+        .model
+        .terminals
+        .insert("block:a".into(), connection);
+    *ws.hosts[0].connection.model.lock().unwrap() = ws.hosts[0].model.clone();
+    let mut rt = runtime(ws);
+    let clipboard = rune::clipboard::memory();
+    rt.use_clipboard(&clipboard);
+    // A block cursor is a filled box; the unfocused form is a hollow outline without fill.
+    let cursor_filled = |rt: &Runtime<Workspace>| {
+        rt.elements()
+            .into_iter()
+            .find(|e| !e.exiting && e.key.as_deref().is_some_and(|k| k.ends_with("/cursor")))
+            .expect("the pane draws its cursor")
+            .fill
+            .a
+            > 0.
+    };
+    let copy = |rt: &mut Runtime<Workspace>, text: &str| {
+        rt.update(|s, tx| {
+            s.hosts[0].connection.model.lock().unwrap().clipboard = Some(ClipboardCopy {
+                session: "s".into(),
+                block: "block:a".into(),
+                text: text.into(),
+            });
+            s.sync(0, tx);
+        });
+        rt.frame(1. / 60.);
+    };
+    let text = |clipboard: &rune::clipboard::MemoryClipboard| {
+        clipboard
+            .text()
+            .as_deref()
+            .map(String::as_str)
+            .map(str::to_owned)
+    };
+
+    assert!(rt.state.window_focused);
+    assert!(
+        cursor_filled(&rt),
+        "a focused window shows the solid cursor"
+    );
+    clipboard.set_text("sentinel");
+
+    rt.window_focus(false);
+    rt.frame(1. / 60.);
+    assert!(
+        !rt.state.window_focused,
+        "Rune's window focus event reaches the workspace"
+    );
+    assert!(
+        !cursor_filled(&rt),
+        "an unfocused window shows a hollow cursor"
+    );
+    copy(&mut rt, "while unfocused");
+    assert_eq!(
+        text(&clipboard).as_deref(),
+        Some("sentinel"),
+        "an unfocused window leaves the clipboard alone"
+    );
+
+    // Commands sent before the refocus don't count for the claim below.
+    while rx.try_recv().is_ok() {}
+    rt.window_focus(true);
+    for _ in 0..30 {
+        rt.frame(1. / 60.);
+    }
+    assert!(rt.state.window_focused);
+    assert!(cursor_filled(&rt), "the cursor is solid again on focus");
+    assert_eq!(
+        text(&clipboard).as_deref(),
+        Some("sentinel"),
+        "a copy dropped while unfocused stays dropped after refocus"
+    );
+    assert!(
+        rx.try_iter()
+            .any(|command| matches!(command, HostCommand::Claim { .. })),
+        "a refocused window claims the size of the terminals it shows again"
+    );
+    copy(&mut rt, "after refocus");
+    assert_eq!(
+        text(&clipboard).as_deref(),
+        Some("after refocus"),
+        "a refocused window applies terminal copies"
+    );
+    std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
 #[test]
