@@ -558,7 +558,6 @@ pub enum WindowEdge {
 }
 
 impl WindowEdge {
-    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn winit(self) -> winit::window::ResizeDirection {
         use winit::window::ResizeDirection as D;
         match self {

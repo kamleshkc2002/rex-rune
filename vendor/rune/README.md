@@ -20,15 +20,17 @@ paths so the whole dependency graph sees a single `rune`. Nothing outside the ve
   runtime access. No dispatch behavior changes. `src/app/physical_input_tests.rs` checks
   base/code/modifier delivery, repeat reporting and release routing through this API.
 
-Rex draws its own window controls in a borderless window. A borderless Linux window cannot
-minimize from a button, edge-resize or open the window manager's menu, and its view cannot
-tell whether it is maximized. The patch adds the following without changing existing
-behavior on macOS (maximizing from a button is `Tx::toggle_maximized`, which Rune has):
+Rex runs in a borderless window and draws its own chrome: resize bands, a drag region and
+the window manager's menu on right-click. It has no minimize or maximize buttons;
+`examples/chrome_spike.rs` exercises those. A borderless Linux window cannot minimize,
+edge-resize or open the window manager's menu, and its view cannot tell whether it is
+maximized. The patch adds the following without changing existing behavior on macOS
+(maximizing is `Tx::toggle_maximized`, which Rune has):
 
 - `Cx::window_maximized()`, refreshed on every `Resized`; the view re-runs when it changes.
-- `Tx::minimize()` works on borderless windows off macOS.
-- `El::window_resize(WindowEdge)` (winit `drag_resize_window`, started inside the press, like
-  `window_drag`), `WindowEdge`, `TitlebarAction::Resize` and `Cursor::ResizeEdge(WindowEdge)`.
+- `Tx::minimize()` works on borderless windows off macOS (used by the spike only).
+- `El::window_resize(WindowEdge)` (winit `drag_resize_window`, started inside the press),
+  `WindowEdge`, `TitlebarAction::Resize` and `Cursor::ResizeEdge(WindowEdge)`.
 - `Tx::show_window_menu(x, y)` (winit `show_window_menu`; Wayland and Windows only in winit).
 - Off macOS, a `window_drag` press waits for 3pt of travel before `drag_window`, so the
   region's double-click (maximize) still reaches Rune: an X11 move grab otherwise takes the
