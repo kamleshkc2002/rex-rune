@@ -85,6 +85,8 @@ pub struct Workspace {
     pub window_focused: bool,
     /// The pane a file drag from another app is over.
     pub drop_hover: Option<String>,
+    /// Pane headers brought out by the pointer or by Reveal pane headers.
+    pub header_reveal: super::pane_header::Reveal,
     /// The pane area in window points, for divider drags and target outlines.
     pub area: [f32; 4],
     pub viewport: [f32; 2],
@@ -99,15 +101,17 @@ pub struct Workspace {
     pub title: String,
     #[cfg(test)]
     pub opened_links: Vec<String>,
-    /// (active tab, pane width, sidebar open, chips in the bar) when the active tab was last
-    /// revealed.
-    pub last_tab: (Option<String>, i32, bool, u8),
+    /// (active tab and its place, pane width, sidebar open, chips in the bar) when the active
+    /// tab was last revealed.
+    pub last_tab: (Option<(String, usize)>, i32, bool, u8),
     pub reveal_tab_again: bool,
     pub tab_strip: TabStrip,
     pub tab_pos: rune::Live<[f32; 2]>,
     pub tab_fade: [rune::Live<f32>; 2],
     pub sidebar_fx: ScrollFx,
     pub switcher_fx: ScrollFx,
+    /// The Settings page's scroll thumb.
+    pub settings_fx: ScrollFx,
     pub sidebar_drag_start: Option<f32>,
     scratch: TextEdit,
     next_host: u64,
@@ -230,6 +234,7 @@ impl Workspace {
             handle,
             window_focused: true,
             drop_hover: None,
+            header_reveal: Default::default(),
             area: [0.; 4],
             viewport: [1440., 900.],
             sidebar,
@@ -246,6 +251,7 @@ impl Workspace {
             tab_fade: [rune::Live::new(0.4), rune::Live::new(1.)],
             sidebar_fx: ScrollFx::default(),
             switcher_fx: ScrollFx::default(),
+            settings_fx: ScrollFx::default(),
             sidebar_drag_start: None,
             scratch: TextEdit::new(""),
             next_host: 0,
@@ -329,6 +335,8 @@ impl Workspace {
         let _ = connection
             .commands
             .send(HostCommand::Keymap(Box::new(self.keymap_declaration())));
+        // About and the copied reports name the server; reading it changes nothing there.
+        let _ = connection.commands.send(HostCommand::Identify);
         let id = HostId(self.next_host);
         self.next_host += 1;
         let receiver = connection.wake.clone();
@@ -563,6 +571,7 @@ impl Workspace {
             self.close_panel(tx);
             self.inform("That pane is no longer available.");
         }
+        self.sync_tabs(index, tx);
         self.process_downloads(index, tx);
         if index == self.active && old_session != self.hosts[index].model.selected {
             self.drag = None;
@@ -671,22 +680,7 @@ impl Workspace {
     }
 
     pub fn shortcut_detail(&self, action: &str, args: &Value) -> String {
-        let empty = |args: &Value| args.is_null() || args.as_object().is_some_and(|a| a.is_empty());
-        self.effective_bindings()
-            .iter()
-            .find(|b| {
-                let bound = b.binding.args.as_ref().unwrap_or(&Value::Null);
-                b.binding.action == action && (bound == args || (empty(bound) && empty(args)))
-            })
-            .and_then(|b| b.chords.as_ref())
-            .map(|chords| {
-                chords
-                    .iter()
-                    .map(|c| c.keycaps().join(" "))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            })
-            .unwrap_or_default()
+        super::keycaps::spell(&self.shortcut_chords(action, args))
     }
 
     fn announce_keymap_problems(&mut self, index: usize) {
@@ -747,17 +741,18 @@ impl Workspace {
             term.cache_images(self.images.as_ref());
             term.resize_if_owner(font);
         }
+        self.place_find(key);
     }
 
     pub fn update_title(&mut self, tx: &mut Tx) {
         let model = &self.hosts[self.active].model;
-        let session = model
-            .view()
-            .and_then(|v| v.label.clone())
-            .unwrap_or_else(|| "Choose session".into());
-        let title = format!(
-            "{session} — {} — Rex",
-            self.settings.hosts[self.active].label
+        let title = window_title(
+            model
+                .window()
+                .map(|tab| super::activity::tab_name(model, tab))
+                .as_deref(),
+            model.view().and_then(|v| v.label.as_deref()),
+            &self.settings.hosts[self.active].label,
         );
         if title != self.title {
             tx.set_title(title.clone());
@@ -825,9 +820,6 @@ impl Workspace {
             self.settings.ui_scale = scale;
             self.save();
         }
-        if let Some(id) = self.zoom_notice.take() {
-            self.dismiss_notice(id);
-        }
         let effective = (self.ui_scale() * 100.).round() as i32;
         let suffix = if effective < percent {
             format!(" · showing {effective}% to fit this window")
@@ -838,9 +830,17 @@ impl Workspace {
         } else {
             String::new()
         };
-        self.inform(format!("Zoom {percent}%{suffix}"));
-        self.zoom_notice = Some(self.next_notice);
+        self.size_notice(format!("Zoom {percent}%{suffix}"));
         tx.instant();
+    }
+
+    /// Say a size change (interface zoom or terminal font) in one notice, replacing the last.
+    pub(super) fn size_notice(&mut self, text: String) {
+        if let Some(id) = self.zoom_notice.take() {
+            self.dismiss_notice(id);
+        }
+        self.inform(text);
+        self.zoom_notice = Some(self.next_notice);
     }
 
     fn push_notice(&mut self, text: String, sticky: bool) {
@@ -958,8 +958,13 @@ impl Workspace {
     /// focused terminal.
     pub fn close_search(&mut self, key: &(HostId, String), tx: &mut Tx) {
         if let Some(term) = self.terminals.get_mut(key)
-            && term.search.take().is_some()
+            && let Some(edit) = term.search.take()
         {
+            // Find next and Find previous bring the bar back on this text, in its home corner.
+            term.find.corner = Default::default();
+            if !edit.text.is_empty() {
+                term.find.last = edit.text.clone();
+            }
             term.send(Command::Search(String::new()));
         }
         tx.blur();
@@ -994,7 +999,7 @@ impl Workspace {
     }
 
     /// Keep the source host/session/block captured by the action, including pane-menu targets.
-    fn open_terminal(
+    pub(super) fn open_terminal(
         &mut self,
         host: usize,
         method: &str,
@@ -1178,7 +1183,10 @@ impl Workspace {
     pub fn perform(&mut self, action: Intent, tx: &mut Tx) {
         // Applying a theme goes back to Settings itself.
         if !action.opens_followup()
-            && !matches!(action, Intent::Theme(_) | Intent::Chrome(_))
+            && !matches!(
+                action,
+                Intent::Theme(_) | Intent::Chrome(_) | Intent::Choose(_)
+            )
             && self.panel.is_some()
         {
             self.close_panel(tx);
@@ -1228,6 +1236,7 @@ impl Workspace {
                     self.panel.as_mut().unwrap().selected = current;
                 }
             }
+            Intent::Choose(index) => self.choose(index, tx),
             Intent::Chrome(chrome) => {
                 self.set_chrome(chrome, tx);
                 match self.settings_back() {
@@ -1268,6 +1277,14 @@ impl Workspace {
                     &[("Shell", "Server default — e.g. zsh or /bin/zsh", &shell)],
                 );
             }
+            Intent::DownloadFolder => {
+                let text = self.download_folder_text();
+                self.open_panel(
+                    PanelKind::Form(Form::DownloadFolder),
+                    "Download folder",
+                    &[("Folder", "/path/to/folder or ~/folder", &text)],
+                );
+            }
             Intent::Pane(target, action) => self.pane_action(target, action, tx),
             Intent::Session(target, action) => self.session_action(target, action, tx),
             Intent::AddHost => self.open_add_host(),
@@ -1290,7 +1307,8 @@ impl Workspace {
             Intent::Split(direction) => {
                 if let (Some(session), Some(block)) = (self.model().selected.clone(), self.focused_block()) {
                     let layout = self.new_terminal(self.active);
-                    self.open_terminal(self.active, "session.new_split", split_payload(&block, direction, layout), &session, Some(&block));
+                    let payload = self.split_payload(self.active, &block, direction, layout);
+                    self.open_terminal(self.active, "session.new_split", payload, &session, Some(&block));
                 }
             }
             Intent::RenameSession => {
@@ -1298,20 +1316,21 @@ impl Workspace {
                 self.open_panel(PanelKind::Form(Form::RenameSession(None)), "Rename session", &[("Session name", "", &label)]);
             }
             Intent::RenameWindow(id) => {
-                let label = self
-                    .model()
-                    .view()
-                    .and_then(|v| v.windows.iter().find(|w| w.window_id.as_ref() == Some(&id)))
-                    .map(|w| super::activity::tab_name(self.model(), w))
-                    .unwrap_or_default();
-                self.open_panel(PanelKind::Form(Form::RenameWindow(id)), "Rename tab", &[("Tab name", "", &label)]);
+                if let Some(target) = self.current_tab(&id) {
+                    self.tab_action(target, super::tabs::TabAction::Rename, tx);
+                }
             }
-            Intent::CloseWindow(id) => self.confirm(
-                "Close this tab?",
-                "session.close_window",
-                json!({"window_id":id}),
-                "Ends every program in this tab on the server. Closing the app itself leaves programs running.",
-            ),
+            // A tab of the session on screen is named in its confirmation (`tabs.rs`).
+            Intent::CloseWindow(id) => match self.current_tab(&id) {
+                Some(target) => self.tab_action(target, super::tabs::TabAction::Close, tx),
+                None => self.confirm(
+                    "Close this tab?",
+                    "session.close_window",
+                    json!({"window_id":id}),
+                    "Ends every program in this tab on the server. Closing the app itself leaves programs running.",
+                ),
+            },
+            Intent::Window(target, action) => self.tab_action(target, action, tx),
             Intent::Zoom => {
                 if let Some(block) = self.focused_block() {
                     self.request("session.zoom_block", json!({"block_id":block}));
@@ -1326,6 +1345,10 @@ impl Workspace {
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
             }
             Intent::Updates => self.open_updates_settings(),
+            Intent::About => {
+                self.perform(Intent::Settings, tx);
+                self.open_section(SettingsSection::About);
+            }
             Intent::CheckUpdates => self.check_updates_now(),
             Intent::Downloads => self.open_panel(PanelKind::Downloads, "Downloads", &[]),
             Intent::EditHost(host) => {
@@ -1345,6 +1368,7 @@ impl Workspace {
                 self.open_panel(PanelKind::RemoveHost(host), &format!("Remove {label}?"), &[]);
             }
             Intent::Retry => self.send(self.active, HostCommand::Reconnect),
+            Intent::Command(command) => command.run(self, tx),
         }
     }
 
@@ -1376,25 +1400,6 @@ impl Workspace {
         }
         let scale = self.ui_scale();
         self.open_panel(PanelKind::Host(host), &title, &[]);
-        let panel = self.panel.as_mut().unwrap();
-        panel.target = None;
-        panel.anchor = Some((anchor.0 / scale, anchor.1 / scale));
-    }
-
-    /// A tab's right-click menu, at the pointer (window points).
-    pub fn tab_menu(&mut self, window: String, anchor: (f32, f32)) {
-        let title = self
-            .model()
-            .view()
-            .and_then(|v| {
-                v.windows
-                    .iter()
-                    .find(|w| w.window_id.as_ref() == Some(&window))
-            })
-            .map(|w| super::activity::tab_name(self.model(), w))
-            .unwrap_or_else(|| "Tab".into());
-        let scale = self.ui_scale();
-        self.open_panel(PanelKind::Window(window), &title, &[]);
         let panel = self.panel.as_mut().unwrap();
         panel.target = None;
         panel.anchor = Some((anchor.0 / scale, anchor.1 / scale));
@@ -1457,6 +1462,10 @@ impl Workspace {
         let panel = self.panel.as_mut().unwrap();
         panel.target = Some(target);
         panel.anchor = anchor;
+        // The rows' availability is the target's (Copy needs its selection), known only now.
+        if let Some(first) = self.entries().iter().position(|e| e.enabled) {
+            self.panel.as_mut().unwrap().selected = first;
+        }
     }
 
     /// A sidebar session row's right-click menu, at the pointer (window points).
@@ -1579,10 +1588,11 @@ impl Workspace {
         match action {
             PaneAction::Split(direction) => {
                 let layout = self.new_terminal(target.host);
+                let payload = self.split_payload(target.host, &target.block, direction, layout);
                 self.open_terminal(
                     target.host,
                     "session.new_split",
-                    split_payload(&target.block, direction, layout),
+                    payload,
                     &target.session,
                     Some(&target.block),
                 )
@@ -1623,6 +1633,12 @@ impl Workspace {
                 self.terminal_command(&key, Command::Reconnect);
             }
             PaneAction::Download => self.download_dialog(target),
+            PaneAction::Copy
+            | PaneAction::Paste
+            | PaneAction::SelectAll
+            | PaneAction::CopyId
+            | PaneAction::Clear
+            | PaneAction::Reset => self.pane_verb(target, action, tx),
         }
     }
 
@@ -1652,7 +1668,7 @@ impl Workspace {
             )
     }
 
-    fn confirm(&mut self, title: &str, method: &str, payload: Value, description: &str) {
+    pub(super) fn confirm(&mut self, title: &str, method: &str, payload: Value, description: &str) {
         let target = self.panel.as_ref().and_then(|p| p.target.clone());
         let mut panel = Panel::new(
             PanelKind::Confirm {
@@ -1720,6 +1736,7 @@ impl Workspace {
                     | PanelKind::StartSsh { .. }
                     | PanelKind::Themes
                     | PanelKind::Chromes
+                    | PanelKind::Choice(_)
                     | PanelKind::Discover
             ) && previous
                 .as_ref()
@@ -1885,6 +1902,9 @@ impl Workspace {
                         .chars()
                         .any(|c| c.is_whitespace() || c.is_control())
                         .then(|| "Enter one shell name or path, without arguments.".to_owned())
+                } else if let Form::DownloadFolder = form {
+                    // Empty goes back to the system's Downloads folder.
+                    super::downloads::folder_error(&values[0]).map(str::to_owned)
                 } else if values.first().is_none_or(|s| s.is_empty()) {
                     Some("Enter a name".to_owned())
                 } else if let Form::AddSsh(index) = form {
@@ -1923,6 +1943,7 @@ impl Workspace {
                     return;
                 }
                 let target = self.panel.as_ref().and_then(|p| p.target.clone());
+                let tab = self.panel.as_ref().and_then(|p| p.tab.clone());
                 let back = self.settings_back();
                 self.close_panel(tx);
                 match form {
@@ -1949,13 +1970,15 @@ impl Workspace {
                             (!values[0].is_empty()).then(|| values[0].clone());
                         self.save();
                     }
+                    Form::DownloadFolder => self.set_download_folder(&values[0]),
                     Form::RenameSession(None) => self.request("session.set_label", json!({"label":values[0]})),
                     Form::RenameSession(Some(session)) => {
                         self.session_request(&session, "session.set_label", json!({"label":values[0]}))
                     }
-                    Form::RenameWindow(id) => {
-                        self.request("session.set_window_label", json!({"window_id":id,"label":values[0]}))
-                    }
+                    Form::RenameWindow(id) => match tab {
+                        Some(tab) => self.set_tab_label(&tab, &values[0]),
+                        None => self.request("session.set_window_label", json!({"window_id":id,"label":values[0]})),
+                    },
                     Form::RenamePane(id) => match target {
                         Some(target) => self.send(
                             target.host,
@@ -2015,7 +2038,12 @@ impl Workspace {
             } => {
                 let target = self.panel.as_ref().and_then(|p| p.target.clone());
                 let session = self.panel.as_ref().and_then(|p| p.session.clone());
+                let tab = self.panel.as_ref().and_then(|p| p.tab.clone());
                 self.close_panel(tx);
+                if let Some(tab) = tab {
+                    self.confirmed_tab_close(&tab, &method, payload);
+                    return;
+                }
                 if let Some(session) = session {
                     self.session_request(&session, &method, payload);
                     return;
@@ -2142,6 +2170,26 @@ impl Workspace {
     }
 }
 
-fn split_payload(block: &str, direction: &str, layout: Value) -> Value {
-    json!({"anchor_id":block,"direction":direction,"side":"after","layout":layout,"focus":true})
+/// The window's title, for task switchers: the tab on screen, then its session and host.
+/// Until a session is chosen it is the app's name and the host.
+fn window_title(tab: Option<&str>, session: Option<&str>, host: &str) -> String {
+    match (tab, session) {
+        (Some(tab), Some(session)) => format!("{tab} - {session} · {host}"),
+        (Some(name), None) | (None, Some(name)) => format!("{name} · {host}"),
+        (None, None) => format!("Rex · {host}"),
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn window_title_leads_with_the_tab_then_names_session_and_host() {
+    assert_eq!(
+        window_title(Some("vim"), Some("lunar-basin"), "shuvdev"),
+        "vim - lunar-basin · shuvdev"
+    );
+    assert_eq!(
+        window_title(None, Some("lunar-basin"), "shuvdev"),
+        "lunar-basin · shuvdev"
+    );
+    assert_eq!(window_title(None, None, "shuvdev"), "Rex · shuvdev");
 }

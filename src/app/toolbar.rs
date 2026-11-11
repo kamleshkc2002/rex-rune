@@ -1,19 +1,38 @@
 //! The 52pt bar on the window ground: sidebar toggle, identity chip, tab track, drag space,
-//! Commands, New tab and Settings, a divider, and Close.
+//! Commands, New tab and Settings, a divider, and Close. Tooltips name each control's shortcut
+//! from the effective keymap (`keycaps.rs`), never from a literal.
 use super::{
     activity::{program_icon, progress_bar, tab_activity, tab_name, tab_progress, tab_word},
     panel::Intent,
+    tabs::{muted_mark, target_ring},
     theme::*,
     widgets::{chrome_button, glyph},
     workspace::Workspace,
 };
 use rune::{Cursor, El, PointerButton, ScrollPos, Tx, col, el, row, text};
 
+/// The identity chip's width limits.
+const IDENTITY_MIN: f32 = 120.;
+const IDENTITY_MAX: f32 = 210.;
+
 /// A chip's press: consume it (chips never drag the window) and keep the terminal focused.
 fn chip_press(e: El) -> El {
     e.cursor(Cursor::Pointer)
         .preserve_focus_on_press(true)
         .tab_index(-1)
+}
+
+/// The host line under the session's name: trouble always, and otherwise the host only while
+/// a second host is connected, when the session's name alone could be either's.
+fn identity_detail(s: &Workspace) -> Option<(String, u32)> {
+    let host = &s.settings.hosts[s.active].label;
+    if !s.model().connected {
+        Some((format!("{host} · Reconnecting"), warning()))
+    } else if s.hosts.iter().filter(|h| h.model.connected).count() > 1 {
+        Some((host.clone(), muted()))
+    } else {
+        None
+    }
 }
 
 fn identity(s: &Workspace) -> El {
@@ -23,25 +42,40 @@ fn identity(s: &Workspace) -> El {
         .view()
         .and_then(|v| v.label.clone())
         .unwrap_or_else(|| "Choose session".into());
-    // Only trouble is worth words: a healthy host shows just its name.
-    let (detail, tone) = if model.connected {
-        (host.clone(), muted())
-    } else {
-        (format!("{host} · Reconnecting"), warning())
-    };
+    let mut words = col().grow(1.).shrink().min_w(0.).gap(1.).child(
+        text(session.clone())
+            .font(strong(12.5))
+            .color(rgb(ink()))
+            .truncate(),
+    );
+    if let Some((detail, tone)) = identity_detail(s) {
+        words = words.child(
+            text(detail)
+                .key("identity-host")
+                .font(ui(10.5))
+                .color(rgb(tone))
+                .truncate(),
+        );
+    }
     chip_press(chip(
         row()
             .key("identity")
             .role("button")
             .label(format!("{session} · {host} · Switch session"))
-            .w(210.)
+            // As wide as its words, between a floor that keeps it a comfortable target and
+            // the width a long name truncates at.
+            .min_w(IDENTITY_MIN)
+            .max_w(IDENTITY_MAX)
             .h(34.)
             .pl(6.)
             .pr(8.)
             .gap(9.)
             .center_y()
             .hover(white(0.08))
-            .help(format!("{session} · {host} · Switch session · Ctrl K"))
+            .help(format!(
+                "{session} · {host} · {}",
+                s.shortcut_help("Switch session", "session.switch")
+            ))
             .on_press_tx(|s: &mut Workspace, tx: &mut Tx| {
                 s.picker(true);
                 tx.blur();
@@ -56,25 +90,22 @@ fn identity(s: &Workspace) -> El {
                 16.,
                 rgb(muted()),
             )))
-            .child(
-                col()
-                    .grow(1.)
-                    .min_w(0.)
-                    .gap(1.)
-                    .child(
-                        text(session)
-                            .font(strong(12.5))
-                            .color(rgb(ink()))
-                            .truncate(),
-                    )
-                    .child(text(detail).font(ui(10.5)).color(rgb(tone)).truncate()),
-            )
+            // The words take any room the floor leaves, so the chevron keeps to the edge.
+            .child(words)
             .child(glyph(&CHEVRON, 14., rgb(muted()))),
     ))
 }
 
+/// The session's tabs on their track. With no tab to show (no session on screen, or one whose
+/// view hasn't arrived) there is no track: an empty one would be a sliver of chip.
 fn tab_track(s: &Workspace) -> El {
     let model = s.model();
+    let tabs = model
+        .view()
+        .is_some_and(|view| view.windows.iter().any(|tab| tab.window_id.is_some()));
+    if !tabs {
+        return el();
+    }
     let session = model.selected.clone().unwrap_or_default();
     let mut names = row()
         .key("tab-names")
@@ -89,15 +120,19 @@ fn tab_track(s: &Workspace) -> El {
             let active = view.active_window_id.as_ref() == Some(&id);
             let label = tab_name(model, tab);
             let activity = tab_activity(model, tab);
-            let word = tab_word(&activity, s.unseen(&id), s.bell_on(s.active, &id))
-                .filter(|_| s.settings.notifications.show_in_tabs);
+            let shown = s.tab_activity_shown(s.active, &id);
+            let quiet = s.tab_muted(s.active, &id);
+            let word =
+                tab_word(&activity, s.unseen(&id), s.bell_on(s.active, &id)).filter(|_| shown);
             let (press_id, rename_id, menu_id) = (id.clone(), id.clone(), id.clone());
+            let menu_session = session.clone();
             let mut tab_el = row()
                 .key(format!("tab:{id}"))
                 .role("tab")
                 .focus_selected(active)
                 .label(match &word {
                     Some((word, _)) => format!("{label} · {word}"),
+                    None if quiet => format!("{label} · Muted"),
                     None => label.clone(),
                 })
                 .h_full()
@@ -122,7 +157,7 @@ fn tab_track(s: &Workspace) -> El {
                     s.perform(Intent::RenameWindow(rename_id.clone()), tx);
                 })
                 .on_secondary_press(move |s: &mut Workspace, p, _| {
-                    s.tab_menu(menu_id.clone(), (p.x, p.y))
+                    s.tab_menu(s.active, &menu_session, &menu_id, (p.x, p.y))
                 });
             if active {
                 tab_el = tab_el.child(
@@ -169,10 +204,14 @@ fn tab_track(s: &Workspace) -> El {
                 }
                 tab_el = tab_el.child(mark);
             }
-            if s.settings.notifications.show_in_tabs
-                && let Some(progress) = tab_progress(&activity)
-            {
+            if quiet {
+                tab_el = tab_el.child(muted_mark(&id));
+            }
+            if shown && let Some(progress) = tab_progress(&activity) {
                 tab_el = tab_el.child(progress_bar(format!("tab-progress:{id}"), progress, 14.));
+            }
+            if s.tab_targeted(s.active, &id) {
+                tab_el = tab_el.child(target_ring(&id, 8.));
             }
             names = names.child(tab_el);
         }
@@ -341,7 +380,7 @@ pub fn toolbar(s: &Workspace) -> El {
         .child(chrome_button(
             "toggle-sidebar",
             &SIDEBAR,
-            "Toggle sidebar · Ctrl Shift B",
+            &s.shortcut_help("Toggle sidebar", "client.sidebar.toggle"),
             30.,
             |s, tx| s.perform(Intent::Sidebar, tx),
         ))
@@ -376,7 +415,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "commands",
                     &COMMAND,
                     "Commands",
-                    "Commands, sessions and tabs · Ctrl Shift P",
+                    &s.shortcut_help("Commands, sessions and tabs", "client.palette.toggle"),
                     36.,
                     false,
                     |s, _| s.picker(false),
@@ -385,7 +424,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "new-tab",
                     &PLUS,
                     "New tab",
-                    "New tab · Ctrl Shift T",
+                    &s.shortcut_help("New tab", "client.tab.new"),
                     36.,
                     false,
                     |s, tx| s.perform(Intent::NewWindow, tx),
@@ -394,7 +433,7 @@ pub fn toolbar(s: &Workspace) -> El {
                     "settings",
                     &SETTINGS,
                     "Settings",
-                    "Settings · Ctrl ,",
+                    &s.shortcut_help("Settings", "client.settings"),
                     36.,
                     false,
                     |s, tx| s.perform(Intent::Settings, tx),

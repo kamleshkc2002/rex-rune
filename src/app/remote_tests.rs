@@ -423,6 +423,10 @@ fn remote_control_switch_is_per_host_and_survives_save() {
     let mut rt = runtime(ws);
     assert!(has(&rt, "remote-control:0"));
     assert!(has(&rt, "remote-control:1"));
+    // The root eases to the window's size; the switches sit at the dialog's trailing edge.
+    for _ in 0..60 {
+        rt.frame(1. / 60.);
+    }
     click(&mut rt, "remote-control:0");
     assert!(Settings::load(&rt.state.settings_path).unwrap().hosts[0].remote_control);
     let endpoint = rt.state.settings.hosts[0].endpoint.clone();

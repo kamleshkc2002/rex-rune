@@ -527,6 +527,7 @@ impl InstallChannel {
 
     /// Channel-specific update instructions for `version`.
     pub fn guidance(&self, version: &str) -> ChannelGuidance {
+        let version = &crate::format_version(version);
         let deb_arch = match std::env::consts::ARCH {
             "aarch64" => "arm64",
             _ => "amd64",

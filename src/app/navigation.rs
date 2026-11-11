@@ -326,6 +326,59 @@ impl Workspace {
         self.navigation.cursor = cursor;
     }
 
+    /// The sessions `cycle_session` moves through: every connected host's, in sidebar order.
+    fn session_stops(&self) -> Vec<Visit> {
+        self.hosts
+            .iter()
+            .filter(|host| host.model.connected)
+            .flat_map(|host| {
+                host.model.sessions.iter().map(|session| Visit {
+                    host: host.id,
+                    session: session.session_id.clone(),
+                    window: None,
+                })
+            })
+            .collect()
+    }
+
+    /// How many sessions Next session and Previous session can reach.
+    pub(super) fn session_stop_count(&self) -> usize {
+        self.session_stops().len()
+    }
+
+    /// Show the session after or before the one on screen, in sidebar order across connected
+    /// hosts, wrapping. A session keeps the tab it last showed, as selecting it does.
+    pub fn cycle_session(&mut self, direction: isize, tx: &mut Tx) {
+        self.observe_navigation();
+        let current = self
+            .navigation
+            .pending
+            .as_ref()
+            .map(|p| (p.visit.host, p.visit.session.clone()))
+            .or_else(|| {
+                let host = self.hosts.get(self.active)?;
+                Some((host.id, host.model.selected.clone()?))
+            });
+        let stops = self.session_stops();
+        if stops.is_empty() {
+            return;
+        }
+        let index = current.and_then(|(host, session)| {
+            stops
+                .iter()
+                .position(|v| v.host == host && v.session == session)
+        });
+        let next = index.map_or_else(
+            || if direction < 0 { stops.len() - 1 } else { 0 },
+            |index| (index as isize + direction).rem_euclid(stops.len() as isize) as usize,
+        );
+        // The only session there is: nowhere to go.
+        if index == Some(next) {
+            return;
+        }
+        self.navigate_to(stops[next].clone(), tx);
+    }
+
     /// Traverse sidebar order using the pending target until the server acknowledges it.
     pub fn cycle_tab(&mut self, direction: isize, tx: &mut Tx) {
         self.observe_navigation();

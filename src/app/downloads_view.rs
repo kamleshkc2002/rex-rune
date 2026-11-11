@@ -410,6 +410,8 @@ pub fn popover(s: &Workspace, viewport: [f32; 2]) -> El {
             .scroll(rune::ScrollSpec {
                 stick_bottom: false,
             })
+            // As Commands does: rows leave under a short fade, not a hard cut.
+            .scroll_edge_fade(10.)
             .child(list),
     );
     // Under the chip that opened it; from Commands, at the bar's right end.
