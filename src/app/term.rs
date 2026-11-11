@@ -3,7 +3,7 @@
 use super::{
     keys,
     sprites::Sprite,
-    theme::{MIDNIGHT, Palette, mix, rgb},
+    theme::{MIDNIGHT, Palette, SEARCH_CURRENT, SEARCH_MATCH, SEARCH_RADIUS, mix, rgb},
 };
 use ghostty_vt::style::Underline;
 use rex_linux::{
@@ -57,6 +57,8 @@ pub struct Term {
     pub pressed_link: Option<String>,
     /// The search field over the grid, while this terminal is being searched.
     pub search: Option<TextEdit>,
+    /// The last text searched here and the corner the find bar is in.
+    pub find: super::find::Memory,
 }
 
 #[derive(Clone, Copy)]
@@ -199,6 +201,7 @@ impl Term {
             link: None,
             pressed_link: None,
             search: None,
+            find: Default::default(),
         }
     }
 
@@ -797,10 +800,15 @@ fn row_pass(
             start = end;
         }
         for &(a, b, selected) in marks.search {
-            let alpha = if selected { 0.55 } else { 0.25 };
+            let alpha = if selected {
+                SEARCH_CURRENT
+            } else {
+                SEARCH_MATCH
+            };
             row = row.child(
                 el().absolute(a as f32 * cw, 0.)
                     .size((b + 1 - a) as f32 * cw, ch)
+                    .radius(SEARCH_RADIUS)
                     .fill(rgb(colors.search_match).alpha(alpha)),
             );
         }
@@ -815,13 +823,21 @@ fn row_pass(
     if pass == RowPass::Background {
         return row;
     }
-    // Selected text takes the theme's selection foreground, decorations included.
+    // Selected text takes the theme's selection foreground, decorations included. The selected
+    // search match, where the selection is not over it, takes the text colour of its mark: the
+    // mark is too light for the terminal's own.
     let style_at = |col: usize| {
         let mut style = RunStyle::of(&cells[col], frame_bg, body);
-        if let (Some(fg), Some((a, b))) = (colors.selection_fg, sel)
-            && (a..=b).contains(&col)
+        if sel.is_some_and(|(a, b)| (a..=b).contains(&col)) {
+            if let Some(fg) = colors.selection_fg {
+                style.fg = fg;
+            }
+        } else if marks
+            .search
+            .iter()
+            .any(|&(a, b, selected)| selected && (a..=b).contains(&col))
         {
-            style.fg = fg;
+            style.fg = colors.search_text;
         }
         style
     };
@@ -1015,6 +1031,8 @@ pub struct TermColors {
     pub cursor_text: Option<u32>,
     /// Search matches' highlight: the chrome's accent.
     pub search_match: u32,
+    /// The selected match's text, over its highlight.
+    pub search_text: u32,
 }
 impl Default for TermColors {
     fn default() -> Self {
@@ -1033,6 +1051,7 @@ impl TermColors {
             selection_fg: theme.selection_foreground,
             cursor_text: theme.cursor_text,
             search_match: palette.accent,
+            search_text: palette.on_accent,
         }
     }
 
@@ -1433,7 +1452,7 @@ mod tests {
                 (
                     (q.rect[0] / cw).round() as u32,
                     (q.rect[1] / ch).round() as u32,
-                    q.fill[3] > 0.4,
+                    q.fill[3] > 0.6,
                 )
             })
             .collect();
@@ -1675,11 +1694,11 @@ mod tests {
         let marks: Vec<_> = rt
             .elements()
             .into_iter()
-            .filter(|e| e.fill == highlight(0.55) || e.fill == highlight(0.25))
+            .filter(|e| e.fill == highlight(SEARCH_CURRENT) || e.fill == highlight(SEARCH_MATCH))
             .map(|e| {
                 let [x, y, w, _] = e.rect;
                 let cells = [x / m.cell.0, y / m.cell.1, w / m.cell.0].map(f32::round);
-                (cells, e.fill == highlight(0.55))
+                (cells, e.fill == highlight(SEARCH_CURRENT))
             })
             .collect();
         assert_eq!(
@@ -1687,6 +1706,17 @@ mod tests {
             [([3., 1., 6.], true)],
             "only the selected match on row 4, the second row on screen; the one on row 0 is clipped"
         );
+        // The selected match's six letters are drawn in its mark's text colour; the two
+        // before it keep the terminal's.
+        let glyphs = |colour: rune::Color| {
+            let fill = [colour.r, colour.g, colour.b, colour.a];
+            rt.instances
+                .iter()
+                .filter(|q| q.params[1] == rune::render::KIND_GLYPH && q.fill == fill)
+                .count()
+        };
+        assert_eq!(glyphs(rgb(colors.search_text)), 6);
+        assert_eq!(glyphs(rgb(0xffffff)), 3, "`c` on the row above, and `xx`");
     }
 
     /// A frame of default text, an explicit red background and inverse video, on a server

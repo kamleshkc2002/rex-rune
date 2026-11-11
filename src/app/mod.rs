@@ -5,6 +5,7 @@ mod activity;
 mod bindings;
 mod dialogs;
 mod discover;
+mod find;
 mod fonts;
 mod input;
 mod integrations;

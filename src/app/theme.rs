@@ -206,6 +206,12 @@ pub fn selection(destructive: bool) -> (Color, Color) {
     (tone.alpha(SELECTION_FILL), tone)
 }
 
+/// Terminal search marks, drawn over the cells as the selection is: every match is `ACCENT` at
+/// `SEARCH_MATCH`, and the selected one at `SEARCH_CURRENT` with its text in `ON_ACCENT`.
+pub const SEARCH_MATCH: f32 = 0.4;
+pub const SEARCH_CURRENT: f32 = 0.8;
+pub const SEARCH_RADIUS: f32 = 2.5;
+
 /// A keycap's chip: white at this opacity over its surface, and `KEYCAP_LIT` on a selected row.
 pub const KEYCAP_FILL: f32 = 0.07;
 pub const KEYCAP_LIT: f32 = 0.12;
@@ -349,6 +355,9 @@ icon!(
     r#"path d="M10.5 14.5h5.5""#
 );
 icon!(CHEVRON, "rex-chevron", r#"path d="m7 8.5 3 3 3-3""#);
+// The find bar's steps: wider than the disclosure chevron, to sit beside the close cross.
+icon!(STEP_UP, "rex-step-up", r#"path d="m6 12 4-4 4 4""#);
+icon!(STEP_DOWN, "rex-step-down", r#"path d="m6 8 4 4 4-4""#);
 icon!(RIGHT, "rex-right", r#"path d="m8.5 6.5 3.5 3.5-3.5 3.5""#);
 icon!(LEFT, "rex-left", r#"path d="m11.5 6.5-3.5 3.5 3.5 3.5""#);
 icon!(CHECK, "rex-check", r#"path d="m5.5 10.5 3 3 6-7""#);

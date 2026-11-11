@@ -51,6 +51,8 @@ enum Handler {
     ClearTerminal,
     ResetTerminal,
     PaneHeaders,
+    FindNext,
+    FindPrevious,
 }
 
 pub struct Spec {
@@ -102,6 +104,8 @@ specs! {
     "pane.clear" => ClearTerminal,
     "pane.reset" => ResetTerminal,
     "client.pane_headers.toggle" => PaneHeaders,
+    super::find::NEXT => FindNext,
+    super::find::PREVIOUS => FindPrevious,
 }
 
 pub fn find(name: &str) -> Option<&'static Spec> {
@@ -157,6 +161,9 @@ impl Spec {
             PaneHeaders => {
                 Remote::Never("Only the person at this computer can show or hide pane headers.")
             }
+            FindNext | FindPrevious => {
+                Remote::Never("Only the person at this computer can search a terminal.")
+            }
         }
     }
     pub fn global(&self) -> bool {
@@ -175,6 +182,8 @@ impl Spec {
                     | Handler::Scroll
                     | Handler::NextGlobal
                     | Handler::PreviousGlobal
+                    | Handler::FindNext
+                    | Handler::FindPrevious
             )
     }
 
@@ -217,6 +226,8 @@ impl Spec {
             Handler::ClearTerminal => "Clear terminal",
             Handler::ResetTerminal => "Reset terminal",
             Handler::PaneHeaders => "Reveal pane headers",
+            Handler::FindNext => "Find next",
+            Handler::FindPrevious => "Find previous",
         }
     }
     pub fn category(&self) -> &'static str {
@@ -257,7 +268,9 @@ impl Spec {
             | Handler::SelectAll
             | Handler::Scroll
             | Handler::SendKey
-            | Handler::Search => "Text and view",
+            | Handler::Search
+            | Handler::FindNext
+            | Handler::FindPrevious => "Text and view",
         }
     }
     fn schema(&self) -> Option<Value> {
@@ -355,6 +368,8 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::PaneHeaders => s.toggle_pane_headers(),
         Handler::Close => s.close_focused(tx),
         Handler::Search => s.open_search(),
+        Handler::FindNext => s.find_step(true),
+        Handler::FindPrevious => s.find_step(false),
         Handler::NewTab => s.perform(Intent::NewWindow, tx),
         Handler::NextTab => s.request("session.focus_next_window", json!({})),
         Handler::PreviousTab => s.request("session.focus_previous_window", json!({})),

@@ -725,6 +725,7 @@ impl Workspace {
             term.cache_images(self.images.as_ref());
             term.resize_if_owner(font);
         }
+        self.place_find(key);
     }
 
     pub fn update_title(&mut self, tx: &mut Tx) {
@@ -936,8 +937,13 @@ impl Workspace {
     /// focused terminal.
     pub fn close_search(&mut self, key: &(HostId, String), tx: &mut Tx) {
         if let Some(term) = self.terminals.get_mut(key)
-            && term.search.take().is_some()
+            && let Some(edit) = term.search.take()
         {
+            // Find next and Find previous bring the bar back on this text, in its home corner.
+            term.find.corner = Default::default();
+            if !edit.text.is_empty() {
+                term.find.last = edit.text.clone();
+            }
             term.send(Command::Search(String::new()));
         }
         tx.blur();

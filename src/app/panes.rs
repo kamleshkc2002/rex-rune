@@ -6,13 +6,13 @@
 //! Cards spring when the layout changes; the terminal grid inside never animates.
 use super::{
     activity::{pane_activity, progress_bar, tab_progress, tab_word},
-    input::search_key,
+    find,
     pane_header::{self, Placement, full_bleed},
     panel::{Form, Intent, PanelKind},
     term::{self, CursorLook, GridLook, Metrics, MouseGesture},
     theme::*,
     widgets::{Pill, pill},
-    workspace::{DividerDrag, HostId, Workspace},
+    workspace::{DividerDrag, Workspace},
 };
 use rex_linux::{
     connection::Command,
@@ -21,11 +21,7 @@ use rex_linux::{
     terminal::selection::Phase as SelectionPhase,
 };
 use rexrs::api::session::Window;
-use rune::{
-    Cursor, El, KeyEvent, Phase, PointerButton, PointerEvent, TextEdit, Tx, WheelEvent, col, el,
-    row, text,
-};
-use rune_kit::TextInput;
+use rune::{Cursor, El, Phase, PointerButton, PointerEvent, Tx, WheelEvent, col, el, row, text};
 
 /// The area cards are laid out in, in the pane area's own points.
 fn inner(s: &Workspace) -> [f32; 4] {
@@ -342,6 +338,7 @@ fn pane_card(
                         t.rect = r;
                         t.resize_if_owner(font);
                     }
+                    s.place_find(&k1);
                 })
                 .on_drag(move |s: &mut Workspace, d, tx| {
                     let cell = term::metrics(s.settings.font_size).cell;
@@ -517,16 +514,14 @@ fn pane_card(
                     true
                 })
                 .child(term::grid(&format!("g{block}"), t, m, look));
-            let grid = match &t.search {
-                Some(edit) => grid.child(search_field(block, &key, edit, t)),
-                None => grid,
-            };
             let padding = s.settings.pane_padding;
             // The card draws a background of its own colour, edge included; any other sits
             // inside the card's border, never over it.
             let fill = t.body(&colors);
-            let (body, top) = if fill == card() {
-                (col().w_full().px(padding).pb(padding), padding)
+            // `side` is from the card's left, right and bottom edges to the grid, and `lead`
+            // from the body's top to where its top padding starts.
+            let (body, top, side, lead) = if fill == card() {
+                (col().w_full().px(padding).pb(padding), padding, padding, 0.)
             } else {
                 let (edge, radius) = if bleed {
                     (0., 0.)
@@ -548,16 +543,43 @@ fn pane_card(
                         .continuous_corners()
                         .fill(rgb(fill)),
                     (padding - above).max(0.),
+                    edge + (padding - edge).max(0.),
+                    above,
                 )
             };
-            c.child(
+            let c = c.child(
                 body.grow(1.)
                     .min_h(0.)
                     .pt(top)
                     .instant_changes()
                     .motion(STILL)
                     .child(grid),
-            )
+            );
+            // The find bar is the card's, not the grid's: it is chrome over a corner of the
+            // terminal, and springs when it changes corner.
+            match &t.search {
+                Some(edit) => {
+                    let above = if headed { CARD_HEADER } else { 0. } + lead + top;
+                    let pane = find::Pane {
+                        size: (
+                            (rect[2] - 2. * side).max(0.),
+                            (rect[3] - above - side).max(0.),
+                        ),
+                        cell: m.cell,
+                        lowered: find::lowered(s, window, block, t),
+                    };
+                    c.child(find::bar(
+                        s,
+                        block,
+                        &key,
+                        edit,
+                        t,
+                        pane,
+                        (side, above, side),
+                    ))
+                }
+                None => c,
+            }
         }
         None => c.child(
             col().grow(1.).center().child(
@@ -589,53 +611,6 @@ fn pane_card(
     } else {
         c
     }
-}
-
-/// The search field over a terminal's top-right corner, with the selected match's place among
-/// all matches, newest first.
-fn search_field(block: &str, key: &(HostId, String), edit: &TextEdit, t: &term::Term) -> El {
-    let results = t.frame.as_ref().and_then(|f| f.search.as_ref());
-    let status = match results {
-        _ if edit.text.is_empty() => "esc".to_owned(),
-        Some(r) if r.total == 0 => "No matches".to_owned(),
-        Some(r) => format!("{}/{}", r.index.map_or(0, |i| i + 1), r.total),
-        None => String::new(),
-    };
-    let (k1, k2, k3) = (key.clone(), key.clone(), key.clone());
-    row()
-        .key(format!("search:{block}"))
-        .w(280.)
-        .h(34.)
-        .px(2.)
-        .center_y()
-        .radius(8.)
-        .continuous_corners()
-        .fill(rgb(popover()).alpha(0.95))
-        .border(1., white(0.12))
-        .box_shadow(shadow(0., 4., 16., black(0.45)))
-        .pin(None, Some(6.), Some(6.), None)
-        .child(
-            TextInput::new(edit)
-                .placeholder("Search terminal")
-                .leading_icon(&SEARCH)
-                .leading_icon_size(14.)
-                .text_style(ui(13.))
-                .height(32.)
-                .plain()
-                .trailing(text(status).font(medium(10.5)).color(rgb(muted())))
-                .on_edit(move |s: &mut Workspace| s.search_input(&k1))
-                .on_change(move |s: &mut Workspace, _: &mut Tx| {
-                    s.last_keypress = Some(std::time::Instant::now());
-                    s.search_changed(&k2);
-                })
-                .on_key(move |s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx| {
-                    search_key(s, &k3, ev, tx)
-                })
-                .width(None)
-                .build(kit())
-                .key(format!("search-field:{block}"))
-                .w_full(),
-        )
 }
 
 fn empty(s: &Workspace) -> El {

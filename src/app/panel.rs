@@ -663,6 +663,16 @@ impl Workspace {
                     "",
                     Intent::ClientAction(super::actions::SEARCH, Value::Null),
                 ),
+                (
+                    "Find next",
+                    "",
+                    Intent::ClientAction(super::find::NEXT, Value::Null),
+                ),
+                (
+                    "Find previous",
+                    "",
+                    Intent::ClientAction(super::find::PREVIOUS, Value::Null),
+                ),
                 ("New session", "", Intent::NewSession),
                 ("New tab", "", Intent::NewWindow),
                 ("Rename session…", "", Intent::RenameSession),
@@ -706,6 +716,12 @@ impl Workspace {
                 ) {
                     entry.enabled =
                         self.header_reveal.pinned || super::pane_header::can_reveal(self);
+                }
+                if matches!(
+                    entry.action,
+                    Intent::ClientAction(super::find::NEXT | super::find::PREVIOUS, _)
+                ) {
+                    entry.enabled = self.can_find();
                 }
                 if matches!(entry.action, Intent::RemoteControl(_)) {
                     entry.label = format!(
