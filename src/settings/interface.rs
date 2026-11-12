@@ -12,6 +12,18 @@ pub enum ToolbarBehavior {
     Always,
 }
 
+/// Which existing program glyphs use colour; unknown future values stay monochrome.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TabIconColor {
+    Always,
+    ActivePane,
+    ActiveTab,
+    #[default]
+    #[serde(other)]
+    Never,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct InterfaceConfig {
@@ -20,6 +32,7 @@ pub struct InterfaceConfig {
     pub tabs_fill_available_space: bool,
     /// Maximum distinct cached program glyphs per tab (0–5); one preserves legacy behavior.
     pub tab_icon_count: u8,
+    pub tab_icon_color: TabIconColor,
     /// None keeps the legacy `pane_padding` on all four sides. With a value here,
     /// `pane_padding` is horizontal only.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,6 +51,7 @@ impl Default for InterfaceConfig {
             toolbar: ToolbarBehavior::default(),
             tabs_fill_available_space: false,
             tab_icon_count: 1,
+            tab_icon_color: TabIconColor::default(),
             pane_padding_vertical: None,
             highlight_active_pane: None,
             fade_inactive_pane_headers: false,
@@ -248,6 +262,36 @@ mod tests {
             let back = Settings::load(&path).unwrap();
             assert_eq!(back.interface.tab_icon_count, count.min(5));
             assert!(back.interface.tabs_fill_available_space);
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn tab_icon_colour_defaults_unknown_partial_and_disk_roundtrip() {
+        for value in [
+            json!({}),
+            json!({"interface": {}}),
+            json!({"interface": {"tab_icon_count": 5}}),
+            json!({"interface": {"tab_icon_color": "future_mode"}}),
+        ] {
+            let settings: Settings = serde_json::from_value(value).unwrap();
+            assert_eq!(settings.interface.tab_icon_color, TabIconColor::Never);
+        }
+        let path = std::env::temp_dir().join(format!("rex-tab-colour-{}.json", std::process::id()));
+        for (mode, word) in [
+            (TabIconColor::Always, "always"),
+            (TabIconColor::ActivePane, "active_pane"),
+            (TabIconColor::ActiveTab, "active_tab"),
+            (TabIconColor::Never, "never"),
+        ] {
+            let mut settings = Settings::default();
+            settings.interface.tab_icon_color = mode;
+            settings.save(&path).unwrap();
+            assert_eq!(Settings::load(&path).unwrap().interface, settings.interface);
+            assert_eq!(
+                serde_json::to_value(&settings).unwrap()["interface"]["tab_icon_color"],
+                word
+            );
         }
         std::fs::remove_file(path).unwrap();
     }

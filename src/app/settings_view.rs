@@ -247,6 +247,32 @@ fn interface(s: &Workspace) -> El {
                         |s, _| s.step_tab_icons(1),
                     ),
                 ),
+                select_row(
+                    "tab-icon-color",
+                    "Use colour for tab icons",
+                    if s.settings.interface.tab_icon_count == 0 {
+                        "No icons are shown while Show tab icons is 0."
+                    } else {
+                        "Active pane colours only its first icon in the tab on screen."
+                    },
+                    &["Always", "Active pane", "Active tab", "Never"],
+                    match s.settings.interface.tab_icon_color {
+                        rex_linux::settings::interface::TabIconColor::Always => 0,
+                        rex_linux::settings::interface::TabIconColor::ActivePane => 1,
+                        rex_linux::settings::interface::TabIconColor::ActiveTab => 2,
+                        rex_linux::settings::interface::TabIconColor::Never => 3,
+                    },
+                    |s, i, _| {
+                        use rex_linux::settings::interface::TabIconColor;
+                        s.settings.interface.tab_icon_color = [
+                            TabIconColor::Always,
+                            TabIconColor::ActivePane,
+                            TabIconColor::ActiveTab,
+                            TabIconColor::Never,
+                        ][i];
+                        s.save();
+                    },
+                ),
                 super::tab_icons::preview(s),
                 setting(
                     "Tabs fill available space",

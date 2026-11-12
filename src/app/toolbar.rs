@@ -200,7 +200,13 @@ fn tab_track(s: &Workspace) -> El {
             } else {
                 tab_el = tab_el.radius(8.).hover(white(0.05));
             }
-            tab_el = tab_icons::append(tab_el, &format!("tab-icon:{id}"), &icons, active);
+            tab_el = tab_icons::append(
+                tab_el,
+                &format!("tab-icon:{id}"),
+                &icons,
+                active,
+                s.settings.interface.tab_icon_color,
+            );
             tab_el = tab_el.child(
                 text(label.clone())
                     .key(format!("tab-name:{id}"))

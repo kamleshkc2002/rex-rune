@@ -299,6 +299,7 @@ fn window_row(s: &Workspace, index: usize, session: &str, tab: &rexrs::api::sess
         &format!("sidebar-tab-icon:{index}:{session}:{id}"),
         &icons,
         active,
+        s.settings.interface.tab_icon_color,
     )
     .child(
         text(label)

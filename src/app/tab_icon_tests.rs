@@ -9,7 +9,7 @@ use crate::app::{
 use rex_linux::connection::activity::{ProgramState, StatusRecord};
 use rex_linux::settings::interface::ToolbarBehavior;
 
-fn settle(rt: &mut Runtime<Workspace>) {
+pub(super) fn settle(rt: &mut Runtime<Workspace>) {
     for _ in 0..3 {
         rt.update(|s, tx| {
             crate::app::poll(s, 0., tx);
@@ -19,7 +19,7 @@ fn settle(rt: &mut Runtime<Workspace>) {
         }
     }
 }
-fn element(rt: &Runtime<Workspace>, key: &str) -> rune::ElementInfo {
+pub(super) fn element(rt: &Runtime<Workspace>, key: &str) -> rune::ElementInfo {
     rt.elements()
         .into_iter()
         .find(|e| !e.exiting && e.key.as_deref() == Some(key))
@@ -139,7 +139,7 @@ fn focused_first_server_order_and_exact_legacy_status_source() {
     std::fs::remove_file(&ws.settings_path).ok();
 }
 /// Five cached pane records on the inactive tab; no client-side layout mutation.
-fn five_programs(ws: &mut Workspace) {
+pub(super) fn five_programs(ws: &mut Workspace) {
     let model = &mut ws.hosts[0].model;
     let tab = &mut model.views.get_mut("s").unwrap().windows[1];
     tab.layers[0].blocks = ["block:b", "block:c", "block:d", "block:e", "block:f"]
