@@ -2,12 +2,11 @@
 //! built from `settings_kit` (sections, cards, rows and their controls).
 use super::{
     dialogs::modal_layer,
-    keycaps::{Chords, keycaps, spell},
     panel::{Intent, SettingsSection},
     settings_kit::{
         NAV_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, Segment, button, card, disclosure, footnote,
         mono_footnote, page, row_frame, section, segmented, select_row, setting, stepper,
-        unavailable, value, value_popup, words,
+        unavailable, value, value_popup,
     },
     theme::*,
     widgets::{Pill, glyph},
@@ -501,103 +500,6 @@ fn hosts(s: &Workspace) -> El {
     ])
 }
 
-/// Presentation only: preserve dispatch priority within each action/argument group.
-struct ShortcutRow<'a> {
-    binding: &'a rex_linux::keymap::ResolvedBinding,
-    also_numpad: bool,
-    arrows: bool,
-}
-
-fn shortcut_rows<'a>(
-    effective: &[&'a rex_linux::keymap::ResolvedBinding],
-    category: &str,
-) -> Vec<ShortcutRow<'a>> {
-    use super::actions::{SPECS, find};
-    use rex_linux::keymap::Key;
-
-    let mut list: Vec<_> = effective
-        .iter()
-        .copied()
-        .filter(|b| {
-            find(&b.binding.action)
-                .map(|a| a.category())
-                .unwrap_or("Server")
-                == category
-        })
-        .collect();
-    list.sort_by_cached_key(|b| {
-        (
-            SPECS
-                .iter()
-                .position(|s| s.name == b.binding.action)
-                .unwrap_or(SPECS.len()),
-            b.binding.action.clone(),
-            b.binding
-                .args
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
-        )
-    });
-    let default_focus = |b: &&rex_linux::keymap::ResolvedBinding, direction: &str| {
-        b.binding.action == "pane.focus"
-            && b.binding.source.as_deref() == Some("linux")
-            && b.binding.keys == [format!("ctrl+alt+{direction}")]
-            && b.binding.args == Some(serde_json::json!({"direction": direction}))
-    };
-    let arrows = ["left", "right", "up", "down"]
-        .iter()
-        .all(|d| list.iter().any(|b| default_focus(b, d)));
-    let mut rows: Vec<_> = list
-        .iter()
-        .map(|b| ShortcutRow {
-            binding: b,
-            also_numpad: false,
-            arrows: false,
-        })
-        .collect();
-    let mut hidden = std::collections::HashSet::new();
-    for (i, b) in list.iter().enumerate() {
-        if arrows
-            && ["left", "right", "up", "down"]
-                .iter()
-                .any(|d| default_focus(b, d))
-        {
-            if default_focus(b, "down") {
-                rows[i].arrows = true;
-            } else {
-                hidden.insert(i);
-            }
-        }
-        let Some([chord]) = b.chords.as_deref() else {
-            continue;
-        };
-        let Key::Physical(code) = &chord.key else {
-            continue;
-        };
-        let equivalent = match *code {
-            "NumpadAdd" => '+',
-            "NumpadSubtract" => '-',
-            "Numpad0" => '0',
-            _ => continue,
-        };
-        if let Some(j) = list.iter().position(|other| {
-            other.binding.action == b.binding.action
-                && other.binding.args == b.binding.args
-                && other.binding.source == b.binding.source
-                && other.chords.as_deref().is_some_and(|chords| matches!(chords,
-                    [other] if other.modifiers == chord.modifiers && other.key == Key::Character(equivalent)))
-        }) {
-            rows[j].also_numpad = true;
-            hidden.insert(i);
-        }
-    }
-    rows.into_iter()
-        .enumerate()
-        .filter_map(|(i, row)| (!hidden.contains(&i)).then_some(row))
-        .collect()
-}
-
 /// The headings of the Shortcuts page, in order. Every action's `category()` is one of them
 /// (a test checks), and an action this client does not know is listed under Server.
 pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
@@ -608,151 +510,6 @@ pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
     "Interface",
     "Server",
 ];
-
-fn shortcuts(s: &Workspace) -> El {
-    let mut sections = Vec::new();
-    let effective = s.effective_bindings();
-    for name in SHORTCUT_CATEGORIES {
-        let list = shortcut_rows(&effective, name);
-        let unbound: Vec<_> = super::actions::SPECS
-            .iter()
-            .filter(|spec| {
-                spec.category() == name
-                    && super::compatibility::unsupported(spec.name).is_none()
-                    && !effective.iter().any(|b| b.binding.action == spec.name)
-            })
-            .collect();
-        if list.is_empty() && unbound.is_empty() {
-            continue;
-        }
-        // A row reads as a menu row does: what it runs on the left, in the name Commands and
-        // the menus use, and its keys on the right as the same keycaps.
-        let rows = list.iter().enumerate().map(|(index, display)| {
-            let binding = display.binding;
-            let chords: Chords = if display.arrows {
-                vec![vec!["Ctrl".into(), "Alt".into(), "Arrows".into()]]
-            } else {
-                let chords = binding.chords.as_ref().unwrap();
-                chords.iter().map(|chord| chord.keycaps()).collect()
-            };
-            let source = match binding.binding.source.as_deref() {
-                Some("linux") => None,
-                Some("settings") => Some("shortcuts.json"),
-                Some(source) => Some(source),
-                None => Some("Server"),
-            };
-            let title = if display.arrows {
-                "Focus adjacent pane".into()
-            } else {
-                super::actions::binding_title(&binding.binding)
-            };
-            let numpad = display.also_numpad.then_some("Also on the numpad");
-            let detail: Vec<&str> = source
-                .into_iter()
-                .chain(numpad)
-                .chain(binding.binding.mode.as_deref())
-                .collect();
-            let detail = detail.join(" · ");
-            row_frame(!detail.is_empty())
-                .key(format!("shortcut-{name}-{index}"))
-                .child(words(&title, &detail))
-                .child(
-                    keycaps(&chords, false)
-                        .key(format!("shortcut-keys-{name}-{index}"))
-                        .label(spell(&chords)),
-                )
-        });
-        let unbound = unbound.into_iter().map(|spec| {
-            let title = if super::compatibility::alias(spec.name).is_some() {
-                format!("{} (alias)", spec.title())
-            } else {
-                spec.title().to_owned()
-            };
-            setting(&title, spec.name, value("Unbound"))
-        });
-        sections.push(section(name, [card(rows.chain(unbound))]));
-    }
-    // The pointer's buttons are not keys: plain words, as in Commands.
-    sections.push(section(
-        "Pointer",
-        [card([setting(
-            "Back and forward in history",
-            "",
-            value("Mouse Back / Forward"),
-        )])],
-    ));
-    let diagnostics = &s.effective_keymap().diagnostics;
-    if !diagnostics.is_empty() || s.model().keymap_error.is_some() {
-        let problem = |words: String| {
-            text(words)
-                .font(ui(11.5))
-                .color(rgb(warning()))
-                .wrap()
-                .grow(1.)
-                .shrink()
-        };
-        let mut rows = Vec::new();
-        if let Some(error) = &s.model().keymap_error {
-            rows.push(row_frame(false).child(problem(error.clone())));
-        }
-        for (index, found) in diagnostics.iter().enumerate() {
-            rows.push(
-                row_frame(false).child(
-                    problem(format!(
-                        "{}: {}",
-                        found.source.as_deref().unwrap_or("keymap"),
-                        found.message
-                    ))
-                    .key(format!("shortcut-problem-{index}")),
-                ),
-            );
-        }
-        sections.push(section("Problems", [card(rows)]));
-    }
-    let path = |key: &str, words: String| {
-        row_frame(false).child(
-            text(words)
-                .key(key.to_owned())
-                .font(mono(11.))
-                .color(rgb(muted()))
-                .selectable(true)
-                .wrap()
-                .grow(1.)
-                .shrink(),
-        )
-    };
-    let mut files = Vec::new();
-    if let Some(snapshot) = s.keymap_snapshot() {
-        files.push(path(
-            "server-shortcuts-path",
-            format!(
-                "Server: {}{}",
-                snapshot.reply.config.path,
-                if snapshot.reply.config.exists {
-                    ""
-                } else {
-                    " (not created)"
-                }
-            ),
-        ));
-    }
-    files.push(path(
-        "shortcuts-path",
-        rex_linux::settings::shortcuts::Shortcuts::path(&s.settings_path)
-            .display()
-            .to_string(),
-    ));
-    sections.push(section(
-        "Files",
-        [
-            card(files),
-            footnote(
-                "Edit the overrides file, then return to Rex to reload. Escape cancels a sequence; unbound keys reach the terminal.",
-            ),
-        ],
-    ));
-    page(sections)
-}
 
 /// The section list, in gapped groups: the window, what runs in it, and the app itself.
 fn nav(s: &Workspace, width: f32) -> El {
@@ -822,7 +579,7 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
         SettingsSection::Notifications => notifications(s),
         SettingsSection::Integrations => super::integrations::section(s),
         SettingsSection::Hosts => hosts(s),
-        SettingsSection::Shortcuts => shortcuts(s),
+        SettingsSection::Shortcuts => super::shortcuts_page::page(s),
         SettingsSection::Updates => super::updates::section(s),
         SettingsSection::About => super::about::section(s),
     };
@@ -830,7 +587,13 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
     // Under the toolbar, which stays whole above it, with a margin at both ends.
     let height = PANEL_HEIGHT.min((viewport[1] - TOOLBAR - 2. * CLEARANCE).max(0.));
     let nav_width = NAV_WIDTH.min(width * 0.3);
-    let (page_width, page_height) = (width - nav_width - 1., height - HEADER);
+    let pinned = (section == SettingsSection::Shortcuts)
+        .then(|| super::shortcuts_page::filter_field(s, PAGE_INSET));
+    let above = HEADER
+        + pinned
+            .as_ref()
+            .map_or(0., |_| super::shortcuts_page::FILTER);
+    let (page_width, page_height) = (width - nav_width - 1., height - above);
     let thumb = s.settings_fx.thumb.clone();
     let scroller = col()
         .key(format!("settings-scroll:{}", section.key()))
@@ -872,6 +635,7 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
                         .key("close-settings"),
                 ),
         )
+        .children(pinned)
         .child(
             col()
                 .grow(1.)
@@ -895,87 +659,4 @@ pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
 /// Settings under a list opened from one of its controls: drawn where it was, taking no input.
 pub fn settings_under(s: &Workspace, viewport: [f32; 2]) -> El {
     modal_layer(s, surface(s, viewport), true, TOOLBAR)
-}
-
-#[cfg(test)]
-mod shortcut_tests {
-    use super::*;
-    use crate::app::actions;
-    use rex_linux::keymap::Overrides;
-    use serde_json::json;
-
-    #[test]
-    fn defaults_are_compact_and_in_registry_order() {
-        let map = actions::resolve(&Overrides::default());
-        let effective = actions::effective(&map, &[]);
-        let panes = shortcut_rows(&effective, "Panes");
-        let focus: Vec<_> = panes
-            .iter()
-            .filter(|r| r.binding.binding.action == "pane.focus")
-            .collect();
-        assert_eq!(focus.len(), 1);
-        assert!(focus[0].arrows);
-        let interface = shortcut_rows(&effective, "Interface");
-        assert_eq!(interface.iter().filter(|r| r.also_numpad).count(), 3);
-        assert!(
-            !interface
-                .iter()
-                .any(|r| r.binding.binding.keys[0].contains("Numpad"))
-        );
-        for category in [
-            "Navigate",
-            "Create and close",
-            "Panes",
-            "Text and view",
-            "Interface",
-        ] {
-            let rows = shortcut_rows(&effective, category);
-            let positions: Vec<_> = rows
-                .iter()
-                .map(|r| {
-                    actions::SPECS
-                        .iter()
-                        .position(|s| s.name == r.binding.binding.action)
-                        .unwrap()
-                })
-                .collect();
-            assert!(positions.windows(2).all(|w| w[0] <= w[1]));
-        }
-        let scroll: Vec<_> = effective
-            .iter()
-            .filter(|b| b.binding.action == "pane.scroll")
-            .map(|b| actions::binding_title(&b.binding))
-            .collect();
-        assert!(scroll.contains(&"Scroll up · 20 lines".into()));
-        assert!(scroll.contains(&"Scroll down · 20 lines".into()));
-    }
-
-    #[test]
-    fn custom_focus_is_not_folded_and_try_order_is_retained() {
-        let map = actions::resolve(&Overrides::parse(&json!([
-            {"keys":"ctrl+alt+left","action":"pane.focus","args":{"direction":"right"}},
-            {"keys":"ctrl+j","action":"client.tab.new"},
-            {"keys":"ctrl+y","action":"client.tab.new"},
-            {"keys":"ctrl+[Numpad0]","action":"client.zoom.in"}
-        ])));
-        let effective = actions::effective(&map, &[]);
-        assert!(shortcut_rows(&effective, "Panes").iter().all(|r| !r.arrows));
-        let expected: Vec<_> = effective
-            .iter()
-            .filter(|b| b.binding.action == "client.tab.new")
-            .map(|b| &b.binding.keys)
-            .collect();
-        let rows = shortcut_rows(&effective, "Create and close");
-        let actual: Vec<_> = rows
-            .iter()
-            .filter(|r| r.binding.binding.action == "client.tab.new")
-            .map(|r| &r.binding.binding.keys)
-            .collect();
-        assert_eq!(actual, expected);
-        assert!(
-            shortcut_rows(&effective, "Interface")
-                .iter()
-                .any(|r| r.binding.binding.keys == ["ctrl+[Numpad0]"] && !r.also_numpad)
-        );
-    }
 }

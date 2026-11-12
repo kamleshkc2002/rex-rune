@@ -675,10 +675,10 @@ fn shortcuts_show_unbound_supported_actions_without_pretending_unsupported_ones_
         rt.frame(1. / 60.);
     }
     let words: Vec<_> = rt.elements().into_iter().filter_map(|e| e.text).collect();
-    assert!(words.iter().any(|s| s == "Unbound"));
-    assert!(words.iter().any(|s| s == "client.config.reload"));
-    assert!(words.iter().any(|s| s == "pane.resize"));
-    assert!(!words.iter().any(|s| s == "pane.move_to_new_tab"));
+    assert!(words.iter().any(|s| s == "Not set"));
+    assert!(has(&rt, "shortcut:client.config.reload"));
+    assert!(has(&rt, "shortcut:pane.resize:left"));
+    assert!(!has(&rt, "shortcut:pane.move_to_new_tab"));
     if let Some(mut camera) = super::pane_verb_tests::Camera::new() {
         camera.snap(&mut rt, "issue44-shortcuts");
     }

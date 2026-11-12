@@ -93,8 +93,13 @@ fn every_action_has_a_title_a_shortcuts_heading_and_a_reason_when_it_is_refused_
 #[test]
 fn a_bound_action_is_listed_on_settings_shortcuts_by_its_title() {
     let mut ws = all_bound();
+    let overrides = ws.settings.shortcut_file.overrides.clone();
     ws.perform(Intent::Settings, &mut rune::Tx::default());
     ws.open_section(SettingsSection::Shortcuts);
+    // Opening Settings reloads the absent file. Restore this test's in-memory map.
+    ws.settings.shortcut_file.overrides = overrides;
+    ws.local_keymap = actions::resolve(&ws.settings.shortcut_file.overrides);
+    ws.keymap_generation += 1;
     let mut rt = runtime_at(ws, (1440., 1000.));
     for _ in 0..30 {
         rt.frame(1. / 60.);
@@ -109,8 +114,30 @@ fn a_bound_action_is_listed_on_settings_shortcuts_by_its_title() {
             "the {heading} heading"
         );
     }
+    assert_eq!(
+        rt.state
+            .settings
+            .shortcut_file
+            .overrides
+            .layer
+            .bindings
+            .len(),
+        actions::SPECS.len()
+    );
     for binding in &rt.state.settings.shortcut_file.overrides.layer.bindings {
-        let title = actions::binding_title(binding);
+        let row = rt
+            .state
+            .shortcut_rows()
+            .into_iter()
+            .find(|r| r.action == binding.action && r.args == binding.args)
+            .expect("bound action row");
+        assert!(has(&rt, &format!("shortcut:{}", row.id())));
+        assert!(
+            !row.keys.is_empty(),
+            "{}: its keys are visible",
+            binding.action
+        );
+        let title = row.title;
         assert!(
             words.contains(&title),
             "{}: no row titled {title:?}",

@@ -28,6 +28,7 @@ mod popups;
 mod remote;
 mod settings_kit;
 mod settings_view;
+mod shortcuts_page;
 mod sidebar;
 mod splits;
 mod sprites;

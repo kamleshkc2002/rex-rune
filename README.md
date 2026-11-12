@@ -438,9 +438,14 @@ No cross-server `servers` list is advertised. A returned action whose original
 host, session, pane or local keymap generation is no longer current is skipped
 with an informational notice rather than applied to a different target.
 
-Settings → Shortcuts lists each effective binding by the name Commands gives its
-action, with its keys as keycaps (“then” between sequence steps), its source,
-persistent Problems and both config paths. Commands shows the highest
+Settings → Shortcuts is a read-only, searchable list of supported actions, including
+unbound actions marked **Not set** and aliases that are bound. Alternate bindings
+share a row; keycaps spell a literal `+` as **Plus** and join sequence steps with
+“then”. Filter by action name, category or keys (for example `ctrl+shift+d` or
+`ctrl+b>c`). Key matches include shadowed bindings in priority order within each
+mode, with source, mode and conflict notes. Escape clears the filter, then closes
+Settings. Persistent Problems include unsupported-action diagnostics; Files lists
+both config paths. This page does not record shortcuts or write `shortcuts.json`. Commands shows the highest
 binding for each action and argument set, or no shortcut when unbound. Only
 settings-source diagnostic sets toast, once per distinct set per host; file and
 default-layer diagnostics stay in Problems. A pending sequence shows `Ctrl B …`

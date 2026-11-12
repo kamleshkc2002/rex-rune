@@ -422,7 +422,7 @@ fn hints_are_the_effective_bindings() {
         ("pane.close_focused", "Ctrl Shift W"),
         ("view.sidebar", "Ctrl Shift B"),
         // The main block's keys, not the numpad's.
-        ("view.zoom.in", "Ctrl +"),
+        ("view.zoom.in", "Ctrl Plus"),
         ("view.zoom.out", "Ctrl -"),
         ("view.zoom.reset", "Ctrl 0"),
         ("app.settings", "Ctrl ,"),

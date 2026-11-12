@@ -4,6 +4,8 @@ This folder holds the November 2026 comparison of Rex Linux (Rust on Rune, commi
 
 **Start with [GAP-REPORT.md](GAP-REPORT.md).** It is the master report: verdict, scorecard, full inventory, UI quality, blocked items, roadmap and an evidence index. Everything else is the material it was built from.
 
+Implementation follow-up: [M2.1 read-only Shortcuts recovery](M2.1.md), with scope and verification. This does not revise the baseline counts below.
+
 ## Layout
 
 | Path | What it is |
