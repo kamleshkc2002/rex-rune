@@ -17,7 +17,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 # Layout the pointer steps assume, pinned into the client's private workspace.json rather than
-# inherited from its defaults: the toolbar is 52 pt, a single pane is full-bleed, and the grid
+# inherited from its defaults: the toolbar is 52 pt, a single pane is full-bleed with no header
+# row (pinned; by default it has one), and the grid
 # starts PANE_PADDING in from the left and below the toolbar. Cells are 9 x 20 px at font size 15.
 PANE_PADDING, TOOLBAR, FONT_SIZE, CELL = 8, 52, 15, (9, 21)
 
@@ -74,7 +75,8 @@ def run():
             (stub / "tailscale").chmod(0o755)
             env["PATH"] = f"{stub}{os.pathsep}{env['PATH']}"
             config = Path(directory) / "workspace.json"
-            config.write_text(json.dumps({"pane_padding": PANE_PADDING, "font_size": FONT_SIZE}))
+            config.write_text(json.dumps({"pane_padding": PANE_PADDING, "font_size": FONT_SIZE,
+                                          "pane_header": "hidden"}))
             app = subprocess.Popen([
                 os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune")), "--session", sid,
                 "--config", str(config), "--window-size", "1200x800"], env=env)

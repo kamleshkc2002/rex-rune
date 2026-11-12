@@ -675,7 +675,10 @@ fn a_single_pane_is_full_bleed_and_a_split_keeps_its_cards() {
         rt.frame(1. / 60.);
     }
     assert!(has(&rt, "pane:block:a"));
-    assert!(!has(&rt, "pane-header:block:a"), "no header on a lone pane");
+    assert!(
+        has(&rt, "pane-header:block:a"),
+        "a lone pane has its header, for Split right and Split down"
+    );
     let r = rt
         .elements()
         .into_iter()

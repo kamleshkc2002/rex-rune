@@ -149,7 +149,7 @@ fn interface(s: &Workspace) -> El {
                     select_row(
                         "pane-header",
                         "Pane headers",
-                        "Auto shows them on split panes in Comfortable density.",
+                        "Auto shows them on every pane in Comfortable density.",
                         &["Auto", "Always", "On hover", "Hidden"],
                         PANE_HEADERS
                             .iter()

@@ -110,7 +110,13 @@ fn header(
         .hover_group()
         .w_full()
         .h(CARD_HEADER)
-        .pl(14.)
+        // On a card the name clears the corner; edge to edge it lines up with the
+        // terminal's text under it.
+        .pl(if pane_header::full_bleed(s, window) {
+            s.settings.padding().0.max(8.)
+        } else {
+            14.
+        })
         // The trailing buttons stay clear of the card's 12 pt corner, where a hover fill
         // 4 pt from the edge all but touched the curve of the border.
         .pr(8.)
@@ -301,7 +307,15 @@ fn pane_card(
                 .box_shadow(shadow(0., 10., 30., black(0.45))),
         };
     }
+    let clear = if headed {
+        pane_header::clearance(s, window)
+    } else {
+        0.
+    };
     if headed {
+        if clear > 0. {
+            c = c.child(el().key("pane-header-clear").w_full().h(clear));
+        }
         c = c.child(header(s, window, block, rect[2], focused, m));
     }
     let c = match s.terminals.get(&key) {
@@ -618,7 +632,7 @@ fn pane_card(
             // terminal, and springs when it changes corner.
             match &t.search {
                 Some(edit) => {
-                    let above = if headed { CARD_HEADER } else { 0. } + lead + top;
+                    let above = if headed { CARD_HEADER + clear } else { 0. } + lead + top;
                     let pane = find::Pane {
                         size: (
                             (rect[2] - 2. * side).max(0.),

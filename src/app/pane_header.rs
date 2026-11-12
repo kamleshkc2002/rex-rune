@@ -2,9 +2,9 @@
 //! and Close, each on the pane the header belongs to, focused or not.
 //!
 //! Settings → Interface → Pane headers decides where the header is. Auto follows the density
-//! (the cards of a split or zoomed tab in Comfortable, never in Compact; a single pane stays
-//! edge to edge), Always puts one on every pane, On hover floats it over the top of the pane
-//! the pointer rests on, and Hidden draws none. A header that floats never moves the terminal
+//! (every pane in Comfortable, a lone one included, which stays edge to edge under its
+//! header; never in Compact), Always puts one on every pane, On hover floats it over the top
+//! of the pane the pointer rests on, and Hidden draws none. A header that floats never moves the terminal
 //! under it: the grid keeps its rows, so nothing is resized on the server.
 use super::{
     panel::{Intent, PaneAction},
@@ -15,7 +15,7 @@ use super::{
 };
 use rex_rune::{
     layout,
-    settings::{PaneDensity, PaneHeader},
+    settings::{PaneDensity, PaneHeader, interface::ToolbarBehavior},
 };
 use rexrs::api::session::Window;
 use rune::{Cursor, El, Icon, SpringPair, Transition, Tx, el, row, text};
@@ -85,19 +85,45 @@ pub fn can_zoom(window: &Window) -> bool {
     !single(window)
 }
 
-/// Whether this tab's panes carry a header row above their terminal.
-pub fn rows(s: &Workspace, window: &Window) -> bool {
+/// Whether `window` holds the last pane of the session on screen: one tab, with one pane.
+/// Its header's Close is not offered, as in Rex for macOS; the pane menu, Commands and the
+/// tab's own menu still close it.
+fn last_pane(s: &Workspace, window: &Window) -> bool {
+    single(window) && s.model().view().is_some_and(|v| v.windows.len() == 1)
+}
+
+/// Whether this tab's panes carry a header row above their terminal. The tab no longer
+/// matters (a lone pane has one too); it stays in the signature for the callers that have it.
+pub fn rows(s: &Workspace, _window: &Window) -> bool {
     match s.settings.pane_header {
         PaneHeader::Always => true,
-        PaneHeader::Auto => s.settings.pane_density == PaneDensity::Comfortable && !single(window),
+        // A lone pane has one too, as in Rex for macOS: Split right and Split down are
+        // where the pointer expects them before there is anything to split from.
+        PaneHeader::Auto => s.settings.pane_density == PaneDensity::Comfortable,
         PaneHeader::OnHover | PaneHeader::Hidden => false,
     }
 }
 
-/// A tab with one pane, not zoomed, draws it edge to edge: no card or margin, and no header
-/// unless headers are always shown.
+/// A tab with one pane, not zoomed, draws it edge to edge: no card or margin. Its header, if
+/// it has one, is a row across the top of it. With headers always shown it is a card like any
+/// other.
 pub fn full_bleed(s: &Workspace, window: &Window) -> bool {
     single(window) && s.settings.pane_header != PaneHeader::Always
+}
+
+/// Room kept above a lone pane's header row while the toolbar has no row of its own. The
+/// header is then the top of the window, and the toolbar's reveal edge (and the window's
+/// resize edge within it) must stay clear of its buttons: a pointer resting on Close would
+/// otherwise bring the toolbar out over it, with Close app where Close pane was.
+pub fn clearance(s: &Workspace, window: &Window) -> f32 {
+    if full_bleed(s, window)
+        && rows(s, window)
+        && s.settings.interface.toolbar != ToolbarBehavior::Always
+    {
+        super::toolbar_reveal::EDGE
+    } else {
+        0.
+    }
 }
 
 pub fn placement(s: &Workspace, window: &Window, block: &str) -> Placement {
@@ -116,7 +142,12 @@ pub fn placement(s: &Workspace, window: &Window, block: &str) -> Placement {
 /// Whether Reveal pane headers has anything to bring out: some pane, here or in another
 /// tab, can be without a header row.
 pub fn can_reveal(s: &Workspace) -> bool {
-    s.settings.pane_header != PaneHeader::Always
+    match s.settings.pane_header {
+        PaneHeader::Always => false,
+        // In Comfortable every pane already has its row.
+        PaneHeader::Auto => s.settings.pane_density != PaneDensity::Comfortable,
+        PaneHeader::OnHover | PaneHeader::Hidden => true,
+    }
 }
 
 impl Workspace {
@@ -255,15 +286,28 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
             on(PaneAction::Zoom),
         )
     };
-    cluster.child(zoom).child(button(
-        format!("pane-close:{block}"),
-        &CLOSE,
-        "Close pane",
-        hint("Close pane…", "pane.close", Value::Null),
-        (rest, fade),
-        true,
-        on(PaneAction::Close),
-    ))
+    let close = if last_pane(s, window) {
+        button(
+            format!("pane-close:{block}"),
+            &CLOSE,
+            "Close pane",
+            "Close pane · the session's only pane".into(),
+            (rest, fade),
+            true,
+            None,
+        )
+    } else {
+        button(
+            format!("pane-close:{block}"),
+            &CLOSE,
+            "Close pane",
+            hint("Close pane…", "pane.close", Value::Null),
+            (rest, fade),
+            true,
+            on(PaneAction::Close),
+        )
+    };
+    cluster.child(zoom).child(close)
 }
 
 /// A floating header's surface: the popover colour over the terminal, with a hairline below

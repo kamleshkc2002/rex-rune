@@ -123,7 +123,10 @@ try:
     enter()
     wait(counter.exists, "private bash prompt not ready")
     config = work / "home" / "workspace.json"
+    # No header row on the single pane: the captures are read whole by OCR, and the header's
+    # line of text beside the browser changes how its rows are segmented.
     config.write_text(json.dumps({"font_family": "IBM Plex Mono", "pane_padding": 8,
+                                 "pane_header": "hidden",
                                  "hosts": [{"label": "Private paths", "endpoint": endpoint}],
                                  "sessions": {endpoint: sid}}))
     desk = accept.Desktop()

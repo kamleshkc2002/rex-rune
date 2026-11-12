@@ -20,8 +20,9 @@ if the images will be shared.
 The scripts that import this module share its helpers: `api`, `Desktop` (Xvfb, openbox and a
 `tailscale` that finds no tailnet, so the Add host list never shows or probes a real one) and
 `grid_origin`, the pointer position of a terminal's first cell, which every script that selects
-text or clicks in the grid uses instead of a hard-coded offset. Pin `pane_padding` in the
-private workspace.json (`pin_layout`) so the origin does not move when the default does.
+text or clicks in the grid uses instead of a hard-coded offset. Pin `pane_padding` and
+`pane_header` in the private workspace.json (`pin_layout`) so the origin does not move when a
+default does.
 """
 import json, os, re, shlex, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
@@ -33,8 +34,9 @@ SHELL = {"block": {"flavor": "com.superlogical.terminal.shell"}}
 
 
 # Layout that pointer scripts depend on, pinned into each private workspace.json instead of
-# inherited from the app's defaults: the toolbar is 52 pt tall and a single pane has no card edge,
-# so the grid starts PANE_PADDING in from the left and PANE_PADDING below the toolbar.
+# inherited from the app's defaults: the toolbar is 52 pt tall, and a single pane has no card edge
+# and (pinned here; by default it has one) no header row, so the grid starts PANE_PADDING in from
+# the left and PANE_PADDING below the toolbar.
 PANE_PADDING = 8
 TOOLBAR_HEIGHT = 52
 # JetBrainsMono at font_size 15: 9 px per column and 20 px per row at scale 1.
@@ -46,7 +48,8 @@ def pin_layout(config, **settings):
     """Write (or update) a private workspace.json with the layout the pointer scripts assume."""
     config = Path(config)
     data = json.loads(config.read_text()) if config.exists() else {}
-    data.update(pane_padding=PANE_PADDING, font_size=FONT_SIZE, **settings)
+    data.update(pane_padding=PANE_PADDING, font_size=FONT_SIZE, pane_header="hidden")
+    data.update(settings)
     config.write_text(json.dumps(data))
     return config
 

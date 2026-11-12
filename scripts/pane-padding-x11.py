@@ -86,8 +86,9 @@ try:
     sid, block = accept.session("M2.7 private padding")
     desk = accept.Desktop()
     config = work / "workspace.json"
+    # No header row on the single pane: the sizes and the grid origin below are the terminal's.
     config.write_text(json.dumps({"sidebar_open": False, "font_family": "IBM Plex Mono",
-                                 "pane_padding": 24, "interface": {"pane_padding_vertical": 2},
+                                 "pane_header": "hidden", "pane_padding": 24, "interface": {"pane_padding_vertical": 2},
                                  "terminal": {"font": {"line_height": 20, "spacing": 20,
                                                           "spacing_unit": "percent"}}}))
     log = (work / "client.log").open("w")
