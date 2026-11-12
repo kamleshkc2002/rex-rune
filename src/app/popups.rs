@@ -615,7 +615,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     if activity {
         surface = surface.child(
             row().h(28.).px(10.).center_y().child(
-                text(super::activity_list::COVERAGE)
+                text(s.activity_coverage())
                     .font(ui(11.))
                     .color(rgb(muted()))
                     .truncate(),

@@ -60,14 +60,7 @@ impl Workspace {
         for (host, session, window, activity) in self.activity_tabs() {
             // On screen, even when the native window is unfocused. This is not tab_seen:
             // the chip never acknowledges a tab or closes a desktop notification.
-            let model = &self.hosts[host].model;
-            if host == self.active
-                && model.selected.as_deref() == Some(session)
-                && model
-                    .views
-                    .get(session)
-                    .is_some_and(|v| v.active_window_id.as_deref() == Some(window))
-            {
+            if self.tab_in_front(host, session, window) {
                 continue;
             }
             match activity.state {

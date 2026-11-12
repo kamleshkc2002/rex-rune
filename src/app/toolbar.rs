@@ -369,7 +369,7 @@ fn activity_chip(s: &Workspace) -> Option<El> {
                 s.shortcut_help("Show activity", super::activity_list::ACTION)
             ))
             // The list's first field takes focus, just as it does from Commands.
-            .on_press(|s: &mut Workspace| s.show_activity())
+            .on_press(|s: &mut Workspace| s.show_activity_elsewhere())
             .child(text(label).font(medium(11.5)).color(rgb(summary.tone()))),
     )))
 }

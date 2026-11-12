@@ -27,6 +27,35 @@ impl Workspace {
         );
     }
 
+    /// Opened from the toolbar chip, which counts tabs other than the one on screen: start
+    /// on the first row that is one of them, not on the tab already in front.
+    pub fn show_activity_elsewhere(&mut self) {
+        self.show_activity();
+        let elsewhere = self.entries().iter().position(|e| match &e.action {
+            Intent::ActivityTab(t) => !self.host_index(t.host).is_some_and(|host| {
+                t.window
+                    .as_deref()
+                    .is_some_and(|window| self.tab_in_front(host, &t.session, window))
+            }),
+            _ => false,
+        });
+        if let (Some(panel), Some(index)) = (&mut self.panel, elsewhere) {
+            panel.selected = index;
+            panel.reveal = true;
+        }
+    }
+
+    /// The list's one quiet line: what it cannot know. A host that is not connected (offline,
+    /// still connecting or reconnecting) is named first, so an empty list beside a host that
+    /// is down does not read as all clear.
+    pub fn activity_coverage(&self) -> String {
+        match self.hosts.iter().filter(|h| !h.model.connected).count() {
+            0 => COVERAGE.into(),
+            1 => "1 host is not connected. Tabs in unopened sessions may be missing.".into(),
+            n => format!("{n} hosts are not connected. Tabs in unopened sessions may be missing."),
+        }
+    }
+
     /// The list and its toolbar entry point share this cached, connected, unmuted inventory.
     /// Server session/window order is preserved; nothing is fetched or marked seen.
     pub fn activity_tabs(&self) -> impl Iterator<Item = (usize, &str, &str, TabActivity)> {
@@ -68,7 +97,11 @@ impl Workspace {
                 _ => continue,
             };
             let (title, place) = self.describe_tab(index, session, Some(id));
-            if !format!("{title} {place}").to_lowercase().contains(lower) {
+            // The state is searchable too: "error", "needs", "working".
+            if !format!("{title} {place} {word} {group}")
+                .to_lowercase()
+                .contains(lower)
+            {
                 continue;
             }
             let mut entry = Entry::new(

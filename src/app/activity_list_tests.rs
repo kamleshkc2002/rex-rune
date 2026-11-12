@@ -142,6 +142,87 @@ fn states_order_mute_hosts_sessions_and_filter() {
 }
 
 #[test]
+fn the_filter_matches_the_state_and_the_coverage_line_names_unconnected_hosts() {
+    let (mut ws, _rx) = fixture();
+    ws.show_activity();
+    // No tab, session or host is called any of these: only the state can match.
+    for (query, group, count) in [
+        ("needs approval", "Needs you", 2),
+        ("needs you", "Needs you", 2),
+        ("working", "Working", 4),
+    ] {
+        edit(&mut ws, query);
+        let rows = ws.entries();
+        assert_eq!(rows.len(), count, "{query}");
+        assert!(rows.iter().all(|e| e.group == group), "{query}");
+    }
+    edit(&mut ws, "");
+    assert_eq!(ws.activity_coverage(), COVERAGE);
+    ws.hosts[1].model.connected = false;
+    assert_eq!(
+        ws.activity_coverage(),
+        "1 host is not connected. Tabs in unopened sessions may be missing."
+    );
+    ws.hosts[0].model.connected = false;
+    assert_eq!(
+        ws.activity_coverage(),
+        "2 hosts are not connected. Tabs in unopened sessions may be missing."
+    );
+    // With every host down nothing is listed, and the line says why.
+    assert!(ws.entries().is_empty());
+}
+
+#[test]
+fn opening_from_the_chip_starts_on_a_tab_that_is_not_the_one_in_front() {
+    let (mut ws, _rx) = fixture();
+    // The tab on screen blocks too, so it heads the Needs you group.
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .get_mut("")
+        .unwrap()
+        .state = ProgramState::Blocked;
+    let front = target(&ws, 0, "s", "front");
+    ws.show_activity();
+    assert_eq!(ws.panel.as_ref().unwrap().selected, 0);
+    assert_eq!(ws.activity_selection(), Some(front.clone()));
+    ws.panel = None;
+    // The chip counted the others: its list opens on the first of them.
+    ws.show_activity_elsewhere();
+    assert_eq!(ws.panel.as_ref().unwrap().selected, 1);
+    assert_eq!(
+        ws.activity_selection(),
+        Some(target(&ws, 0, "s", "blocked"))
+    );
+    ws.panel = None;
+    // The same session and tab id on the other host is not the tab in front: with it
+    // the only other tab that needs you, it is the row the list opens on.
+    for id in ["blocked", "error", "done", "build"] {
+        ws.hosts[0].model.activity.remove(id);
+    }
+    ws.hosts[1].model.activity.remove("blocked");
+    ws.hosts[1]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .get_mut("")
+        .unwrap()
+        .state = ProgramState::Blocked;
+    ws.unseen_done.clear();
+    ws.show_activity_elsewhere();
+    assert_eq!(ws.panel.as_ref().unwrap().selected, 1);
+    assert_eq!(ws.activity_selection(), Some(target(&ws, 1, "s", "front")));
+    ws.panel = None;
+    // Only the tab in front qualifies: the list still opens, on it.
+    ws.hosts[1].model.connected = false;
+    ws.show_activity_elsewhere();
+    assert_eq!(ws.activity_selection(), Some(front));
+}
+
+#[test]
 fn browsing_is_local_and_is_not_seeing_a_tab() {
     let _families = rune::text::with_families("Inter", "Inter");
     let (mut ws, rx) = fixture();

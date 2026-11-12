@@ -256,16 +256,20 @@ fn finished(before: ProgramState, now: ProgramState) -> bool {
 }
 
 impl Workspace {
-    /// The tab is in front of the user: this window has focus and shows that tab.
-    pub fn tab_seen(&self, index: usize, session: &str, window: &str) -> bool {
+    /// The tab this window shows, whether or not the window has focus.
+    pub fn tab_in_front(&self, index: usize, session: &str, window: &str) -> bool {
         let model = &self.hosts[index].model;
-        self.window_focused
-            && index == self.active
+        index == self.active
             && model.selected.as_deref() == Some(session)
             && model
                 .views
                 .get(session)
                 .is_some_and(|v| v.active_window_id.as_deref() == Some(window))
+    }
+
+    /// The tab is in front of the user: this window has focus and shows that tab.
+    pub fn tab_seen(&self, index: usize, session: &str, window: &str) -> bool {
+        self.window_focused && self.tab_in_front(index, session, window)
     }
 
     /// Compare each tab of host `index` with its last state: latch unseen Done, clear what
