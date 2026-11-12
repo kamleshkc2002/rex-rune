@@ -26,6 +26,8 @@ mod polish_tests;
 mod remote_session_tests;
 #[path = "remote_tests.rs"]
 mod remote_tests;
+#[path = "settings_nav_tests.rs"]
+mod settings_nav_tests;
 #[path = "settings_tests.rs"]
 mod settings_tests;
 #[path = "shortcuts_page_tests.rs"]
@@ -1417,6 +1419,7 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     // The header's two copies come first, then the project links.
     let clipboard = rune::clipboard::memory();
     rt.use_clipboard(&clipboard);
+    press(&mut rt, Key::Tab); // Back (the section visit created history)
     press(&mut rt, Key::Tab); // Close
     press(&mut rt, Key::Tab);
     assert!(focused(&rt).unwrap().ends_with("about-copy"));
@@ -1533,7 +1536,8 @@ fn forms_focus_their_first_field_and_settings_start_on_its_section_list() {
         super::panel::SettingsSection::Terminal
     );
     let font = rt.state.settings.font_size;
-    for _ in 0..4 {
+    // Back joins the tab order once the section visit has created history.
+    for _ in 0..5 {
         press(&mut rt, Key::Tab);
     }
     let path = focused(&rt).expect("a focused control");

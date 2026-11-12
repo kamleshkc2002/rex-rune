@@ -274,10 +274,10 @@ impl SettingsSection {
     pub const ALL: [SettingsSection; 8] = [
         SettingsSection::Interface,
         SettingsSection::Terminal,
-        SettingsSection::Notifications,
-        SettingsSection::Integrations,
-        SettingsSection::Hosts,
         SettingsSection::Shortcuts,
+        SettingsSection::Integrations,
+        SettingsSection::Notifications,
+        SettingsSection::Hosts,
         SettingsSection::Updates,
         SettingsSection::About,
     ];

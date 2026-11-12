@@ -57,7 +57,9 @@ pub fn section(title: &str, children: impl IntoIterator<Item = El>) -> El {
                 .px(INSET),
         );
     }
-    body.children(children)
+    let body = body.children(children);
+    super::settings_nav::heading(title);
+    body
 }
 
 /// Rows on one inset surface, with a hairline between each pair.
@@ -88,6 +90,20 @@ pub fn footnote(words: impl Into<String>) -> El {
         .color(rgb(muted()))
         .wrap()
         .px(INSET)
+}
+
+/// Search Settings' field surface, with the same focus cue as the page controls.
+pub fn search_box(key: &str, height: f32, input: El) -> El {
+    row()
+        .key(key.to_owned())
+        .w_full()
+        .h(height)
+        .center_y()
+        .radius(8.)
+        .continuous_corners()
+        .fill(white(0.055))
+        .focus_within_ring(1.5, 0., rgb(accent()).alpha(0.7))
+        .child(input.w_full())
 }
 
 /// [`footnote`] for a path, a command or another value to copy.
@@ -128,7 +144,11 @@ pub fn words(label: &str, detail: &str) -> El {
         words = words.child(
             text(detail.to_owned())
                 .font(ui(11.5))
-                .color(rgb(muted()))
+                .color(rgb(if super::settings_nav::will_mark(label) {
+                    ink()
+                } else {
+                    muted()
+                }))
                 .wrap(),
         );
     }
@@ -138,8 +158,10 @@ pub fn words(label: &str, detail: &str) -> El {
 /// A labelled setting: its words on the left and its control in the trailing slot, which
 /// ends at the card's inset on every row.
 pub fn setting(label: &str, detail: &str, control: El) -> El {
-    row_frame(!detail.is_empty())
-        .child(words(label, detail))
+    // Resolve the words before the registry consumes this match. The mark paints behind them.
+    let words = words(label, detail);
+    super::settings_nav::row(label, detail, row_frame(!detail.is_empty()))
+        .child(words)
         .child(control)
 }
 
@@ -199,7 +221,7 @@ pub fn state_chip(key: &str, label: &str, tone: ChipTone, why: &str) -> El {
 }
 
 /// Return presses a focused control as Space does: Settings has no default button to take it.
-fn on_return(e: El, action: impl Fn(&mut Workspace, &mut Tx) + 'static) -> El {
+pub(super) fn on_return(e: El, action: impl Fn(&mut Workspace, &mut Tx) + 'static) -> El {
     e.on_key(move |s: &mut Workspace, event: &KeyEvent, tx: &mut Tx| {
         (event.key == Key::Enter).then(|| action(s, tx)).is_some()
     })
@@ -477,7 +499,8 @@ pub fn disclosure(
     current: &str,
     open: impl Fn(&mut Workspace, &mut Tx) + Clone + 'static,
 ) -> El {
-    let mut e = row_frame(!detail.is_empty())
+    let words = words(label, detail);
+    let mut e = super::settings_nav::row(label, detail, row_frame(!detail.is_empty()))
         .key(key.to_owned())
         .role("button")
         .label(label.to_owned())
@@ -488,7 +511,7 @@ pub fn disclosure(
         .focusable(true)
         .focus_ring(2., -2., rgb(accent()))
         .on_press_tx(open.clone())
-        .child(words(label, detail));
+        .child(words);
     if !current.is_empty() {
         e = e.child(
             text(current.to_owned())

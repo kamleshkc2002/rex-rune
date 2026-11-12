@@ -120,6 +120,7 @@ pub struct Workspace {
     scratch: TextEdit,
     next_host: u64,
     pub settings_section: SettingsSection,
+    pub settings_nav: super::settings_nav::Nav,
     /// Each tab's folded activity state when last synced.
     pub tab_states: TabStates,
     /// Tabs whose programs finished while the user wasn't looking; they show "Done".
@@ -262,6 +263,7 @@ impl Workspace {
             scratch: TextEdit::new(""),
             next_host: 0,
             settings_section: SettingsSection::default(),
+            settings_nav: Default::default(),
             tab_states: HashMap::new(),
             unseen_done: HashSet::new(),
             unseen_bells: HashSet::new(),
@@ -1387,6 +1389,7 @@ impl Workspace {
                 self.bindings.sequence.clear();
                 self.reload_shortcuts();
                 self.shortcut_filter = TextEdit::new("");
+                self.settings_nav.opened();
                 let back = self.panel.take();
                 self.panel = Some(Panel::new(PanelKind::Settings, "Settings", &[]));
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
