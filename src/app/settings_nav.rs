@@ -1,8 +1,8 @@
 //! Settings history and search, recovered from the preserved Wave 2 navigation.
-//! Pages remain the existing sections: no placeholder pages or shortcut action search.
+//! Existing sections plus Advanced font settings; no placeholder pages or shortcut action search.
 //! The row registry is read from settings_kit's labelled rows, not a second copy of UI text.
 use super::{
-    panel::{PanelKind, SettingsSection as Page},
+    panel::{PanelKind, SettingsSection},
     theme::*,
     workspace::Workspace,
 };
@@ -19,19 +19,70 @@ const MARKED_FOR: Duration = Duration::from_millis(2400);
 const HITS: usize = 40;
 const STOPS: usize = 64;
 
+/// One focused subpage; it participates in the same history and automatic row index.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SubPage {
+    AdvancedFont,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Page {
+    Section(SettingsSection),
+    Sub(SubPage),
+}
+impl From<SettingsSection> for Page {
+    fn from(section: SettingsSection) -> Self {
+        Self::Section(section)
+    }
+}
+impl PartialEq<SettingsSection> for Page {
+    fn eq(&self, section: &SettingsSection) -> bool {
+        *self == Self::Section(*section)
+    }
+}
+impl Page {
+    fn all() -> impl Iterator<Item = Self> {
+        SettingsSection::ALL
+            .into_iter()
+            .map(Self::Section)
+            .chain([Self::Sub(SubPage::AdvancedFont)])
+    }
+    pub fn section(self) -> SettingsSection {
+        match self {
+            Self::Section(section) => section,
+            Self::Sub(SubPage::AdvancedFont) => SettingsSection::Terminal,
+        }
+    }
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Section(section) => section.title(),
+            Self::Sub(SubPage::AdvancedFont) => "Advanced font settings",
+        }
+    }
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::Section(section) => section.key(),
+            Self::Sub(SubPage::AdvancedFont) => "advanced-font",
+        }
+    }
+}
+
 /// Discovery aliases name existing pages, not promises of controls on them.
 fn keywords(page: Page) -> &'static str {
     match page {
-        Page::Interface => {
-            "appearance layout window scale zoom sidebar tabs downloads colors colours palette"
-        }
-        Page::Terminal => "font shell text padding",
-        Page::Shortcuts => "keys keyboard bindings keymap hotkeys",
-        Page::Integrations => "agents skill hooks claude codex opencode pi",
-        Page::Notifications => "alerts sound bell desktop activity status",
-        Page::Hosts => "servers ssh tailscale tailnet endpoint remote control",
-        Page::Updates => "upgrade version release",
-        Page::About => "version build license licence credits",
+        Page::Sub(SubPage::AdvancedFont) => "font leading tracking spacing fallback bold italic",
+        Page::Section(section) => match section {
+            SettingsSection::Interface => {
+                "appearance layout window scale zoom sidebar tabs downloads colors colours palette"
+            }
+            SettingsSection::Terminal => "font shell text padding",
+            SettingsSection::Shortcuts => "keys keyboard bindings keymap hotkeys",
+            SettingsSection::Integrations => "agents skill hooks claude codex opencode pi",
+            SettingsSection::Notifications => "alerts sound bell desktop activity status",
+            SettingsSection::Hosts => "servers ssh tailscale tailnet endpoint remote control",
+            SettingsSection::Updates => "upgrade version release",
+            SettingsSection::About => "version build license licence credits",
+        },
     }
 }
 
@@ -74,6 +125,7 @@ struct Found {
 /// Where Settings is, where it has been, and its search.
 #[derive(Default)]
 pub struct Nav {
+    pub(super) sub: Option<SubPage>,
     stops: Vec<Stop>,
     /// The stop that is on screen, once `record` has run for it.
     at: usize,
@@ -90,6 +142,7 @@ pub struct Nav {
 impl Nav {
     /// Settings just opened: no history yet and no search, on the page it was left on.
     pub fn opened(&mut self) {
+        self.sub = None;
         self.stops.clear();
         self.at = 0;
         self.offset.set(0.);
@@ -254,7 +307,7 @@ fn mark() -> El {
 /// `page`'s rows, by building it.
 fn read(s: &Workspace, page: Page) -> Vec<Indexed> {
     // Shortcuts owns its own filter; this search links to the page, never bypasses it.
-    if page == Page::Shortcuts {
+    if page == Page::Section(SettingsSection::Shortcuts) {
         return Vec::new();
     }
     PASS.set(Pass::Read(Vec::new(), 0));
@@ -331,7 +384,7 @@ fn search(index: &[Indexed], query: &str) -> Vec<Hit> {
         return Vec::new();
     }
     let mut hits = Vec::new();
-    for page in Page::ALL {
+    for page in Page::all() {
         if let Some(rank) = rank(&query, &words, page.title(), keywords(page)) {
             hits.push((
                 rank,
@@ -345,6 +398,12 @@ fn search(index: &[Indexed], query: &str) -> Vec<Hit> {
         }
     }
     for found in index {
+        // The disclosure and its destination are one search result.
+        if found.page == SettingsSection::Terminal
+            && found.label == Page::Sub(SubPage::AdvancedFont).title()
+        {
+            continue;
+        }
         let more = format!("{} {} {}", found.helper, found.heading, found.page.title());
         if let Some(rank) = rank(&query, &words, &found.label, &more) {
             hits.push((
@@ -371,12 +430,15 @@ impl Workspace {
 
     /// The page currently shown beside the sidebar.
     pub fn settings_page(&self) -> Page {
-        self.settings_section
+        self.settings_nav
+            .sub
+            .map_or(Page::Section(self.settings_section), Page::Sub)
     }
 
     /// Go to `page` as the user does from the sidebar, a row or a search: a new stop in the
     /// history, opened at its top.
-    pub fn navigate(&mut self, page: Page) {
+    pub fn navigate(&mut self, page: impl Into<Page>) {
+        let page = page.into();
         let from = self.settings_page();
         if page == from {
             return;
@@ -384,7 +446,24 @@ impl Workspace {
         self.settings_nav.record(from);
         self.settings_nav.push(page);
         self.settings_nav.found = None;
-        self.open_section(page);
+        self.show_settings_page(page);
+    }
+
+    fn show_settings_page(&mut self, page: Page) {
+        self.open_section(page.section());
+        self.settings_nav.sub = match page {
+            Page::Section(_) => None,
+            Page::Sub(sub) => Some(sub),
+        };
+    }
+
+    pub fn open_sub_page(&mut self, sub: SubPage, tx: &mut Tx) {
+        self.navigate(Page::Sub(sub));
+        tx.scroll_to_y(
+            format!("settings-scroll:{}", self.settings_page().key()),
+            0.,
+        );
+        tx.focus("settings-back", tx.focus_visible());
     }
 
     /// Whether Back (-1) or Forward (1) has a page to show.
@@ -405,8 +484,14 @@ impl Workspace {
         self.settings_nav.record(from);
         if let Some(stop) = self.settings_nav.step(direction) {
             self.settings_nav.found = None;
-            self.open_section(stop.page);
+            self.show_settings_page(stop.page);
             tx.scroll_to_y(format!("settings-scroll:{}", stop.page.key()), stop.scroll);
+            if matches!(from, Page::Sub(SubPage::AdvancedFont))
+                && stop.page == SettingsSection::Terminal
+                && !self.settings_nav.search.focused
+            {
+                tx.focus("open-advanced-font", tx.focus_visible());
+            }
         }
         true
     }
@@ -420,12 +505,7 @@ impl Workspace {
             return;
         }
         if self.settings_nav.index.is_none() {
-            self.settings_nav.index = Some(
-                Page::ALL
-                    .into_iter()
-                    .flat_map(|page| read(self, page))
-                    .collect(),
-            );
+            self.settings_nav.index = Some(Page::all().flat_map(|page| read(self, page)).collect());
         }
         let nav = &mut self.settings_nav;
         nav.hits = search(
@@ -483,6 +563,23 @@ impl Workspace {
             self.clear_settings_search();
             return true;
         }
+        if ev.key == Key::Escape && self.settings_open() && self.settings_nav.sub.is_some() {
+            let parent = Page::Section(SettingsSection::Terminal);
+            if self
+                .settings_nav
+                .at
+                .checked_sub(1)
+                .and_then(|at| self.settings_nav.stops.get(at))
+                .is_some_and(|stop| stop.page == parent)
+            {
+                self.settings_history(-1, tx);
+            } else {
+                self.navigate(parent);
+                tx.scroll_into_view("open-advanced-font");
+            }
+            tx.focus("open-advanced-font", tx.focus_visible());
+            return true;
+        }
         if !ev.mods.alt || ev.mods.ctrl || ev.mods.cmd || ev.mods.shift {
             return false;
         }
@@ -499,10 +596,10 @@ impl Workspace {
 mod tests {
     use super::*;
 
-    const INTERFACE: Page = Page::Interface;
-    const TERMINAL: Page = Page::Terminal;
-    const ABOUT: Page = Page::About;
-    const PANES: Page = Page::Notifications;
+    const INTERFACE: Page = Page::Section(SettingsSection::Interface);
+    const TERMINAL: Page = Page::Section(SettingsSection::Terminal);
+    const ABOUT: Page = Page::Section(SettingsSection::About);
+    const PANES: Page = Page::Section(SettingsSection::Notifications);
 
     fn visit(nav: &mut Nav, from: Page, to: Page, scrolled: f32) {
         nav.offset.set(scrolled);
@@ -611,7 +708,10 @@ mod tests {
             },
         ];
         assert_eq!(search(&index, "  PADDING ")[0].label, "Pane padding");
-        assert_eq!(search(&index, "sound")[0].page, Page::Notifications);
+        assert_eq!(
+            search(&index, "sound")[0].page,
+            Page::Section(SettingsSection::Notifications)
+        );
         assert!(!search(&index, "sound")[0].row);
         assert_eq!(search(&index, "typography")[0].label, "Font size");
         assert!(

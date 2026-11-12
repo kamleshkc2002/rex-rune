@@ -430,7 +430,7 @@ fn prompt_column(rt: &Runtime<Workspace>) -> usize {
 /// The selected match's rect in the window: `row` of the pane, `cols` wide from `col`.
 fn cells(rt: &Runtime<Workspace>, row: usize, col: usize, cols: usize) -> [f32; 4] {
     let grid = rect(rt, "grid:block:a");
-    let (cw, ch) = term::metrics(rt.state.settings.font_size).cell;
+    let (cw, ch) = rt.state.metrics().cell;
     [
         grid[0] + col as f32 * cw,
         grid[1] + row as f32 * ch,
@@ -453,7 +453,7 @@ fn bar_on_rows(rt: &Runtime<Workspace>, block: &str) -> ([f32; 4], [f32; 4]) {
         rect(rt, &format!("grid:{block}")),
     );
     let apron = rect(rt, &format!("find-apron:{block}:{corner:?}"));
-    let ch = term::metrics(rt.state.settings.font_size).cell.1;
+    let ch = rt.state.metrics().cell.1;
     let whole = |y: f32| {
         let rows = (y - grid[1]) / ch;
         (rows - rows.round()).abs() < 0.01
@@ -472,6 +472,41 @@ fn bar_on_rows(rt: &Runtime<Workspace>, block: &str) -> ([f32; 4], [f32; 4]) {
         "{bar:?} is inside {apron:?}"
     );
     (bar, apron)
+}
+
+#[test]
+fn typography_repositions_find_on_adjusted_cells_without_an_unowned_resize_reply() {
+    let (mut rt, mut pane) = single(two_alphas);
+    ctrl_shift(&mut rt, 'f');
+    type_text(&mut rt, "alpha");
+    pane.work(&mut rt);
+    assert!(!pane.model.lock().unwrap().owner);
+    rt.update(|s, _| {
+        s.edit_typography(|font| {
+            font.line_height = 20;
+            font.spacing_unit = rex_linux::settings::typography::SpacingUnit::Percent;
+            font.spacing = 20;
+        })
+    });
+    settle(&mut rt);
+    assert!(pane.sent.try_iter().all(|c| !matches!(
+        c,
+        HostCommand::Terminal {
+            command: Command::Resize(..),
+            ..
+        }
+    )));
+    bar_on_rows(&rt, "block:a");
+    let selected = rt.state.terminals[&pane.key]
+        .frame
+        .as_ref()
+        .unwrap()
+        .search
+        .as_ref()
+        .unwrap()
+        .selected;
+    assert!(selected.is_some(), "existing search is preserved");
+    std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
 #[test]

@@ -15,7 +15,7 @@
 use super::{
     input::search_key,
     pane_header::{self, BUTTON, Placement, UNAVAILABLE},
-    term::{self, Term},
+    term::Term,
     theme::*,
     widgets::glyph,
     workspace::{HostId, Workspace},
@@ -235,7 +235,7 @@ impl Workspace {
         if self.terminals.get(key).is_none_or(|t| t.search.is_none()) {
             return;
         }
-        let cell = term::metrics(self.settings.font_size).cell;
+        let cell = self.metrics().cell;
         // Only a pane of the tab on screen has a strip to stay under.
         let lowered = *key == self.term_key(&key.1)
             && self.model().window().is_some_and(|window| {

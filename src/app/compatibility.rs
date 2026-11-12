@@ -284,7 +284,7 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) {
             }
         }
         "client.scroll.page_up" | "client.scroll.page_down" => {
-            let cell = super::term::metrics(s.settings.font_size).cell;
+            let cell = s.metrics().cell;
             if let Some(term) = s.active_terminal_mut() {
                 let rows = term.visible_rows(cell).max(1) as isize;
                 term.send(Command::Scroll(if name.ends_with("up") {

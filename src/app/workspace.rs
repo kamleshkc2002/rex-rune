@@ -11,10 +11,7 @@ use super::{
 use rex_linux::{
     connection::{Command, DEFAULT_TAB_LABEL, HostCommand, HostConnection, HostModel, Options},
     layout::{Divider, shell_layout},
-    settings::{
-        ChromeTheme, Host, NoticePosition, Settings, TerminalThemeChoice,
-        normalize_font_preferences, validate_host,
-    },
+    settings::{ChromeTheme, Host, NoticePosition, Settings, TerminalThemeChoice, validate_host},
     terminal_theme::{TerminalTheme, ThemeDirs, ThemeInfo, paired},
 };
 use rexrs::api::terminal::SetTheme;
@@ -101,6 +98,7 @@ pub struct Workspace {
     /// The saved family when the client started, to tell a pending font change from the
     /// active one.
     pub launch_saved_font: String,
+    pub fonts: super::font_picker::FontState,
     pub title: String,
     #[cfg(test)]
     pub opened_links: Vec<String>,
@@ -170,6 +168,7 @@ impl Workspace {
     ) -> Self {
         let launch_font = options.fonts(&settings).0.to_owned();
         let launch_saved_font = settings.font_family.clone();
+        let fonts = super::font_picker::FontState::new(&options, &settings);
         let explicit = options.session.is_some()
             || options.new.is_some()
             || options.endpoint != rex_linux::transport::local_endpoint();
@@ -251,6 +250,7 @@ impl Workspace {
             terminal_family,
             launch_font,
             launch_saved_font,
+            fonts,
             title: "Rex".into(),
             #[cfg(test)]
             opened_links: Vec::new(),
@@ -605,10 +605,10 @@ impl Workspace {
             self.save();
         }
         self.claim_visible();
-        let font = self.settings.font_size;
+        let cell = self.metrics().cell;
         for ((host, _), term) in self.terminals.iter_mut() {
             if *host == id {
-                term.resize_if_owner(font);
+                term.resize_if_owner(cell);
             }
         }
         self.sync_prefetch();
@@ -753,11 +753,11 @@ impl Workspace {
     }
 
     pub fn refresh_terminal(&mut self, key: &(HostId, String)) {
-        let font = self.settings.font_size;
+        let cell = self.metrics().cell;
         if let Some(term) = self.terminals.get_mut(key) {
             term.refresh();
             term.cache_images(self.images.as_ref());
-            term.resize_if_owner(font);
+            term.resize_if_owner(cell);
         }
         self.place_find(key);
     }
@@ -1231,7 +1231,11 @@ impl Workspace {
         if !action.opens_followup()
             && !matches!(
                 action,
-                Intent::Theme(_) | Intent::Chrome(_) | Intent::Choose(_) | Intent::Shortcuts(_)
+                Intent::Theme(_)
+                    | Intent::Chrome(_)
+                    | Intent::Choose(_)
+                    | Intent::Shortcuts(_)
+                    | Intent::Font(_)
             )
             && self.panel.is_some()
         {
@@ -1299,18 +1303,9 @@ impl Workspace {
                 },
                 Err(error) => self.notify(format!("{error:#}")),
             },
-            Intent::Fonts => {
-                let family = self.settings.font_family.clone();
-                let fallbacks = self.settings.font_fallbacks.join(", ");
-                self.open_panel(
-                    PanelKind::Form(Form::Fonts),
-                    "Terminal fonts",
-                    &[
-                        ("Font family", "JetBrainsMono Nerd Font", &family),
-                        ("Fallback families (comma-separated)", "Automatic system fallbacks when empty", &fallbacks),
-                    ],
-                );
-            }
+            Intent::Fonts => self.open_fonts(super::font_picker::FontPurpose::Terminal),
+            Intent::AddFallback => self.open_fonts(super::font_picker::FontPurpose::Fallback),
+            Intent::Font(family) => self.pick_font(family, tx),
             Intent::RemoteControl(host) => self.toggle_remote_control(host),
             Intent::ClientLabel => {
                 let label = self.settings.client_label();
@@ -1783,6 +1778,7 @@ impl Workspace {
                     | PanelKind::AgentChange { .. }
                     | PanelKind::StartSsh { .. }
                     | PanelKind::Themes
+                    | PanelKind::Fonts(_)
                     | PanelKind::Chromes
                     | PanelKind::Choice(_)
                     | PanelKind::Discover
@@ -1825,6 +1821,7 @@ impl Workspace {
 
     /// Show a Settings section; Integrations reads the agents' state when first shown.
     pub fn open_section(&mut self, section: SettingsSection) {
+        self.settings_nav.sub = None;
         self.settings_section = section;
         self.recorder = None;
         if section == SettingsSection::Shortcuts {
@@ -1937,18 +1934,7 @@ impl Workspace {
         }
         match kind {
             PanelKind::Form(form) => {
-                let font_preferences = matches!(form, Form::Fonts).then(|| {
-                    let fallbacks = values[1]
-                        .split(',')
-                        .map(str::trim)
-                        .filter(|s| !s.is_empty())
-                        .map(str::to_owned)
-                        .collect::<Vec<_>>();
-                    normalize_font_preferences(&values[0], &fallbacks)
-                });
-                let error = if let Some(result) = &font_preferences {
-                    result.as_ref().err().map(ToString::to_string)
-                } else if let Form::HostShell(_) = form {
+                let error = if let Form::HostShell(_) = form {
                     // Empty clears it; the server takes one program name, never arguments.
                     values[0]
                         .chars()
@@ -1999,19 +1985,6 @@ impl Workspace {
                 let back = self.settings_back();
                 self.close_panel(tx);
                 match form {
-                    Form::Fonts => {
-                        let (family, fallbacks) = font_preferences
-                            .expect("font form")
-                            .expect("validated above");
-                        let changed = family != self.settings.font_family
-                            || fallbacks != self.settings.font_fallbacks;
-                        self.settings.font_family = family;
-                        self.settings.font_fallbacks = fallbacks;
-                        self.save();
-                        if changed {
-                            self.inform("Fonts saved. Reopen the client to use them.");
-                        }
-                    }
                     Form::ClientLabel => {
                         self.settings.client_label = Some(values[0].clone());
                         self.save();
@@ -2121,13 +2094,7 @@ impl Workspace {
 
     pub fn change_font(&mut self, delta: f32) {
         self.settings.font_size = (self.settings.font_size + delta).clamp(8., 48.);
-        for term in self.terminals.values_mut() {
-            term.last_size = None;
-        }
-        let font = self.settings.font_size;
-        for term in self.terminals.values_mut() {
-            term.resize_if_owner(font);
-        }
+        self.resize_terminals();
         self.save();
     }
 

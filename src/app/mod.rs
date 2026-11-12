@@ -10,6 +10,8 @@ mod discover;
 mod downloads;
 mod downloads_view;
 mod find;
+mod font_page;
+mod font_picker;
 mod font_size;
 mod fonts;
 mod help;
@@ -123,6 +125,9 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         root = root.child(toasts);
     }
     let open = match &s.panel {
+        Some(panel) if matches!(panel.kind, panel::PanelKind::Fonts(_)) => {
+            Some(font_picker::popup(s, viewport))
+        }
         Some(panel) if panel.is_list() => Some(popups::list_popup(s, viewport)),
         Some(panel) if matches!(panel.kind, panel::PanelKind::Downloads) => {
             Some(downloads_view::popover(s, viewport))

@@ -12,6 +12,8 @@ mod compatibility_tests;
 mod downloads_tests;
 #[path = "find_tests.rs"]
 mod find_tests;
+#[path = "font_settings_tests.rs"]
+mod font_settings_tests;
 #[path = "menu_tests.rs"]
 mod menu_tests;
 #[path = "navigation_tests.rs"]
@@ -1542,8 +1544,9 @@ fn forms_focus_their_first_field_and_settings_start_on_its_section_list() {
         super::panel::SettingsSection::Terminal
     );
     let font = rt.state.settings.font_size;
-    // Back joins the tab order once the section visit has created history.
-    for _ in 0..5 {
+    // Back joins the tab order once the section visit has created history; Font style
+    // is the additional stop between the family picker and size controls.
+    for _ in 0..6 {
         press(&mut rt, Key::Tab);
     }
     let path = focused(&rt).expect("a focused control");
@@ -3347,101 +3350,14 @@ fn pane_padding_changes_every_grid_without_changing_pane_placements() {
     }
 }
 
-#[test]
-fn font_preferences_save_from_settings_without_server_requests() {
-    let mut ws = workspace();
-    let requests = capture_host(&mut ws, 0);
-    ws.perform(Intent::Settings, &mut rune::Tx::default());
-    let mut rt = runtime(ws);
-    click(&mut rt, "settings-section:terminal");
-    click(&mut rt, "font-change");
-    rt.state.panel.as_mut().unwrap().inputs[0].text = "TX02 Nerd Font Mono".into();
-    rt.state.panel.as_mut().unwrap().inputs[1].text = "Noto Sans CJK JP, Noto Color Emoji".into();
-    click(&mut rt, "save-form");
-    assert!(matches!(
-        rt.state.panel.as_ref().unwrap().kind,
-        PanelKind::Settings
-    ));
-    let saved: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(&rt.state.settings_path).unwrap()).unwrap();
-    assert_eq!(saved["font_family"], "TX02 Nerd Font Mono");
-    assert_eq!(
-        saved["font_fallbacks"],
-        serde_json::json!(["Noto Sans CJK JP", "Noto Color Emoji"])
-    );
-    assert!(
-        requests.try_iter().next().is_none(),
-        "font preferences are entirely local"
-    );
-    std::fs::remove_file(&rt.state.settings_path).unwrap();
-}
+// Font picker, saved preferences, cancellation and fallback ordering are tested in
+// font_settings_tests, replacing the former free-text font form tests.
 
 /// Rendered text containing `needle`.
 fn shown(rt: &Runtime<Workspace>, needle: &str) -> bool {
     rt.elements()
         .iter()
         .any(|e| e.text.as_deref().is_some_and(|t| t.contains(needle)))
-}
-
-#[test]
-fn font_family_row_says_a_saved_font_waits_for_the_next_launch() {
-    let mut ws = workspace();
-    ws.perform(Intent::Settings, &mut rune::Tx::default());
-    let mut rt = runtime(ws);
-    click(&mut rt, "settings-section:terminal");
-    assert!(shown(
-        &rt,
-        "JetBrainsMono Nerd Font isn't installed, so terminals use IBM Plex Mono (bundled)."
-    ));
-    // The row's helper is one short sentence; what is drawn now is the footnote's.
-    let helper = rt
-        .elements()
-        .into_iter()
-        .filter_map(|e| e.text)
-        .find(|t| t.contains("reopen the client"))
-        .expect("the row's helper");
-    assert_eq!(helper, "Applies when you reopen the client.");
-    assert!(has(&rt, "font-drawn"));
-
-    click(&mut rt, "font-change");
-    rt.state.panel.as_mut().unwrap().inputs[0].text = "MonoLisaCode Variable".into();
-    click(&mut rt, "save-form");
-    assert!(shown(
-        &rt,
-        "MonoLisaCode Variable is saved and applies when you reopen the client."
-    ));
-    let notices: Vec<_> = rt.state.notices.iter().map(|n| n.text.as_str()).collect();
-    assert_eq!(notices, ["Fonts saved. Reopen the client to use them."]);
-
-    // Saving without a change doesn't repeat the notice.
-    click(&mut rt, "font-change");
-    click(&mut rt, "save-form");
-    assert_eq!(rt.state.notices.len(), 1);
-    std::fs::remove_file(&rt.state.settings_path).unwrap();
-}
-
-#[test]
-fn font_preferences_validate_cancel_and_clear_optional_fallbacks() {
-    let mut ws = workspace();
-    ws.settings.font_fallbacks = vec!["Inter".into()];
-    ws.perform(Intent::Settings, &mut rune::Tx::default());
-    let mut rt = runtime(ws);
-    click(&mut rt, "settings-section:terminal");
-    click(&mut rt, "font-change");
-    rt.state.panel.as_mut().unwrap().inputs[0].text.clear();
-    click(&mut rt, "save-form");
-    assert!(rt.state.panel.as_ref().unwrap().error.is_some());
-    assert!(!rt.state.settings_path.exists());
-    press(&mut rt, Key::Escape);
-    assert_eq!(rt.state.settings.font_fallbacks, ["Inter"]);
-    click(&mut rt, "font-change");
-    rt.state.panel.as_mut().unwrap().inputs[1].text.clear();
-    click(&mut rt, "save-form");
-    assert!(rt.state.settings.font_fallbacks.is_empty());
-    let restored = Settings::load(&rt.state.settings_path).unwrap();
-    assert!(restored.font_fallbacks.is_empty());
-    assert_eq!(restored.font_family, "JetBrainsMono Nerd Font");
-    std::fs::remove_file(&rt.state.settings_path).unwrap();
 }
 
 /// A workspace with sessions "s" (selected) and "other", each with two tabs, listing tabs in
@@ -3709,6 +3625,9 @@ fn a_chrome_palette_applies_at_once_and_brings_its_terminal_theme_until_one_is_c
 
 #[test]
 fn a_palette_round_trip_leaves_terminal_output_and_its_selection_alone() {
+    // Compare geometry with this runtime's fonts, not a parallel test's TextSystem.
+    // Runtime construction updates the scoped fonts as well as its own renderer.
+    let _families = rune::text::with_families("Inter", "Inter");
     use rex_linux::{
         connection::{Connection, TerminalSender},
         settings::ChromeTheme,
@@ -3747,11 +3666,7 @@ fn a_palette_round_trip_leaves_terminal_output_and_its_selection_alone() {
     let output = |rt: &Runtime<Workspace>| {
         rt.elements()
             .into_iter()
-            .filter(|e| {
-                e.text
-                    .as_deref()
-                    .is_some_and(|t| t.contains("plain") || t.contains("red"))
-            })
+            .filter(|e| e.path.contains("gblock:a") && e.text.is_some())
             .map(|e| (e.text, format!("{:?}", e.text_color), e.rect))
             .collect::<Vec<_>>()
     };

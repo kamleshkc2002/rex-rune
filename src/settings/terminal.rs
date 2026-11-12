@@ -1,6 +1,6 @@
 //! How this client draws and copies in its terminals: the cursor's shape, the selection's
-//! colours and corners, and what selecting text copies. All of it is local: nothing here is
-//! sent to a server or changes what a program sees.
+//! colours and corners, typography, and what selecting text copies. Preferences stay local;
+//! changed cell metrics use the existing owner-only resize path.
 use crate::terminal::CursorShape;
 use serde::{Deserialize, Serialize};
 
@@ -70,6 +70,7 @@ impl SelectionColor {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TerminalConfig {
+    pub font: super::typography::Typography,
     pub cursor_style: CursorStyle,
     /// Draw `cursor_style` whatever shape a program asks for.
     pub cursor_force: bool,
@@ -87,6 +88,7 @@ pub struct TerminalConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
+            font: Default::default(),
             cursor_style: CursorStyle::default(),
             cursor_force: false,
             key_sequence_hints: true,
@@ -159,13 +161,17 @@ mod tests {
             assert_eq!(saved[key], old[key]);
             assert!(saved["terminal"].get(key).is_none());
         }
-        assert!(saved["terminal"].get("font").is_none());
+        assert_eq!(
+            saved["terminal"]["font"],
+            serde_json::to_value(super::super::typography::Typography::default()).unwrap()
+        );
         assert_eq!(
             saved["terminal"],
             serde_json::json!({
                 "cursor_style":"underline", "cursor_force":false, "key_sequence_hints":true,
                 "copy_on_selection":false, "primary_selection":false,
-                "selection_foreground":"theme", "selection_background":"theme", "selection_rounded":false
+                "selection_foreground":"theme", "selection_background":"theme", "selection_rounded":false,
+                "font": super::super::typography::Typography::default()
             })
         );
     }
@@ -185,6 +191,7 @@ mod tests {
                     selection_foreground: color,
                     selection_background: color,
                     selection_rounded: false,
+                    font: Default::default(),
                 };
                 Settings {
                     terminal: terminal.clone(),

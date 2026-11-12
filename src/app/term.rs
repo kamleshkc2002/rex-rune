@@ -11,7 +11,10 @@ use ghostty_vt::style::Underline;
 use rex_linux::{
     connection::{Command, Connection},
     links::Link,
-    settings::terminal::{SelectionColor, TerminalConfig},
+    settings::{
+        terminal::{SelectionColor, TerminalConfig},
+        typography::Typography,
+    },
     terminal::{
         Cell, CursorShape, Frame, SelectionUnit,
         graphics::{Image as TermImage, ImagePixels},
@@ -19,7 +22,7 @@ use rex_linux::{
     terminal_theme::{TerminalTheme, is_light},
 };
 use rune::{
-    El, Family, LineCap, Mods, Path, Shape, Span, TextEdit, TextStyle, canvas, el, memo, rich, text,
+    El, LineCap, Mods, Path, Shape, Span, TextEdit, TextStyle, canvas, el, memo, rich, text,
 };
 use serde_json::json;
 use std::{
@@ -32,7 +35,10 @@ use std::{
 pub mod preview;
 #[cfg(test)]
 mod selection_tests;
+#[cfg(test)]
+mod typography_tests;
 
+/// The radius of the selection's outer corners, when they are rounded.
 const SELECTION_RADIUS: f32 = 3.;
 
 pub struct Term {
@@ -162,21 +168,56 @@ pub struct Metrics {
     /// Device pixels per point the grid is drawn at, so box drawing lands on whole pixels:
     /// 1 from `metrics`, the window's own in the pane view.
     pub px: f32,
+    /// Whether the bold and the italic attributes programs set are drawn (Settings →
+    /// Terminal → Advanced font settings → Render bold and italic).
+    pub bold: bool,
+    pub italic: bool,
+    /// How far right of its cell's edge a glyph starts: half the character spacing, so the
+    /// space added to a cell is shared between its two sides.
+    pub inset: f32,
+    /// How far the text's own line box is in from the top and the bottom of its row: half
+    /// of what the line height setting adds, in whole points. Underlines and overlines stay
+    /// with the text by it.
+    pub leading: f32,
 }
 
 const FEATURES: &str = "'liga' 0, 'calt' 0, 'clig' 0, 'kern' 0";
 
+/// The cell and text style at `size` with the typography settings at their defaults.
+#[cfg(test)]
 pub fn metrics(size: f32) -> Metrics {
-    let base = TextStyle::new(size, 400.)
-        .lh((size * 1.4).ceil())
+    metrics_for(size, &Typography::default())
+}
+
+/// The cell and text style at `size` under `font`. The cell is the primary face's advance
+/// plus the character spacing, by the row height the size gives scaled by the line height
+/// setting; sprites and decorations are drawn from the cell, so they follow both.
+pub fn metrics_for(size: f32, font: &Typography) -> Metrics {
+    let natural = (size * 1.4).ceil();
+    let height = (natural * font.line_scale()).ceil().max(1.);
+    let mut base = TextStyle::new(size, if font.style.bold() { 700. } else { 400. })
+        .lh(height)
         .features(FEATURES);
+    if font.style.italic() {
+        base = base.italic();
+    }
     // The mono slot keeps the primary face first and supplies missing glyphs from fallbacks.
     let style = base.mono();
-    let width = rune::text::advance("M", style).max(1.);
+    let advance = rune::text::advance("M", style).max(1.);
+    // Never so tight that a cell vanishes.
+    let spacing = font.spacing_points(advance).max(1. - advance);
     Metrics {
-        cell: (width, (size * 1.4).ceil()),
-        style,
+        cell: (advance + spacing, height),
+        style: if spacing == 0. {
+            style
+        } else {
+            style.tracking(spacing)
+        },
         px: 1.,
+        bold: font.bold_italic.bold(),
+        italic: font.bold_italic.italic(),
+        inset: spacing / 2.,
+        leading: ((height - natural) / 2.).floor(),
     }
 }
 
@@ -347,13 +388,12 @@ impl Term {
     }
 
     /// A non-owner never resizes; an owner sends its grid size whenever it changes.
-    pub fn resize_if_owner(&mut self, font: f32) {
+    pub fn resize_if_owner(&mut self, cell: (f32, f32)) {
         let status = self.status();
         self.initial_size.transition(&status);
         if self.rect[2] <= 0. || self.rect[3] <= 0. {
             return;
         }
-        let Metrics { cell, .. } = metrics(font);
         let cols = (self.rect[2] / cell.0).floor().clamp(1., 65535.) as u16;
         let rows = (self.rect[3] / cell.1).floor().clamp(1., 65535.) as u16;
         self.initial_size.layout(
@@ -671,11 +711,11 @@ fn glyph_run(content: String, style: RunStyle, x: f32, y: f32, m: &Metrics) -> E
     if style.strike {
         e = e.strike(0, len, Some(color));
     }
-    e.no_wrap().font(font).color(color).absolute(x, y)
+    e.no_wrap().font(font).color(color).absolute(x + m.inset, y)
 }
 
-/// (character, bold, italic, size bits, family) → advances exactly one cell.
-type FitCache = std::collections::HashMap<(char, bool, bool, u32, &'static str), bool>;
+/// (character, bold, italic, the grid's text style) → advances exactly one cell.
+type FitCache = std::collections::HashMap<(char, bool, bool, u64, u32, u64), bool>;
 
 thread_local! {
     /// Whether a character, in a given face, advances exactly one cell: only those join
@@ -683,26 +723,34 @@ thread_local! {
     static FITS: std::cell::RefCell<FitCache> = Default::default();
 }
 
+/// The grid's style for text a program marked bold or italic, where those are drawn.
 fn face(m: &Metrics, bold: bool, italic: bool) -> TextStyle {
     let mut font = m.style;
-    if bold {
+    if bold && m.bold {
         font.weight = 700.;
     }
-    if italic {
+    if italic && m.italic {
         font = font.italic();
     }
     font
 }
 
 fn fits_cell(ch: char, bold: bool, italic: bool, m: &Metrics) -> bool {
-    if ch.is_ascii_graphic() || ch == ' ' {
-        return true;
-    }
-    let family = match m.style.family {
-        Family::Named(name) => name,
-        _ => "",
-    };
-    let key = (ch, bold, italic, m.style.size.to_bits(), family);
+    // All fonts permits proportional families too: even ASCII must advance one cell
+    // before it may join a segment. A non-fitting glyph is placed in its own cell.
+    // The style carries the size, the family, the face ordinary text is drawn in and the
+    // character spacing: every one of them changes what fits.
+    let (bold, italic) = (bold && m.bold, italic && m.italic);
+    let mut style = DefaultHasher::new();
+    m.style.hash(&mut style);
+    let key = (
+        ch,
+        bold,
+        italic,
+        style.finish(),
+        m.cell.0.to_bits(),
+        rune::text::font_epoch(),
+    );
     FITS.with_borrow_mut(|cache| {
         *cache.entry(key).or_insert_with(|| {
             let advance = rune::text::advance(&ch.to_string(), face(m, bold, italic));
@@ -780,7 +828,7 @@ impl Segment {
             // The server owns line breaks. Fractional-DPI rounding must not wrap a run again.
             .no_wrap()
             .font(m.style)
-            .absolute(self.col as f32 * m.cell.0, 0.);
+            .absolute(self.col as f32 * m.cell.0 + m.inset, 0.);
         for (a, b, fg) in self.strikes {
             e = e.strike(a, b, Some(rgb(fg)));
         }
@@ -984,8 +1032,11 @@ fn row_pass(
     // mark is too light for the terminal's own.
     let style_at = |col: usize| {
         let mut style = RunStyle::of(&cells[col], frame_bg, body);
+        style.bold &= m.bold;
+        style.italic &= m.italic;
         if sel.is_some_and(|(a, b)| (a..=b).contains(&col)) {
-            style.fg = selected_colors(colors, style.fg, ground_of(&cells[col], frame_bg, body)).1;
+            let ground = ground_of(&cells[col], frame_bg, body);
+            style.fg = selected_colors(colors, style.fg, ground).1;
         } else if marks
             .search
             .iter()
@@ -1046,12 +1097,14 @@ fn row_pass(
         }
         if !cells[start].text.starts_with('\u{10eeee}') {
             let width = (end - start) as f32 * cw;
-            let shape = decoration_shape(&style, width, ch, m.px);
+            // In the text's own line box, so a taller or shorter row keeps them at the text.
+            let line = ch - 2. * m.leading;
+            let shape = decoration_shape(&style, width, line, m.px);
             if !shape.is_empty() {
                 row = row.child(
                     canvas(shape)
-                        .absolute(start as f32 * cw, 0.)
-                        .size(width, ch),
+                        .absolute(start as f32 * cw, m.leading)
+                        .size(width, line),
                 );
             }
         }
@@ -1302,6 +1355,7 @@ pub fn grid(key: &str, term: &Term, m: &Metrics, look: GridLook) -> El {
                 ch.to_bits(),
                 m.px.to_bits(),
                 m.style,
+                (m.bold, m.italic, m.inset.to_bits(), m.leading.to_bits()),
                 pass,
                 colors,
             )
@@ -1441,7 +1495,11 @@ fn link_marks(
                 .absolute(c0 as f32 * cw, (y - rows.start) as f32 * ch)
                 .size(width, ch)
                 .help(help.clone())
-                .child(el().absolute(0., ch - 2.).size(width, 1.).fill(rgb(color)))
+                .child(
+                    el().absolute(0., ch - 2. - m.leading)
+                        .size(width, 1.)
+                        .fill(rgb(color)),
+                )
         })
         .collect()
 }

@@ -1,9 +1,10 @@
 //! Terminal display and selection settings. Previews reuse the real grid renderer.
+use super::widgets::Pill;
 use super::{
     panel::Intent,
     settings_kit::{
-        card, disclosure, footnote, page, preview_well, section, select_row, setting, stepper,
-        value, value_popup,
+        ChipTone, button, card, disclosure, footnote, page, preview_well, row_frame, section,
+        select_row, setting, state_chip, stepper, value_popup,
     },
     term::{
         self,
@@ -12,8 +13,11 @@ use super::{
     theme::*,
     workspace::Workspace,
 };
-use rex_linux::settings::terminal::{CursorStyle, SelectionColor, TerminalConfig};
-use rune::El;
+use rex_linux::settings::{
+    terminal::{CursorStyle, SelectionColor, TerminalConfig},
+    typography::FontStyle,
+};
+use rune::{El, TextStyle, col, row, text};
 
 /// What the previews draw in: the colours panes draw in now, and the terminal's default
 /// text, cursor and a few of its palette's colours.
@@ -65,7 +69,7 @@ pub(super) fn preview(
     inks: &Inks,
     sample: &Sample<'_>,
 ) -> El {
-    let m = term::metrics(s.settings.font_size);
+    let m = s.metrics();
     let (_, height) = term::preview::size(sample, &m);
     preview_well(
         key,
@@ -261,8 +265,66 @@ fn selection(s: &Workspace, inks: &Inks) -> El {
     )
 }
 
-pub fn terminal(s: &Workspace) -> El {
-    let inks = Inks::of(s);
+fn terminal_font(s: &Workspace) -> El {
+    let saved = &s.settings.font_family;
+    let (label, helper) = ("Terminal font", "Applies when you reopen the client.");
+    // The saved family is not installed: this launch asked for it and got the bundled font
+    // instead, or the families fontconfig knows, once read, have none of that name.
+    let missing = if s.terminal_family.is_none() && saved.eq_ignore_ascii_case(&s.launch_font) {
+        true
+    } else {
+        s.fonts.installed(saved) == Some(false)
+    };
+    // The name gets its own line instead of competing with the label and Choose at 640 pt.
+    let mut heading = row()
+        .gap(8.)
+        .center_y()
+        .child(text(label).font(ui(13.)).color(rgb(ink())));
+    if missing {
+        heading = heading.child(state_chip(
+            "font-missing", "Not installed", ChipTone::Attention,
+            "fontconfig has no family of this name. An unavailable primary uses bundled IBM Plex Mono on reopen.",
+        ));
+    }
+    let title = col()
+        .grow(1.)
+        .shrink()
+        .min_w(0.)
+        .gap(2.)
+        .child(heading)
+        .child(
+            text(saved.clone())
+                .key("font-name")
+                .font(if missing {
+                    ui(13.)
+                } else {
+                    TextStyle::new(13., 400.).family(super::fonts::named(saved))
+                })
+                .color(rgb(ink()))
+                .truncate()
+                .help_when_truncated(saved.clone()),
+        )
+        .child(
+            text(helper)
+                .font(ui(11.5))
+                .color(rgb(if super::settings_nav::will_mark(label) {
+                    ink()
+                } else {
+                    muted()
+                }))
+                .wrap(),
+        );
+    super::settings_nav::row(label, helper, row_frame(true))
+        .child(title)
+        .child(button(
+            "font-choose",
+            "Choose…",
+            Pill::Neutral,
+            |s, tx| s.open_anchored("font-choose", Intent::Fonts, tx),
+        ))
+}
+
+fn typography(s: &Workspace, inks: &Inks) -> El {
     let saved = &s.settings.font_family;
     let active = s.terminal_family.unwrap_or("IBM Plex Mono (bundled)");
     // The row's helper is one sentence. What terminals are drawn in now goes under the card,
@@ -276,14 +338,67 @@ pub fn terminal(s: &Workspace) -> El {
             "{} isn't installed, so terminals use {active}.",
             s.launch_font
         ))
+    } else if !saved.eq_ignore_ascii_case(&s.launch_font) {
+        Some(format!(
+            "This launch uses --font {} instead of the saved family; terminals use {active}.",
+            s.launch_font
+        ))
     } else {
         None
     };
-    let fallbacks = if s.settings.font_fallbacks.is_empty() {
-        "Automatic".to_owned()
-    } else {
-        s.settings.font_fallbacks.join(", ")
-    };
+    let style = s.settings.terminal.font.style;
+    section(
+        "Typography",
+        [card([
+            preview(
+                s,
+                "typography-preview",
+                "Typography preview: regular, bold and italic text as terminals set it.",
+                inks,
+                &typography_sample(inks),
+            ),
+            terminal_font(s),
+            select_row(
+                "font-style",
+                "Font style",
+                "The face ordinary text is drawn in.",
+                &FontStyle::ALL.map(FontStyle::name),
+                FontStyle::ALL
+                    .iter()
+                    .position(|choice| *choice == style)
+                    .unwrap_or_default(),
+                |s, i, _| {
+                    s.edit_typography(|font| {
+                        font.style = FontStyle::ALL[i.min(FontStyle::ALL.len() - 1)]
+                    })
+                },
+            ),
+            setting(
+                "Font size",
+                "From 8 to 48 pt, for every terminal.",
+                stepper(
+                    "font",
+                    format!("{} pt", s.settings.font_size),
+                    |s, _| s.change_font(-1.),
+                    |s, _| s.change_font(1.),
+                ),
+            ),
+        ])]
+        .into_iter()
+        // What terminals are drawn in now goes right under the card whose row it explains.
+        .chain(drawn.map(|words| footnote(words).key("font-drawn")))
+        .chain([card([disclosure(
+            "open-advanced-font",
+            "Advanced font settings",
+            "",
+            &super::font_page::summary(s),
+            |s, tx| s.open_advanced_fonts(tx),
+        )])]),
+    )
+}
+
+pub fn terminal(s: &Workspace) -> El {
+    let inks = Inks::of(s);
     let shells = s.settings.hosts.iter().enumerate().map(|(i, host)| {
         disclosure(
             &format!("host-shell:{i}"),
@@ -294,41 +409,7 @@ pub fn terminal(s: &Workspace) -> El {
         )
     });
     page([
-        section(
-            "Typography",
-            std::iter::once(card([
-                preview(
-                    s,
-                    "typography-preview",
-                    "Typography preview: regular, bold and italic terminal text.",
-                    &inks,
-                    &typography_sample(&inks),
-                ),
-                disclosure(
-                    "font-change",
-                    "Font family",
-                    "Applies when you reopen the client.",
-                    saved,
-                    |s, tx| s.perform(Intent::Fonts, tx),
-                ),
-                setting(
-                    "Font size",
-                    "From 8 to 48 pt, for every terminal.",
-                    stepper(
-                        "font",
-                        format!("{} pt", s.settings.font_size),
-                        |s, _| s.change_font(-1.),
-                        |s, _| s.change_font(1.),
-                    ),
-                ),
-                setting(
-                    "Fallback fonts",
-                    "For glyphs the font lacks, before the system's own fallbacks.",
-                    value(fallbacks).truncate().max_w(260.),
-                ),
-            ]))
-            .chain(drawn.map(|words| footnote(words).key("font-drawn"))),
-        ),
+        typography(s, &inks),
         section(
             "Layout",
             [card([setting(

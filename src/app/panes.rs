@@ -349,15 +349,15 @@ fn pane_card(
                 .instant_changes()
                 .motion(STILL)
                 .on_layout(move |s: &mut Workspace, r| {
-                    let font = s.settings.font_size;
+                    let cell = s.metrics().cell;
                     if let Some(t) = s.terminals.get_mut(&k1) {
                         t.rect = r;
-                        t.resize_if_owner(font);
+                        t.resize_if_owner(cell);
                     }
                     s.place_find(&k1);
                 })
                 .on_drag(move |s: &mut Workspace, d, tx| {
-                    let cell = term::metrics(s.settings.font_size).cell;
+                    let cell = s.metrics().cell;
                     let focused = s.focused_block().as_deref() == Some(k2.1.as_str());
                     let copies = s.settings.terminal.copy_on_selection
                         || s.settings.terminal.primary_selection;
@@ -468,7 +468,7 @@ fn pane_card(
                 // that track every move (1003) hear it (the server drops it for the others).
                 // Only the focused pane reports it.
                 .on_pointer_move_local(move |s: &mut Workspace, p: PointerEvent, tx: &mut Tx| {
-                    let cell = term::metrics(s.settings.font_size).cell;
+                    let cell = s.metrics().cell;
                     let focused = s.focused_block().as_deref() == Some(k4.1.as_str());
                     let Some(t) = s.terminals.get_mut(&k4) else {
                         tx.live_only();
@@ -511,7 +511,7 @@ fn pane_card(
                 // Shift+right-click goes to such a program (sent on release, when Rune reports
                 // it).
                 .on_secondary_press_local(move |s: &mut Workspace, p: PointerEvent, tx: &mut Tx| {
-                    let cell = term::metrics(s.settings.font_size).cell;
+                    let cell = s.metrics().cell;
                     let mods = tx.mods();
                     let focused = s.focused_block().as_deref() == Some(k5.1.as_str());
                     if let Some(t) = s.terminals.get_mut(&k5)
@@ -533,7 +533,7 @@ fn pane_card(
                 })
                 .on_wheel(move |s: &mut Workspace, e: WheelEvent, _| {
                     let scale = if e.precise { s.ui_scale() } else { 1. };
-                    let cell = term::metrics(s.settings.font_size).cell;
+                    let cell = s.metrics().cell;
                     let Some(t) = s.terminals.get_mut(&k3) else {
                         return false;
                     };
@@ -745,10 +745,7 @@ fn target_block(s: &Workspace) -> Option<String> {
 
 /// `px` is device pixels per point, for drawing terminal box drawing on whole pixels.
 pub fn area(s: &Workspace, px: f32) -> El {
-    let m = Metrics {
-        px,
-        ..term::metrics(s.settings.font_size)
-    };
+    let m = Metrics { px, ..s.metrics() };
     let mut area = el()
         .key("panes")
         .grow(1.)

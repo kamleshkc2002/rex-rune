@@ -2,6 +2,7 @@ pub mod interface;
 pub mod recorded;
 pub mod shortcuts;
 pub mod terminal;
+pub mod typography;
 
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};

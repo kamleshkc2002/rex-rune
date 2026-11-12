@@ -432,7 +432,13 @@ pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
 ];
 
 /// Build only the page content. Search reads these same labelled Settings-kit rows.
-pub(super) fn body(s: &Workspace, section: SettingsSection) -> El {
+pub(super) fn body(s: &Workspace, page: super::settings_nav::Page) -> El {
+    let section = match page {
+        super::settings_nav::Page::Section(section) => section,
+        super::settings_nav::Page::Sub(super::settings_nav::SubPage::AdvancedFont) => {
+            return super::font_page::advanced(s);
+        }
+    };
     match section {
         SettingsSection::Interface => interface(s),
         SettingsSection::Terminal => terminal(s),
@@ -448,7 +454,7 @@ pub(super) fn body(s: &Workspace, section: SettingsSection) -> El {
 /// The dialog's surface: the section list, and the page under its header. The page scrolls
 /// with a fade at whichever edge hides content and a thumb while there is more than fits.
 fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
-    let section = s.settings_section;
+    let section = s.settings_page();
     let body = super::settings_nav::draw(s, section);
     let width = PANEL_WIDTH.min(viewport[0] * 0.92);
     // Under the toolbar, which stays whole above it, with a margin at both ends.

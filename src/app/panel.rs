@@ -43,6 +43,8 @@ pub enum Intent {
     Sidebar,
     Settings,
     Fonts,
+    AddFallback,
+    Font(String),
     ClientLabel,
     RemoteControl(usize),
     /// The Add host list: the tailnet's machines, or an endpoint by hand.
@@ -160,6 +162,7 @@ impl Intent {
                 | Intent::Downloads
                 | Intent::About
                 | Intent::Fonts
+                | Intent::AddFallback
                 | Intent::ClientLabel
                 | Intent::ChooseTheme
                 | Intent::ChooseChrome
@@ -232,7 +235,6 @@ pub enum PaneAction {
 
 #[derive(Clone, Debug)]
 pub enum Form {
-    Fonts,
     ClientLabel,
     /// A host's default shell for new terminals.
     HostShell(usize),
@@ -327,6 +329,7 @@ pub enum PanelKind {
     Settings,
     /// The terminal themes, filtered by the search field.
     Themes,
+    Fonts(super::font_picker::FontPick),
     /// The chrome palettes.
     Chromes,
     /// The values of one setting, from a Settings `select_row`.
@@ -423,6 +426,7 @@ impl Panel {
                 | PanelKind::Host(_)
                 | PanelKind::Window
                 | PanelKind::Themes
+                | PanelKind::Fonts(_)
                 | PanelKind::Chromes
                 | PanelKind::Choice(_)
                 | PanelKind::Discover
@@ -667,6 +671,9 @@ impl Workspace {
         };
         let query = self.query();
         let lower = query.to_lowercase();
+        if let PanelKind::Fonts(pick) = panel.kind {
+            return self.font_entries(pick);
+        }
         if matches!(panel.kind, PanelKind::Themes) {
             return self.theme_entries(&lower);
         }

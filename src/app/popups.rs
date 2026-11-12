@@ -97,7 +97,7 @@ pub fn overlay() -> El {
         .pin(Some(0.), Some(0.), Some(0.), Some(0.))
 }
 
-fn dismiss_layer() -> El {
+pub(super) fn dismiss_layer() -> El {
     el().key("popup-dismiss")
         .pin(Some(0.), Some(0.), Some(0.), Some(0.))
         .preserve_focus_on_press(true)
@@ -118,7 +118,7 @@ fn dismiss(s: &mut Workspace, tx: &mut Tx) {
 }
 
 /// How far a list opened from a control sits from it.
-const CONTROL_GAP: f32 = 4.;
+pub(super) const CONTROL_GAP: f32 = 4.;
 
 /// The captured pane's outline, in window points, above any scrim and below the panel.
 pub fn target_outline(s: &Workspace) -> Option<El> {

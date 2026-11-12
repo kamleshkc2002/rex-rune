@@ -160,14 +160,6 @@ fn form(s: &Workspace, form: &Form) -> El {
             .wrap(),
         );
     }
-    if let Form::Fonts = form {
-        body = body.child(
-            text("Applied when you reopen the client. --font and --font-fallback override saved choices for that launch. Server sessions keep running.")
-                .font(ui(12.))
-                .color(rgb(muted()))
-                .wrap(),
-        );
-    }
     let primary = if matches!(form, Form::AddHost | Form::Discovered(_) | Form::AddSsh(_)) {
         "Connect"
     } else {

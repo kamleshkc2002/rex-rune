@@ -295,7 +295,7 @@ fn results(s: &Workspace) -> El {
             } else {
                 el().pin(Some(0.), Some(0.), Some(0.), Some(0.))
             })
-            .child(tile(hit.page, false))
+            .child(tile(hit.page.section(), false))
             .child(words);
         list = list.child(item);
     }
@@ -377,7 +377,7 @@ fn history_button(s: &Workspace, direction: isize) -> El {
 }
 
 /// The current section's title.
-fn title(page: SettingsSection) -> El {
+fn title(page: super::settings_nav::Page) -> El {
     row().grow(1.).min_w(0.).child(
         text(page.title())
             .key("settings-title")
@@ -390,7 +390,7 @@ fn title(page: SettingsSection) -> El {
 }
 
 /// The header over the page: Back and Forward, the title, and Close.
-pub fn header(s: &Workspace, page: SettingsSection) -> El {
+pub fn header(s: &Workspace, page: super::settings_nav::Page) -> El {
     row()
         .key("settings-header")
         .h(HEADER)

@@ -1,5 +1,11 @@
-//! Bundled chrome fonts, a fontconfig-resolved terminal family and the user's ordered fallbacks.
-use std::{collections::HashSet, path::PathBuf, process::Command};
+//! Bundled chrome fonts, a fontconfig-resolved terminal family and the user's ordered
+//! fallbacks; and the families fontconfig knows, for the font pickers in Settings.
+use std::{
+    collections::{BTreeMap, HashSet},
+    path::PathBuf,
+    process::Command,
+    sync::OnceLock,
+};
 
 pub struct Fonts {
     pub files: &'static [&'static [u8]],
@@ -80,6 +86,91 @@ fn resolve_family(family: &str) -> Option<(String, Vec<PathBuf>)> {
     Some((name?, files))
 }
 
+/// A font family a picker lists.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Family {
+    pub name: String,
+    /// The name in lower case, which a search is matched against.
+    pub lower: String,
+    /// Every character is one width (fontconfig's `mono` and `charcell` spacing) or one of
+    /// two (`dual`, as CJK terminal fonts are): what a terminal's grid needs.
+    pub mono: bool,
+}
+impl Family {
+    pub fn new(name: &str, mono: bool) -> Self {
+        Self {
+            name: name.to_owned(),
+            lower: name.to_lowercase(),
+            mono,
+        }
+    }
+}
+
+/// What `fc-list` is asked to print for each face: its first family name (the one
+/// `resolve_family` accepts) and its spacing, tab-separated.
+const CATALOG_FORMAT: &str = "%{family[0]}\t%{spacing}\n";
+
+/// The families in `fc-list`'s output in [`CATALOG_FORMAT`], and the two bundled ones, in
+/// alphabetical order whatever their case. A family is monospaced only when all listed faces
+/// are fixed-pitch; mixed families stay in All fonts.
+/// Names the settings can't hold (with a comma or a control character) are left out.
+pub fn parse_catalog(listing: &str) -> Vec<Family> {
+    // Keyed by the name in lower case, so "Hack" and "hack" from two files are one family.
+    let mut families: BTreeMap<String, (String, bool)> = BTreeMap::new();
+    let mut add = |name: &str, mono: bool| {
+        let Ok(name) = rex_linux::settings::parse_font_family(name) else {
+            return;
+        };
+        let entry = families.entry(name.to_lowercase()).or_insert((name, true));
+        entry.1 &= mono;
+    };
+    for line in listing.lines() {
+        let (name, spacing) = line.split_once('\t').unwrap_or((line, ""));
+        // FC_DUAL, FC_MONO and FC_CHARCELL; a proportional face has no spacing at all.
+        let mono = matches!(spacing.trim().parse::<u32>(), Ok(90 | 100 | 110));
+        add(name, mono);
+    }
+    add(rune_theme_opencode::FAMILIES.0, false);
+    add(rune_theme_opencode::FAMILIES.1, true);
+    families
+        .into_values()
+        .map(|(name, mono)| Family::new(&name, mono))
+        .collect()
+}
+
+/// The families installed on this machine and the bundled ones, read from fontconfig once
+/// per run. Without `fc-list` only the bundled families are listed.
+pub fn installed() -> &'static [Family] {
+    static CATALOG: OnceLock<Vec<Family>> = OnceLock::new();
+    CATALOG.get_or_init(|| {
+        let listing = Command::new("fc-list")
+            .args(["--format", CATALOG_FORMAT])
+            .output()
+            .ok()
+            .filter(|out| out.status.success())
+            .map(|out| String::from_utf8_lossy(&out.stdout).into_owned())
+            .unwrap_or_default();
+        parse_catalog(&listing)
+    })
+}
+
+/// `family` for a text style ([`rune::Family::Named`]), which loads an installed family the
+/// first time it is drawn: a name can be shown in its own face. A family name has no comma,
+/// so Rune reads it as one literal name. Each name is kept for the life of the process, once.
+pub fn named(family: &str) -> rune::Family {
+    thread_local! {
+        static NAMES: std::cell::RefCell<std::collections::HashMap<String, &'static str>> =
+            Default::default();
+    }
+    NAMES.with_borrow_mut(|names| {
+        rune::Family::Named(
+            names
+                .entry(family.to_owned())
+                .or_insert_with(|| leak(family.to_owned())),
+        )
+    })
+}
+
 pub fn load(terminal_family: &str, fallbacks: &[String]) -> Fonts {
     let mut paths = Vec::new();
     let mut seen = HashSet::new();
@@ -149,6 +240,125 @@ mod tests {
     }
 
     #[test]
+    fn the_catalog_merges_faces_sorts_names_and_marks_fixed_pitch_families() {
+        let listing = "Zed Mono\t100\nNoto Sans\t\nhack\t\nHack\t100\nNoto Sans\t\n\
+                       Sarasa Term\t90\nCell Font\t110\nPropo\t0\nOdd, Name\t100\n\
+                       Fira Code\t\nFira Code\t100\n";
+        let catalog = parse_catalog(listing);
+        let names: Vec<(&str, bool)> = catalog.iter().map(|f| (f.name.as_str(), f.mono)).collect();
+        assert_eq!(
+            names,
+            [
+                ("Cell Font", true),
+                ("Fira Code", false),
+                // One family for both spellings, excluded because one face is proportional.
+                ("hack", false),
+                ("IBM Plex Mono", true),
+                ("Inter", false),
+                ("Noto Sans", false),
+                ("Propo", false),
+                ("Sarasa Term", true),
+                ("Zed Mono", true),
+            ]
+        );
+        assert!(catalog.iter().all(|f| f.lower == f.name.to_lowercase()));
+        // With no fontconfig at all the bundled families are still there to choose.
+        let bundled: Vec<String> = parse_catalog("").into_iter().map(|f| f.name).collect();
+        assert_eq!(bundled, ["IBM Plex Mono", "Inter"]);
+    }
+
+    #[test]
+    fn the_installed_families_always_include_the_bundled_ones_in_order() {
+        // Whatever this machine has, or with no fontconfig at all.
+        let catalog = installed();
+        assert!(catalog.iter().any(|f| f.name == "IBM Plex Mono" && f.mono));
+        assert!(catalog.iter().any(|f| f.name == "Inter"));
+        assert!(catalog.windows(2).all(|pair| pair[0].lower < pair[1].lower));
+        assert!(std::ptr::eq(catalog, installed()), "read once");
+    }
+
+    #[test]
+    fn missing_fontconfig_still_lists_bundled_families() {
+        const CHILD: &str = "REX_TEST_NO_FONTCONFIG";
+        if std::env::var_os(CHILD).is_some() {
+            let names: Vec<_> = installed().iter().map(|f| f.name.as_str()).collect();
+            assert_eq!(names, ["IBM Plex Mono", "Inter"]);
+            assert!(std::ptr::eq(installed(), installed()));
+            return;
+        }
+        // A separate process keeps PATH and the OnceLock isolated from parallel tests.
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "app::fonts::tests::missing_fontconfig_still_lists_bundled_families",
+                "--test-threads=1",
+            ])
+            .env(CHILD, "1")
+            .env("PATH", "")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+    }
+
+    #[test]
+    fn a_family_name_is_interned_once_as_a_literal_name() {
+        let (a, b) = (named("Joe's Mono"), named("Joe's Mono"));
+        let rune::Family::Named(first) = a else {
+            panic!("a named family")
+        };
+        let rune::Family::Named(second) = b else {
+            panic!("a named family")
+        };
+        assert_eq!(first, "Joe's Mono");
+        assert!(std::ptr::eq(first, second), "kept once");
+    }
+
+    #[test]
+    fn named_family_samples_use_the_requested_bundled_face_not_chrome_fallback() {
+        let _families = rune::text::with_families("Inter", "Inter");
+        let mut ts =
+            rune::text::TextSystem::new(rune_theme_opencode::FONTS, rune_theme_opencode::FAMILIES);
+        let sample = rune::text::Run::new("Aa 0O 1il");
+        let plex = ts.run_layout(
+            &sample,
+            rune::TextStyle::new(16., 400.).family(named("IBM Plex Mono")),
+            1.,
+        );
+        let chrome = ts.run_layout(
+            &sample,
+            rune::TextStyle::new(16., 400.).family(named("Inter")),
+            1.,
+        );
+        let bytes = |layout: &rune::text::RunLayout| {
+            layout
+                .layout
+                .lines()
+                .next()
+                .unwrap()
+                .runs()
+                .next()
+                .unwrap()
+                .font()
+                .data
+                .as_ref()
+                .to_vec()
+        };
+        assert_ne!(
+            bytes(&plex),
+            bytes(&chrome),
+            "a named sample is not silently the chrome face"
+        );
+        assert_eq!(
+            bytes(&plex),
+            include_bytes!("../../vendor/rune/crates/rune/assets/IBMPlexMono-Regular.ttf")
+        );
+    }
+
+    #[test]
     fn fontconfig_and_css_names_are_escaped_as_patterns_not_syntax() {
         assert_eq!(pattern(r"A:B,C\D"), r"A\:B\,C\\D");
         assert_eq!(css_family("Joe's Mono"), "'Joe\\'s Mono'");
@@ -156,6 +366,7 @@ mod tests {
 
     #[test]
     fn native_font_paths_shape_from_the_file_without_an_embedded_copy() {
+        let _families = rune::text::with_families("Inter", "Inter");
         const PLEX: &[u8] =
             include_bytes!("../../vendor/rune/crates/rune/assets/IBMPlexMono-Regular.ttf");
         let path = std::env::temp_dir().join(format!(
@@ -191,6 +402,7 @@ mod tests {
     #[test]
     #[ignore = "requires fontconfig and a CJK font; exercised by the Nix package check"]
     fn fontconfig_cjk_fallback_has_real_glyphs_and_keeps_ascii_metrics() {
+        let _families = rune::text::with_families("Inter", "Inter");
         let fonts = load("IBM Plex Mono", &[]);
         let mut ts =
             rune::text::TextSystem::new_with_paths(fonts.files, fonts.paths, fonts.families);
