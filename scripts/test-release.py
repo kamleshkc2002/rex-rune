@@ -20,7 +20,7 @@ SCRIPTS = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("manifest", SCRIPTS / "release-manifest.py")
 manifest = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(manifest)
-VERSION = "0.5.0"
+VERSION = "0.8.0"
 PUBLISHED = "2026-11-20T10:00:00-08:00"
 TARGETS = {"x86_64-linux-gnu": "amd64", "aarch64-linux-gnu": "arm64"}
 
@@ -28,7 +28,9 @@ TARGETS = {"x86_64-linux-gnu": "amd64", "aarch64-linux-gnu": "arm64"}
 def fixtures(dist):
     packages = {}
     for target, arch in TARGETS.items():
-        for name in (f"rex-linux-{VERSION}-{target}.tar.gz", f"rex-linux_{VERSION}_{arch}.deb"):
+        cpu = target.split("-linux-")[0]
+        for name in (f"rex-rune-{VERSION}-{target}.tar.gz", f"rex-linux-{VERSION}-{target}.tar.gz",
+                     f"rex-rune_{VERSION}_{arch}.deb", f"rex-rune-bin-{VERSION}-1-{cpu}.pkg.tar.zst"):
             packages[name] = (name + "\nfixture package\n").encode()
             (dist / name).write_bytes(packages[name])
     (dist / "SHA256SUMS").write_text("".join(
@@ -62,6 +64,7 @@ class ManifestTests(unittest.TestCase):
         value = self.generate()
         self.assertEqual(set(value), {"schema", "product", "version", "tag", "published", "notes_url", "update_from", "targets"})
         self.assertEqual(value["schema"], 1)
+        # The id every published 0.7.x updater requires; it did not change with the rename.
         self.assertEqual(value["product"], "rex-linux")
         self.assertEqual(value["version"], VERSION)
         self.assertEqual(value["tag"], f"v{VERSION}")
@@ -71,15 +74,22 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(set(value["targets"]), set(TARGETS))
         for target, arch in TARGETS.items():
             entry = value["targets"][target]
-            self.assertEqual(set(entry), {"min_glibc", "tarball", "deb"})
+            self.assertEqual(set(entry), {"min_glibc", "tarball", "archive", "deb", "pacman"})
             self.assertEqual(set(entry["tarball"]), {"url", "size", "sha256"})
+            self.assertEqual(set(entry["archive"]), {"url", "size", "sha256"})
             self.assertEqual(set(entry["deb"]), {"name", "size", "sha256"})
+            self.assertEqual(set(entry["pacman"]), {"name", "size", "sha256"})
             self.assertEqual(entry["min_glibc"], "2.39")
-            for kind, name in (("tarball", f"rex-linux-{VERSION}-{target}.tar.gz"), ("deb", f"rex-linux_{VERSION}_{arch}.deb")):
+            cpu = target.split("-linux-")[0]
+            # `tarball` is what the 0.7.x updater downloads: the bridge under the old name.
+            for kind, name in (("tarball", f"rex-linux-{VERSION}-{target}.tar.gz"),
+                               ("archive", f"rex-rune-{VERSION}-{target}.tar.gz"),
+                               ("deb", f"rex-rune_{VERSION}_{arch}.deb"),
+                               ("pacman", f"rex-rune-bin-{VERSION}-1-{cpu}.pkg.tar.zst")):
                 package = entry[kind]
                 self.assertEqual(package["size"], len(self.packages[name]))
                 self.assertEqual(package["sha256"], hashlib.sha256(self.packages[name]).hexdigest())
-                if kind == "tarball":
+                if kind in ("tarball", "archive"):
                     self.assertEqual(package["url"], f"{manifest.RELEASE_URL}/download/v{VERSION}/{name}")
                 else:
                     self.assertEqual(package["name"], name)
@@ -95,13 +105,13 @@ class ManifestTests(unittest.TestCase):
 
     def test_bad_versions_and_floor(self):
         for field in ("version", "update_from"):
-            for value in ("v0.5.0", "0.5", "01.5.0", "0.5.0-rc.1", "0.5.0+build", "../0.5.0"):
+            for value in ("v0.8.0", "0.8", "01.8.0", "0.8.0-rc.1", "0.8.0+build", "../0.8.0"):
                 with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                     self.generate(**{field: value})
         with self.assertRaises(ValueError):
-            self.generate(update_from="0.6.0")
+            self.generate(update_from="0.9.0")
         self.assertEqual(self.generate(update_from=VERSION)["update_from"], VERSION)
-        # Numeric ordering, not lexicographic: 0.10 is newer than 0.5.
+        # Numeric ordering, not lexicographic: 0.10 is newer than 0.8.
         with self.assertRaises(ValueError):
             self.generate(update_from="0.10.0")
 
@@ -180,6 +190,7 @@ class SigningTests(unittest.TestCase):
                 result = self.run_sign()
                 self.assertEqual(result.returncode, 0, result.stderr)
                 for name in ("latest.json", "SHA256SUMS", "install.sh"):
+                    # The signing product id is the pre-rename name, as published clients check.
                     self.assertIn(f"trusted comment: rex-linux v{VERSION} {name}", (self.dist / f"{name}.minisig").read_text())
                 self.assertEqual(self.run_sign("--verify-only").returncode, 0)
 

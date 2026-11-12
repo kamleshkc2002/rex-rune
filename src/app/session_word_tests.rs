@@ -1,7 +1,7 @@
 //! A sidebar session row says the most pressing thing one of its out-of-sight tabs would.
 use super::pane_verb_tests::Camera;
 use super::*;
-use rex_linux::connection::activity::{BlockedKind, ProgramState, StatusRecord};
+use rex_rune::connection::activity::{BlockedKind, ProgramState, StatusRecord};
 use serde_json::json;
 
 /// Host 0 shows session `s`; session `other` has tabs `build`, `agent` and `quiet`.
@@ -57,7 +57,7 @@ fn word(ws: &Workspace) -> Option<(String, u32, String)> {
 #[test]
 fn the_most_pressing_tab_speaks_for_its_session() {
     use crate::app::theme::{accent, danger, warning};
-    use rex_linux::connection::activity::TerminalProgress;
+    use rex_rune::connection::activity::TerminalProgress;
     let (mut ws, _rx) = fixture();
     let host = ws.hosts[0].id;
     assert_eq!(word(&ws), None, "quiet when healthy");
@@ -124,7 +124,7 @@ fn the_most_pressing_tab_speaks_for_its_session() {
 #[test]
 fn the_ranking_colours_are_distinct_in_every_palette() {
     // The rank after needs-you is read from the word's colour.
-    for chrome in rex_linux::settings::ChromeTheme::ALL {
+    for chrome in rex_rune::settings::ChromeTheme::ALL {
         let p = crate::app::theme::palette_of(chrome);
         assert!(
             p.accent != p.warning && p.warning != p.danger && p.accent != p.danger,
@@ -141,7 +141,7 @@ fn muted_tabs_and_the_activity_switch_keep_the_row_quiet() {
     report(&mut ws, "build", ProgramState::Error, None);
     assert_eq!(word(&ws).unwrap().0, "Needs input");
     // A muted tab says nothing; the next most pressing one does.
-    ws.settings.muted_tabs.push(rex_linux::settings::MutedTab {
+    ws.settings.muted_tabs.push(rex_rune::settings::MutedTab {
         endpoint: ws.settings.hosts[0].endpoint.clone(),
         session: "other".into(),
         window: "agent".into(),
@@ -350,7 +350,7 @@ fn the_switcher_says_the_same_word_for_sessions_out_of_sight() {
     assert!(row.detail.ends_with("Session"), "{}", row.detail);
     // What silences the sidebar word silences this one.
     ws.picker(true);
-    ws.settings.muted_tabs.push(rex_linux::settings::MutedTab {
+    ws.settings.muted_tabs.push(rex_rune::settings::MutedTab {
         endpoint: ws.settings.hosts[0].endpoint.clone(),
         session: "other".into(),
         window: "agent".into(),

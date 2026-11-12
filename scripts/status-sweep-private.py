@@ -35,7 +35,7 @@ parser.add_argument("--delay-ms", type=float, default=0,
                     help="bench only: hold every server-to-client frame this long, as a slow link would")
 args = parser.parse_args()
 assert bool(args.bench) != args.native
-binary = os.environ.get("REX_BIN", str(BASE / "target/release/rex-linux"))
+binary = os.environ.get("REX_BIN", str(BASE / "target/release/rex-rune"))
 probe = os.environ.get("REX_SWEEP_PROBE", str(BASE / "target/release/examples/status_sweep_probe"))
 work = Path(tempfile.mkdtemp(prefix=f"{'native' if args.native else args.bench}-", dir=BASE))
 for key in list(os.environ):

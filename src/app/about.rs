@@ -7,7 +7,7 @@ use super::{
     widgets::{Pill, app_logo},
     workspace::Workspace,
 };
-use rex_linux::{connection::HostModel, format_version, settings::Host};
+use rex_rune::{connection::HostModel, format_version, settings::Host};
 use rune::{Align, El, col, row, text};
 
 pub const REPOSITORY: &str = "https://github.com/shuv1337/rex-rune";
@@ -70,7 +70,7 @@ fn format_info(
     server: Option<&Server>,
 ) -> String {
     let mut info = format!(
-        "Rex Linux {}\nCommit: {commit}\nBuild date: {date}\nBuild channel: {channel}\nOS: {os}\n",
+        "Rex Rune {}\nCommit: {commit}\nBuild date: {date}\nBuild channel: {channel}\nOS: {os}\n",
         format_version(version)
     );
     if let Some(server) = server {
@@ -89,7 +89,7 @@ pub fn version_info(s: &Workspace) -> String {
         VERSION,
         COMMIT,
         BUILD_DATE,
-        rex_linux::BUILD_CHANNEL,
+        rex_rune::BUILD_CHANNEL,
         &format!("{} ({})", std::env::consts::OS, std::env::consts::ARCH),
         Server::of(s.model()).as_ref(),
     )
@@ -291,7 +291,7 @@ fn header(s: &Workspace) -> El {
                 .items_center()
                 .gap(5.)
                 .child(
-                    text("Rex Linux")
+                    text("Rex Rune")
                         .role("heading")
                         .font(medium(15.))
                         .color(rgb(ink())),
@@ -419,7 +419,7 @@ pub fn section(s: &Workspace) -> El {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rex_linux::connection::server_info::{Answer, Build, ServerInfo};
+    use rex_rune::connection::server_info::{Answer, Build, ServerInfo};
 
     fn server<'a>(version: Option<&'a str>, range: Option<(u32, u32)>) -> Server<'a> {
         Server {
@@ -441,7 +441,7 @@ mod tests {
                 "linux (x86_64)",
                 Some(&server(Some("0.1.0-preview.15"), Some((10, 13))))
             ),
-            "Rex Linux 0.5.0\nCommit: abc1234\nBuild date: 2026-11-10 PST\nBuild channel: official\nOS: linux (x86_64)\nRex Server: 0.1.0-preview.15\nServer API revision: 12 (server supports 10–13)\n"
+            "Rex Rune 0.5.0\nCommit: abc1234\nBuild date: 2026-11-10 PST\nBuild channel: official\nOS: linux (x86_64)\nRex Server: 0.1.0-preview.15\nServer API revision: 12 (server supports 10–13)\n"
         );
     }
 
@@ -456,7 +456,7 @@ mod tests {
                 "linux",
                 Some(&server(None, None))
             ),
-            "Rex Linux 0.5.0\nCommit: a\nBuild date: b\nBuild channel: source\nOS: linux\nRex Server: Not reported\nServer API revision: 12\n"
+            "Rex Rune 0.5.0\nCommit: a\nBuild date: b\nBuild channel: source\nOS: linux\nRex Server: Not reported\nServer API revision: 12\n"
         );
     }
 
@@ -464,12 +464,12 @@ mod tests {
     fn source_archive_and_offline_report_are_honest() {
         assert_eq!(
             format_info("0.5.0", "unknown", "unknown", "source", "linux", None),
-            "Rex Linux 0.5.0\nCommit: unknown\nBuild date: unknown\nBuild channel: source\nOS: linux\n"
+            "Rex Rune 0.5.0\nCommit: unknown\nBuild date: unknown\nBuild channel: source\nOS: linux\n"
         );
         // Plain cargo builds default to source; release CI supplies its own marker.
         assert_eq!(
-            rex_linux::BUILD_CHANNEL,
-            option_env!("REX_LINUX_CHANNEL").unwrap_or("source")
+            rex_rune::BUILD_CHANNEL,
+            option_env!("REX_RUNE_CHANNEL").unwrap_or("source")
         );
         assert_eq!(
             release_url(),
@@ -482,7 +482,7 @@ mod tests {
         assert_eq!(format_version("0.6.0"), "0.6.0");
         assert_eq!(format_version("v0.6.0"), "0.6.0");
         assert_eq!(format_version(" V1.2.3-rc.1 "), "1.2.3-rc.1");
-        assert!(format_info("v0.6.0", "a", "b", "c", "d", None).starts_with("Rex Linux 0.6.0\n"));
+        assert!(format_info("v0.6.0", "a", "b", "c", "d", None).starts_with("Rex Rune 0.6.0\n"));
     }
 
     #[test]

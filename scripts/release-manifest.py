@@ -2,6 +2,11 @@
 """Generate latest.json from both architectures' packages and SHA256SUMS.
 
 Only stable X.Y.Z releases are supported. No network access or signing keys.
+
+Two names appear because the client was rex-linux through 0.7.x and those clients still
+read this file. `product` stays "rex-linux", which their updater requires. Each target's
+`tarball` is the bridge archive laid out for that updater (scripts/package-release.py),
+and `archive` is the rex-rune tarball that current clients and install.sh install.
 """
 
 import argparse
@@ -15,6 +20,8 @@ from zoneinfo import ZoneInfo
 
 RELEASE_URL = "https://github.com/shuv1337/rex-rune/releases"
 TARGETS = {"x86_64-linux-gnu": "amd64", "aarch64-linux-gnu": "arm64"}
+# The manifest's product id, and the name of the bridge tarball: see the module docstring.
+PRODUCT = "rex-linux"
 
 
 def version_tuple(value):
@@ -37,16 +44,17 @@ def generate(dist, version, update_from, published, min_glibc="2.39"):
         if not match or match[2] in checksums:
             raise ValueError("malformed or duplicate SHA256SUMS entry")
         checksums[match[2]] = match[1]
-    expected = {
-        name
-        for target, deb_arch in TARGETS.items()
-        for name in (f"rex-linux-{version}-{target}.tar.gz", f"rex-linux_{version}_{deb_arch}.deb")
-    }
-    pacman = version_tuple(version) >= (0, 5, 3) or any(name.endswith(".pkg.tar.zst") for name in checksums)
-    if pacman:
-        expected |= {f"rex-linux-bin-{version}-1-{target.split('-linux-')[0]}.pkg.tar.zst" for target in TARGETS}
+    def names(target, deb_arch):
+        return {
+            "archive": f"rex-rune-{version}-{target}.tar.gz",
+            "tarball": f"{PRODUCT}-{version}-{target}.tar.gz",
+            "deb": f"rex-rune_{version}_{deb_arch}.deb",
+            "pacman": f"rex-rune-bin-{version}-1-{target.split('-linux-')[0]}.pkg.tar.zst",
+        }
+
+    expected = {name for target, deb_arch in TARGETS.items() for name in names(target, deb_arch).values()}
     if set(checksums) != expected:
-        raise ValueError("SHA256SUMS must list exactly the packages for this version (four legacy, six with pacman)")
+        raise ValueError("SHA256SUMS must list exactly the eight packages for this version")
 
     def package(name):
         path = dist / name
@@ -62,19 +70,17 @@ def generate(dist, version, update_from, published, min_glibc="2.39"):
     tag = f"v{version}"
     targets = {}
     for target, deb_arch in TARGETS.items():
-        tarball = f"rex-linux-{version}-{target}.tar.gz"
-        deb = f"rex-linux_{version}_{deb_arch}.deb"
+        files = names(target, deb_arch)
         targets[target] = {
             "min_glibc": min_glibc,
-            "tarball": {"url": f"{RELEASE_URL}/download/{tag}/{tarball}", **package(tarball)},
-            "deb": {"name": deb, **package(deb)},
+            "tarball": {"url": f"{RELEASE_URL}/download/{tag}/{files['tarball']}", **package(files["tarball"])},
+            "archive": {"url": f"{RELEASE_URL}/download/{tag}/{files['archive']}", **package(files["archive"])},
+            "deb": {"name": files["deb"], **package(files["deb"])},
+            "pacman": {"name": files["pacman"], **package(files["pacman"])},
         }
-        if pacman:
-            name = f"rex-linux-bin-{version}-1-{target.split('-linux-')[0]}.pkg.tar.zst"
-            targets[target]["pacman"] = {"name": name, **package(name)}
     return {
         "schema": 1,
-        "product": "rex-linux",
+        "product": PRODUCT,
         "version": version,
         "tag": tag,
         "published": published,

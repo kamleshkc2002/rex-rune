@@ -2,7 +2,7 @@
 """Real X11 event/clipboard regression, isolated from the user's desktop.
 
 Requires Xvfb, xdotool, rex and a built native binary (REX_BIN selects it, default
-target/debug/rex-linux). REX_SERVER must explicitly name a disposable server; autostart is disabled
+target/debug/rex-rune). REX_SERVER must explicitly name a disposable server; autostart is disabled
 and the script exits without it. Creates/destroys only its own Rex session. The client runs with
 its own HOME and XDG directories, no update check and a `tailscale` that finds no tailnet.
 This validates XKB dead-key composition, not Wayland or a full input method editor.
@@ -61,7 +61,7 @@ def run():
             with os.fdopen(read_fd) as display:
                 number = display.readline().strip()
             assert number, "Xvfb failed to start"
-            env = dict(os.environ, DISPLAY=f":{number}", REX_LINUX_NO_UPDATE_CHECK="1")
+            env = dict(os.environ, DISPLAY=f":{number}", REX_RUNE_NO_UPDATE_CHECK="1")
             env.pop("WAYLAND_DISPLAY", None)
             for name in ("config", "state", "cache", "data"):
                 env.pop(f"XDG_{name.upper()}_HOME", None)
@@ -76,7 +76,7 @@ def run():
             config = Path(directory) / "workspace.json"
             config.write_text(json.dumps({"pane_padding": PANE_PADDING, "font_size": FONT_SIZE}))
             app = subprocess.Popen([
-                os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux")), "--session", sid,
+                os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune")), "--session", sid,
                 "--config", str(config), "--window-size", "1200x800"], env=env)
 
             def x(*args):

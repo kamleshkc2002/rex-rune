@@ -22,12 +22,12 @@ let
     url = "https://tip.files.ghostty.org/83fb95624b0439ee660c2679b43b38c8b63769cd/libghostty-vt-source.tar.gz";
     hash = "sha256-7Veum5VYHIjyYU6XbB0/FGwC1EOjwmE5IA653m5kXrQ=";
   };
-  ghosttySource = runCommand "rex-linux-ghostty-83fb956" { } ''
+  ghosttySource = runCommand "rex-rune-ghostty-83fb956" { } ''
     mkdir -p "$out"
     tar -xzf ${ghosttyArchive} --strip-components=1 -C "$out"
   '';
   ghosttyDepArchives = (pkgs.zig.fetchDeps.override { inherit zig; }) {
-    pname = "rex-linux-ghostty";
+    pname = "rex-rune-ghostty";
     version = "83fb956";
     src = ghosttyArchive;
     # VT enables lazy wuffs/highway dependencies after build configuration.
@@ -35,7 +35,7 @@ let
     hash = "sha256-82Ife6Av0wfZLmovdEdJFgsG5MI4swCeOB3dbvgBDSU=";
   };
   # Zig 0.17 caches archives, but --system expects extracted package directories.
-  ghosttyDeps = runCommand "rex-linux-ghostty-83fb956-system-deps" { } ''
+  ghosttyDeps = runCommand "rex-rune-ghostty-83fb956-system-deps" { } ''
     mkdir -p "$out"
     for archive in ${ghosttyDepArchives}/*.tar.gz; do
       tar -xzf "$archive" -C "$out"
@@ -54,7 +54,7 @@ let
   ];
 in
 rustPlatform.buildRustPackage {
-  pname = "rex-linux";
+  pname = "rex-rune";
   version = "0.7.5";
   src = lib.cleanSourceWith {
     src = lib.cleanSource ../.;
@@ -84,7 +84,7 @@ rustPlatform.buildRustPackage {
     libxkbcommon
     wayland
   ];
-  REX_LINUX_CHANNEL = "nix";
+  REX_RUNE_CHANNEL = "nix";
   passthru = { inherit runtimeLibraries; };
   cargoBuildFlags = [ "--bins" ];
   cargoTestFlags = [ "--all-features" ];
@@ -117,17 +117,19 @@ rustPlatform.buildRustPackage {
   '';
 
   postInstall = ''
-    install -Dm644 resources/dev.shuv.rex-linux.desktop \
-      "$out/share/applications/dev.shuv.rex-linux.desktop"
-    substituteInPlace "$out/share/applications/dev.shuv.rex-linux.desktop" \
-      --replace-fail 'Exec=rex-linux' "Exec=$out/bin/rex-linux"
+    install -Dm644 resources/dev.shuv.rex-rune.desktop \
+      "$out/share/applications/dev.shuv.rex-rune.desktop"
+    substituteInPlace "$out/share/applications/dev.shuv.rex-rune.desktop" \
+      --replace-fail 'Exec=rex-rune' "Exec=$out/bin/rex-rune"
     for size in 32 128 256; do
-      install -Dm644 "resources/icons/''${size}x''${size}/apps/dev.shuv.rex-linux.png" \
-        "$out/share/icons/hicolor/''${size}x''${size}/apps/dev.shuv.rex-linux.png"
+      install -Dm644 "resources/icons/''${size}x''${size}/apps/dev.shuv.rex-rune.png" \
+        "$out/share/icons/hicolor/''${size}x''${size}/apps/dev.shuv.rex-rune.png"
     done
-    wrapProgram "$out/bin/rex-linux" \
+    wrapProgram "$out/bin/rex-rune" \
       --prefix PATH : ${lib.makeBinPath [ fontconfig ]} \
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath runtimeLibraries}
+    # The command's name before the rename, for scripts and key bindings that start it.
+    ln -s rex-rune "$out/bin/rex-linux"
   '';
   meta = {
     description = "Native Linux Rune client for existing Rex terminal servers";
@@ -135,6 +137,6 @@ rustPlatform.buildRustPackage {
     # The inherited Rex icon has separate provenance/terms; see its README.
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;
-    mainProgram = "rex-linux";
+    mainProgram = "rex-rune";
   };
 }

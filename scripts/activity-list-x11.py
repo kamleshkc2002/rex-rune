@@ -18,7 +18,7 @@ import time
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 BASE = Path(os.environ.get("REX_ACTIVITY_OUT", str(Path.home() / ".cache/agent-ws/rex-m32-activity")))
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="native-", dir=BASE))

@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::{actions, bindings::Input};
-use rex_linux::{connection::Command, keymap::Overrides};
+use rex_rune::{connection::Command, keymap::Overrides};
 use rune::{PhysicalInput, PhysicalKeyCode as Code};
 use serde_json::{Value, json};
 
@@ -44,9 +44,9 @@ fn server_map(
     };
     ws.hosts[0].model.connected = true;
     ws.hosts[0].model.keymap = Some(std::sync::Arc::new(
-        rex_linux::connection::keymap::Snapshot {
+        rex_rune::connection::keymap::Snapshot {
             generation: ws.keymap_generation,
-            resolved: rex_linux::keymap::Resolved::from_server(
+            resolved: rex_rune::keymap::Resolved::from_server(
                 &reply,
                 &ws.settings.shortcut_file.overrides,
             ),
@@ -194,7 +194,7 @@ fn returned_client_actions_are_taken_once_in_order_unknown_names_ignored() {
         ] {
             model
                 .client_actions
-                .push(rex_linux::connection::actions::Queued {
+                .push(rex_rune::connection::actions::Queued {
                     generation: 0,
                     session: None,
                     block: None,
@@ -232,7 +232,7 @@ fn returned_actions_allow_changed_pane_focus_but_guard_workspace_and_panels() {
         model.views.get_mut("s").unwrap().windows[1].focused_block_id = Some("block:c".into());
         model
             .client_actions
-            .push(rex_linux::connection::actions::Queued {
+            .push(rex_rune::connection::actions::Queued {
                 generation: ws.keymap_generation,
                 session: Some("s".into()),
                 block: Some("block:b".into()),
@@ -277,13 +277,13 @@ fn returned_actions_allow_changed_pane_focus_but_guard_workspace_and_panels() {
 #[test]
 fn settings_shows_effective_sequences_sources_and_pending_chip_cancels() {
     let mut ws = workspace();
-    let path = rex_linux::settings::shortcuts::Shortcuts::path(&ws.settings_path);
+    let path = rex_rune::settings::shortcuts::Shortcuts::path(&ws.settings_path);
     std::fs::write(
         &path,
         r#"[{"keys":"ctrl+k","action":null},{"keys":"ctrl+b>c","action":"client.tab.new"}]"#,
     )
     .unwrap();
-    ws.settings.shortcut_file = rex_linux::settings::shortcuts::Shortcuts::load(&ws.settings_path);
+    ws.settings.shortcut_file = rex_rune::settings::shortcuts::Shortcuts::load(&ws.settings_path);
     overrides(
         &mut ws,
         json!([
@@ -393,9 +393,9 @@ fn effective_map_swaps_by_host_and_generation_and_preserves_problems() {
         };
         ws.hosts[index].model.connected = true;
         ws.hosts[index].model.keymap = Some(std::sync::Arc::new(
-            rex_linux::connection::keymap::Snapshot {
+            rex_rune::connection::keymap::Snapshot {
                 generation: 0,
-                resolved: rex_linux::keymap::Resolved::from_server(&reply, &overrides),
+                resolved: rex_rune::keymap::Resolved::from_server(&reply, &overrides),
                 reply,
             },
         ));
@@ -440,7 +440,7 @@ fn server_config_path_marks_only_missing_files() {
 
 #[test]
 fn changed_shortcuts_reach_offline_hosts_but_unchanged_touches_send_nothing() {
-    use rex_linux::settings::shortcuts::Shortcuts;
+    use rex_rune::settings::shortcuts::Shortcuts;
     let mut ws = workspace_hosts(2);
     let receivers = [capture_host(&mut ws, 0), capture_host(&mut ws, 1)];
     ws.hosts[0].model.connected = true;
@@ -506,7 +506,7 @@ fn shortcut_import_notice_uses_custom_config_filenames() {
 #[test]
 fn a_bad_shortcut_entry_notifies_once_across_two_connected_hosts() {
     let mut ws = workspace_hosts(2);
-    let path = rex_linux::settings::shortcuts::Shortcuts::path(&ws.settings_path);
+    let path = rex_rune::settings::shortcuts::Shortcuts::path(&ws.settings_path);
     std::fs::write(&path, r#"[{"keys":"ctrl+b>","action":"client.settings"}]"#).unwrap();
     let _receivers = [capture_host(&mut ws, 0), capture_host(&mut ws, 1)];
     ws.reload_shortcuts();
@@ -519,9 +519,9 @@ fn a_bad_shortcut_entry_notifies_once_across_two_connected_hosts() {
             let reply = rexrs::api::client::KeymapResponse::default();
             model.connected = true;
             model.keymap = Some(std::sync::Arc::new(
-                rex_linux::connection::keymap::Snapshot {
+                rex_rune::connection::keymap::Snapshot {
                     generation: ws.keymap_generation,
-                    resolved: rex_linux::keymap::Resolved::from_server(
+                    resolved: rex_rune::keymap::Resolved::from_server(
                         &reply,
                         &ws.settings.shortcut_file.overrides,
                     ),
@@ -565,9 +565,9 @@ fn settings_diagnostic_sets_toast_once_per_host_never_file_or_linux() {
             let mut model = ws.hosts[0].connection.model.lock().unwrap();
             model.connected = true;
             model.keymap = Some(std::sync::Arc::new(
-                rex_linux::connection::keymap::Snapshot {
+                rex_rune::connection::keymap::Snapshot {
                     generation: 0,
-                    resolved: rex_linux::keymap::Resolved::from_server(
+                    resolved: rex_rune::keymap::Resolved::from_server(
                         &reply,
                         &Overrides::default(),
                     ),

@@ -7,7 +7,7 @@ use crate::app::{
     settings_kit::ChipTone,
     theme,
 };
-use rex_linux::tailnet::{Machine, Probe};
+use rex_rune::tailnet::{Machine, Probe};
 
 fn settle(rt: &mut Runtime<Workspace>) {
     for _ in 0..90 {

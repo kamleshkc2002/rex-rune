@@ -99,7 +99,7 @@ fn notification_settings_search_test_and_health_are_local_and_fit() {
 
 #[test]
 fn activity_outbox_replaces_and_seen_closes_only_that_tab() {
-    use rex_linux::connection::activity::ProgramState::*;
+    use rex_rune::connection::activity::ProgramState::*;
     let (mut ws, _host) = tabbed_workspace("single");
     ws.track_activity(0);
     set_activity(&mut ws, "block:b", &[("", record(Blocked, true))]);
@@ -133,7 +133,7 @@ fn seen_commands(ws: &Workspace) -> usize {
 
 #[test]
 fn a_seen_tab_asks_once_per_notification_and_never_on_every_update() {
-    use rex_linux::connection::activity::ProgramState::*;
+    use rex_rune::connection::activity::ProgramState::*;
     let (mut ws, _host) = tabbed_workspace("single");
     // A tab on screen with nothing sent about it asks for nothing, however often it updates.
     for _ in 0..5 {
@@ -194,7 +194,7 @@ fn a_test_on_its_way_stays_sending_until_its_own_answer() {
 #[ignore = "requires REX_M34_PRIVATE_BUS and its matching private DBUS_SESSION_BUS_ADDRESS"]
 fn notification_worker_reconnects_after_a_private_bus_restart() {
     use crate::app::notify::{Kind, Note, NoteTarget, Notifier};
-    use rex_linux::connection::activity::ProgramState::Blocked;
+    use rex_rune::connection::activity::ProgramState::Blocked;
     use std::{
         path::PathBuf,
         process::{Child, Command as Process, Stdio},

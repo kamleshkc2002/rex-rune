@@ -6,7 +6,7 @@ use crate::app::{
     keycaps::spell,
     theme::{MIDNIGHT, danger, ink, muted, rgb, selection, set_palette},
 };
-use rex_linux::keymap::Overrides;
+use rex_rune::keymap::Overrides;
 use rune::ElementInfo;
 use serde_json::json;
 

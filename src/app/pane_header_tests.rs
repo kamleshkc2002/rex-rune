@@ -3,7 +3,7 @@
 use super::pane_verb_tests::{Camera, framed_terminal, rect, sent_verbs};
 use super::*;
 use crate::app::{actions, pane_header};
-use rex_linux::settings::{PaneDensity, PaneHeader};
+use rex_rune::settings::{PaneDensity, PaneHeader};
 use serde_json::Value;
 
 fn settle(rt: &mut Runtime<Workspace>) {
@@ -446,7 +446,7 @@ fn reveal_pane_headers_is_a_local_toggle_that_never_resizes_a_terminal() {
     assert!(spec.accepts(&Value::Null) && !spec.accepts(&serde_json::json!({"x": 1})));
     assert!(!spec.repeats() && !spec.global());
     assert!(
-        rex_linux::keymap::defaults()
+        rex_rune::keymap::defaults()
             .bindings
             .iter()
             .all(|b| b.action != "client.pane_headers.toggle"),
@@ -614,7 +614,7 @@ fn a_narrow_pane_keeps_zoom_and_close() {
 /// The header under each choice as drawn, for a look (see `Camera`).
 #[test]
 fn pane_headers_draw_under_each_choice() {
-    use rex_linux::connection::activity::{BlockedKind, ProgramState::*};
+    use rex_rune::connection::activity::{BlockedKind, ProgramState::*};
     let Some(mut camera) = Camera::new() else {
         return;
     };

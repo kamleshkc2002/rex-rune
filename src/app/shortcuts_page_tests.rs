@@ -7,7 +7,7 @@ use crate::app::{
     settings_view::SHORTCUT_CATEGORIES,
     shortcuts_page::{Row, listing, rows},
 };
-use rex_linux::keymap::{Overrides, Resolved};
+use rex_rune::keymap::{Overrides, Resolved};
 use rexrs::api::client::{Binding, InspectResponseAction};
 use serde_json::{Value, json};
 
@@ -711,7 +711,7 @@ fn server_map(ws: &mut Workspace, bindings: Vec<Binding>, actions: Vec<InspectRe
         ..Default::default()
     };
     ws.hosts[0].model.keymap = Some(std::sync::Arc::new(
-        rex_linux::connection::keymap::Snapshot {
+        rex_rune::connection::keymap::Snapshot {
             generation: ws.keymap_generation,
             resolved: Resolved::from_server(&reply, &ws.settings.shortcut_file.overrides),
             reply,
@@ -723,7 +723,7 @@ fn server_map(ws: &mut Workspace, bindings: Vec<Binding>, actions: Vec<InspectRe
 #[test]
 fn a_connected_hosts_actions_are_rows_under_server() {
     let (mut ws, _host) = tabbed_workspace("split");
-    let mut bindings: Vec<Binding> = rex_linux::keymap::defaults()
+    let mut bindings: Vec<Binding> = rex_rune::keymap::defaults()
         .bindings
         .into_iter()
         .map(|mut binding| {

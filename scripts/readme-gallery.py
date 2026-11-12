@@ -24,7 +24,7 @@ import time
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = Path(os.environ.get("REX_BIN", ROOT / "target/release/rex-linux")).resolve()
+APP = Path(os.environ.get("REX_BIN", ROOT / "target/release/rex-rune")).resolve()
 OUT = Path(os.environ.get("SHOT_OUT_DIR", ROOT / "docs")).resolve()
 SIZE = "1280x800"
 SHELL = {"block": {"flavor": "com.superlogical.terminal.shell"}}
@@ -33,7 +33,7 @@ SHELL = {"block": {"flavor": "com.superlogical.terminal.shell"}}
 def main():
     for tool in ("rex", "Xvfb", "openbox", "xdotool", "import", "bat", "eza"):
         assert shutil.which(tool), f"{tool} required"
-    assert APP.is_file(), f"Build rex-linux first: {APP}"
+    assert APP.is_file(), f"Build rex-rune first: {APP}"
     keep = os.environ.get("SHOT_KEEP") == "1"
     work = Path(tempfile.mkdtemp(prefix="rex-gallery-"))
     for name in ("home", "config", "state", "runtime", "cache", "data", "captures"):
@@ -46,7 +46,7 @@ def main():
                       USER="demo", LOGNAME="demo", SHELL="/bin/bash",
                       XDG_CONFIG_HOME=str(work / "config"), XDG_STATE_HOME=str(work / "state"),
                       XDG_RUNTIME_DIR=str(work / "runtime"), XDG_CACHE_HOME=str(work / "cache"),
-                      XDG_DATA_HOME=str(work / "data"), REX_LINUX_NO_UPDATE_CHECK="1",
+                      XDG_DATA_HOME=str(work / "data"), REX_RUNE_NO_UPDATE_CHECK="1",
                       REX_SERVER=endpoint, REX_BIN=str(APP), REX_CAPTURE_OUT=str(work / "captures"))
     spec = importlib.util.spec_from_file_location("accept", ROOT / "scripts/rune-acceptance-x11.py")
     accept = importlib.util.module_from_spec(spec)

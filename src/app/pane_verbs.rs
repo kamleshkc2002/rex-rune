@@ -7,7 +7,7 @@ use super::{
     term::Term,
     workspace::Workspace,
 };
-use rex_linux::connection::Command;
+use rex_rune::connection::Command;
 use rexrs::api::session::Window;
 use rune::Tx;
 

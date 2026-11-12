@@ -8,7 +8,7 @@ use crate::app::{
     panel::SettingsSection,
     settings_view::SHORTCUT_CATEGORIES,
 };
-use rex_linux::keymap::Overrides;
+use rex_rune::keymap::Overrides;
 use serde_json::{Value, json};
 
 /// Arguments for the actions that cannot run without them. An action that starts taking

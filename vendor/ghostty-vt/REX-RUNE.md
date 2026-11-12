@@ -1,4 +1,4 @@
-# Rex Linux patch
+# Rex Rune patch
 
 This is the crates.io `ghostty-vt` 0.8.0+ghostty.1.4.0-main.83fb956 source from
 `prabirshrestha/gpui-cn`, commit `e49d909b2ceae040714aa53cd38f97faa4f85cd2`,

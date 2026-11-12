@@ -6,7 +6,7 @@ use super::{
     selection_corners,
 };
 use crate::app::theme::rgb;
-use rex_linux::terminal::{Cell, CursorShape};
+use rex_rune::terminal::{Cell, CursorShape};
 use rune::{El, el};
 
 /// A run of one line's text in one style; `color` none is the terminal's default text.

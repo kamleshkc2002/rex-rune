@@ -1,5 +1,5 @@
 //! Read-only production-worker measurement. Use only with scripts/status-sweep-private.py.
-use rex_linux::connection::{HostCommand, HostConnection};
+use rex_rune::connection::{HostCommand, HostConnection};
 use serde_json::json;
 use std::time::{Duration, Instant};
 

@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::updates::Installation;
-use rex_linux::update::{InstallChannel, UpdateState};
+use rex_rune::update::{InstallChannel, UpdateState};
 
 #[test]
 fn updater_check_and_install_are_mutually_exclusive() {
@@ -14,7 +14,7 @@ fn updater_check_and_install_are_mutually_exclusive() {
     ws.updates.installation = Installation::Working("Downloading…".into());
     ws.check_updates_now();
     assert!(!ws.updates.checking);
-    ws.updates.installation = Installation::Ready("/nonexistent/rex-linux".into());
+    ws.updates.installation = Installation::Ready("/nonexistent/rex-rune".into());
     ws.check_updates_now();
     assert!(!ws.updates.checking);
     let _ = std::fs::remove_file(&ws.settings_path);
@@ -22,7 +22,7 @@ fn updater_check_and_install_are_mutually_exclusive() {
 
 #[test]
 fn updater_stale_workspace_notice_actions_never_lower_verified_version() {
-    use rex_linux::update::CheckOutcome;
+    use rex_rune::update::CheckOutcome;
     let mut ws = workspace();
     let temp = tempfile::tempdir().unwrap();
     ws.updates.config.state_path = temp.path().join("state.json");
@@ -66,7 +66,7 @@ fn updater_stale_workspace_notice_actions_never_lower_verified_version() {
 fn updater_restart_requests_normal_shutdown_instead_of_exec_in_callback() {
     let mut ws = workspace();
     ws.updates.channel = InstallChannel::Tarball;
-    let binary = std::path::PathBuf::from("/nonexistent/rex-linux");
+    let binary = std::path::PathBuf::from("/nonexistent/rex-rune");
     ws.updates.installation = Installation::Ready(binary.clone());
     let restart = ws.restart.clone();
     ws.open_updates_settings();
@@ -130,7 +130,7 @@ fn updater_controls_are_channel_gated_and_show_progress_error_and_restart() {
             .iter()
             .any(|e| e.text.as_deref().is_some_and(|t| t.contains("SHA-256")))
     );
-    rt.update(|s, _| s.updates.installation = Installation::Ready("/nonexistent/rex-linux".into()));
+    rt.update(|s, _| s.updates.installation = Installation::Ready("/nonexistent/rex-rune".into()));
     rt.frame(1. / 60.);
     assert!(has(&rt, "updates-restart"));
     assert!(!has(&rt, "updates-install-now"));
@@ -210,7 +210,7 @@ fn updater_settings_render_install_states() {
         ),
         (
             "updater-ready",
-            Installation::Ready("/nonexistent/rex-linux".into()),
+            Installation::Ready("/nonexistent/rex-rune".into()),
         ),
     ] {
         rt.update(|s, _| s.updates.installation = state);

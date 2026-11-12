@@ -10,7 +10,7 @@ Covers:
       a second) stays within one 60 Hz frame;
   grid: a Nerd glyph / CJK / box-drawing / right-aligned prompt capture for the grid check.
 
-Environment: REX_BIN is the client to test (default target/debug/rex-linux). REX_SERVER must name a
+Environment: REX_BIN is the client to test (default target/debug/rex-rune). REX_SERVER must name a
 disposable Rex server (a unix:// socket you started yourself); nothing here starts, stops or
 autostarts one, and the script refuses to run without it. It creates and destroys only its own Rex
 sessions. Writes captures to REX_CAPTURE_OUT (default in the system temporary directory). The
@@ -27,7 +27,7 @@ import json, os, re, shlex, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BIN = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux"))
+BIN = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune"))
 OUT = Path(os.environ.get("REX_CAPTURE_OUT", Path(tempfile.gettempdir()) / "rex-rune-acceptance"))
 SHELL = {"block": {"flavor": "com.superlogical.terminal.shell"}}
 
@@ -147,7 +147,7 @@ class Desktop:
         os.close(write_fd)
         with os.fdopen(read_fd) as pipe:
             self.display = ":" + pipe.readline().strip()
-        self.env = dict(os.environ, DISPLAY=self.display, REX_LINUX_NO_UPDATE_CHECK="1")
+        self.env = dict(os.environ, DISPLAY=self.display, REX_RUNE_NO_UPDATE_CHECK="1")
         self.env.pop("WAYLAND_DISPLAY", None)
         # The Add host list runs `tailscale status`: give the client one that finds no tailnet.
         self.stub = tempfile.mkdtemp(prefix="rex-no-tailscale-")

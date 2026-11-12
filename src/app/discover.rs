@@ -5,8 +5,8 @@
 use super::panel::{Entry, Form, Intent, PanelKind};
 use super::theme::*;
 use super::workspace::Workspace;
-use rex_linux::settings::Host;
-use rex_linux::tailnet::{self, ListenerDescription, Machine, Probe};
+use rex_rune::settings::Host;
+use rex_rune::tailnet::{self, ListenerDescription, Machine, Probe};
 use rune::{El, Span, Tx, el, row, text};
 use std::time::{Duration, Instant};
 
@@ -227,7 +227,7 @@ impl Workspace {
             .iter()
             .enumerate()
             .filter(|(_, h)| {
-                let host = rex_linux::settings::endpoint_label(&h.endpoint).to_lowercase();
+                let host = rex_rune::settings::endpoint_label(&h.endpoint).to_lowercase();
                 host == address || host == short
             })
             .map(|(i, _)| i)
@@ -581,7 +581,7 @@ impl Workspace {
         } else {
             match self.discovery.candidates.get(index) {
                 None => Some("That machine is no longer listed".to_owned()),
-                Some(c) => rex_linux::ssh::Target::parse(&c.machine.ssh_endpoint(user, socket))
+                Some(c) => rex_rune::ssh::Target::parse(&c.machine.ssh_endpoint(user, socket))
                     .err()
                     .map(|e| e.to_string()),
             }

@@ -1,6 +1,6 @@
 # README captures
 
-The README images show Rex Linux built from `origin/master` at
+The README images show Rex Rune built from `origin/master` at
 `9af5bf5d0a7cc1ba5c61e2d2784035a66e30e19b` (0.7.4). They are native X11
 captures with real fonts, not mock-ups or Rune's headless test-font renderer.
 
@@ -21,8 +21,8 @@ output are fixtures, not this repository's source or test results.
 Build a clean checkout of the source revision above, then run:
 
 ```sh
-cargo build --locked --release --bin rex-linux
-REX_BIN="$PWD/target/release/rex-linux" python3 scripts/readme-gallery.py
+cargo build --locked --release --bin rex-rune
+REX_BIN="$PWD/target/release/rex-rune" python3 scripts/readme-gallery.py
 oxipng -o 4 --strip all docs/screenshot.png docs/images/settings-*.png
 ```
 
@@ -42,7 +42,7 @@ autostart off. It does not use the personal environment inherited by
 
 ## Verification and hygiene
 
-- Built the current source with `cargo build --locked --offline --release --bin rex-linux`
+- Built the current source with `cargo build --locked --offline --release --bin rex-rune`
   in a disposable WTFM clone, with a temporary HOME and network disabled.
 - WTFM command records passed for format checking, release build, app help,
   Python compilation and the native capture script. This documentation-only

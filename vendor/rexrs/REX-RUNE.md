@@ -1,4 +1,4 @@
-# Rex Linux SDK patch
+# Rex Rune SDK patch
 
 Vendored from `https://github.com/a10y/rexrs` at
 `780be3f9f0455c758273e57199af30bdaa145cf1`. The upstream manifest declares
@@ -21,7 +21,7 @@ Local changes:
   `docs/server-preview14.md` in the client repository for the comparisons.
 - `ClientBuilder::api_revisions(min..=max)` passes an explicit supported range
   to HELLO. The SDK default still advertises only its generated revision.
-  Rex Linux advertises 10–13, validates WELCOME and gates uploads on 11.
+  Rex Rune advertises 10–13, validates WELCOME and gates uploads on 11.
 - A focused negotiation test accompanies the builder change.
 - Hand-written `tests/listeners.rs` covers the new optional listener metadata in
   status and bootstrap, including omitted/null lists and unknown enum-like strings.

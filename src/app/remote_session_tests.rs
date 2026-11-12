@@ -1,7 +1,7 @@
 use super::remote_tests::{code, pending, reply};
 use super::*;
 use crate::app::actions;
-use rex_linux::connection::perform::Outcome;
+use rex_rune::connection::perform::Outcome;
 use serde_json::{Value, json};
 use std::time::{Duration, Instant};
 

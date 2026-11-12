@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Rex Linux
+Name=Rex Rune
 GenericName=Terminal Workspace
 Comment=Connect to Rex sessions in a native Linux workspace
-Exec=rex-linux
-TryExec=rex-linux
-Icon=dev.shuv.rex-linux
+Exec=rex-rune
+TryExec=rex-rune
+Icon=dev.shuv.rex-rune
 Terminal=false
 Categories=System;TerminalEmulator;
 Keywords=Rex;terminal;workspace;sessions;
-StartupWMClass=dev.shuv.rex-linux
+StartupWMClass=dev.shuv.rex-rune

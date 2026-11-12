@@ -4,7 +4,7 @@ use super::{
     panel::{Entry, Intent},
     workspace::Workspace,
 };
-use rex_linux::settings::Settings;
+use rex_rune::settings::Settings;
 use serde_json::Value;
 
 pub const INCREASE: &str = "client.font.increase";

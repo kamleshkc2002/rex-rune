@@ -1,6 +1,6 @@
 //! The selection's colours and corners, cell by cell and row by row.
 use super::*;
-use rex_linux::settings::terminal::SelectionColor::{CellBackground, CellForeground, Theme};
+use rex_rune::settings::terminal::SelectionColor::{CellBackground, CellForeground, Theme};
 
 const TEXT: u32 = 0xd0d0d0;
 const GROUND: u32 = 0x101010;
@@ -182,7 +182,7 @@ fn wide_selected_cells_share_fill_and_leave_original_cells_unchanged() {
     })
     .unwrap();
     terminal.vt_write("\x1b[31m界e\u{301}".as_bytes());
-    let frame = rex_linux::terminal::Renderer::new()
+    let frame = rex_rune::terminal::Renderer::new()
         .unwrap()
         .frame(&terminal)
         .unwrap();

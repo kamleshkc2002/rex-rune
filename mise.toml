@@ -4,12 +4,12 @@ zig = "0.17.1"
 
 [tasks.build]
 description = "Build the release application"
-run = "cargo build --locked --release --bin rex-linux && touch target/release/.rex-linux-build.stamp"
+run = "cargo build --locked --release --bin rex-rune && touch target/release/.rex-rune-build.stamp"
 sources = [
     "Cargo.toml",
     "Cargo.lock",
     "src/**/*",
-    "resources/icons/256x256/apps/dev.shuv.rex-linux.png",
+    "resources/icons/256x256/apps/dev.shuv.rex-rune.png",
     "vendor/rune/crates/{rune,rune-motion,rune-staging,rune-taffy,procwatch}/Cargo.toml",
     "vendor/rune/crates/{rune,rune-motion,rune-staging,rune-taffy,procwatch}/src/**/*",
     "vendor/rune/crates/rune/assets/**/*",
@@ -17,15 +17,15 @@ sources = [
     "vendor/rexrs/src/**/*",
     "vendor/ghostty-vt/**/*",
 ]
-outputs = ["target/release/rex-linux", "target/release/.rex-linux-build.stamp"]
+outputs = ["target/release/rex-rune", "target/release/.rex-rune-build.stamp"]
 
 [tasks.install]
-description = "Build Rex Linux and install it with a launcher for the current user"
+description = "Build Rex Rune and install it with a launcher for the current user"
 depends = ["build"]
 run = "bash scripts/install-desktop.sh --copy"
 
 [tasks.uninstall]
-description = "Remove the current user's Rex Linux installation"
+description = "Remove the current user's Rex Rune installation"
 run = "bash scripts/install-desktop.sh --uninstall"
 
 [tasks.test]

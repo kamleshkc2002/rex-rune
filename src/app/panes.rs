@@ -14,7 +14,7 @@ use super::{
     widgets::{Pill, pill},
     workspace::{DividerDrag, Workspace},
 };
-use rex_linux::{
+use rex_rune::{
     connection::Command,
     layout,
     settings::{PaneDensity, PaneHeader},

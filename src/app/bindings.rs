@@ -1,6 +1,6 @@
 //! Layout-aware matching and sequence/repeat state, adapted from Andrea Zito
 //! (nivox), 8037d78. Input is plain data: no Tx or workspace needed by the matcher.
-use rex_linux::keymap::{Chord, Key as BindingKey, Modifiers, Resolved};
+use rex_rune::keymap::{Chord, Key as BindingKey, Modifiers, Resolved};
 use rune::{Key, KeyEvent, PhysicalKeyCode as Code};
 
 #[derive(Clone, Copy)]

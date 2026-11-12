@@ -1,5 +1,5 @@
 [package]
-name = "rex-linux"
+name = "rex-rune"
 version = "0.7.5"
 edition = "2024"
 rust-version = "1.96"
@@ -54,7 +54,7 @@ debug = false
 opt-level = 2
 
 [[bin]]
-name = "rex-linux"
+name = "rex-rune"
 path = "src/main.rs"
 required-features = ["ui"]
 
@@ -80,7 +80,7 @@ rune = { path = "vendor/rune/crates/rune" }
 rune-motion = { path = "vendor/rune/crates/rune-motion" }
 rune-staging = { path = "vendor/rune/crates/rune-staging" }
 
-# Revision-13 generated types and explicit negotiation range (vendor/rexrs/REX-LINUX.md).
+# Revision-13 generated types and explicit negotiation range (vendor/rexrs/REX-RUNE.md).
 [patch."https://github.com/a10y/rexrs"]
 rexrs = { path = "vendor/rexrs" }
 

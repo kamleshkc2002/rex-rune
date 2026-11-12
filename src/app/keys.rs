@@ -185,7 +185,7 @@ pub fn payload(
 /// Explicit, layout-free pane.send_key: use the regular payload builder for both edges,
 /// never a US shifted-character table. Physical spellings carry no invented text.
 pub fn synthesize(spelling: &str) -> Option<[Value; 2]> {
-    use rex_linux::keymap::{Chord, Key as K};
+    use rex_rune::keymap::{Chord, Key as K};
     let chord = Chord::parse(spelling).ok()?;
     let mods = Mods {
         ctrl: chord.modifiers.ctrl,

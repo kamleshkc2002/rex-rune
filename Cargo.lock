@@ -3063,7 +3063,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rex-linux"
+name = "rex-rune"
 version = "0.7.5"
 dependencies = [
  "anyhow",

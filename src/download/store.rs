@@ -419,7 +419,7 @@ struct RecordFile {
     partials: Vec<Record>,
 }
 
-/// `$XDG_STATE_HOME/rex-linux/downloads.json`: the partial files this app has made. Only these
+/// `$XDG_STATE_HOME/rex-rune/downloads.json`: the partial files this app has made. Only these
 /// are ever deleted after a crash, and only if they still look like a partial file. Updates are
 /// serialised within the process; two running apps updating the file at the same instant can
 /// still lose an entry (the file is replaced whole, never half written).
@@ -430,7 +430,7 @@ pub struct Records {
 
 impl Default for Records {
     fn default() -> Self {
-        Self::at(crate::update::xdg_state_dir().join("rex-linux/downloads.json"))
+        Self::at(crate::update::xdg_state_dir().join("rex-rune/downloads.json"))
     }
 }
 

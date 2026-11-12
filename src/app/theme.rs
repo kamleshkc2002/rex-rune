@@ -1,6 +1,6 @@
 //! The chrome palette's tokens, the kit pinned to them, shared surfaces (chips, glass,
 //! cards) and the app's icons.
-use rex_linux::settings::ChromeTheme;
+use rex_rune::settings::ChromeTheme;
 use rune::{Color, El, Icon, Shadow, Spring, SpringPair, TextStyle, Transition};
 use rune_kit::{Kit, PaletteFocus, PaletteSeed};
 use std::sync::OnceLock;
@@ -693,7 +693,7 @@ mod tests {
                 "{name}: warning and danger differ in hue"
             );
             assert_eq!(p.card, p.ground, "{name}: one surface");
-            let paired = rex_linux::terminal_theme::paired(chrome);
+            let paired = rex_rune::terminal_theme::paired(chrome);
             assert_eq!(
                 (paired.theme)().background,
                 Some(p.ground),

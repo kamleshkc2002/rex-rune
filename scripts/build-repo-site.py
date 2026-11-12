@@ -32,10 +32,38 @@ def version(tag):
     return tuple(map(int, tag[1:].split('.')))
 
 
-def required_assets(tag):
-    names = {f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
+# The repository keeps the name it was published under, before the client was renamed
+# from rex-linux: every pacman.conf that has it reads [rex-linux] and fetches rex-linux.db.
+REPOSITORY = 'rex-linux'
+CERTIFICATE = 'rex-linux-archive-key.asc'
+# Releases also keep their signing product id (scripts/sign-release.py).
+PRODUCT = 'rex-linux'
+
+
+def package_base(names, tag):
+    """The pacman package a release carries: rex-rune-bin, or rex-linux-bin before the rename."""
+    for base in ('rex-rune-bin', 'rex-linux-bin'):
+        if f'{base}-{tag[1:]}-1-{ARCHES[0]}.pkg.tar.zst' in names:
+            return base
+    raise ValueError(f'{tag}: no pacman package')
+
+
+def required_assets(tag, base):
+    names = {f'{base}-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
              for a in ARCHES for suffix in ('', '.sig')}
     return names | {'SHA256SUMS', 'SHA256SUMS.minisig'}
+
+
+def release_packages(v, base):
+    """Exactly what a release's SHA256SUMS lists: six files before the rename, eight after."""
+    client = base.removesuffix('-bin')
+    expected = {f'{client}-{v}-{a}-linux-gnu.tar.gz' for a in ARCHES}
+    expected |= {f'{client}_{v}_{a}.deb' for a in ('amd64', 'arm64')}
+    expected |= {f'{base}-{v}-1-{a}.pkg.tar.zst' for a in ARCHES}
+    if client != 'rex-linux':
+        # The tarballs the 0.7.x updater installs (scripts/package-release.py, bridge).
+        expected |= {f'rex-linux-{v}-{a}-linux-gnu.tar.gz' for a in ARCHES}
+    return expected
 
 
 def select(releases, exclude, require_tag=None):
@@ -60,7 +88,7 @@ def select(releases, exclude, require_tag=None):
     # eventually instead of blocking every future rebuild. Inside the window it fails.
     selected = []
     for number, tag, names, immutable in candidates[:5]:
-        required = required_assets(tag)
+        required = required_assets(tag, package_base(names, tag))
         if not required <= names or not immutable:
             raise ValueError(f'{tag}: incomplete or mutable package release')
         selected.append((number, tag, required))
@@ -79,7 +107,7 @@ def verify_release(directory, tag, keys, gpg_home):
     else:
         raise ValueError(f'{tag}: untrusted checksum signature')
     lines = (directory / 'SHA256SUMS.minisig').read_text().splitlines()
-    if len(lines) != 4 or lines[2] != f'trusted comment: rex-linux {tag} SHA256SUMS':
+    if len(lines) != 4 or lines[2] != f'trusted comment: {PRODUCT} {tag} SHA256SUMS':
         raise ValueError(f'{tag}: signed checksums belong to another tag')
     checksums = {}
     for line in sums.read_text().splitlines():
@@ -88,13 +116,11 @@ def verify_release(directory, tag, keys, gpg_home):
             raise ValueError(f'{tag}: malformed or duplicate checksum')
         checksums[match[2]] = match[1]
     v = tag[1:]
-    expected = {f'rex-linux-{v}-{a}-linux-gnu.tar.gz' for a in ARCHES}
-    expected |= {f'rex-linux_{v}_{a}.deb' for a in ('amd64', 'arm64')}
-    expected |= {f'rex-linux-bin-{v}-1-{a}.pkg.tar.zst' for a in ARCHES}
-    if set(checksums) != expected:
-        raise ValueError(f'{tag}: expected exactly six package checksums')
+    base = package_base(checksums, tag)
+    if set(checksums) != release_packages(v, base):
+        raise ValueError(f'{tag}: SHA256SUMS does not list exactly this release\'s packages')
     for a in ARCHES:
-        package = directory / f'rex-linux-bin-{v}-1-{a}.pkg.tar.zst'
+        package = directory / f'{base}-{v}-1-{a}.pkg.tar.zst'
         with package.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
         if digest != checksums[package.name]:
@@ -104,16 +130,16 @@ def verify_release(directory, tag, keys, gpg_home):
 
 
 def landing(site, certificate, tags):
-    shutil.copy2(certificate, site / 'rex-linux-archive-key.asc')
+    shutil.copy2(certificate, site / CERTIFICATE)
     (site / 'CNAME').write_text('pkg.shuv.dev\n')
     (site / '.nojekyll').touch()
     (site / 'releases.json').write_text(json.dumps(tags, indent=2) + '\n')
     message = ('Available: ' + ', '.join(tags)) if tags else 'Repository pending the first pacman release. Do not add it to pacman.conf yet.'
     (site / 'index.html').write_text(f'''<!doctype html><html lang="en"><meta charset="utf-8">
-<title>Rex Linux packages</title><h1>Rex Linux packages</h1><p>{message}</p>
-<p><a href="rex-linux-archive-key.asc">OpenPGP public certificate</a></p>
+<title>Rex Rune packages</title><h1>Rex Rune packages</h1><p>{message}</p>
+<p><a href="{CERTIFICATE}">OpenPGP public certificate</a></p>
 <p><a href="https://github.com/{REPO}/blob/master/docs/auto-update-operator-walkthrough.md">Setup, fingerprints and recovery</a></p>
-<p>Signed pacman repository: https://pkg.shuv.dev/arch/$arch. APT is not available yet.</p></html>\n''')
+<p>Signed pacman repository <code>[{REPOSITORY}]</code>: https://pkg.shuv.dev/arch/$arch. The package is <code>rex-rune-bin</code>; it replaces <code>rex-linux-bin</code>, the client's name before it was renamed. APT is not available yet.</p></html>\n''')
 
 
 def list_releases(require_tag):
@@ -133,7 +159,7 @@ def build(site, keys, exclude, releases_dir=None, bootstrap=False, require_tag=N
     if site.exists():
         raise ValueError('site output must not already exist; never reuse a partial rebuild')
     site.mkdir(parents=True)
-    certificate = keys / 'rex-linux-archive-key.asc'
+    certificate = keys / CERTIFICATE
     if bootstrap:
         landing(site, certificate, [])
         return
@@ -150,7 +176,9 @@ def build(site, keys, exclude, releases_dir=None, bootstrap=False, require_tag=N
         selected = select(releases, exclude, require_tag)
         if not selected:
             raise ValueError('no signed pacman releases; bootstrap explicitly instead')
+        bases = {}
         for _, tag, required in selected:
+            bases[tag] = package_base(required, tag)
             directory = work / tag; directory.mkdir()
             for name in sorted(required):
                 if releases_dir:
@@ -163,17 +191,20 @@ def build(site, keys, exclude, releases_dir=None, bootstrap=False, require_tag=N
             for a in ARCHES:
                 target = site / 'arch' / a; target.mkdir(parents=True, exist_ok=True)
                 for suffix in ('', '.sig'):
-                    name = f'rex-linux-bin-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
+                    name = f'{bases[tag]}-{tag[1:]}-1-{a}.pkg.tar.zst{suffix}'
                     shutil.copy2(directory / name, target / name)
-        newest = selected[0][1][1:]
+        # Only the newest release enters the database. Once that is rex-rune-bin, which
+        # replaces rex-linux-bin, pacman moves every install over on its next -Syu.
+        newest_tag = selected[0][1]
+        newest = newest_tag[1:]
         for a in ARCHES:
             target = (site / 'arch' / a).resolve()
             subprocess.run(['docker', 'run', '--rm', '-v', f'{target}:/repo', '-w', '/repo',
-                            arch.ARCH_IMAGE, 'repo-add', '--include-sigs', 'rex-linux.db.tar.gz',
-                            f'rex-linux-bin-{newest}-1-{a}.pkg.tar.zst'], check=True)
+                            arch.ARCH_IMAGE, 'repo-add', '--include-sigs', f'{REPOSITORY}.db.tar.gz',
+                            f'{bases[newest_tag]}-{newest}-1-{a}.pkg.tar.zst'], check=True)
             # Pages artifacts forbid symlinks. Canonical .db/.files and compressed names
             # are identical bytes, with detached signatures for both URL spellings.
-            for name in ('rex-linux.db', 'rex-linux.files'):
+            for name in (f'{REPOSITORY}.db', f'{REPOSITORY}.files'):
                 path = target / name
                 if not path.is_symlink():
                     raise ValueError('repo-add did not produce its expected alias')

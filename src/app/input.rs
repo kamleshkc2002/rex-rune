@@ -10,7 +10,7 @@ use super::{
     panel::{Intent, PanelKind},
     workspace::{HostId, Workspace},
 };
-use rex_linux::connection::Command;
+use rex_rune::connection::Command;
 use rune::{Ime, Key, KeyEvent, PhysicalKeyCode as Code, Tx};
 
 fn ctrl(ev: &KeyEvent) -> bool {
@@ -188,7 +188,7 @@ fn dispatch(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx, global_only: bool) ->
                     }
                     s.send(
                         s.active,
-                        rex_linux::connection::HostCommand::Action {
+                        rex_rune::connection::HostCommand::Action {
                             generation: s.keymap_generation,
                             request: Box::new(request),
                         },

@@ -1,17 +1,17 @@
 use clap::Parser;
-use rex_linux::update::{CheckConfig, run_cli_check};
+use rex_rune::update::{CheckConfig, run_cli_check};
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(
-    about = "Verify signed Rex Linux release metadata against an endpoint or loopback fixture"
+    about = "Verify signed Rex Rune release metadata against an endpoint or loopback fixture"
 )]
 struct Args {
     #[arg(long, default_value = env!("CARGO_PKG_VERSION"))]
     current_version: String,
-    #[arg(long, default_value = rex_linux::update::DEFAULT_MANIFEST_URL)]
+    #[arg(long, default_value = rex_rune::update::DEFAULT_MANIFEST_URL)]
     manifest_url: String,
-    #[arg(long, default_value = rex_linux::update::DEFAULT_SIGNATURE_URL)]
+    #[arg(long, default_value = rex_rune::update::DEFAULT_SIGNATURE_URL)]
     signature_url: String,
     #[arg(long)]
     public_key_file: Vec<PathBuf>,

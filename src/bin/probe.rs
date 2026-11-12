@@ -1,7 +1,7 @@
 //! Live, destructive only to its own temporary session. Exercises the same
 //! snapshot/APC/offset implementation used by the native view.
 use anyhow::{Context, Result, ensure};
-use rex_linux::{terminal::TerminalStream, transport, wire};
+use rex_rune::{terminal::TerminalStream, transport, wire};
 use rexrs::api::{Layout, session};
 use serde_json::json;
 use std::time::Duration;
@@ -55,7 +55,7 @@ async fn run() -> Result<()> {
         .nth(1)
         .unwrap_or_else(transport::local_endpoint);
     // An ssh:// endpoint is reached through a forward of the server's socket.
-    let _tunnel = rex_linux::ssh::Tunnel::for_endpoint(&endpoint).await?;
+    let _tunnel = rex_rune::ssh::Tunnel::for_endpoint(&endpoint).await?;
     let endpoint = _tunnel
         .as_ref()
         .map_or(endpoint, |t| t.endpoint().to_owned());

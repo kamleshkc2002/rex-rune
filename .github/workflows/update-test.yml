@@ -8,6 +8,8 @@ on:
       - 'src/app/updates.rs'
       - 'src/app/updates_tests.rs'
       - 'src/settings.rs'
+      - 'src/legacy.rs'
+      - 'src/connection.rs'
       - 'src/main.rs'
       - 'src/app/mod.rs'
       - 'src/app/workspace.rs'

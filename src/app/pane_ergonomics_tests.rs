@@ -2,7 +2,7 @@
 use super::pane_verb_tests::{Camera, framed_terminal, rect};
 use super::*;
 use crate::app::{find, panel::SettingsSection, panes};
-use rex_linux::{
+use rex_rune::{
     connection::Command,
     settings::{PaneDensity, PaneHeader, typography::SpacingUnit},
 };
@@ -93,7 +93,7 @@ fn asymmetric_padding_keeps_layout_and_sizes_only_owned_panes() {
             ws.settings.pane_density = density;
             ws.settings.pane_header = PaneHeader::Always;
             if foreign_background {
-                ws.term_theme = Some(rex_linux::terminal_theme::TerminalTheme {
+                ws.term_theme = Some(rex_rune::terminal_theme::TerminalTheme {
                     background: Some(0x331122),
                     ..Default::default()
                 });
@@ -180,7 +180,7 @@ fn vertical_steps_resize_a_full_screen_terminal() {
         let mut model = t.connection.model.lock().unwrap();
         model.owner = true;
         model.frame = Some(std::sync::Arc::new(
-            rex_linux::terminal::Renderer::new()
+            rex_rune::terminal::Renderer::new()
                 .unwrap()
                 .frame(&terminal)
                 .unwrap(),
@@ -373,7 +373,7 @@ fn compact_outline_overlays_foreign_background_without_changing_content() {
     let (mut ws, host) = tabbed_workspace("split");
     ws.settings.pane_density = PaneDensity::Compact;
     ws.settings.pane_header = PaneHeader::Hidden;
-    ws.term_theme = Some(rex_linux::terminal_theme::TerminalTheme {
+    ws.term_theme = Some(rex_rune::terminal_theme::TerminalTheme {
         background: Some(0x331122),
         ..Default::default()
     });
@@ -481,7 +481,7 @@ fn pane_ergonomics_draw() {
     settle(&mut rt);
     camera.snap(&mut rt, "panes-outline-compact");
     rt.update(|s, _| {
-        s.term_theme = Some(rex_linux::terminal_theme::TerminalTheme {
+        s.term_theme = Some(rex_rune::terminal_theme::TerminalTheme {
             background: Some(0x331122),
             ..Default::default()
         });

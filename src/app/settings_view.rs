@@ -12,7 +12,7 @@ use super::{
     widgets::{Pill, glyph},
     workspace::Workspace,
 };
-use rex_linux::settings::{
+use rex_rune::settings::{
     NoticePosition, NotificationsConfig, PaneDensity, PaneHeader,
     interface::{InterfaceConfig, ToolbarBehavior},
 };
@@ -257,13 +257,13 @@ fn interface(s: &Workspace) -> El {
                     },
                     &["Always", "Active pane", "Active tab", "Never"],
                     match s.settings.interface.tab_icon_color {
-                        rex_linux::settings::interface::TabIconColor::Always => 0,
-                        rex_linux::settings::interface::TabIconColor::ActivePane => 1,
-                        rex_linux::settings::interface::TabIconColor::ActiveTab => 2,
-                        rex_linux::settings::interface::TabIconColor::Never => 3,
+                        rex_rune::settings::interface::TabIconColor::Always => 0,
+                        rex_rune::settings::interface::TabIconColor::ActivePane => 1,
+                        rex_rune::settings::interface::TabIconColor::ActiveTab => 2,
+                        rex_rune::settings::interface::TabIconColor::Never => 3,
                     },
                     |s, i, _| {
-                        use rex_linux::settings::interface::TabIconColor;
+                        use rex_rune::settings::interface::TabIconColor;
                         s.settings.interface.tab_icon_color = [
                             TabIconColor::Always,
                             TabIconColor::ActivePane,

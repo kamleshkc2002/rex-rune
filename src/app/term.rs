@@ -8,7 +8,7 @@ use super::{
     },
 };
 use ghostty_vt::style::Underline;
-use rex_linux::{
+use rex_rune::{
     connection::{Command, Connection},
     links::Link,
     settings::{
@@ -55,7 +55,7 @@ pub struct Term {
     selection_unit: SelectionUnit,
     pub selecting: bool,
     pub(super) selection_revision: u64,
-    last_selection_input: Option<rex_linux::terminal::selection::Input>,
+    last_selection_input: Option<rex_rune::terminal::selection::Input>,
     copy_wanted: Option<u64>,
     cursor_style: CursorShape,
     /// Local middle click origin; movement cancels primary paste.
@@ -515,12 +515,12 @@ impl Term {
 
     pub fn selection_event(
         &mut self,
-        phase: rex_linux::terminal::selection::Phase,
+        phase: rex_rune::terminal::selection::Phase,
         x: f32,
         y: f32,
         cell: (f32, f32),
     ) {
-        use rex_linux::terminal::selection::{Geometry, Input, Phase};
+        use rex_rune::terminal::selection::{Geometry, Input, Phase};
         let index = self.index(x, y, cell);
         let cols = usize::from(self.frame.as_ref().map_or(1, |f| f.cols));
         self.selection_revision = self.selection_revision.wrapping_add(1);
@@ -551,7 +551,7 @@ impl Term {
         {
             self.selection_revision = self.selection_revision.wrapping_add(1);
             input.revision = self.selection_revision;
-            input.phase = rex_linux::terminal::selection::Phase::Up;
+            input.phase = rex_rune::terminal::selection::Phase::Up;
             self.send(Command::Selection(input));
         }
         self.selecting = false;
@@ -565,7 +565,7 @@ impl Term {
         if let Some(mut input) = self.last_selection_input.take() {
             self.selection_revision = self.selection_revision.wrapping_add(1);
             input.revision = self.selection_revision;
-            input.phase = rex_linux::terminal::selection::Phase::Clear;
+            input.phase = rex_rune::terminal::selection::Phase::Clear;
             self.send(Command::Selection(input));
         }
     }
@@ -574,7 +574,7 @@ impl Term {
     /// the selection on its terminal, so the marked rows and the text to copy arrive with
     /// its next frame; until then nothing is selected.
     pub fn select_all(&mut self) {
-        use rex_linux::terminal::selection::{Geometry, Input, Phase};
+        use rex_rune::terminal::selection::{Geometry, Input, Phase};
         self.selection = None;
         self.selection_anchor = None;
         self.selecting = false;
@@ -1623,7 +1623,7 @@ mod tests {
             ..Default::default()
         })
         .unwrap();
-        let mut renderer = rex_linux::terminal::Renderer::new().unwrap();
+        let mut renderer = rex_rune::terminal::Renderer::new().unwrap();
         let fonts = crate::app::fonts::load("JetBrainsMono Nerd Font", &[]);
         let mut rt = Runtime::with_text(
             RowState { cells: vec![] },
@@ -1714,7 +1714,7 @@ mod tests {
 
     #[test]
     fn search_matches_stay_on_their_rows_when_the_pane_clips_a_taller_terminal() {
-        use rex_linux::{
+        use rex_rune::{
             connection::{Connection, TerminalSender},
             terminal::{Renderer, search::Controller},
         };
@@ -1781,7 +1781,7 @@ mod tests {
         })
         .unwrap();
         terminal.vt_write(text.as_bytes());
-        let frame = rex_linux::terminal::Renderer::new()
+        let frame = rex_rune::terminal::Renderer::new()
             .unwrap()
             .frame(&terminal)
             .unwrap();
@@ -1876,7 +1876,7 @@ mod tests {
         .unwrap();
         terminal
             .vt_write(b"\x1b]8;;https://evil.example/\x1b\\https://good.example/\x1b]8;;\x1b\\");
-        let frame = rex_linux::terminal::Renderer::new()
+        let frame = rex_rune::terminal::Renderer::new()
             .unwrap()
             .frame(&terminal)
             .unwrap();
@@ -1904,7 +1904,7 @@ mod tests {
 
     #[test]
     fn search_highlights_follow_their_rows_when_the_pane_clips_a_taller_terminal() {
-        use rex_linux::connection::{Connection, TerminalSender};
+        use rex_rune::connection::{Connection, TerminalSender};
         let mut terminal = ghostty_vt::Terminal::new(ghostty_vt::TerminalOptions {
             cols: 12,
             rows: 5,
@@ -1912,10 +1912,10 @@ mod tests {
         })
         .unwrap();
         terminal.vt_write(b"needle\r\na\r\nb\r\nc\r\nxx needle");
-        let mut search = rex_linux::terminal::search::Controller::default();
+        let mut search = rex_rune::terminal::search::Controller::default();
         search.set_needle(Some(&terminal), "needle".into()).unwrap();
         while search.update(&terminal).unwrap() {}
-        let mut frame = rex_linux::terminal::Renderer::new()
+        let mut frame = rex_rune::terminal::Renderer::new()
             .unwrap()
             .frame(&terminal)
             .unwrap();
@@ -1991,7 +1991,7 @@ mod tests {
         terminal.set_default_bg_color(color(bg)).unwrap();
         terminal.set_default_fg_color(color(fg)).unwrap();
         terminal.vt_write(b"x\x1b[48;2;200;0;0mR\x1b[0m\x1b[7mI\x1b[0m");
-        rex_linux::terminal::Renderer::new()
+        rex_rune::terminal::Renderer::new()
             .unwrap()
             .frame(&terminal)
             .unwrap()

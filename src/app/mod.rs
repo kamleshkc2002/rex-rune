@@ -58,13 +58,13 @@ mod upload;
 mod widgets;
 mod workspace;
 
-use rex_linux::{connection::Options, settings::Settings};
+use rex_rune::{connection::Options, settings::Settings};
 use rune::{AppSpec, Cursor, Cx, El, Tx, WindowEdge, col, el, row};
 use std::time::Duration;
 use theme::*;
 use workspace::Workspace;
 
-const APP_ICON: &[u8] = include_bytes!("../../resources/icons/256x256/apps/dev.shuv.rex-linux.png");
+const APP_ICON: &[u8] = include_bytes!("../../resources/icons/256x256/apps/dev.shuv.rex-rune.png");
 
 fn resize_band(e: WindowEdge) -> El {
     let b = 6.;
@@ -108,7 +108,7 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         .fill(rgb(ground()));
     // Hover tracks position even behind content. Keep the band below both panes and
     // toolbar so secondary presses reach their context menus rather than this sibling.
-    if s.settings.interface.toolbar == rex_linux::settings::interface::ToolbarBehavior::OnHover {
+    if s.settings.interface.toolbar == rex_rune::settings::interface::ToolbarBehavior::OnHover {
         root = root.child(toolbar_reveal::band(s));
     }
     root = root.child(
@@ -284,7 +284,7 @@ pub fn run(
     let fonts = fonts::load(family, fallbacks);
     rune::text::set_app_font_paths(fonts.paths)
         .map_err(|_| anyhow::anyhow!("terminal fonts were already initialized"))?;
-    rune::set_app_id("dev.shuv.rex-linux");
+    rune::set_app_id("dev.shuv.rex-rune");
     if let Err(error) = rune::set_app_icon(APP_ICON) {
         eprintln!("Could not load the Rex window icon: {error}");
     }
@@ -343,5 +343,5 @@ pub fn run(
 const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
 
 fn wait_for_hosts_at_exit() {
-    rex_linux::connection::wait_for_hosts(EXIT_WAIT);
+    rex_rune::connection::wait_for_hosts(EXIT_WAIT);
 }

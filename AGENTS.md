@@ -1,11 +1,11 @@
 # Contributor and agent guide
 
-Rex Linux is a native Linux client for Rex terminal servers, written in Rust on Rune. See [README.md](README.md) for what it does and how to run it, [PRODUCT.md](PRODUCT.md) for product principles and [DESIGN.md](DESIGN.md) for the design system.
+Rex Rune is a native Linux client for Rex terminal servers, written in Rust on Rune. See [README.md](README.md) for what it does and how to run it, [PRODUCT.md](PRODUCT.md) for product principles and [DESIGN.md](DESIGN.md) for the design system.
 
 ## Build and test
 
 ```sh
-cargo build --locked --release --bin rex-linux          # the app
+cargo build --locked --release --bin rex-rune          # the app
 cargo test --locked --all-features                      # unit and headless UI tests
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
@@ -29,6 +29,7 @@ Some probes connect to the configured Rex server and create sessions there. Of t
   - `connection.rs` (and `connection/`): one control connection per host, block-keyed terminal streams, the `Options` CLI definition. `connection/server_info.rs`: the server's version and status on `HostModel::server_info`, read-only and once per connection.
   - `terminal.rs`: Ghostty decoding and render frames. `terminal/search.rs`: searching the screen and scrollback with Ghostty's search. `links.rs`: OSC 8 hyperlinks and text URLs in a frame.
   - `layout.rs`: split placement. `settings.rs`: local configuration. `settings/terminal.rs`: local cursor, selection and sequence-hint preferences, with backwards-compatible defaults. `settings/typography.rs`: compatible font style, line height, spacing and program bold/italic preferences under `terminal.font`; existing top-level font keys stay put.
+  - `legacy.rs`: what is left of `rex-linux`, the client's name through 0.7.x: the name it still answers to and the one-time move of that name's settings and state.
   - `download.rs` and `download/`: the file download core for API 13 (`name.rs` sanitizes hostile names, `store.rs` the destination folder, partial files and crash records, `stream.rs` the data stream; nothing in it opens or runs a downloaded file); driven by `HostCommand::Download` in `connection/downloads.rs`.
   - `ssh.rs`: `ssh://` endpoints, a Rex socket forwarded with `ssh -L`. `tailnet.rs`: the machines in `tailscale status --json` and the check for a Rex server on each.
 - `src/main.rs` and `src/app/`: the Rune front end (behind the default `ui` feature).
@@ -75,13 +76,14 @@ Some probes connect to the configured Rex server and create sessions there. Of t
 - UI changes should follow [DESIGN.md](DESIGN.md). Prefer verifying them in a rendered build (for example with Rune's `-- --snap out.png`) rather than by reading code.
 - Add tests for protocol and state-machine changes; headless UI tests in `src/app/tests.rs` cover focus and dialog behavior.
 - Keep the README's claims honest: don't document features that aren't implemented or checked.
+- The client was `rex-linux` through 0.7.x, and four things keep that name so those installs still update: the product id in signed release metadata, the bridge tarballs, the `rex-linux` command, and the `[rex-linux]` package repository. Do not rename them; [docs/releases.md](docs/releases.md#the-rex-linux-bridge) says what depends on each and how to retire them.
 - Outside pull requests are not accepted. Never ask a contributor to open a PR or invite one in issue replies; welcome issues (including issues pointing at fork commits or branches), harvest changes from forks following [`docs/fork-harvest-2026-11.md`](docs/fork-harvest-2026-11.md)'s approach (cherry-pick or rewrite what fits), credit the author with a `Co-authored-by:` trailer, and mention the author in [CHANGELOG.md](CHANGELOG.md).
 
 ## Vendored patches
 
 `vendor/rune`, `vendor/rexrs` and `vendor/ghostty-vt` are upstream snapshots plus small, documented patches, wired in through `[patch]` in `Cargo.toml`. Rules:
 
-- Keep each patch minimal and describe it in the vendor directory's README (`vendor/rune/README.md`, `vendor/rexrs/REX-LINUX.md`, `vendor/ghostty-vt/REX-LINUX.md`).
+- Keep each patch minimal and describe it in the vendor directory's README (`vendor/rune/README.md`, `vendor/rexrs/REX-RUNE.md`, `vendor/ghostty-vt/REX-RUNE.md`).
 - Do not mix unrelated edits into vendored code; changes that could go upstream should.
 - Preserve upstream license files and attribution. When bumping a pinned revision, update `Cargo.toml`, the vendored copy and its README together, then re-run the tests above.
 - The Nix package (`nix/package.nix`) pins fetched sources by hash. A Rune bump also means updating the `rune-kit` hash in `cargoLock.outputHashes`; a `ghostty-vt` bump also means updating the Ghostty source archive and the Zig dependency hash there.

@@ -1,11 +1,11 @@
 /// Build provenance only. Runtime package markers/receipts distinguish official installs.
 /// Unset (including ordinary source builds) deliberately means source, not tarball.
-pub const BUILD_CHANNEL: &str = match option_env!("REX_LINUX_CHANNEL") {
+pub const BUILD_CHANNEL: &str = match option_env!("REX_RUNE_CHANNEL") {
     Some(channel) => channel,
     None => "source",
 };
 
-/// A Rex Linux version as every page, notice, command and copied report prints it: the
+/// A Rex Rune version as every page, notice, command and copied report prints it: the
 /// bare number, without the `v` of a release tag.
 pub fn format_version(version: &str) -> String {
     version.trim().trim_start_matches(['v', 'V']).to_owned()
@@ -15,6 +15,7 @@ pub mod connection;
 pub mod download;
 pub mod keymap;
 pub mod layout;
+pub mod legacy;
 pub mod links;
 pub mod settings;
 pub mod ssh;

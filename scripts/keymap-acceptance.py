@@ -2,7 +2,7 @@
 """Phase 6 live acceptance: native keys, private Rex/Xvfb, no daily hosts.
 
 Requires rex, Xvfb, openbox, xdotool, ImageMagick. REX_BIN selects the built
-client (default target/release/rex-linux). Artifacts stay in the printed temp
+client (default target/release/rex-rune). Artifacts stay in the printed temp
 folder. Starts/stops only its own processes; all API calls explicitly use the
 private Unix endpoint with autostart disabled.
 """
@@ -16,7 +16,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import"):
     assert shutil.which(tool), f"{tool} required"
 work = Path(tempfile.mkdtemp(prefix="rex-keymap-acceptance-"))

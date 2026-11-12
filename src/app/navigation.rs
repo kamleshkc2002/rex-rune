@@ -1,7 +1,7 @@
 //! Window-local visit history and sidebar-order navigation, adapted from joegoldin.
 //! Stable host ids keep removed hosts from retargeting a visit to another server.
 use super::workspace::{HostId, Workspace};
-use rex_linux::connection::HostCommand;
+use rex_rune::connection::HostCommand;
 use rune::Tx;
 use std::time::{Duration, Instant};
 
@@ -214,10 +214,10 @@ impl Workspace {
             visit,
             origin,
             false,
-            rex_linux::connection::perform::MAX_WAIT,
+            rex_rune::connection::perform::MAX_WAIT,
             tx,
         );
-        tx.wake_after(rex_linux::connection::perform::MAX_WAIT);
+        tx.wake_after(rex_rune::connection::perform::MAX_WAIT);
         self.navigation.pending.as_ref().map(|p| p.id)
     }
 

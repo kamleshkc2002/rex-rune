@@ -1,15 +1,15 @@
 //! File downloads from a pane's machine (Rex API revision 13): the dialog that asks for one,
 //! the notices when transfers end, and what a finished one offers. The transfers themselves
-//! live in the library (`rex_linux::download`) and in each host's model; this module only reads
+//! live in the library (`rex_rune::download`) and in each host's model; this module only reads
 //! them, answers their questions and tells the person.
 //!
 //! Nothing here starts a download except the dialog's own button, and a finished file is shown
-//! in its folder only by a press on that transfer's row. Rex Linux never opens or runs it.
+//! in its folder only by a press on that transfer's row. Rex Rune never opens or runs it.
 use super::{
     panel::{Intent, PaneTarget, PanelKind},
     workspace::{HostId, Workspace},
 };
-use rex_linux::{
+use rex_rune::{
     connection::{HostCommand, downloads::Request},
     download::{
         self, Confirmation, Failure, Reason, State, Transfer, number_text, power_of, size_text,

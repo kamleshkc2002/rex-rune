@@ -1,6 +1,6 @@
 //! Explicit personal-server setup, separate from automatic attachment and reconnect.
 use super::{panel::PanelKind, workspace::Workspace};
-use rex_linux::{
+use rex_rune::{
     connection::HostCommand,
     ssh::{Target, setup},
 };

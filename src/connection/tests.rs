@@ -24,7 +24,7 @@ use tokio_tungstenite::{WebSocketStream, tungstenite::Message};
 #[test]
 fn startup_size_prefers_cli_then_saved_size_then_default_and_keeps_the_minimum() {
     use clap::Parser;
-    let options = Options::parse_from(["rex-linux"]);
+    let options = Options::parse_from(["rex-rune"]);
     let legacy: crate::settings::Settings = serde_json::from_str("{}").unwrap();
     assert_eq!(options.window_size, None);
     assert_eq!(options.startup_size(&legacy), (1440., 900.));
@@ -46,7 +46,7 @@ fn startup_size_prefers_cli_then_saved_size_then_default_and_keeps_the_minimum()
         ("infx900", (1100., 750.)),
         ("NaNx900", (1100., 750.)),
     ] {
-        let options = Options::parse_from(["rex-linux", "--window-size", arg]);
+        let options = Options::parse_from(["rex-rune", "--window-size", arg]);
         assert_eq!(options.startup_size(&settings), expected, "{arg}");
     }
     settings.window_size = Some([320., 200.]);
@@ -1053,14 +1053,14 @@ fn font_preferences_use_saved_values_unless_explicitly_overridden() {
         ..Default::default()
     };
     let before = serde_json::to_value(&settings).unwrap();
-    let defaults = Options::parse_from(["rex-linux"]);
+    let defaults = Options::parse_from(["rex-rune"]);
     assert_eq!(
         defaults.fonts(&settings),
         ("IBM Plex Mono", settings.font_fallbacks.as_slice())
     );
     assert_eq!(defaults.font_size, None);
     let explicit = Options::parse_from([
-        "rex-linux",
+        "rex-rune",
         "--font",
         "TX02 Nerd Font Mono",
         "--font-size",
@@ -1083,18 +1083,18 @@ fn font_preferences_use_saved_values_unless_explicitly_overridden() {
         before,
         "CLI family choices do not overwrite preferences"
     );
-    let primary_only = Options::parse_from(["rex-linux", "--font", "Inter"]);
+    let primary_only = Options::parse_from(["rex-rune", "--font", "Inter"]);
     assert_eq!(
         primary_only.fonts(&settings),
         ("Inter", settings.font_fallbacks.as_slice())
     );
-    let fallback_only = Options::parse_from(["rex-linux", "--font-fallback", "Noto Sans CJK JP"]);
+    let fallback_only = Options::parse_from(["rex-rune", "--font-fallback", "Noto Sans CJK JP"]);
     assert_eq!(fallback_only.fonts(&settings).0, "IBM Plex Mono");
     for args in [
-        ["rex-linux", "--font", " "],
-        ["rex-linux", "--font-fallback", "a,b"],
-        ["rex-linux", "--font-size", "NaN"],
-        ["rex-linux", "--font-size", "inf"],
+        ["rex-rune", "--font", " "],
+        ["rex-rune", "--font-fallback", "a,b"],
+        ["rex-rune", "--font-size", "NaN"],
+        ["rex-rune", "--font-size", "inf"],
     ] {
         assert!(Options::try_parse_from(args).is_err());
     }
@@ -1863,4 +1863,20 @@ async fn a_worker_gets_its_search_whatever_the_control_connection_is_doing() {
         Ok(DataCommand::PromptStep(false))
     ));
     assert!(received.try_recv().is_err());
+}
+
+#[test]
+fn the_old_name_answers_version_as_the_old_updater_checks_it() {
+    let version = env!("CARGO_PKG_VERSION");
+    assert_eq!(
+        Options::version_line(false),
+        format!("rex-rune {version}\n")
+    );
+    // The 0.7.x updater runs `bin/rex-linux --version` and installs only on this exact line.
+    assert_eq!(
+        Options::version_line(true),
+        format!("rex-linux {version}\n")
+    );
+    let options = Options::from_arguments(["rex-linux", "--session", "work"].map(Into::into), true);
+    assert_eq!(options.session.as_deref(), Some("work"));
 }

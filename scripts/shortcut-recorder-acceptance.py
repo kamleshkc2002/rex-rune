@@ -16,7 +16,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-binary = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+binary = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import"):
     assert shutil.which(tool), f"{tool} required"
 work = Path(tempfile.mkdtemp(prefix="rex-recorder-"))

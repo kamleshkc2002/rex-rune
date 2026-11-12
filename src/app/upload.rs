@@ -1,7 +1,7 @@
 //! Files dropped on a pane, or pasted, go to its terminal's machine through Rex, which types
 //! their paths into it.
 use super::workspace::Workspace;
-use rex_linux::{
+use rex_rune::{
     connection::{Command, HostCommand},
     upload::File,
 };

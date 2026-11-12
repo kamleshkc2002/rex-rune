@@ -16,7 +16,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 work = Path(tempfile.mkdtemp(prefix="rex-m27-padding-", dir=Path.home() / ".cache/agent-ws"))
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import"):
     assert shutil.which(tool), f"{tool} required"

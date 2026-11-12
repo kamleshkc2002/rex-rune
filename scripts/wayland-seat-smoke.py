@@ -13,7 +13,7 @@ Environment:
                    resources to check: run tools/vptr in it first (see mouse-check.py).
   REX_SERVER       required: a disposable Rex server you started (unix:// socket). Autostart is
                    off, and the script exits rather than fall back to the default server.
-  REX_BIN          the client to test (default target/debug/rex-linux).
+  REX_BIN          the client to test (default target/debug/rex-rune).
 The client runs with its own HOME and XDG directories, no update check, and a `tailscale` that
 finds no tailnet.
 """
@@ -25,7 +25,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune"))
 
 
 def api(method, **payload):
@@ -58,7 +58,7 @@ def run():
             (stub / "tailscale").chmod(0o755)
             env = {k: v for k, v in os.environ.items()
                    if not k.startswith(("XDG_CONFIG", "XDG_STATE", "XDG_CACHE", "XDG_DATA"))}
-            env.update(HOME=str(home), WAYLAND_DEBUG="client", REX_LINUX_NO_UPDATE_CHECK="1",
+            env.update(HOME=str(home), WAYLAND_DEBUG="client", REX_RUNE_NO_UPDATE_CHECK="1",
                        PATH=f"{stub}{os.pathsep}{env.get('PATH', '')}")
             app = subprocess.Popen([
                 BINARY, "--session", session,

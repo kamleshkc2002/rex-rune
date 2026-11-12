@@ -1,10 +1,10 @@
 # Remote control: carrying out `client.perform` requests
 
-Plan for [issue #12](https://github.com/shuv1337/rex-rune/issues/12), written 2026-11-09 (PST) against `master` at `da8da40` (Rex Linux 0.4.1, Rex server `0.1.0-preview.14`, API revision 12). Status: implemented and tested for 0.5.0; awaiting review, not merged or released. R1–R9 are decided as recommended, with the client label folded into PR 1 (two stacked PRs, released together). PR 1 implements consent, guards, notices, the seven existing actions and the label; PR 2 adds `session.select`. The original rationale and contract evidence below are retained. Both implementation branches are based on 0.4.2 (`origin/master` at `5b2c9e2`), with PR 2 stacked on PR 1. `client_call_requested` is tracked separately in [#20](https://github.com/shuv1337/rex-rune/issues/20).
+Plan for [issue #12](https://github.com/shuv1337/rex-rune/issues/12), written 2026-11-09 (PST) against `master` at `da8da40` (Rex Rune 0.4.1, Rex server `0.1.0-preview.14`, API revision 12). Status: implemented and tested for 0.5.0; awaiting review, not merged or released. R1–R9 are decided as recommended, with the client label folded into PR 1 (two stacked PRs, released together). PR 1 implements consent, guards, notices, the seven existing actions and the label; PR 2 adds `session.select`. The original rationale and contract evidence below are retained. Both implementation branches are based on 0.4.2 (`origin/master` at `5b2c9e2`), with PR 2 stacked on PR 1. `client_call_requested` is tracked separately in [#20](https://github.com/shuv1337/rex-rune/issues/20).
 
 ## Summary
 
-Today Rex Linux answers every `client.perform` request with `not_supported`. The plan is to carry out a small set of them, under a setting the user turns on per host.
+Today Rex Rune answers every `client.perform` request with `not_supported`. The plan is to carry out a small set of them, under a setting the user turns on per host.
 
 - **What gets performed:** only actions that change what this window shows. That is one new action, `session.select` (show a session, optionally one of its tabs), and seven existing ones: go to a tab, next tab, previous tab, focus a pane, zoom a pane, scroll a terminal, and toggle the sidebar.
 - **What stays refused:** the other 24 registered actions. They create or close things, open a dialog that takes the keyboard, touch the clipboard, type into a terminal, change a saved preference, or move the window to another host. Most have a `rex` command that does the same job on the server with the requester's own identity, and the refusal names it.
@@ -30,7 +30,7 @@ Stack: [PR 1 — consent, guards, existing actions and label](https://github.com
 
 Rex has two kinds of action. Server actions (`rex window new`, `rex split`, `rex send-key`) change session state that every attached client shares. Client actions change one app's interface: which session and tab it shows, its sidebar, its command palette. A program asks an app to run a client action by calling `client.perform` with the app's client ID; the server relays the request to that app as a `client_perform_requested` event and waits for the app's `client.reply`.
 
-Rex Linux keeps one control connection to each saved host and has a separate client ID on each. So a request always arrives on one host's connection, from a client of that host's server. The window shows one host at a time, and the host that sent a request need not be the one on screen. "Remote UI execution" for this client is: **a program on host H asks this window to do something, and the window does it, for H.**
+Rex Rune keeps one control connection to each saved host and has a separate client ID on each. So a request always arrives on one host's connection, from a client of that host's server. The window shows one host at a time, and the host that sent a request need not be the one on screen. "Remote UI execution" for this client is: **a program on host H asks this window to do something, and the window does it, for H.**
 
 The requester is almost always the `rex` command, run by a coding agent or by the user in a terminal on H:
 
@@ -51,15 +51,15 @@ The second form is what the skill's "Work on other machines" section describes: 
 | "Scroll up a page" | `pane.scroll` | Scroll position is local to this window. |
 | "Hide the sidebar" | `client.sidebar.toggle` | Window chrome. |
 
-`session.select` is the important one. It is the action Rex's skill names for "Show a session in the app", it is what the Mac app calls it, and Rex Linux does not have it: its `session.switch` opens the switcher instead of taking a target.
+`session.select` is the important one. It is the action Rex's skill names for "Show a session in the app", it is what the Mac app calls it, and Rex Rune does not have it: its `session.switch` opens the switcher instead of taking a target.
 
 ### What users can already do without this
 
-Creating a tab, splitting a pane, typing, renaming and closing all have server commands (`rex window new`, `rex split`, `rex send`, `rex window rename`, `rex block close`) that act with the requester's own identity, return the new IDs, and work whether or not an app is open. Rex's skill tells agents to use those and to keep client actions for the interface. Rex Linux picks the new state up from the server's events. Performing these through the app adds no capability, so they are not part of the first version.
+Creating a tab, splitting a pane, typing, renaming and closing all have server commands (`rex window new`, `rex split`, `rex send`, `rex window rename`, `rex block close`) that act with the requester's own identity, return the new IDs, and work whether or not an app is open. Rex's skill tells agents to use those and to keep client actions for the interface. Rex Rune picks the new state up from the server's events. Performing these through the app adds no capability, so they are not part of the first version.
 
 ### Out of scope
 
-- **`client_call_requested`**, where a Lua action asks this client to call a method on another server. The server sends it only to a client that listed other servers in `client.action`'s `servers`, and Rex Linux lists none. It is a relay between servers, not an interface action, and needs its own design (see question 8).
+- **`client_call_requested`**, where a Lua action asks this client to call a method on another server. The server sends it only to a client that listed other servers in `client.action`'s `servers`, and Rex Rune lists none. It is a relay between servers, not an interface action, and needs its own design (see question 8).
 - Starting, installing or configuring a server on another host. Attachment only, as now.
 - New client actions other than `session.select`, such as the Mac app's `client.font.*` or `client.config.reload`.
 
@@ -112,7 +112,7 @@ Delivered only to the named client, on its control connection, whatever it is at
 
 `requester.principal` is filled in by the server from the requester's connection: Unix peer credentials (`uid`, `gid`, `pid`), a Tailscale login (`user_id`, `login_name`, `node`, `tags`), or `anonymous`. `requester.info` is what the requester says about itself and is for display only. `requester.client_id` is not stable enough to key anything on: every `rex` invocation is a new client (**verified**).
 
-The requester cannot fake its principal, but all of it reaches Rex Linux through the host's server. It is exactly as trustworthy as that server. That is why consent in this plan is given per host and not per requester.
+The requester cannot fake its principal, but all of it reaches Rex Rune through the host's server. It is exactly as trustworthy as that server. That is why consent in this plan is given per host and not per requester.
 
 ### Reply: `client.reply`
 
@@ -131,7 +131,7 @@ The requester cannot fake its principal, but all of it reaches Rex Linux through
 - Requests to one client wait in a line. The server sends the next event only after the previous one is answered or times out (**verified**: a second request sent 0.3 s into a 3 s action was delivered when the first was answered). So at most one request is outstanding, unless an earlier one timed out unanswered.
 - `timeout_ms` counts from when a request reaches the front of the line.
 - On timeout the requester gets `timeout` and the client is told nothing. `rex do` prints "did not answer within 10s; the action may still run" (**verified**). A slow client can therefore perform an action after its requester gave up.
-- When a request ends, connections attached with `event_scope: all` receive `client_performed` with the outcome: `performed`, `refused` (for `refused`, `not_supported` and `bad_request`), `failed` or `timeout` (**verified**). Rex Linux attaches with that scope, so it also sees the events for other clients; it has no use for them.
+- When a request ends, connections attached with `event_scope: all` receive `client_performed` with the outcome: `performed`, `refused` (for `refused`, `not_supported` and `bad_request`), `failed` or `timeout` (**verified**). Rex Rune attaches with that scope, so it also sees the events for other clients; it has no use for them.
 
 ### What Rex's skill expects of an app
 
@@ -140,7 +140,7 @@ From `rex skill show` in preview.14:
 - "Client actions need Remote Control, which is off by default. `actions` still lists them while it's off. If a client refuses, show the user its message. Don't change the setting yourself."
 - "Check the client's action list before calling an action, because available actions vary by app and version."
 - "To show a host's session, select a client on that host. Clients connect to each host separately."
-- Its examples: `session.select session_id=SESSION`, optionally with `window_id=`; `client.tab.goto index=2`, or `index=-1` for the last tab; `client.sidebar.toggle`; and `client.font.*` and `client.config.reload`, which Rex Linux does not have.
+- Its examples: `session.select session_id=SESSION`, optionally with `window_id=`; `client.tab.goto index=2`, or `index=-1` for the last tab; `client.sidebar.toggle`; and `client.font.*` and `client.config.reload`, which Rex Rune does not have.
 
 The Mac app has one switch, Settings → Server → Client Info → **Remote Control** ("Let Rex and other clients perform actions in this app"), and next to it a **Label** ("Name this Mac in client lists and for targeting it from rex commands").
 
@@ -208,7 +208,7 @@ All 32 stay in the list sent with `client.keymap`. The server needs the full lis
 | Situation | `error.code` | Notes |
 | --- | --- | --- |
 | Action is never performed remotely, or unknown | `not_supported` | Checked first, so an agent is never told to ask for a setting that would not help. |
-| Remote control is off for the host | `refused` | "Remote control is off for this host in Rex Linux. The person at that computer can turn it on in Settings → Remote Hosts." |
+| Remote control is off for the host | `refused` | "Remote control is off for this host in Rex Rune. The person at that computer can turn it on in Settings → Remote Hosts." |
 | Arguments fail the action's own check | `bad_request` | Nothing is performed. |
 | A dialog is open, the host is not on screen, the named session or pane is not the current one, or the person is typing | `refused` | The message says which, and that nothing was done. |
 | `session.select` names a session or tab the host does not have | `not_found` | |
@@ -220,7 +220,7 @@ All 32 stay in the list sent with `client.keymap`. The server needs the full lis
 | Option | Verdict |
 | --- | --- |
 | A prompt for each request | No. It takes the keyboard, which is the hazard being avoided; callers time out after 10 seconds; agents retry. |
-| One global switch, as in the Mac app | Workable, but Rex Linux shows several servers in one window and each is its own trust decision. A global switch would let every saved host steer the window as soon as one needed it. |
+| One global switch, as in the Mac app | Workable, but Rex Rune shows several servers in one window and each is its own trust decision. A global switch would let every saved host steer the window as soon as one needed it. |
 | **A switch per host, off by default** | Recommended. Stored as `"remote_control": true` on the host in the settings file. |
 | An action allowlist in the config file | Not now. The built-in set is small and fixed. A second tier (new tab, split) could be added later as a second switch if it is wanted. |
 | Filtering by requester principal | Not now. The main requester is `rex` over the host's Unix socket, whose principal (a uid on H) cannot be compared with this client's when it connects over Tailscale. Per-host consent already covers "everyone this server admits". See question 7. |
@@ -270,7 +270,7 @@ Guards in the worker:
 
 - **No UI answer in 5 seconds:** if the request has not been taken, the worker removes it and replies `internal`, so it cannot run later. If the UI has taken it, the worker waits for the answer.
 - **Reconnect:** untaken requests are dropped, and a reply carrying an older epoch is discarded. Without this, a late reply with `call_id` `"1"` could answer a different request on the new connection.
-- **Busy loop** (see question 4): the worker is serial, so a request can sit unread behind a slow call such as a file upload or a 35-second Lua action. If the loop was busy for more than 5 seconds when the request is found, the worker replies `internal` ("Rex Linux was busy; nothing was done") and does not queue it.
+- **Busy loop** (see question 4): the worker is serial, so a request can sit unread behind a slow call such as a file upload or a 35-second Lua action. If the loop was busy for more than 5 seconds when the request is found, the worker replies `internal` ("Rex Rune was busy; nothing was done") and does not queue it.
 
 No change to the vendored SDK is needed: `client::Reply` and `ReplyError` exist, and the event is parsed with a small `serde` struct in the client that ignores unknown fields. No API revision gate is needed either; a server without `client.perform` never sends the event.
 
@@ -355,12 +355,12 @@ Each PR also runs the suite in AGENTS.md: `cargo test`, `fmt`, `clippy -D warnin
 
 ## 6. Open questions
 
-1. **Is the allowed set right?** Recommended: the eight actions above. Leave out new tab and split (use `rex window new` and `rex split`), and interface zoom (a saved preference for every host; the skill's "make the text bigger" is the Mac's terminal font action, which Rex Linux does not have). Either could become a second, separate switch later.
+1. **Is the allowed set right?** Recommended: the eight actions above. Leave out new tab and split (use `rex window new` and `rex split`), and interface zoom (a saved preference for every host; the skill's "make the text bigger" is the Mac's terminal font action, which Rex Rune does not have). Either could become a second, separate switch later.
 2. **Per host, and off everywhere?** Recommended: a switch per saved host, off by default, including for this machine's own server. A local server's requesters already run as you, so on-by-default there would be defensible, but a window that moves without ever having been asked is the wrong first experience, and off matches the Mac app and the skill's wording.
 3. **Should a request wait while you are typing?** The failure: an agent finishes background work and shows its session while you are mid-command in another, and your next keys go to the wrong terminal. Likely enough once agents use this unprompted. Recommended: yes. Refuse navigation (`session.select`, the tab actions, `pane.focus`) for 1.5 seconds after the last key sent to a terminal, with a message saying to try again. Cost: one timestamp and one comparison.
 4. **Should requests found after a busy spell be dropped?** The failure: a request arrives while the host's serial loop is waiting on an upload or a slow Lua action; the requester times out; when the loop frees up, the window jumps to another session, possibly a minute later. Unlikely, since it needs the two to overlap on one host, and harmless, but surprising. Recommended: yes, the 5-second check in section 5. Cost: about ten lines in the worker loop and one test. Without it, the late action is simply performed.
 5. **How loud should a performed request be?** Recommended: one 6-second notice for every performed request, coalesced. Alternatives: notices for navigation only, or none once the switch is on.
-6. **Give this client a label?** With the Mac app and Rex Linux both attached, `rex do` without `-C` is ambiguous, and Rex Linux shows in `rex client ls` with an empty label, so an agent has to copy an ID that changes on every launch. Recommended: yes, as PR 3. Default to this machine's hostname, editable in Settings. It needs your say because the label is visible to everyone on each server the client attaches to.
+6. **Give this client a label?** With the Mac app and Rex Rune both attached, `rex do` without `-C` is ambiguous, and Rex Rune shows in `rex client ls` with an empty label, so an agent has to copy an ID that changes on every launch. Recommended: yes, as PR 3. Default to this machine's hostname, editable in Settings. It needs your say because the label is visible to everyone on each server the client attaches to.
 7. **Filter requesters beyond the host switch?** For example, always refuse `anonymous` principals or tagged Tailscale devices. Recommended: no. On a server that admits anonymous clients, they can already type into every terminal, and the allowed set gives them less than that. Revisit if a second tier is added.
 8. **`client_call_requested`?** Recommended: keep it out of this work and track it separately. It makes the client a relay between servers, which is a different permission from steering a window.
 9. **Stack and release?** Recommended: PR 1 then PR 2, released together as 0.5.0 so the setting never ships without `session.select`; PR 3 if question 6 is yes.
@@ -369,6 +369,6 @@ Each PR also runs the suite in AGENTS.md: `cargo test`, `fmt`, `clippy -D warnin
 
 The preview.14 binary already extracted under `~/.cache/agent-ws/rex-preview14/bin` for #10 was reused (archive SHA-256 `36ece396…ff940a`, as recorded in `docs/server-preview14.md`); no installer was run and no existing Rex server, package or service was touched. A foreground server ran on a private Unix socket with its own home, XDG and state directories under `~/.cache/agent-ws/rex-rune-issue12/`, with `--restore=false` and an empty Lua config, and was stopped by PID. Every `rex` call used that socket explicitly with `--autostart=false`.
 
-A short Python WebSocket script connected as an `app` client, declared a handful of actions through `client.keymap` (two with Rex Linux's names, the rest test stand-ins), logged every `client_perform_requested` it received, and answered in scripted ways (success, each error code, late, never, malformed). A second connection attached with `event_scope: all` to log `client_performed`. The requests came from `rex -C … do`, `rex do` with no client named, `rex do` scripts using `rex.client.queue`, and `rex api call client.perform`.
+A short Python WebSocket script connected as an `app` client, declared a handful of actions through `client.keymap` (two with Rex Rune's names, the rest test stand-ins), logged every `client_perform_requested` it received, and answered in scripted ways (success, each error code, late, never, malformed). A second connection attached with `event_scope: all` to log `client_performed`. The requests came from `rex -C … do`, `rex do` with no client named, `rex do` scripts using `rex.client.queue`, and `rex api call client.perform`.
 
 The script and its logs are scratch files, not part of the repository. PR 2's acceptance script replaces them with a check that drives the real app.

@@ -1,6 +1,6 @@
 //! Cached program glyphs and local colour policy. No assets, fetching or shell themes.
 use super::{activity::program_icon, theme::*, widgets::glyph, workspace::Workspace};
-use rex_linux::settings::interface::{InterfaceConfig, TabIconColor};
+use rex_rune::settings::interface::{InterfaceConfig, TabIconColor};
 use rune::{El, Icon, col, el, row, text};
 
 pub struct TabIcon {

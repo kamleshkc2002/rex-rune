@@ -527,7 +527,7 @@ fn named_actions_are_in_commands_and_keep_modal_mouse_navigation_out() {
 
 #[test]
 fn navigation_keys_and_mouse_buttons_do_not_leak_to_a_tracking_terminal() {
-    use rex_linux::connection::{Command, Connection, TerminalSender};
+    use rex_rune::connection::{Command, Connection, TerminalSender};
     let (mut ws, _) = tabbed_workspace("single");
     let (sender, sent) = flume::unbounded();
     let connection = Connection {
@@ -547,7 +547,7 @@ fn navigation_keys_and_mouse_buttons_do_not_leak_to_a_tracking_terminal() {
         m.connected = true;
         m.control_connected = true;
         m.frame = Some(std::sync::Arc::new(
-            rex_linux::terminal::Renderer::new()
+            rex_rune::terminal::Renderer::new()
                 .unwrap()
                 .frame(&terminal)
                 .unwrap(),

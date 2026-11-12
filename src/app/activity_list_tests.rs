@@ -6,7 +6,7 @@ use crate::app::{
     activity_list::{self, ACTION, COVERAGE},
     notify::NoteTarget,
 };
-use rex_linux::connection::activity::{BlockedKind, ProgramState, StatusRecord};
+use rex_rune::connection::activity::{BlockedKind, ProgramState, StatusRecord};
 use serde_json::{Value, json};
 
 pub(super) fn fixture() -> (Workspace, Vec<flume::Receiver<HostCommand>>) {
@@ -81,7 +81,7 @@ fn swept_status_is_visible_but_is_not_news_or_a_done_latch() {
         ws.unseen_bells.clear();
         ws.hosts[0].model.activity.clear();
         ws.track_activity(0);
-        let records = rex_linux::connection::activity::parse_status(&json!({"records":[{
+        let records = rex_rune::connection::activity::parse_status(&json!({"records":[{
             "id":"", "state":match state {
                 ProgramState::Blocked => "blocked", ProgramState::Error => "error", _ => "done"
             }
@@ -237,7 +237,7 @@ fn states_order_mute_hosts_sessions_and_filter() {
             .kind = kind;
         assert_eq!(ws.entries()[0].detail, word);
     }
-    ws.settings.muted_tabs.push(rex_linux::settings::MutedTab {
+    ws.settings.muted_tabs.push(rex_rune::settings::MutedTab {
         endpoint: ws.settings.hosts[0].endpoint.clone(),
         session: "s".into(),
         window: "blocked".into(),
@@ -597,7 +597,7 @@ fn draw(case: &str) {
                 .unwrap()
                 .get_mut("")
                 .unwrap()
-                .age = Some(rex_linux::connection::activity::time::Age {
+                .age = Some(rex_rune::connection::activity::time::Age {
                 observed: now,
                 initial: std::time::Duration::from_secs(seconds),
                 reported,
@@ -650,7 +650,7 @@ fn activity_elapsed_draw() {
 
 #[test]
 fn elapsed_boundaries_and_accessible_words_use_injected_now() {
-    use rex_linux::connection::activity::time::Age;
+    use rex_rune::connection::activity::time::Age;
     use std::time::{Duration, Instant};
     let start = Instant::now();
     for (seconds, text, words) in [
@@ -681,7 +681,7 @@ fn elapsed_boundaries_and_accessible_words_use_injected_now() {
 
 #[test]
 fn folded_state_clock_survives_progress_and_restarts_after_a_higher_state() {
-    use rex_linux::connection::activity::time::Age;
+    use rex_rune::connection::activity::time::Age;
     use std::time::{Duration, Instant};
     let (mut ws, _rx) = fixture();
     let start = Instant::now();
@@ -864,7 +864,7 @@ fn unknown_time_and_latch_without_done_record_have_no_time_element() {
 
 #[test]
 fn a_tab_that_left_a_state_and_returned_between_wakes_shows_the_records_younger_time() {
-    use rex_linux::connection::activity::time::Age;
+    use rex_rune::connection::activity::time::Age;
     use std::time::{Duration, Instant};
     let (mut ws, _rx) = fixture();
     let start = Instant::now();
@@ -909,7 +909,7 @@ fn a_tab_that_left_a_state_and_returned_between_wakes_shows_the_records_younger_
 
 #[test]
 fn one_pane_with_an_unknown_age_keeps_its_tab_from_showing_a_siblings_time() {
-    use rex_linux::connection::activity::time::Age;
+    use rex_rune::connection::activity::time::Age;
     use std::time::{Duration, Instant};
     let (mut ws, _rx) = fixture();
     let start = Instant::now();

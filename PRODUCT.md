@@ -1,4 +1,4 @@
-# Rex Linux: product
+# Rex Rune: product
 
 ## Purpose
 

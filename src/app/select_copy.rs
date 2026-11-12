@@ -7,7 +7,7 @@
 //! server: selecting and copying never claim a pane, and only the paste is sent, as any
 //! paste is.
 use super::workspace::{HostId, Workspace};
-use rex_linux::connection::Command;
+use rex_rune::connection::Command;
 use rune::Tx;
 
 impl Workspace {

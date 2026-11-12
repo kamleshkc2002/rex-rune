@@ -5,7 +5,7 @@ use crate::app::{
     actions,
     directory::{self, ACTION},
 };
-use rex_linux::connection::{
+use rex_rune::connection::{
     Command,
     directory::{Failure, Reply, Request},
 };
@@ -209,7 +209,7 @@ fn insert_path_is_never_remote_and_a_host_cannot_open_it() {
     let mut model = ws.hosts[0].model.clone();
     model
         .client_actions
-        .push(rex_linux::connection::actions::Queued {
+        .push(rex_rune::connection::actions::Queued {
             generation: ws.keymap_generation,
             session: Some("s".into()),
             block: Some("block:b".into()),
@@ -564,7 +564,7 @@ fn go_to_directory_is_never_remote_and_a_host_cannot_open_it() {
     let mut model = ws.hosts[0].model.clone();
     model
         .client_actions
-        .push(rex_linux::connection::actions::Queued {
+        .push(rex_rune::connection::actions::Queued {
             generation: ws.keymap_generation,
             session: Some("s".into()),
             block: Some("block:b".into()),
@@ -1001,7 +1001,7 @@ fn recents_are_shared_across_sessions_but_not_hosts_and_forget_removed_or_edited
 
 #[test]
 fn recents_filter_files_and_hostile_disk_paths_without_any_extra_read() {
-    use rex_linux::settings::recent_paths::RecentPath;
+    use rex_rune::settings::recent_paths::RecentPath;
     let (mut ws, rx) = fixture();
     remember(&mut ws, 0, "/home/dev/old folder", true);
     remember(&mut ws, 0, "/home/dev/old file", false);

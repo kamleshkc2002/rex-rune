@@ -15,7 +15,7 @@ use super::{
     widgets::Pill,
     workspace::Workspace,
 };
-use rex_linux::settings::typography::{BoldItalic, SpacingUnit, Typography};
+use rex_rune::settings::typography::{BoldItalic, SpacingUnit, Typography};
 use rune::{El, Tx, row, text};
 use rune_kit::IconButton;
 

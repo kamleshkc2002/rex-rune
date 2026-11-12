@@ -1,6 +1,6 @@
 //! Verify Ghostty's actual default/explicit distinction before using it for local policy.
 use ghostty_vt::{Terminal, TerminalOptions, terminal::CursorStyle};
-use rex_linux::terminal::{CursorShape, Renderer};
+use rex_rune::terminal::{CursorShape, Renderer};
 
 #[test]
 fn ghostty_preserves_default_vs_explicit_cursor_in_snapshots() {
@@ -15,7 +15,7 @@ fn ghostty_preserves_default_vs_explicit_cursor_in_snapshots() {
             server.vt_write(b"\x1b[2 q");
         }
         let bytes = ghostty_vt::snapshot::encode(&server).unwrap();
-        let mut stream = rex_linux::terminal::TerminalStream::new(42);
+        let mut stream = rex_rune::terminal::TerminalStream::new(42);
         stream.feed(&bytes).unwrap();
         let mut local = stream.terminal.take().unwrap();
         local

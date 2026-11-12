@@ -16,6 +16,10 @@ import tempfile
 
 
 FILES = ("latest.json", "SHA256SUMS", "install.sh")
+# The product id in every trusted comment. It is the client's name before it became
+# rex-rune, kept because the updater in each published 0.7.x client and every installer
+# accept a signature only when its comment reads exactly "rex-linux vX.Y.Z <file>".
+PRODUCT = "rex-linux"
 spec = importlib.util.spec_from_file_location("manifest", Path(__file__).with_name("release-manifest.py"))
 manifest = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(manifest)
@@ -37,8 +41,8 @@ def verify(dist, keys, tag):
             raise ValueError(f"{name}: signature did not verify against either repository public key")
         # Minisign has authenticated the comment; also bind it to this tag and file.
         lines = (dist / f"{name}.minisig").read_text().splitlines()
-        if len(lines) != 4 or lines[2] != f"trusted comment: rex-linux {tag} {name}":
-            raise ValueError(f"{name}: trusted comment must be exactly 'rex-linux {tag} {name}'")
+        if len(lines) != 4 or lines[2] != f"trusted comment: {PRODUCT} {tag} {name}":
+            raise ValueError(f"{name}: trusted comment must be exactly '{PRODUCT} {tag} {name}'")
 
     value = json.loads((dist / "latest.json").read_text())
     try:
@@ -81,7 +85,7 @@ def main():
                 for name in FILES:
                     result = subprocess.run(
                         ["minisign", "-S", "-s", str(key), "-m", str(args.dist / name),
-                         "-t", f"rex-linux {args.tag} {name}", "-q"],
+                         "-t", f"{PRODUCT} {args.tag} {name}", "-q"],
                         input=password + "\n", text=True, capture_output=True,
                     )
                     if result.returncode != 0:

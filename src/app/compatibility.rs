@@ -5,7 +5,7 @@ use super::{
     panel::{Intent, PaneAction, PanelKind},
     workspace::Workspace,
 };
-use rex_linux::{
+use rex_rune::{
     connection::{Command, HostCommand},
     layout,
 };

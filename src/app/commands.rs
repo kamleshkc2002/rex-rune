@@ -20,7 +20,7 @@ use super::{
     splits::SplitWay,
     workspace::Workspace,
 };
-use rex_linux::{connection::HostCommand, settings::PaneDensity};
+use rex_rune::{connection::HostCommand, settings::PaneDensity};
 use rune::Tx;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -588,7 +588,7 @@ impl Workspace {
             .map(|(id, entry)| Command::row(id, G, entry).section(3)),
         );
         for action in ["pane.move", "pane.resize"] {
-            for side in rex_linux::layout::Side::ALL {
+            for side in rex_rune::layout::Side::ALL {
                 rows.push(
                     Command::new(
                         format!("{action}.{}", side.arg()),
@@ -894,8 +894,8 @@ impl Workspace {
                     "app.update",
                     G,
                     format!(
-                        "Update Rex Linux ({})…",
-                        rex_linux::format_version(&update.version)
+                        "Update Rex Rune ({})…",
+                        rex_rune::format_version(&update.version)
                     ),
                     Intent::Updates,
                 )
@@ -904,7 +904,7 @@ impl Workspace {
             );
         }
         rows.extend([
-            Command::action("app.about", G, "About Rex Linux", about::ABOUT)
+            Command::action("app.about", G, "About Rex Rune", about::ABOUT)
                 .keywords("version build license credits"),
             Command::row("app.help", G, help::command()).keywords("guide docs documentation"),
             Command::action("app.report_issue", G, "Report an issue", REPORT_ISSUE)

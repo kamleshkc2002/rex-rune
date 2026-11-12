@@ -1,7 +1,7 @@
 //! Issue #44: declarations, exact argument validation, reuse of existing dispatch and local-only policy.
 use super::*;
 use crate::app::{actions, compatibility, panel::SettingsSection};
-use rex_linux::{
+use rex_rune::{
     connection::Command,
     keymap::{Overrides, Resolved},
 };
@@ -300,7 +300,7 @@ fn rename_close_others_and_move_to_tab_use_existing_pane_and_confirmation_paths(
 fn reload_reads_local_overrides_and_requests_the_active_hosts_lua_reload_without_a_session() {
     let mut ws = workspace();
     let rx = capture_host(&mut ws, 0);
-    let path = rex_linux::settings::shortcuts::Shortcuts::path(&ws.settings_path);
+    let path = rex_rune::settings::shortcuts::Shortcuts::path(&ws.settings_path);
     std::fs::write(
         &path,
         r#"[{"keys":"ctrl+alt+q","action":"client.config.reload"}]"#,
@@ -368,7 +368,7 @@ fn with_modes(ws: &mut Workspace, exclusive: bool) {
         }],
         ..Default::default()
     };
-    ws.hosts[0].model.keymap = Some(Arc::new(rex_linux::connection::keymap::Snapshot {
+    ws.hosts[0].model.keymap = Some(Arc::new(rex_rune::connection::keymap::Snapshot {
         generation: ws.keymap_generation,
         resolved: Resolved::from_server(&reply, &Overrides::default()),
         reply,

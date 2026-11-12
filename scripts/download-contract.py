@@ -20,7 +20,7 @@ check what a revision 10-12 server answers; without one, that check uses only re
 the API 13 server. Exit status is 1 if an expectation no longer holds, which means the contract
 moved and the client's download code (and docs/server-api13.md) must be rechecked.
 
-Not the client: nothing here exercises Rex Linux itself.
+Not the client: nothing here exercises Rex Rune itself.
 """
 import argparse
 import base64

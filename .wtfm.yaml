@@ -1,5 +1,5 @@
 project:
-  name: rex-linux
+  name: rex-rune
   type: desktop
   description: Unofficial native Linux client for Rex terminal servers, written in Rust on Rune.
   repo: https://github.com/shuv1337/rex-rune
@@ -29,14 +29,14 @@ verify:
       requires_env: []
       optional: false
     - id: build-release
-      run: ["cargo", "build", "--locked", "--offline", "--release", "--bin", "rex-linux"]
+      run: ["cargo", "build", "--locked", "--offline", "--release", "--bin", "rex-rune"]
       cwd: .
       timeout_s: 2400
       expect_exit: 0
       requires_env: [CARGO_HOME, RUSTUP_HOME, GHOSTTY_SOURCE_DIR]
       optional: false
     - id: app-help
-      run: ["./target/release/rex-linux", "--help"]
+      run: ["./target/release/rex-rune", "--help"]
       cwd: .
       timeout_s: 30
       expect_exit: 0

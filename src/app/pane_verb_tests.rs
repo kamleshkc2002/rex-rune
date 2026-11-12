@@ -2,7 +2,7 @@
 //! Clear terminal and Reset terminal, on the pane the menu names, and their `pane.*` actions.
 use super::*;
 use crate::app::actions;
-use rex_linux::{
+use rex_rune::{
     connection::{Command, Connection, TerminalSender},
     terminal::{Renderer, selection},
 };
@@ -563,7 +563,7 @@ fn the_verbs_are_actions_on_the_focused_pane_and_never_remote() {
         assert!(!spec.repeats() && !spec.global());
     }
     assert!(
-        rex_linux::keymap::defaults()
+        rex_rune::keymap::defaults()
             .bindings
             .iter()
             .all(|b| !matches!(
@@ -614,7 +614,7 @@ fn the_verbs_are_actions_on_the_focused_pane_and_never_remote() {
 fn a_rebound_verb_shows_its_keys_in_the_menu() {
     let (mut rt, _host, sent, _clipboard) = split();
     rt.update(|s, _| {
-        s.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(
+        s.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(
             &serde_json::json!([{"keys":"ctrl+shift+a","action":"pane.select_all"}]),
         );
         s.local_keymap = actions::resolve(&s.settings.shortcut_file.overrides);

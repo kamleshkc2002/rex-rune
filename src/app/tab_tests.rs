@@ -2,7 +2,7 @@
 //! session's order, muting it on this client, closing the others and its default title.
 use super::*;
 use crate::app::{actions, tabs::TabAction};
-use rex_linux::connection::activity::{DesktopNotice, ProgramState::*};
+use rex_rune::connection::activity::{DesktopNotice, ProgramState::*};
 use serde_json::{Value, json};
 
 fn tab(id: &str, label: &str) -> Value {
@@ -592,7 +592,7 @@ fn a_named_tab_can_go_back_to_its_default_title() {
     // A tab that already shows its program's title has nothing to go back to: neither the
     // label this client gives new tabs nor the server's own default.
     for label in [
-        rex_linux::connection::DEFAULT_TAB_LABEL.to_owned(),
+        rex_rune::connection::DEFAULT_TAB_LABEL.to_owned(),
         "Window 9dcd0a4c".to_owned(),
     ] {
         rt.update(|s, tx| {

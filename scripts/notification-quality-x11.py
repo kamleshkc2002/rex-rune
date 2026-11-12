@@ -89,7 +89,7 @@ if len(sys.argv) == 3 and sys.argv[1] == "--service":
     raise SystemExit
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 BASE = Path.home() / ".cache/agent-ws/rex-m34-notify"
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="native-", dir=BASE))

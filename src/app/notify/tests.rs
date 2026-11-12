@@ -1,5 +1,5 @@
 use super::{worker::*, *};
-use rex_linux::connection::activity::ProgramState::*;
+use rex_rune::connection::activity::ProgramState::*;
 
 fn note(window: &str, kind: Kind) -> Note {
     Note {

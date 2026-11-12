@@ -6,7 +6,7 @@
 //!   typed, removes the binding being replaced. While it is open it has the keyboard and a
 //!   press anywhere else cancels it.
 //! - What is recorded goes to `Settings::recorded_shortcuts`, a keymap layer above the
-//!   user's `shortcuts.json` (`rex_linux::settings::recorded`), saved in the app's own
+//!   user's `shortcuts.json` (`rex_rune::settings::recorded`), saved in the app's own
 //!   settings file. `shortcuts.json` is never written. The layer is declared to every host
 //!   with `client.keymap` and resolved locally at once, so a new key works immediately.
 //! - The Configuration menu ([`menu_button`]) says how much is recorded, copies the path of
@@ -24,7 +24,7 @@ use super::{
     widgets::{Pill, glyph, pill},
     workspace::Workspace,
 };
-use rex_linux::{
+use rex_rune::{
     connection::HostCommand,
     keymap::{self, Chord, Key as BoundKey, RECORDED, Resolved},
     settings::{Settings, shortcuts::Shortcuts},

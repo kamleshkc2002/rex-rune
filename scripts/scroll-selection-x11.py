@@ -17,7 +17,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune"))
 SERVER = shutil.which("rex")
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import"):
     assert shutil.which(tool), f"{tool} required"

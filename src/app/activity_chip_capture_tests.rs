@@ -1,7 +1,7 @@
 //! Real-font evidence; this file also runs unchanged on master for the quiet-pixel proof.
 use super::pane_verb_tests::{Camera, framed_terminal};
 use super::*;
-use rex_linux::connection::activity::{ProgramState, StatusRecord};
+use rex_rune::connection::activity::{ProgramState, StatusRecord};
 
 fn draw(case: &str) {
     let Some(mut camera) = Camera::new() else {
@@ -36,7 +36,7 @@ fn draw(case: &str) {
         );
     }
     if case.ends_with("download") {
-        let mut t = rex_linux::download::Transfer::new(
+        let mut t = rex_rune::download::Transfer::new(
             1,
             "s".into(),
             "block:a".into(),
@@ -45,7 +45,7 @@ fn draw(case: &str) {
             1,
         );
         t.name = Some("build.log".into());
-        t.state = rex_linux::download::State::Receiving {
+        t.state = rex_rune::download::State::Receiving {
             received: 42,
             hint: 100,
         };

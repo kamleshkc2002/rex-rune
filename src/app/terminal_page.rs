@@ -13,7 +13,7 @@ use super::{
     theme::*,
     workspace::Workspace,
 };
-use rex_linux::settings::{
+use rex_rune::settings::{
     terminal::{CursorStyle, SelectionColor, TerminalConfig},
     typography::FontStyle,
 };

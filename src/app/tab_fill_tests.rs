@@ -2,7 +2,7 @@
 use super::pane_verb_tests::{Camera, framed_terminal, rect};
 use super::*;
 use crate::app::panel::SettingsSection;
-use rex_linux::{
+use rex_rune::{
     connection::activity::TerminalProgress,
     download::{State, Transfer},
     settings::interface::ToolbarBehavior,
@@ -330,7 +330,7 @@ fn tab_fill_keeps_labels_status_progress_and_muted_marks() {
             model.programs.insert("block:a".into(), "vim".into());
             model.places.insert(
                 "block:a".into(),
-                rex_linux::connection::titles::Place {
+                rex_rune::connection::titles::Place {
                     cwd: Some("/home/u/rex".into()),
                     home: Some("/home/u".into()),
                     shell: Some(1),

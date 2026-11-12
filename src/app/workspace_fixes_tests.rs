@@ -60,7 +60,7 @@ fn the_window_title_leads_with_the_tab_on_screen() {
     rt.update(|s, tx| {
         let model = &mut s.hosts[0].model;
         model.views.get_mut("s").unwrap().windows[1].label =
-            Some(rex_linux::connection::DEFAULT_TAB_LABEL.into());
+            Some(rex_rune::connection::DEFAULT_TAB_LABEL.into());
         model
             .titles
             .insert("block:b".into(), ("vim notes".into(), None));
@@ -366,7 +366,7 @@ fn font_size_keys_are_the_users_to_bind_and_ctrl_keys_still_zoom_the_interface()
 
     // Bound in shortcuts.json they size the font, a point at a time.
     rt.update(|s, _| {
-        s.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(&json!([
+        s.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(&json!([
             {"keys":"ctrl+alt+=","action":font_size::INCREASE},
             {"keys":"ctrl+alt+-","action":font_size::DECREASE},
             {"keys":"ctrl+alt+0","action":font_size::RESET}
@@ -469,7 +469,7 @@ fn the_new_actions_are_registered_bindable_and_never_remote() {
         assert!(!spec.accepts(&json!({"extra":1})), "{name}");
     }
     // A user's shortcuts.json can bind them, with the split's new directions.
-    let overrides = rex_linux::keymap::Overrides::parse(&json!([
+    let overrides = rex_rune::keymap::Overrides::parse(&json!([
         {"keys":"ctrl+alt+]","action":"pane.focus_next"},
         {"keys":"ctrl+alt+enter","action":"pane.split","args":{"direction":"best_fit"}},
         {"keys":"f1","action":"client.help"}

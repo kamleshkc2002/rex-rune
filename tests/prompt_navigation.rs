@@ -3,7 +3,7 @@ use ghostty_vt::{
     Terminal, TerminalOptions,
     terminal::{Point, PointCoordinate, ScrollViewport},
 };
-use rex_linux::terminal::{Renderer, TerminalStream};
+use rex_rune::terminal::{Renderer, TerminalStream};
 
 fn terminal(rows: u16) -> Terminal {
     Terminal::new(TerminalOptions {
@@ -88,8 +88,8 @@ fn ordinary_scrolling_in_a_cropped_pane_keeps_every_row_reachable() {
     // An old search result must not push an explicitly selected prompt out of view.
     let mut frame = renderer.frame(&t).unwrap();
     frame.prompt_anchor = true;
-    let mut search = rex_linux::terminal::search::Results::default();
-    search.selected = Some(rex_linux::terminal::search::Match {
+    let mut search = rex_rune::terminal::search::Results::default();
+    search.selected = Some(rex_rune::terminal::search::Match {
         start: (0, 7),
         end: (2, 7),
     });

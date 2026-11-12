@@ -10,7 +10,7 @@ use crate::app::{
     settings_nav::{Page, SubPage},
     term,
 };
-use rex_linux::{
+use rex_rune::{
     connection::Command,
     settings::typography::{BoldItalic, FontStyle, SpacingUnit, Typography},
 };
@@ -778,7 +778,7 @@ fn a_fallback_that_is_not_installed_says_so_and_the_terminal_font_leaves_the_lis
 fn font_fallback_on_the_command_line_still_overrides_the_saved_list() {
     let endpoint = "unix:///nonexistent/rex-test.sock";
     let options = Options::parse_from([
-        "rex-linux",
+        "rex-rune",
         "--endpoint",
         endpoint,
         "--font-fallback",
@@ -1083,7 +1083,7 @@ fn the_adjusted_grid_draws_wide_combining_selection_and_forced_cursor() {
     for (name, adjusted) in [("grid-default", false), ("grid-metrics-20", true)] {
         let (mut ws, _host) = tabbed_workspace("single");
         ws.settings.terminal.cursor_force = true;
-        ws.settings.terminal.cursor_style = rex_linux::settings::terminal::CursorStyle::Bar;
+        ws.settings.terminal.cursor_style = rex_rune::settings::terminal::CursorStyle::Bar;
         if adjusted {
             ws.settings.terminal.font.line_height = 20;
             ws.settings.terminal.font.spacing = 20;

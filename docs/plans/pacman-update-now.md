@@ -7,7 +7,7 @@ revised the same day after an independent review of the security argument.
 
 Settings → Updates offers **Update now** for install.sh installs under `~/.local`
 ([how that works](../self-updates.md)). For a pacman install it shows instructions
-instead: `omarchy update` on Omarchy, `sudo pacman -Syu rex-linux-bin` elsewhere, with
+instead: `omarchy update` on Omarchy, `sudo pacman -Syu rex-rune-bin` elsewhere, with
 **Copy command**. The owner wants pacman installs to update without pasting a sudo
 command, and both install methods used daily (shuvdev runs the install.sh build,
 shuvmbp the pacman package from `pkg.shuv.dev`).
@@ -16,9 +16,9 @@ This note compares the ways to get there and recommends one. It builds nothing.
 
 ## What exists today
 
-- **The package.** `rex-linux-bin`, built from `packaging/arch/PKGBUILD.in`, installs
-  `/usr/bin/rex-linux`, the desktop entry, icons, licenses and
-  `/usr/share/rex-linux/channel` (`channel=pacman`). It has no install scriptlet.
+- **The package.** `rex-rune-bin`, built from `packaging/arch/PKGBUILD.in`, installs
+  `/usr/bin/rex-rune`, the desktop entry, icons, licenses and
+  `/usr/share/rex-rune/channel` (`channel=pacman`). It has no install scriptlet.
 - **The repository.** `https://pkg.shuv.dev/arch/$arch`, a signed pacman repository.
   The database names the newest version; the newest five releases' packages and their
   detached OpenPGP signatures stay in the directory, so an exact version can be
@@ -42,7 +42,7 @@ Checked on shuvdev (Omarchy, pacman 7.1, polkit 128), read-only. The author chec
 the first five; the reviews checked the hook and the control-group file ownership:
 
 - The live 0.7.5 manifest has the `pacman` entry
-  (`rex-linux-bin-0.7.5-1-x86_64.pkg.tar.zst`, 22,135,553 bytes), and the site serves
+  (`rex-rune-bin-0.7.5-1-x86_64.pkg.tar.zst`, 22,135,553 bytes), and the site serves
   that file at that size with a 119-byte `.sig` beside it. Downloaded as an ordinary
   user, the file's SHA-256 matches the manifest's, and `gpgv` with only
   `packaging/keys/rex-linux-archive-key.asc` as its keyring reports a good signature
@@ -64,7 +64,7 @@ the first five; the reviews checked the hook and the control-group file ownershi
 - Omarchy installs a pacman hook (`00-omarchy-update-guard`) that stops a direct
   `pacman -S…u…` and points at `omarchy update`. It lets `pacman -U` through. This
   means the alternative the client prints today on Omarchy, `sudo pacman -Syu
-  rex-linux-bin`, is refused there; that text should be corrected whatever is decided
+  rex-rune-bin`, is refused there; that text should be corrected whatever is decided
   here.
 
 ## Why this needs root at all
@@ -81,14 +81,14 @@ permission could be used for.
 
 The package adds three files:
 
-- `/usr/lib/rex-linux/rex-linux-update`: a small program owned by root, **not** setuid.
-- `/usr/share/polkit-1/actions/dev.shuv.rex-linux.update.policy`: a polkit action
+- `/usr/lib/rex-rune/rex-rune-update`: a small program owned by root, **not** setuid.
+- `/usr/share/polkit-1/actions/dev.shuv.rex-rune.update.policy`: a polkit action
   bound to that exact path (`org.freedesktop.policykit.exec.path`), with a fixed
-  message that names Rex Linux and does not echo the caller's arguments.
-- `/usr/share/rex-linux/archive-key.gpg`: the Rex package-signing certificate
+  message that names Rex Rune and does not echo the caller's arguments.
+- `/usr/share/rex-rune/archive-key.gpg`: the Rex package-signing certificate
   (`packaging/keys/rex-linux-archive-key.asc`), for the helper alone.
 
-Update now runs `pkexec --disable-internal-agent /usr/lib/rex-linux/rex-linux-update
+Update now runs `pkexec --disable-internal-agent /usr/lib/rex-rune/rex-rune-update
 <version>`. polkit decides whether to allow it. With the action's default
 (`auth_admin`), the desktop's polkit agent shows its own password dialog, the same one
 the person sees for other system changes; there is no command to paste and no
@@ -100,7 +100,7 @@ needs one run.
 What the helper does, in full:
 
 1. Takes one argument, a version, and accepts only `digits.digits.digits`.
-2. Replaces itself with `systemd-run --scope --unit rex-linux-update <helper>
+2. Replaces itself with `systemd-run --scope --unit rex-rune-update <helper>
    <version>`. `systemd-run --scope` cannot move a running process; it starts the
    command in a new system scope, and because the helper `exec`s it, the process is
    the same one and `pkexec`'s caller still gets its exit status. The fixed scope name
@@ -112,10 +112,10 @@ What the helper does, in full:
    opened without following symlinks.
 4. Works out the architecture itself (`uname -m`), never from the caller.
 5. Reads the installed version from pacman and refuses unless the requested version
-   is strictly newer (`vercmp`). Refuses if `rex-linux-bin` is listed in pacman's
+   is strictly newer (`vercmp`). Refuses if `rex-rune-bin` is listed in pacman's
    `IgnorePkg`: an administrator pinned it.
 6. Downloads
-   `https://pkg.shuv.dev/arch/<arch>/rex-linux-bin-<version>-1-<arch>.pkg.tar.zst` and
+   `https://pkg.shuv.dev/arch/<arch>/rex-rune-bin-<version>-1-<arch>.pkg.tar.zst` and
    its `.sig` into a directory made with `mktemp -d` under a parent only root can
    write (never a fixed name in `/tmp`). curl runs with `-q` first (so root's
    `.curlrc` is not read), `--proto =https`, `--fail`, no redirects, `--max-filesize`
@@ -128,7 +128,7 @@ What the helper does, in full:
    is the gate. It does not consult pacman's keyring.
 8. Reads the package's own metadata from the verified file
    (`pacman -U --print-format '%n %v %a'`) and refuses unless it is exactly
-   `rex-linux-bin`, `<version>-1` and this architecture, with nothing else added or
+   `rex-rune-bin`, `<version>-1` and this architecture, with nothing else added or
    removed. A signature covers a file's bytes, not its name, so without this a validly
    signed *older* Rex package served under the newer file name would pass step 7 and
    pacman would downgrade to it. It also keeps a one-package update from pulling in
@@ -159,7 +159,7 @@ Two variants:
   example that an administrator copies into `/etc/polkit-1/rules.d/` once, or install
   it enabled under `/usr/share/polkit-1/rules.d/`. See "The owner's calls".
 - **A systemd unit instead of pkexec.** The package ships
-  `rex-linux-update@.service`, and Update now starts `rex-linux-update@<version>`.
+  `rex-rune-update@.service`, and Update now starts `rex-rune-update@<version>`.
   systemd asks polkit itself (password dialog by default; a rule can match the unit
   name for the promptless form). The unit gives a clean environment, its own control
   group and journal logging without the helper arranging them. Against it: the dialog
@@ -171,7 +171,7 @@ Two variants:
   helper's steps 4 to 9 are the same in every form, so this choice can be made at
   build time.
 
-### (b) An AUR `rex-linux-bin` package, for yay
+### (b) An AUR `rex-rune-bin` package, for yay
 
 Publish the same `PKGBUILD` to the AUR. People who use yay would install and update
 Rex with it, and on Omarchy `omarchy update` already updates AUR packages.
@@ -229,7 +229,7 @@ application raised.
 **With the promptless rule.** The attacker can run the helper whenever they like, and
 the helper's checks are the whole boundary. What they can cause:
 
-- An upgrade of `rex-linux-bin` to a newer version that the site serves and the Rex
+- An upgrade of `rex-rune-bin` to a newer version that the site serves and the Rex
   key signed. Normally that is only the latest, which is the intended effect. The
   site keeps five releases, so up to four of them can be newer than the installed
   one, and a release withdrawn for a fault could be chosen while the site still
@@ -294,7 +294,7 @@ build should take the stricter rule unless it proves impractical.
   user can write could be swapped between the check and the install. (A download by
   the helper into a root-only directory is fine, and is the design.)
 - Passing a URL, repository name, pacman option or configuration file through.
-- Running `pacman -Sy rex-linux-bin`. Refreshing the databases and installing one
+- Running `pacman -Sy rex-rune-bin`. Refreshing the databases and installing one
   package is a partial upgrade, which Arch does not support.
 - A setuid helper.
 
@@ -321,7 +321,7 @@ build should take the stricter rule unless it proves impractical.
 
 - A one-package `pacman -U` of a third-party package whose dependencies are already
   satisfied does not conflict with `omarchy update`, which afterwards finds
-  `rex-linux-bin` current. Step 8 refuses when dependencies are not satisfied.
+  `rex-rune-bin` current. Step 8 refuses when dependencies are not satisfied.
 - It does bypass what `omarchy update` wraps around pacman: the snapshot, the keyring
   refresh and the migrations. For one application package that looks harmless, and
   Omarchy's own guard allows `-U`, but it is Omarchy's stated preference that updates
@@ -375,7 +375,7 @@ These are not engineering judgments:
    file an administrator copies into place. It is a standing grant of a narrow root
    action to anything running as the user. The recommendation is the password dialog
    by default and the rule as an opt-in file.
-2. **The AUR.** Publishing `rex-linux-bin` there puts a public name under an account
+2. **The AUR.** Publishing `rex-rune-bin` there puts a public name under an account
    of the owner's and adds a publishing key to CI. This feature does not need it; the
    earlier "not yet" conditions have since been met, so it is open on its own merits.
 3. **What the helper trusts.** The proposal pins the Rex OpenPGP certificate shipped in

@@ -1,7 +1,7 @@
 //! The cell and the text style under the typography settings: line height, character
 //! spacing, the face ordinary text is drawn in, and whether bold and italic are drawn.
 use super::*;
-use rex_linux::settings::typography::{BoldItalic, FontStyle, SpacingUnit, Typography};
+use rex_rune::settings::typography::{BoldItalic, FontStyle, SpacingUnit, Typography};
 use rune::{Cx, Env, Runtime};
 
 fn font(edit: impl FnOnce(&mut Typography)) -> Typography {

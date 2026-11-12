@@ -15,7 +15,7 @@ use super::{
     widgets::{Row, list_row},
     workspace::Workspace,
 };
-use rex_linux::{
+use rex_rune::{
     connection::Options,
     settings::{Settings, normalize_font_preferences},
 };

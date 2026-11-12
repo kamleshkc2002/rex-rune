@@ -3,7 +3,7 @@ use super::pane_verb_tests::{Camera, framed_terminal, rect};
 use super::tab_icon_tests::{element, five_programs, settle};
 use super::*;
 use crate::app::{activity::tab_programs, tab_icons::*, theme::*};
-use rex_linux::settings::{ChromeTheme, interface::TabIconColor};
+use rex_rune::settings::{ChromeTheme, interface::TabIconColor};
 
 const MODES: [TabIconColor; 4] = [
     TabIconColor::Always,
@@ -103,7 +103,7 @@ fn modes_change_only_real_glyph_colours_not_geometry_content_or_channels() {
                     ws.sync_prefetch();
                     ws.hosts[0].model.progress.insert(
                         "block:c".into(),
-                        rex_linux::connection::activity::TerminalProgress::Paused(Some(42)),
+                        rex_rune::connection::activity::TerminalProgress::Paused(Some(42)),
                     );
                     let (sender, sent) = flume::unbounded();
                     for block in ["block:b", "block:c"] {

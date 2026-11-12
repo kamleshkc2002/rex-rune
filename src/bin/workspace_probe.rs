@@ -1,6 +1,6 @@
 //! Exercises the real host controller, using only sessions created by this probe.
 use anyhow::{Context, Result, ensure};
-use rex_linux::{
+use rex_rune::{
     connection::{Command, Connection, HostCommand, HostConnection, HostModel},
     transport,
 };
@@ -80,7 +80,7 @@ async fn run() -> Result<()> {
         .nth(1)
         .unwrap_or_else(transport::local_endpoint);
     // An ssh:// endpoint is reached through a forward of the server's socket.
-    let _tunnel = rex_linux::ssh::Tunnel::for_endpoint(&endpoint).await?;
+    let _tunnel = rex_rune::ssh::Tunnel::for_endpoint(&endpoint).await?;
     let endpoint = _tunnel
         .as_ref()
         .map_or(endpoint, |t| t.endpoint().to_owned());

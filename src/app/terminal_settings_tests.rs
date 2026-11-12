@@ -2,7 +2,7 @@
 use super::pane_verb_tests::{Camera, framed_terminal, rect};
 use super::*;
 use crate::app::{panel::SettingsSection, select_copy::memory, term};
-use rex_linux::{
+use rex_rune::{
     connection::Command,
     settings::terminal::{CursorStyle, SelectionColor},
     terminal::{CursorShape, Renderer, selection},
@@ -559,9 +559,9 @@ fn key_sequence_hints_can_be_turned_off_without_changing_the_sequence() {
         let mut ws = workspace();
         ws.settings.terminal.key_sequence_hints = hints;
         if hidden {
-            ws.settings.interface.toolbar = rex_linux::settings::interface::ToolbarBehavior::Hidden;
+            ws.settings.interface.toolbar = rex_rune::settings::interface::ToolbarBehavior::Hidden;
         }
-        ws.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(
+        ws.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(
             &serde_json::json!([{"keys":"ctrl+b>c","action":"client.tab.new"}]),
         );
         ws.local_keymap = crate::app::actions::resolve(&ws.settings.shortcut_file.overrides);

@@ -13,7 +13,7 @@ use super::{
     widgets::glyph,
     workspace::Workspace,
 };
-use rex_linux::{
+use rex_rune::{
     layout,
     settings::{PaneDensity, PaneHeader},
 };

@@ -455,7 +455,7 @@ selection-foreground = #1e1e2e
 
     #[test]
     fn a_users_theme_overrides_ghosttys_and_names_never_leave_the_directory() {
-        let root = std::env::temp_dir().join(format!("rex-linux-themes-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("rex-rune-themes-{}", std::process::id()));
         let (user, system) = (root.join("user"), root.join("system"));
         std::fs::create_dir_all(&user).unwrap();
         std::fs::create_dir_all(&system).unwrap();

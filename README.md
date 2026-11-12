@@ -1,10 +1,10 @@
-# Rex Linux
+# Rex Rune
 
 An unofficial, independent native Linux client for [Rex](https://www.superlogical.com/rex), the terminal multiplexer from Superlogical. It is not affiliated with, endorsed by or supported by Superlogical or the Rex authors.
 
-![Rex Linux in the default Midnight theme, with three tabs, the sessions sidebar and a three-pane split showing a fictional project's file tree, source code and checks](docs/screenshot.png)
+![Rex Rune in the default Midnight theme, with three tabs, the sessions sidebar and a three-pane split showing a fictional project's file tree, source code and checks](docs/screenshot.png)
 
-Rex Linux attaches to an existing Rex server. Saved hosts contain sessions, each session's Rex windows become tabs, and the server defines the terminal splits. Sessions and their programs stay on the server when the app closes, so any other Rex client can attach to the same sessions.
+Rex Rune attaches to an existing Rex server. Saved hosts contain sessions, each session's Rex windows become tabs, and the server defines the terminal splits. Sessions and their programs stay on the server when the app closes, so any other Rex client can attach to the same sessions.
 
 It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, `rune-kit` components) with libghostty-vt for terminal emulation, and talks to the server through the [`rexrs`](https://github.com/a10y/rexrs) control SDK.
 
@@ -12,13 +12,13 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 ## Features
 
-- **Settings → About** (also **About Rex Linux** in Commands) shows the app icon, version and how it was installed, the build commit and date, and for the active host, when connected, its Rex server's version, the negotiated API revision and the range of revisions the server supports. The server's version comes from one read-only `server.version` request on each connection (its status arrives with the session list); nothing is attached, created or changed, and a server that doesn't answer is shown as not reported rather than guessed. **Copy version info** copies the client version, commit, build date, build channel (`official`, `nix` or `source`), OS and architecture, and the server version and API revisions. **Copy debug info** adds the install channel, display server, desktop, interface theme and zoom, terminal font, and for each saved host its kind (Unix socket, HTTPS, SSH), connection state, API revision and server version. Both are in Commands too, and neither contains a host name, address, session name, client id or credential. Open the repository, this version’s release notes, the MIT license or the issue tracker from the same page. Source archives without Git show `unknown` for build metadata.
-- **In-app update notice and Settings → Updates:** official and Nix builds check the signed GitHub release manifest (`latest.json` and `latest.json.minisig`) against embedded CI and backup Minisign public keys about 30 seconds after launch and at most once every 24 hours while running. When a newer stable release is verified, a non-blocking toast offers **What's new** (opening the GitHub release page in your browser), **Updates…** and **Dismiss for this version**. Guidance matches the detected install channel (`REX_LINUX_CHANNEL`, `/usr/share/rex-linux/channel` and `~/.local/share/rex-linux/install.json`): `sudo pacman -Syu rex-linux-bin` on Arch (`omarchy update` on Omarchy), **Update now** (with **Copy command** fallback) for verified, user-writable tarball/script installs under `~/.local`, `.deb` upgrade instructions for Debian/Ubuntu, and `nix flake update rex-rune` / `nix profile upgrade rex-linux` for Nix. Source builds never check automatically; turn automatic checks off in Settings → Updates (`updates.check` in `workspace.json`) or with `REX_LINUX_NO_UPDATE_CHECK=1`, or check on demand with **Check now** or `rex-linux --check-update`. Background check failures are silent. Installer updates verify the signed tarball, replace the client and desktop files with rollback on failure, then offer **Restart to finish**. **Install updates automatically** is a separate default-off preference (`updates.install_automatically`); it offers restart rather than interrupting work. See [self-updates](docs/self-updates.md).
+- **Settings → About** (also **About Rex Rune** in Commands) shows the app icon, version and how it was installed, the build commit and date, and for the active host, when connected, its Rex server's version, the negotiated API revision and the range of revisions the server supports. The server's version comes from one read-only `server.version` request on each connection (its status arrives with the session list); nothing is attached, created or changed, and a server that doesn't answer is shown as not reported rather than guessed. **Copy version info** copies the client version, commit, build date, build channel (`official`, `nix` or `source`), OS and architecture, and the server version and API revisions. **Copy debug info** adds the install channel, display server, desktop, interface theme and zoom, terminal font, and for each saved host its kind (Unix socket, HTTPS, SSH), connection state, API revision and server version. Both are in Commands too, and neither contains a host name, address, session name, client id or credential. Open the repository, this version’s release notes, the MIT license or the issue tracker from the same page. Source archives without Git show `unknown` for build metadata.
+- **In-app update notice and Settings → Updates:** official and Nix builds check the signed GitHub release manifest (`latest.json` and `latest.json.minisig`) against embedded CI and backup Minisign public keys about 30 seconds after launch and at most once every 24 hours while running. When a newer stable release is verified, a non-blocking toast offers **What's new** (opening the GitHub release page in your browser), **Updates…** and **Dismiss for this version**. Guidance matches the detected install channel (`REX_RUNE_CHANNEL`, `/usr/share/rex-rune/channel` and `~/.local/share/rex-rune/install.json`): `sudo pacman -Syu rex-rune-bin` on Arch (`omarchy update` on Omarchy), **Update now** (with **Copy command** fallback) for verified, user-writable tarball/script installs under `~/.local`, `.deb` upgrade instructions for Debian/Ubuntu, and `nix flake update rex-rune` / `nix profile upgrade rex-rune` for Nix. Source builds never check automatically; turn automatic checks off in Settings → Updates (`updates.check` in `workspace.json`) or with `REX_RUNE_NO_UPDATE_CHECK=1`, or check on demand with **Check now** or `rex-rune --check-update`. Background check failures are silent. Installer updates verify the signed tarball, replace the client and desktop files with rollback on failure, then offer **Restart to finish**. **Install updates automatically** is a separate default-off preference (`updates.install_automatically`); it offers restart rather than interrupting work. See [self-updates](docs/self-updates.md).
 
 - Multiple saved hosts, each with its sessions; session windows are tabs and splits follow the server's layout.
 - Unix-socket, HTTPS/WSS and SSH endpoints. Add host lists the machines on your tailnet: a server that answers shows its reachable endpoint and, on API 12, a review of its listener addresses and access rules before connecting. Other machines take an SSH user name and are reached by forwarding their Rex socket over SSH (Tailscale SSH needs no keys).
 - A single toolbar with session identity, tabs, commands and the window's own controls. A tab with one pane draws it edge to edge; splits are rounded pane cards. Tabs close from their right-click menu, a middle-click or `Ctrl Shift W`, always behind a confirmation; the same menu renames a tab, mutes it, moves it left or right in its session's order and closes the other tabs. Host-grouped session navigation opens on demand, with an optional sidebar (Ctrl Shift B) that opens at launch as it was left. Tabs can sit in the toolbar or, while the sidebar is open, under each session in the sidebar.
-- Searchable session switcher (`Ctrl K`) and command palette (`Ctrl Shift P`). Commands lists every command under Session, Tab, Pane, Host, View and App headings that name what is on screen, about twenty rows at a time, each with its current shortcut; typing searches commands, sessions and the current session's tabs as one list. Among them: Next and Previous session, Refresh sessions, Close session…, the pane menu's rows for the focused pane (Copy selection, Paste, Select all, the splits, Copy pane ID, Download file…, Clear terminal, Reset terminal), Find next and Find previous, Collapse other hosts, Change terminal theme… and Change interface theme…, compact or comfortable panes, Reveal pane headers, tabs in the sidebar or toolbar, interface zoom and terminal font size, Downloads, About Rex Linux, Copy version info, Copy debug info, **Report an issue** and **Rex help**, which opens this guide for the installed version in your browser. The rows that end something (Close…, Remove…) come last in their group, in red. A host's own actions (those its Rex configuration defines with `rex.action`, and its block types' titled actions) are listed under Server actions when they need no arguments.
+- Searchable session switcher (`Ctrl K`) and command palette (`Ctrl Shift P`). Commands lists every command under Session, Tab, Pane, Host, View and App headings that name what is on screen, about twenty rows at a time, each with its current shortcut; typing searches commands, sessions and the current session's tabs as one list. Among them: Next and Previous session, Refresh sessions, Close session…, the pane menu's rows for the focused pane (Copy selection, Paste, Select all, the splits, Copy pane ID, Download file…, Clear terminal, Reset terminal), Find next and Find previous, Collapse other hosts, Change terminal theme… and Change interface theme…, compact or comfortable panes, Reveal pane headers, tabs in the sidebar or toolbar, interface zoom and terminal font size, Downloads, About Rex Rune, Copy version info, Copy debug info, **Report an issue** and **Rex help**, which opens this guide for the installed version in your browser. The rows that end something (Close…, Remove…) come last in their group, in red. A host's own actions (those its Rex configuration defines with `rex.action`, and its block types' titled actions) are listed under Server actions when they need no arguments.
 - Splits on any side of a pane (right, left, down, up) or along its longer side (best fit), and focus that moves by direction or cycles through a tab's panes.
 - A window title of `<tab> - <session> · <host>`, so a task switcher can tell windows apart.
 - **Generated titles:** Settings → Terminal → Prefer generated titles shows the foreground program and directory (`vim - ~/rex`) on unnamed tabs and panes instead of shell-set titles. User names and program-set titles still win. The local `generated_titles` preference defaults off, including for old settings files. No server label, output or layout is changed; see [behavior and verification](docs/parity-2026-11/generated-titles.md).
@@ -46,9 +46,30 @@ It is written in Rust on [Rune](https://github.com/anomalyco/rune) (wgpu/winit, 
 
 **Attachment-only by default.** Attaching and reconnecting never start, stop, replace or reconfigure a Rex server and do not need a `rex` executable. A missing default server on an SSH host offers a separately confirmed, one-time **Start personal server…** action (see [SSH setup](#ssh-setup)); it never enables automatic starts on future connections. Settings → Integrations runs local `rex skill` with `--autostart=false`. Both explicit CLI features search `PATH`, then `$XDG_BIN_HOME` or `~/.local/bin` for desktop launches. An unavailable server is shown as disconnected and retried. Closing the client leaves server programs running.
 
+## Renamed from Rex Linux
+
+This client was **Rex Linux** (`rex-linux`) through 0.7.x. It is now **Rex Rune** (`rex-rune`), after the toolkit it is built on and the repository it lives in. The binary, packages, launcher, icons and settings folder all took the new name. An existing install moves over when it updates:
+
+| Installed with | Update with | Result |
+| --- | --- | --- |
+| `install.sh` or the tarball | **Update now** in Settings → Updates, or `install.sh` again | `~/.local/bin/rex-rune`, with the launcher and icons renamed. After **Update now** the rename happens at the next start |
+| pacman (`rex-linux-bin`) | `sudo pacman -Syu`, or `omarchy update` on Omarchy | pacman asks to replace `rex-linux-bin` with `rex-rune-bin`. The `[rex-linux]` entry in `pacman.conf` stays as it is |
+| `.deb` | `sudo apt install ./rex-rune_*.deb` | apt removes `rex-linux` and installs `rex-rune` in one step. Rex Linux 0.7.x names the file `rex-linux_*.deb` in its update notice; there is no such file, so take `rex-rune_*.deb` |
+| Nix | Update the flake input | The package and binary are `rex-rune`; the `rex-linux` output name still resolves |
+| Source | `git pull`, then build and `mise run install` | `rex-rune` replaces the old launcher and copied binary |
+
+- **One launcher.** Each route removes the old `dev.shuv.rex-linux` launcher and icons when it installs the new ones.
+- **Settings and state move once**, at the first start: `~/.config/rex-linux` becomes `~/.config/rex-rune`, and `~/.local/state/rex-linux` becomes `~/.local/state/rex-rune` (under `XDG_CONFIG_HOME` and `XDG_STATE_HOME` when set). Nothing is merged: if the new folder already exists, the old one is left alone.
+- **`rex-linux` still starts the client.** Packages install it as a link to `rex-rune`, and an upgraded `install.sh` install keeps one in `~/.local/bin`. A later release will remove the link, so change scripts, aliases and key bindings to `rex-rune`.
+- `REX_LINUX_NO_UPDATE_CHECK` still works; the variable is now `REX_RUNE_NO_UPDATE_CHECK`.
+- **Three names stay**, because installed clients and package managers look for them: the pacman repository `[rex-linux]` with its certificate `rex-linux-archive-key.asc`, the `rex-linux` product id inside signed release metadata, and the `rex-linux-*.tar.gz` release archives. Those archives exist only for the updater inside 0.7.x; install from `rex-rune-*.tar.gz`.
+- **The app id is `dev.shuv.rex-rune`.** Window rules, dock favourites and pinned launchers keyed on `dev.shuv.rex-linux` need the new id.
+- `install.sh` installs releases from the rename onwards. For an older one, use that release's own `install.sh` with `--version`, as it tells you. A copy of the 0.7.x `install.sh` kept from before does not install a renamed release: it stops and names the current installer.
+- **Going back to 0.7.x** is by hand. Uninstall first (`install.sh --uninstall`, `apt remove rex-rune` or `pacman -R rex-rune-bin`), so no second launcher is left, then install the old release with its own package or installer, pinned to that version: `curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/download/v0.7.5/install.sh | sh -s -- --version 0.7.5`. It starts with default settings unless you copy `~/.config/rex-rune` back to `~/.config/rex-linux`. On pacman the next `-Syu` offers the replacement again; add `IgnorePkg = rex-rune-bin` to stay.
+
 ## Install a binary release
 
-**Rex Linux is a desktop client, not a Rex server.** Every install method (pacman `rex-linux-bin`, `.deb`, Nix, tarball or `install.sh`) installs only the `rex-linux` client binary, its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server. On distributions where `/bin` is a symlink to `/usr/bin` (`usrmerge`), `which -a rex` can list both `/usr/bin/rex` and `/bin/rex`; that is one file, not a second server.
+**Rex Rune is a desktop client, not a Rex server.** Every install method (pacman `rex-rune-bin`, `.deb`, Nix, tarball or `install.sh`) installs only the `rex-rune` client binary, its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server. On distributions where `/bin` is a symlink to `/usr/bin` (`usrmerge`), `which -a rex` can list both `/usr/bin/rex` and `/bin/rex`; that is one file, not a second server.
 
 ### One-command user install or upgrade (0.5.2+)
 
@@ -57,14 +78,14 @@ curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/relea
 # Explicit upgrade, check, pin (including deliberate downgrade), or uninstall:
 # ... | sh -s -- --upgrade
 # ... | sh -s -- --check
-# ... | sh -s -- --version 0.5.1
+# ... | sh -s -- --version X.Y.Z
 # ... | sh -s -- --uninstall
 ```
 
 The signed, immutable release asset detects x86_64/aarch64 Linux and requires
 **glibc 2.39+**, `curl`, `tar`, coreutils, `bash`, `desktop-file-utils`, and either
 **minisign or OpenSSL 3+**. It verifies the signed checksums with embedded CI and
-backup keys, verifies the tarball, then installs `~/.local/bin/rex-linux` with a launcher
+backup keys, verifies the tarball, then installs `~/.local/bin/rex-rune` with a launcher
 and icons. `XDG_BIN_HOME`, `XDG_DATA_HOME` and `XDG_CACHE_HOME` are respected.
 No root, server changes or automatic downgrade. Uninstall keeps preferences.
 NixOS users should use [Nix](docs/nix.md); musl is unsupported.
@@ -78,10 +99,12 @@ keys fails closed after rotation. **Only** explicit `--trust-repo-keys` expands
 trust to keys at the requested release's protected tag (never `master`), printing
 the key ID and fingerprint. Prefer fetching and reviewing the current script.
 
-`/usr/bin/rex-linux` or a mismatching install receipt blocks replacement;
-`--force` deliberately overrides those guards, **not signature checks or downgrade
-protection**. A receipt requires Python 3 to validate; pre-receipt installs such
-as 0.5.1 upgrade without it. Avoid mixing user installs and package managers.
+`/usr/bin/rex-rune` (or `/usr/bin/rex-linux`) or a mismatching install receipt blocks
+replacement; `--force` deliberately overrides those guards, **not signature checks or
+downgrade protection**. A receipt requires Python 3 to validate; pre-receipt installs
+such as 0.5.1 upgrade without it. An install made as `rex-linux` is checked the same
+way and replaced: its launcher and icons are removed, and `~/.local/bin/rex-linux`
+becomes a link to `rex-rune`. Avoid mixing user installs and package managers.
 
 ### Manual download
 
@@ -91,15 +114,15 @@ Download a package and `SHA256SUMS` from [Releases](https://github.com/shuv1337/
 sha256sum --ignore-missing -c SHA256SUMS
 
 # Debian/Ubuntu: install the one .deb matching your architecture.
-sudo apt install ./rex-linux_0.7.0_amd64.deb
+sudo apt install ./rex-rune_X.Y.Z_amd64.deb
 
-# Or extract the matching tarball and install for your user (no root).
-tar -xzf rex-linux-0.7.0-x86_64-linux-gnu.tar.gz
-cd rex-linux-0.7.0-x86_64-linux-gnu
+# Or extract the matching rex-rune tarball and install for your user (no root).
+tar -xzf rex-rune-X.Y.Z-x86_64-linux-gnu.tar.gz
+cd rex-rune-X.Y.Z-x86_64-linux-gnu
 bash install.sh
 ```
 
-The tarball installs into `~/.local/bin` with a desktop launcher and icons, independently of any source checkout. It needs `desktop-file-utils`; uninstall with `bash scripts/install-desktop.sh --uninstall`. Uninstall a `.deb` with `sudo apt remove rex-linux`. Neither removes preferences or changes Rex servers. Avoid mixing both installation methods: a user installation can shadow `/usr/bin/rex-linux`.
+The tarball installs into `~/.local/bin` with a desktop launcher and icons, independently of any source checkout. It needs `desktop-file-utils`; uninstall with `bash scripts/install-desktop.sh --uninstall`. Uninstall a `.deb` with `sudo apt remove rex-rune`. Neither removes preferences or changes Rex servers. Avoid mixing both installation methods: a user installation can shadow `/usr/bin/rex-rune`.
 
 Prebuilt packages are built on Ubuntu 24.04 and require **glibc 2.39+**. They are dynamically linked, not self-contained AppImages. Install your distribution's graphics drivers, fontconfig (including `fc-match`), xkbcommon, Wayland/X11, EGL/OpenGL/Vulkan libraries, CA certificates and `xdg-utils`. On Debian/Ubuntu the `.deb` declares these dependencies. Rust and Zig are **not** needed to run a binary. A running Rex server with API revision 10, 11, 12 or 13 is required.
 
@@ -156,12 +179,12 @@ Older releases do not gain signatures or attestations retroactively.
 ## Build
 
 ```sh
-cargo build --locked --release --bin rex-linux
+cargo build --locked --release --bin rex-rune
 ```
 
 Optionally, [mise](https://mise.jdx.dev/) can provide the toolchain: [`mise.toml`](mise.toml) pins Rust 1.96.1 (with Clippy and rustfmt) and Zig 0.17.1, and `mise run build` runs the command above. Run `mise trust` and `mise install` once first. Mise does not provide the native Linux libraries listed in [Requirements](#requirements).
 
-The repository is also a Nix flake: `nix build .#rex-linux` builds a package with the desktop entry and icons, and `nix develop` gives a shell with the toolchain and libraries. See [Nix packaging](docs/nix.md).
+The repository is also a Nix flake: `nix build .#rex-rune` builds a package with the desktop entry and icons, and `nix develop` gives a shell with the toolchain and libraries. See [Nix packaging](docs/nix.md).
 
 `Cargo.lock` pins the dependency graph. Server connections use Rustls with the system trust roots; release metadata checks use Rustls with WebPKI roots and verify Ed25519 Minisign signatures against the embedded release public keys. The workspace also builds three probes (`rex-probe`, `rex-workspace-probe`, `rex-update-probe`) that do not need the UI; use `--no-default-features` to build only those.
 
@@ -169,19 +192,19 @@ The repository is also a Nix flake: `nix build .#rex-linux` builds a package wit
 
 ```sh
 # Create a persistent session on the local Rex server.
-target/release/rex-linux --new work
+target/release/rex-rune --new work
 
 # Reattach to an existing session by exact label or ID.
-target/release/rex-linux --session work
+target/release/rex-rune --session work
 
 # Attach to a remote server (for example one exposed over Tailscale).
-target/release/rex-linux --endpoint https://my-host.example.ts.net --session work
+target/release/rex-rune --endpoint https://my-host.example.ts.net --session work
 
 # Attach to the Rex server on another machine through its SSH login.
-target/release/rex-linux --endpoint ssh://me@my-host.example.ts.net --session work
+target/release/rex-rune --endpoint ssh://me@my-host.example.ts.net --session work
 
 # Choose a terminal font and size.
-target/release/rex-linux --session work --font 'JetBrainsMono Nerd Font' --font-size 15
+target/release/rex-rune --session work --font 'JetBrainsMono Nerd Font' --font-size 15
 ```
 
 Options:
@@ -204,17 +227,17 @@ Without `--session`, the workspace restores the saved host and session; on a new
 ### Desktop install
 
 ```sh
-bash scripts/install-desktop.sh [--copy] [path/to/rex-linux]
+bash scripts/install-desktop.sh [--copy] [path/to/rex-rune]
 bash scripts/install-desktop.sh --uninstall
 ```
 
-This installs `dev.shuv.rex-linux.desktop` under `$XDG_DATA_HOME/applications` (normally `~/.local/share/applications`) pointing at the release binary of this checkout (or the binary you pass), and the app icon at 32, 128 and 256 px into the user's `hicolor` theme. Without `--copy`, re-run it if you move the checkout. With `--copy`, the binary is copied to `$XDG_BIN_HOME` (normally `~/.local/bin`) and the launcher points there, so it no longer depends on the checkout. `--uninstall` removes the launcher, the icons and the copied binary. It needs `desktop-file-install`, `desktop-file-validate` and `update-desktop-database`; no root access. See [icon provenance](resources/icons/README.md).
+This installs `dev.shuv.rex-rune.desktop` under `$XDG_DATA_HOME/applications` (normally `~/.local/share/applications`) pointing at the release binary of this checkout (or the binary you pass), and the app icon at 32, 128 and 256 px into the user's `hicolor` theme. Without `--copy`, re-run it if you move the checkout. With `--copy`, the binary is copied to `$XDG_BIN_HOME` (normally `~/.local/bin`) and the launcher points there, so it no longer depends on the checkout. `--uninstall` removes the launcher, the icons and the copied binary. It needs `desktop-file-install`, `desktop-file-validate` and `update-desktop-database`; no root access. See [icon provenance](resources/icons/README.md).
 
 With mise, `mise run install` builds the release binary and runs the script with `--copy`, and `mise run uninstall` runs it with `--uninstall`.
 
 ## Configuration
 
-Preferences are stored as JSON in `$XDG_CONFIG_HOME/rex-linux/workspace.json` (default `~/.config/rex-linux/workspace.json`): saved hosts (label, endpoint, collapsed state, optional default shell), the last host and session per host, whether the sidebar is open and its width, the last non-maximized window size in points (`window_size`, saved after resizing settles for one second), tab position (`vertical_tabs`), pane density (`pane_density`: `"compact"` or `"comfortable"`, the default), pane headers (`pane_header`: `"auto"`, the default, `"always"`, `"on_hover"` or `"hidden"`; an unknown value is Auto), horizontal pane padding (`pane_padding`: 0–32 pt, default 8 pt) and optional vertical padding (`interface.pane_padding_vertical`; absent follows the legacy horizontal value on all four sides), terminal font family (`font_family`), ordered fallback families (`font_fallbacks`), font size, the chrome palette (`chrome_theme`: `"midnight"`, `"rose_pine"`, `"rose_pine_moon"` or `"gruvbox_dark"`; an unknown value is Midnight), the terminal theme (`terminal_theme`: `"follow_server"`, `"builtin_default"` for Rex's own colours, `"follow_chrome"`, or `"named:<name>"` with `rex/midnight`, `rex/rose-pine`, `rex/rose-pine-moon`, `rex/gruvbox-dark` or a Ghostty theme's file name), whether you have picked a terminal theme yourself (`terminal_theme_chosen`) and whether this client has ever declared one (`terminal_theme_declared`), interface zoom (`ui_scale`), the corner notices appear in (`notice_position`), the activity and notification choices (`notifications`), the tabs muted on this client (`muted_tabs`), automatic update checks (`updates.check`, default `true`), automatic installation for eligible install.sh installs (`updates.install_automatically`, default `false`), and whether agents may name sessions (`agent_session_naming`). Update check state and dismissed versions are stored in `$XDG_STATE_HOME/rex-linux/update.json`. Use `--config <path>` to keep a separate workspace.
+Preferences are stored as JSON in `$XDG_CONFIG_HOME/rex-rune/workspace.json` (default `~/.config/rex-rune/workspace.json`): saved hosts (label, endpoint, collapsed state, optional default shell), the last host and session per host, whether the sidebar is open and its width, the last non-maximized window size in points (`window_size`, saved after resizing settles for one second), tab position (`vertical_tabs`), pane density (`pane_density`: `"compact"` or `"comfortable"`, the default), pane headers (`pane_header`: `"auto"`, the default, `"always"`, `"on_hover"` or `"hidden"`; an unknown value is Auto), horizontal pane padding (`pane_padding`: 0–32 pt, default 8 pt) and optional vertical padding (`interface.pane_padding_vertical`; absent follows the legacy horizontal value on all four sides), terminal font family (`font_family`), ordered fallback families (`font_fallbacks`), font size, the chrome palette (`chrome_theme`: `"midnight"`, `"rose_pine"`, `"rose_pine_moon"` or `"gruvbox_dark"`; an unknown value is Midnight), the terminal theme (`terminal_theme`: `"follow_server"`, `"builtin_default"` for Rex's own colours, `"follow_chrome"`, or `"named:<name>"` with `rex/midnight`, `rex/rose-pine`, `rex/rose-pine-moon`, `rex/gruvbox-dark` or a Ghostty theme's file name), whether you have picked a terminal theme yourself (`terminal_theme_chosen`) and whether this client has ever declared one (`terminal_theme_declared`), interface zoom (`ui_scale`), the corner notices appear in (`notice_position`), the activity and notification choices (`notifications`), the tabs muted on this client (`muted_tabs`), automatic update checks (`updates.check`, default `true`), automatic installation for eligible install.sh installs (`updates.install_automatically`, default `false`), and whether agents may name sessions (`agent_session_naming`). Update check state and dismissed versions are stored in `$XDG_STATE_HOME/rex-rune/update.json`. Use `--config <path>` to keep a separate workspace.
 
 Settings (the gear button in the toolbar, `Ctrl ,`, or Settings… in Commands) has Server (read-only facts last reported by the active host, with credential-free address copy; [scope and evidence](docs/parity-2026-11/M3.3-server-settings.md)), Interface (chrome theme, zoom, toolbar visibility, pane density, pane headers, active-pane outline, header fading, sidebar, tab position, tab icon count, tab fill, download folder, notice corner), Terminal (font picker, style, size, Advanced font settings and ordered fallbacks, pane padding, theme, cursor, selection, sequence hints, each host's default shell, generated titles), Shortcuts, Integrations (Rex's skill and hooks for coding agents on this machine), Notifications (activity in tabs, desktop notifications and which changes send one), Remote Hosts (add, edit or remove saved hosts), Updates and About sections. A host's name, endpoint and default shell can also be edited from its sidebar header's right-click menu, from Edit host… in Commands, or from an offline session's menu. Removing a host only stops this client connecting to it; its sessions keep running on the server. A changed endpoint connects to that server as a new host. How hosts are added is described under [Hosts](#hosts).
 
@@ -263,7 +286,7 @@ A host's default shell (empty means the server user's login shell) is used for e
 - A machine already added stays listed, marked **Added** (its tooltip names the saved hosts that reach it); pressing it adds another login over SSH (another user, or another socket). The same endpoint is never added twice.
 - **Enter an endpoint…** takes any endpoint by hand, as before. Without Tailscale, the list says so and this is what remains.
 
-An `ssh://` host is reached by forwarding the Rex server's Unix socket on that machine to a local one with `ssh -L` (OpenSSH's Unix-socket forwarding, so only `sshd` is needed there). Unless the endpoint names the socket (`ssh://user@host/run/rex/server.sock`), the client first asks the machine where it is: the path `rex server status --autostart=false` prints, then the login user's own server (`$XDG_RUNTIME_DIR/rex/server.sock` on Linux, `~/Library/Application Support/rex/server.sock` on macOS), then a shared server's `/run/rex/server.sock` or `/var/run/rex/server.sock`; "No Rex server found on … for …" names those places when none is a socket and suggests a manual `rex server install 'ssh://[user@]host[:port]'` (preview.14 or newer) for a Linux host. That command asks before installing or configuring anything; the app never runs it. `ssh` runs with `BatchMode=yes` (it never prompts; use an agent for keys with passphrases), `StrictHostKeyChecking=accept-new` (a machine's key is trusted the first time and a changed key is refused), keep-alives and `ControlMaster=no` (a shared connection in your SSH configuration is not used, since it would keep the forward after this client lets go). The local end lives in a directory of this process's own under `$XDG_RUNTIME_DIR/rex-linux`, so two instances (or a probe alongside the app) forwarding the same machine don't disturb each other, and it is removed when the forward ends; directories left by a crashed instance are swept on the next forward. When the forward drops, the host reconnects through a new one like any other disconnect, and the reason `ssh` gave (for example "tailnet policy does not permit you to SSH as user …") is shown next to Retry. Edit host… shows the `ssh://` endpoint, where the user name and socket can be changed.
+An `ssh://` host is reached by forwarding the Rex server's Unix socket on that machine to a local one with `ssh -L` (OpenSSH's Unix-socket forwarding, so only `sshd` is needed there). Unless the endpoint names the socket (`ssh://user@host/run/rex/server.sock`), the client first asks the machine where it is: the path `rex server status --autostart=false` prints, then the login user's own server (`$XDG_RUNTIME_DIR/rex/server.sock` on Linux, `~/Library/Application Support/rex/server.sock` on macOS), then a shared server's `/run/rex/server.sock` or `/var/run/rex/server.sock`; "No Rex server found on … for …" names those places when none is a socket and suggests a manual `rex server install 'ssh://[user@]host[:port]'` (preview.14 or newer) for a Linux host. That command asks before installing or configuring anything; the app never runs it. `ssh` runs with `BatchMode=yes` (it never prompts; use an agent for keys with passphrases), `StrictHostKeyChecking=accept-new` (a machine's key is trusted the first time and a changed key is refused), keep-alives and `ControlMaster=no` (a shared connection in your SSH configuration is not used, since it would keep the forward after this client lets go). The local end lives in a directory of this process's own under `$XDG_RUNTIME_DIR/rex-rune`, so two instances (or a probe alongside the app) forwarding the same machine don't disturb each other, and it is removed when the forward ends; directories left by a crashed instance are swept on the next forward. When the forward drops, the host reconnects through a new one like any other disconnect, and the reason `ssh` gave (for example "tailnet policy does not permit you to SSH as user …") is shown next to Retry. Edit host… shows the `ssh://` endpoint, where the user name and socket can be changed.
 
 Ordinary attachment keeps using socket forwarding and **never auto-starts** a server. The separate, confirmed setup action below can invoke the Rex CLI's native `-S ssh://host` auto-start once. No local Rex executable or Tailscale is required for SSH attachment; your OpenSSH configuration and aliases still apply. Discovery uses `server.status` listener metadata after a documented tailnet endpoint answers; it never guesses alternate reachable addresses from wildcard, loopback or Unix bindings. Built-in Tailscale is not in the server's listener list.
 
@@ -375,8 +398,8 @@ Reset forgets only recordings, never edits either user or server configuration.
 **Change shortcuts…** in Commands opens this page; **Ctrl Enter** on a command
 opens its recorder when that command has a valid binding target.
 
-For file-based overrides, edit `$XDG_CONFIG_HOME/rex-linux/shortcuts.json` (normally
-`~/.config/rex-linux/shortcuts.json`). With a custom `--config /path/demo.json`,
+For file-based overrides, edit `$XDG_CONFIG_HOME/rex-rune/shortcuts.json` (normally
+`~/.config/rex-rune/shortcuts.json`). With a custom `--config /path/demo.json`,
 edit `/path/demo.shortcuts.json`. The app never writes this file, except for the
 one-time import of custom bindings from nivox's legacy `keybindings` field.
 
@@ -450,7 +473,7 @@ request refused because control is off shows one explanatory notice per host per
 launch. Requester identity is displayed, not used as a second permission filter.
 
 The **Client label**, also in Remote Hosts, defaults to this computer's current
-hostname (or “Rex Linux” if empty), without saving that default as an override.
+hostname (or “Rex Rune” if empty), without saving that default as an override.
 It is visible to clients on every connected server and can be edited (reopen the
 app to apply it). Use `rex -C LABEL actions` to list actions, then, for example,
 `rex -C LABEL do client.sidebar.toggle`. Local shortcuts and queued actions from
@@ -555,17 +578,17 @@ Needs a server with API revision 13 or newer (`rex` snapshots from 2026-11-10; p
 - **Starting one.** Choose **Download file…** in the pane menu (right-click, or `Ctrl Shift Space`) or in Commands (`Ctrl Shift P`), or bind `pane.download` to a key (it has no default; see [Configuring shortcuts](#configuring-shortcuts)). The dialog is titled with the host of the pane it was opened from. Type a path on that machine: absolute, `~/…`, or relative to the pane's foreground program's directory (so it follows `cd`). The path is always on the machine running Rex, even when the pane shows an `ssh` session or a container: with `ssh remote` in the foreground, a relative name resolves in `ssh`'s own directory on the Rex host, not on `remote`, so type an absolute path there. The resolved path is the row's tooltip in the Downloads popover. A single-line selection in the pane fills the field. Enter starts; Escape closes. Only a person at this client starts a download: terminal output and `client.perform` cannot.
 - **Where files go.** The **Save in** folder shows under the field: the XDG download folder (`xdg-user-dirs`, else `~/Downloads`), or `downloads.directory` in `workspace.json` (absolute or `~/…`), which **Change** in the dialog and Settings → Interface → Download folder write (the same check: absolute or `~/…`; empty goes back to the system's folder). The file keeps the server's file name after cleaning: control characters, direction overrides and invisible characters are removed, a leading dot becomes `_`, trailing dots and spaces go, and a name that ends up empty becomes `download`. A leading dash and non-ASCII names are kept as they are. The folder must already exist: it is never created, and a missing one fails with "<folder> doesn't exist." (use **Change**, or create it first; minimal desktops often have no `~/Downloads`).
 - **Never overwritten.** If the name exists, the new file is `name (1).ext`, then `(2)`. The saved file is mode 0644 less the umask and never executable, whatever the source's mode. While running, the data goes to a hidden `.name.<uuid>.rex-part` in the same folder, renamed into place only when the transfer finished completely.
-- **Never opened.** A finished transfer leaves one notice ("Saved build.log from devbox to ~/Downloads"); nothing is shown in a file manager or run. A finished row in the Downloads popover offers one action, **Show in folder** (the file manager's `ShowItems`, else `xdg-open` on the folder). Rex Linux does not open downloaded files itself; open them from your file manager.
+- **Never opened.** A finished transfer leaves one notice ("Saved build.log from devbox to ~/Downloads"); nothing is shown in a file manager or run. A finished row in the Downloads popover offers one action, **Show in folder** (the file manager's `ShowItems`, else `xdg-open` on the folder). Rex Rune does not open downloaded files itself; open them from your file manager.
 - **Progress.** While bytes arrive, a chip in the toolbar shows `↓ build.log 42%` (or `↓ 3 files`); click it, or choose **Downloads** in Commands, for a row per transfer of this launch with its state and **Cancel**. Cancelling closes the stream and deletes the partial file. A failure is a sticky notice and a row that says why; nothing is retried or resumed.
 - **Limits and confirmation.** A file of 1 GiB or more, or one that would leave under 256 MiB free, is not started until you answer a question in the dialog ("build.img is 3.2 GB. ~/Downloads has 41 GB free."), with **Cancel** focused. A file that cannot fit with 16 MiB left over is refused at once. After a yes to the low-space question the transfer stops if free space falls under 16 MiB; after a yes to a large file it stops under 256 MiB. A transfer ends if the file grows past the larger of twice Rex's size and that size plus 64 MiB (a file being appended to), or if no data arrives for 30 seconds. A file that changes while it is sent is saved as it arrived: one that grew by less than that is saved longer than Rex first reported, and one that shrank or whose reported size was wrong (`/proc` and `/sys` files) is saved shorter; the Saved notice adds the size when it differs from what Rex reported ("6 bytes; Rex reported 4096"). A log, database or archive that is being written to can therefore be saved as a torn copy and still say Saved, so download files that are not being written to. At most three downloads run at once per host; a fourth is refused. There is no other size limit.
-- **Leftovers.** Quitting the app with the Close button or the window manager's close cancels every running download without asking, and a transfer is never resumed on the next launch, so a large file that is nearly done is lost. A partial file is deleted on cancel, on failure and when the app quits that way; each is recorded in `$XDG_STATE_HOME/rex-linux/downloads.json`. The app has no signal handler: a signal (SIGTERM, SIGINT, SIGHUP) or a crash ends it at once and leaves the partial file until the next launch, which deletes it. Only recorded files are touched; the folder is never swept.
+- **Leftovers.** Quitting the app with the Close button or the window manager's close cancels every running download without asking, and a transfer is never resumed on the next launch, so a large file that is nearly done is lost. A partial file is deleted on cancel, on failure and when the app quits that way; each is recorded in `$XDG_STATE_HOME/rex-rune/downloads.json`. The app has no signal handler: a signal (SIGTERM, SIGINT, SIGHUP) or a crash ends it at once and leaves the partial file until the next launch, which deletes it. Only recorded files are touched; the folder is never swept.
 - **Known limits.** Filesystems that support neither a no-replace rename nor hard links (sshfs, CIFS without Unix extensions) fail cleanly (the transfer ends with an error and the partial file is deleted). A download folder that is itself a symlink is refused, and the message names the real folder. A transfer ends if the connection to the host drops, and is never resumed or retried; Rex ends every stream when a control connection goes.
 
 `python3 scripts/download-acceptance.py` checks this behaviour against the built binary (see [Development](#development)); HTTPS and Tailscale hosts, the real file-manager and `xdg-open` calls and Wayland pointer input were not part of that run.
 
 ## Clipboard (OSC 52)
 
-A program in a terminal copies to your desktop clipboard by writing an OSC 52 sequence (`ESC ] 52 ; c ; <base64> BEL`). Rex Linux puts the text on the system clipboard of the machine the client runs on, with no environment variable and no setting, for a local server and for an `ssh://` host alike (checked live on X11 and on a private Wayland compositor, and through a private `ssh://` login).
+A program in a terminal copies to your desktop clipboard by writing an OSC 52 sequence (`ESC ] 52 ; c ; <base64> BEL`). Rex Rune puts the text on the system clipboard of the machine the client runs on, with no environment variable and no setting, for a local server and for an `ssh://` host alike (checked live on X11 and on a private Wayland compositor, and through a private `ssh://` login).
 
 - A copy is applied only from the focused pane of the selected session on the active host, while the Rex window has keyboard focus and no dialog or popup is open. Any other copy (a background tab, an unfocused split pane, another session, an unfocused window) is dropped without a notice and leaves the clipboard as it was.
 - The selections `c`, `p` and `s` (and an empty one) all go to the clipboard; the primary selection is never set. The server drops a target of several letters such as `cp`.
@@ -575,7 +598,7 @@ A program in a terminal copies to your desktop clipboard by writing an OSC 52 se
 
 ### Programs that don't copy through OSC 52
 
-Some programs send OSC 52 only when an `SSH_*` variable is set, or prefer the clipboard of the machine they run on. Neither is the client: **Rex Linux cannot set environment variables in a terminal on a remote server, because the Rex server owns the terminal's environment** (the session and block options have no environment field; an `env` option is accepted and ignored). What the sources and tests showed:
+Some programs send OSC 52 only when an `SSH_*` variable is set, or prefer the clipboard of the machine they run on. Neither is the client: **Rex Rune cannot set environment variables in a terminal on a remote server, because the Rex server owns the terminal's environment** (the session and block options have no environment field; an `env` option is accepted and ignored). What the sources and tests showed:
 
 - **OpenAI Codex CLI** (read from the source of `rust-v0.167.1`; Codex itself was not run): it always tries the native clipboard first, so on a server that has `DISPLAY` or `WAYLAND_DISPLAY` the text lands in the server's own clipboard whatever else is set. It additionally sends OSC 52 when `SSH_TTY` or `SSH_CONNECTION` (any value) or `HERDR_ENV=1` is set, even if the native copy succeeded; under `TMUX`/`TMUX_PANE` it forwards through tmux instead (`tmux load-buffer -w`, then a passthrough sequence), which reaches Rex with tmux's default `set-clipboard`. It falls back to OSC 52 alone only if the native copy fails.
 - **Neovim 0.10.x** enables its OSC 52 provider only when `SSH_TTY` is set (any value) and the `clipboard` option is empty (the default); without both there is no provider (checked with 0.10.4). **Neovim 0.11 and later** don't check `SSH_TTY` and, when the `clipboard` option is empty (the default), use OSC 52 on their own, which Rex advertises (checked with 0.12.6), but they pick `xclip`, `xsel` or `wl-copy` first when `DISPLAY` or `WAYLAND_DISPLAY` is set, whatever `SSH_TTY` says. **LazyVim** sets `clipboard` to empty only when `SSH_CONNECTION` is set, and that is what turns its OSC 52 provider on (checked live: `SSH_TTY` alone does not).
@@ -618,7 +641,7 @@ With mise, `mise run test`, `fmt`, `clippy` and `test-rexrs` run the first three
 `python3 scripts/keymap-acceptance.py` checks layered bindings, native sequences,
 Lua forwarding, queued client actions, file/server reload, removals and the
 send-key escape hatch and explicit remote-action refusal on its own disposable Rex server and Xvfb display. It uses
-`target/release/rex-linux` unless `REX_BIN` selects another build, and preserves
+`target/release/rex-rune` unless `REX_BIN` selects another build, and preserves
 logs/captures in the printed temporary directory.
 
 `python3 scripts/shortcut-recorder-acceptance.py` exercises the row recorder through
@@ -660,8 +683,8 @@ This repository does not accept pull requests from outside contributors. If you 
 Three dependencies are vendored with small, documented patches and wired in through `[patch]` in `Cargo.toml`:
 
 - [`vendor/rune/`](vendor/rune/README.md): the `rune`, `rune-motion`, `rune-staging`, `rune-taffy` and `procwatch` crates from `anomalyco/rune` at `d70929a` (MIT), with dead-key forwarding and window-chrome additions for a borderless Linux window (maximized state, minimize, edge resize, window menu, native window icon).
-- [`vendor/rexrs/`](vendor/rexrs/REX-LINUX.md): `a10y/rexrs` at `780be3f` (MIT OR Apache-2.0), plus revision-13 generated types, explicit API-revision range negotiation and preservation of an empty `attach_session_ids`.
-- [`vendor/ghostty-vt/`](vendor/ghostty-vt/REX-LINUX.md): the crates.io `ghostty-vt` 0.8.0 source (Apache-2.0; Ghostty itself is MIT), plus a safe wrapper for Ghostty's render-state image iterator, image-aware snapshot decoding, a fixed temporary-file medium setting and grayscale PNG normalization.
+- [`vendor/rexrs/`](vendor/rexrs/REX-RUNE.md): `a10y/rexrs` at `780be3f` (MIT OR Apache-2.0), plus revision-13 generated types, explicit API-revision range negotiation and preservation of an empty `attach_session_ids`.
+- [`vendor/ghostty-vt/`](vendor/ghostty-vt/REX-RUNE.md): the crates.io `ghostty-vt` 0.8.0 source (Apache-2.0; Ghostty itself is MIT), plus a safe wrapper for Ghostty's render-state image iterator, image-aware snapshot decoding, a fixed temporary-file medium setting and grayscale PNG normalization.
 
 Each patch is meant to be dropped once the corresponding upstream release has equivalent APIs.
 

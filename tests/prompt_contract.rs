@@ -5,7 +5,7 @@ use ghostty_vt::{
     screen::{CellSemanticContent, RowSemanticPrompt},
     terminal::{Point, PointCoordinate},
 };
-use rex_linux::{
+use rex_rune::{
     connection::{Command, HostConnection},
     terminal::TerminalStream,
     transport, wire,
@@ -289,7 +289,7 @@ async fn run() -> Result<()> {
         );
         drop(host);
         ensure!(
-            rex_linux::connection::wait_for_hosts(Duration::from_secs(5)),
+            rex_rune::connection::wait_for_hosts(Duration::from_secs(5)),
             "worker did not stop"
         );
         println!("worker viewport prompts={visited:?}; input_events=0; server windows unchanged");

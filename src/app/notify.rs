@@ -19,7 +19,7 @@ use zbus::{Connection, Proxy, Variant};
 const DEST: &str = "org.freedesktop.Notifications";
 const PATH: &str = "/org/freedesktop/Notifications";
 /// The picture each notification shows. GNOME draws only a small, plain app icon without one.
-const IMAGE: &[u8] = include_bytes!("../../resources/icons/128x128/apps/dev.shuv.rex-linux.png");
+const IMAGE: &[u8] = include_bytes!("../../resources/icons/128x128/apps/dev.shuv.rex-rune.png");
 
 /// `IMAGE` as the spec's `image-data` hint, `(iiibiiay)`: width, height, row stride, alpha,
 /// bits per sample, channels and RGBA bytes. Sent with every notification, so it needs no
@@ -58,14 +58,14 @@ pub struct Note {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Kind {
-    Activity(rex_linux::connection::activity::ProgramState),
+    Activity(rex_rune::connection::activity::ProgramState),
     Program,
     Test,
 }
 
 impl Kind {
     pub fn urgency(self) -> u8 {
-        use rex_linux::connection::activity::ProgramState::{Blocked, Error};
+        use rex_rune::connection::activity::ProgramState::{Blocked, Error};
         if matches!(self, Self::Activity(Blocked | Error)) {
             2
         } else {
@@ -181,7 +181,7 @@ pub fn notify_restart_failure(message: &str) -> anyhow::Result<()> {
             let conn = Connection::session().await?;
             let proxy = Proxy::new(&conn, DEST, PATH, DEST).await?;
             let hints = HashMap::from([
-                ("desktop-entry", Variant::from("dev.shuv.rex-linux")),
+                ("desktop-entry", Variant::from("dev.shuv.rex-rune")),
                 ("urgency", Variant::from(2u8)),
             ]);
             let _: u32 = proxy
@@ -190,7 +190,7 @@ pub fn notify_restart_failure(message: &str) -> anyhow::Result<()> {
                     &(
                         "Rex",
                         0u32,
-                        "dev.shuv.rex-linux",
+                        "dev.shuv.rex-rune",
                         "Rex restart failed",
                         message,
                         Vec::<String>::new(),
@@ -349,7 +349,7 @@ impl Backend for Desktop {
     async fn send(&mut self, note: &Note, replaces: u32) -> Result<u32, Service> {
         let bus = self.bus.as_ref().expect("ready before send");
         let mut hints = HashMap::from([
-            ("desktop-entry", Variant::from("dev.shuv.rex-linux")),
+            ("desktop-entry", Variant::from("dev.shuv.rex-rune")),
             ("urgency", Variant::from(note.kind.urgency())),
         ]);
         if let Some(image) = self.image.as_ref().and_then(|i| i.try_clone().ok()) {
@@ -363,7 +363,7 @@ impl Backend for Desktop {
         let body = (
             "Rex",
             replaces,
-            "dev.shuv.rex-linux",
+            "dev.shuv.rex-rune",
             &note.summary,
             &note.body,
             actions,

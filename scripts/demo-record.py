@@ -8,15 +8,15 @@ Nothing touches the user's desktop or their Rex server: the server listens on a 
 and every `rex` call names it with autostart off. The fixture shells do run with your real
 environment (HOME, shell startup files and prompt, and your `~/.config/rex`), so the recording
 can show your user name, host name and paths: check the clip before publishing it. REX_BIN selects the client (default
-target/release/rex-linux), which runs with a `tailscale` that finds no tailnet and no update
+target/release/rex-rune), which runs with a `tailscale` that finds no tailnet and no update
 check. `DEMO_PROBE=1` skips the recording and
 writes screenshots at the interesting moments instead, for calibrating coordinates.
 
 Needs a `rex` server binary, labwc, wlr-randr, wf-recorder, grim, xkbcli, ffmpeg, the `vptr`
 helper (`cargo build --release` in tools/vptr, or DEMO_VPTR) and, for the fixture panes,
 btop, bat, eza, tree and git.
-Output in $XDG_CACHE_HOME/rex-linux/demo (default ~/.cache/rex-linux/demo): raw.mkv, beats.json (seconds from the start of the recording)
-and rex-linux-demo.mp4, the trimmed clip.
+Output in $XDG_CACHE_HOME/rex-rune/demo (default ~/.cache/rex-rune/demo): raw.mkv, beats.json (seconds from the start of the recording)
+and rex-rune-demo.mp4, the trimmed clip.
 """
 import json
 import os
@@ -27,12 +27,12 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WORK = Path(os.environ.get("DEMO_DIR", Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "rex-linux/demo"))
+WORK = Path(os.environ.get("DEMO_DIR", Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "rex-rune/demo"))
 REPO = str(ROOT)
 SCALE = 1.25
 W, H = 1920, 1080
 PROBE = os.environ.get("DEMO_PROBE") == "1"
-APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-rune")
 
 # Evdev key codes on a US layout: (code, needs shift).
 KEYS = {"Enter": (28, False), "Escape": (1, False), "Tab": (15, False), "BackSpace": (14, False),
@@ -89,7 +89,7 @@ def main():
             return sid, [w["focused_block_id"] for w in view]
 
         cd = f"cd {REPO} && clear\r"
-        main_sid, (dev, server, notes) = session("rex-linux", ["dev", "server", "notes"])
+        main_sid, (dev, server, notes) = session("rex-rune", ["dev", "server", "notes"])
         api("session.set_block_label", session_id=main_sid, block_id=dev, label="shell")
         _, (infra,) = session("infra", ["monitor"])
         _, (api_gw,) = session("api-gateway", ["logs"])
@@ -131,7 +131,7 @@ def main():
         (stub / "tailscale").chmod(0o755)
         spawn([str(APP), "--endpoint", endpoint, "--session", main_sid,
                "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"],
-              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_LINUX_NO_UPDATE_CHECK="1"))
+              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_RUNE_NO_UPDATE_CHECK="1"))
         keymap = WORK / "us.xkb"
         keymap.write_text(subprocess.check_output(["xkbcli", "compile-keymap", "--layout", "us"], text=True))
         driver = subprocess.Popen([os.environ.get("DEMO_VPTR", str(ROOT / "tools/vptr/target/release/vptr")),
@@ -331,7 +331,7 @@ def main():
             subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", "1.0", "-i", str(raw), "-t", str(length), "-vf",
                                    f"fps=60,format=yuv420p,fade=t=in:st=0:d=0.35,fade=t=out:st={length - 0.5}:d=0.5",
                                    "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-profile:v", "high",
-                                   "-movflags", "+faststart", "-an", str(WORK / "rex-linux-demo.mp4")])
+                                   "-movflags", "+faststart", "-an", str(WORK / "rex-rune-demo.mp4")])
     finally:
         for p in reversed(processes):
             if p.poll() is None:

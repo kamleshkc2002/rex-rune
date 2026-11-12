@@ -4,7 +4,7 @@ use super::{
     navigation::Visit,
     workspace::{HostId, Workspace},
 };
-use rex_linux::connection::{
+use rex_rune::connection::{
     HostCommand,
     perform::{MAX_WAIT, Outcome, Pending},
 };
@@ -36,7 +36,7 @@ impl Workspace {
         let Some(spec) = actions::find(&request.action) else {
             return Err(Outcome::error(
                 "not_supported",
-                "This remote action is not supported by Rex Linux; nothing was done.",
+                "This remote action is not supported by Rex Rune; nothing was done.",
             ));
         };
         let Remote::View { navigation } = spec.remote() else {
@@ -54,7 +54,7 @@ impl Workspace {
         if !self.settings.hosts[host].remote_control {
             return Err(Outcome::error(
                 "refused",
-                "Remote control is off for this host in Rex Linux. The person at that computer can turn it on in Settings → Remote Hosts. Nothing was done.",
+                "Remote control is off for this host in Rex Rune. The person at that computer can turn it on in Settings → Remote Hosts. Nothing was done.",
             ));
         }
         if !spec.accepts(&request.args) {
@@ -106,7 +106,7 @@ impl Workspace {
         if !self.hosts[host].model.connected || pending.received.elapsed() >= MAX_WAIT {
             return Err(Outcome::error(
                 "internal",
-                "Rex Linux did not act in time or the host disconnected; nothing was done.",
+                "Rex Rune did not act in time or the host disconnected; nothing was done.",
             ));
         }
         if selecting {
@@ -149,7 +149,7 @@ impl Workspace {
         // Remote requests arrive through the latter, so inspect mounted search editors too.
         let field_focused = tx.focused().is_some()
             || self.model().window().is_some_and(|window| {
-                rex_linux::layout::placements(window, None)
+                rex_rune::layout::placements(window, None)
                     .0
                     .iter()
                     .any(|p| {
@@ -278,7 +278,7 @@ impl Workspace {
         } else if now >= navigation.deadline {
             Some(Outcome::error(
                 "internal",
-                "Rex Linux did not finish navigation in five seconds.",
+                "Rex Rune did not finish navigation in five seconds.",
             ))
         } else if self
             .navigation

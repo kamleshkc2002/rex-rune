@@ -3,7 +3,7 @@
 use super::pane_verb_tests::{Camera, rect};
 use super::*;
 use crate::app::{actions, find, term};
-use rex_linux::{
+use rex_rune::{
     connection::{Command, Connection, Model, TerminalSender},
     terminal::{Renderer, search::Controller},
 };
@@ -335,7 +335,7 @@ fn the_find_actions_are_bindable_local_only_and_in_commands() {
     );
     // Neither takes a key from terminal programs by default.
     assert!(
-        rex_linux::keymap::defaults()
+        rex_rune::keymap::defaults()
             .bindings
             .iter()
             .all(|b| b.action != find::NEXT && b.action != find::PREVIOUS)
@@ -367,7 +367,7 @@ fn the_find_actions_are_bindable_local_only_and_in_commands() {
     // step from the terminal and from the field alike.
     rt.update(|s, _| {
         s.settings.shortcut_file.overrides =
-            rex_linux::keymap::Overrides::parse(&serde_json::json!([
+            rex_rune::keymap::Overrides::parse(&serde_json::json!([
                 {"keys": "f3", "action": find::NEXT},
                 {"keys": "shift+f3", "action": find::PREVIOUS}
             ]));
@@ -484,7 +484,7 @@ fn typography_repositions_find_on_adjusted_cells_without_an_unowned_resize_reply
     rt.update(|s, _| {
         s.edit_typography(|font| {
             font.line_height = 20;
-            font.spacing_unit = rex_linux::settings::typography::SpacingUnit::Percent;
+            font.spacing_unit = rex_rune::settings::typography::SpacingUnit::Percent;
             font.spacing = 20;
         })
     });

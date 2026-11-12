@@ -293,7 +293,7 @@ pub async fn probe_endpoint(endpoint: &str) -> Result<Probe> {
     .await
     .context("Rex discovery timed out")??;
     let (listeners, reason) =
-        match crate::transport::control_from_socket(socket, None, "Rex Linux (discovery)").await {
+        match crate::transport::control_from_socket(socket, None, "Rex Rune (discovery)").await {
             Ok(mut control) => {
                 let listeners = listeners(&mut control).await;
                 let _ =
@@ -547,7 +547,7 @@ mod tests {
                     serde_json::from_str(ws.next().await.unwrap().unwrap().to_text().unwrap())
                         .unwrap();
                 assert_eq!(hello["type"], "hello");
-                assert_eq!(hello["client"]["name"], "Rex Linux (discovery)");
+                assert_eq!(hello["client"]["name"], "Rex Rune (discovery)");
                 ws.send(Message::Text(json!({"type":"welcome","protocol":"rex.control.v1","api_revision":revision,
                     "limits":{"max_message_bytes":65536},"client":{"id":"client:probe","reconnect_token":"probe"}}).to_string().into())).await.unwrap();
                 if revision == 9 {

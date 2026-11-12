@@ -10,7 +10,7 @@
 //! `server-pid` the probe also checks that the server closes a cancelled file. Exit 0 when every
 //! check passed.
 use anyhow::{Context, Result, bail, ensure};
-use rex_linux::{
+use rex_rune::{
     connection::{HostCommand, HostConnection, HostModel, downloads::Request},
     download::{Config, Failure, Limits, Reason, Records, State, next_id},
 };

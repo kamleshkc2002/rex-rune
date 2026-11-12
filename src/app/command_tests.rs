@@ -6,7 +6,7 @@ use crate::app::{
     commands::{self, Run},
     navigation::Visit,
 };
-use rex_linux::settings::PaneDensity;
+use rex_rune::settings::PaneDensity;
 use rexrs::api::client::{Binding, InspectResponseAction};
 use serde_json::{Value, json};
 
@@ -190,7 +190,7 @@ fn notices(ws: &Workspace) -> Vec<&str> {
 }
 
 fn overrides(ws: &mut Workspace, value: Value) {
-    ws.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(&value);
+    ws.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(&value);
     ws.local_keymap = actions::resolve(&ws.settings.shortcut_file.overrides);
     ws.keymap_generation += 1;
 }
@@ -203,9 +203,9 @@ fn server_map(ws: &mut Workspace, bindings: Vec<Binding>, actions: Vec<InspectRe
         ..Default::default()
     };
     ws.hosts[0].model.keymap = Some(std::sync::Arc::new(
-        rex_linux::connection::keymap::Snapshot {
+        rex_rune::connection::keymap::Snapshot {
             generation: ws.keymap_generation,
-            resolved: rex_linux::keymap::Resolved::from_server(
+            resolved: rex_rune::keymap::Resolved::from_server(
                 &reply,
                 &ws.settings.shortcut_file.overrides,
             ),

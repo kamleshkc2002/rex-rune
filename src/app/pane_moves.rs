@@ -7,7 +7,7 @@
 //! for `session.resize_pane`, as a divider drag does. Which pane is beside which is read
 //! from the server's layout (`layout::neighbour`, `layout::resized`); nothing is placed here.
 use super::{panel::PaneTarget, workspace::Workspace};
-use rex_linux::{
+use rex_rune::{
     connection::HostCommand,
     layout::{self, Side},
 };

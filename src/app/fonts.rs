@@ -118,7 +118,7 @@ pub fn parse_catalog(listing: &str) -> Vec<Family> {
     // Keyed by the name in lower case, so "Hack" and "hack" from two files are one family.
     let mut families: BTreeMap<String, (String, bool)> = BTreeMap::new();
     let mut add = |name: &str, mono: bool| {
-        let Ok(name) = rex_linux::settings::parse_font_family(name) else {
+        let Ok(name) = rex_rune::settings::parse_font_family(name) else {
             return;
         };
         let entry = families.entry(name.to_lowercase()).or_insert((name, true));

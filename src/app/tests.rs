@@ -80,7 +80,7 @@ use super::{
     workspace::Workspace,
 };
 use clap::Parser;
-use rex_linux::{
+use rex_rune::{
     connection::{HostCommand, HostConnection, Options},
     settings::{Host, Settings, TerminalThemeChoice},
     terminal_theme::ThemeDirs,
@@ -93,7 +93,7 @@ fn workspace() -> Workspace {
 
 fn workspace_hosts(count: usize) -> Workspace {
     let endpoint = "unix:///nonexistent/rex-test.sock";
-    let options = Options::parse_from(["rex-linux", "--endpoint", endpoint]);
+    let options = Options::parse_from(["rex-rune", "--endpoint", endpoint]);
     let settings = Settings {
         hosts: (0..count)
             .map(|i| Host {
@@ -113,7 +113,7 @@ fn workspace_hosts(count: usize) -> Workspace {
     let handle = rune::App::new(AppSpec::new("Rex", (1024., 700.), placeholder, view)).handle();
     static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let path = std::env::temp_dir().join(format!(
-        "rex-linux-test-{}-{}.json",
+        "rex-rune-test-{}-{}.json",
         std::process::id(),
         NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     ));
@@ -123,7 +123,7 @@ fn workspace_hosts(count: usize) -> Workspace {
 /// A second launch on the settings `ws` saved.
 fn relaunch(ws: &Workspace) -> Workspace {
     let options = Options::parse_from([
-        "rex-linux",
+        "rex-rune",
         "--endpoint",
         "unix:///nonexistent/rex-test.sock",
     ]);
@@ -582,7 +582,7 @@ fn tabs_and_splits_start_the_right_hosts_shell() {
         serde_json::json!({"shell":"zsh"}),
         "Follow server gives new blocks no theme"
     );
-    ws.term_theme = Some(rex_linux::terminal_theme::TerminalTheme::midnight());
+    ws.term_theme = Some(rex_rune::terminal_theme::TerminalTheme::midnight());
     let target = super::panel::PaneTarget {
         host: 1,
         session: "b".into(),
@@ -727,7 +727,7 @@ fn compact_separators_are_straight_full_length_lines_in_both_directions() {
 
 #[test]
 fn pane_density_switch_saves_and_keeps_split_geometry_and_reconnect_controls() {
-    use rex_linux::settings::PaneDensity;
+    use rex_rune::settings::PaneDensity;
     let (mut ws, _rx) = tabbed_workspace("split");
     let (sender, _terminal_rx) = flume::unbounded();
     live_terminal(&mut ws, "block:b", &sender);
@@ -818,7 +818,7 @@ fn pane_density_switch_saves_and_keeps_split_geometry_and_reconnect_controls() {
 
 #[test]
 fn split_pane_headers_show_their_own_status_word() {
-    use rex_linux::connection::activity::{BlockedKind, ProgramState::*};
+    use rex_rune::connection::activity::{BlockedKind, ProgramState::*};
     let (mut ws, _rx) = tabbed_workspace("split");
     let mut blocked = record(Blocked, true);
     blocked.kind = Some(BlockedKind::Question);
@@ -946,7 +946,7 @@ fn split_uses_the_focused_pane_as_its_directory_source() {
 fn new_tabs_without_a_source_use_defaults_and_without_a_session_do_nothing() {
     let mut ws = workspace();
     let rx = capture_host(&mut ws, 0);
-    ws.term_theme = Some(rex_linux::terminal_theme::TerminalTheme::midnight());
+    ws.term_theme = Some(rex_rune::terminal_theme::TerminalTheme::midnight());
     ws.perform(Intent::NewWindow, &mut rune::Tx::default());
     assert!(rx.is_empty(), "no selected session, no creation");
     assert!(
@@ -1442,7 +1442,7 @@ fn about_is_keyboard_reachable_and_opens_links_and_copies_details() {
     assert!(
         rt.elements()
             .iter()
-            .any(|e| e.text.as_deref() == Some("Rex Linux"))
+            .any(|e| e.text.as_deref() == Some("Rex Rune"))
     );
     assert!(
         rt.elements()
@@ -1589,7 +1589,7 @@ fn invalid_shortcuts_start_with_one_notice_and_a_persistent_settings_problem() {
     std::fs::create_dir_all(&directory).unwrap();
     ws.settings_path = directory.join("workspace.json");
     ws.settings.save(&ws.settings_path).unwrap();
-    let shortcuts = rex_linux::settings::shortcuts::Shortcuts::path(&ws.settings_path);
+    let shortcuts = rex_rune::settings::shortcuts::Shortcuts::path(&ws.settings_path);
     std::fs::write(&shortcuts, "[broken").unwrap();
     let mut ws = relaunch(&ws);
     assert_eq!(
@@ -1767,7 +1767,7 @@ fn settings_sections_and_their_forms_return_to_settings() {
 
 #[test]
 fn the_theme_picker_filters_declares_to_every_host_and_returns_to_settings() {
-    let root = std::env::temp_dir().join(format!("rex-linux-picker-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("rex-rune-picker-{}", std::process::id()));
     std::fs::create_dir_all(&root).unwrap();
     std::fs::write(
         root.join("Rex Test Mocha"),
@@ -1926,7 +1926,7 @@ fn follow_server_resets_only_after_a_theme_was_ever_declared() {
     let mut ws = workspace();
     let host = capture_host(&mut ws, 0);
     ws.hosts[0].model.selected = Some("cur".into());
-    ws.term_theme = Some(rex_linux::terminal_theme::TerminalTheme::midnight());
+    ws.term_theme = Some(rex_rune::terminal_theme::TerminalTheme::midnight());
     ws.perform(Intent::NewWindow, &mut tx);
     assert_eq!(requests(&host)[0].0, "session.new_window");
     assert!(
@@ -2032,10 +2032,10 @@ fn escape_walks_back_from_the_host_step_to_the_switcher() {
 }
 
 fn record(
-    state: rex_linux::connection::activity::ProgramState,
+    state: rex_rune::connection::activity::ProgramState,
     live: bool,
-) -> rex_linux::connection::activity::StatusRecord {
-    rex_linux::connection::activity::StatusRecord {
+) -> rex_rune::connection::activity::StatusRecord {
+    rex_rune::connection::activity::StatusRecord {
         state,
         app: Some("claude".into()),
         live,
@@ -2046,7 +2046,7 @@ fn record(
 fn set_activity(
     ws: &mut Workspace,
     block: &str,
-    records: &[(&str, rex_linux::connection::activity::StatusRecord)],
+    records: &[(&str, rex_rune::connection::activity::StatusRecord)],
 ) {
     let model = &mut ws.hosts[0].model;
     model.activity.remove(block);
@@ -2063,7 +2063,7 @@ fn set_activity(
 #[test]
 fn a_tab_folds_its_records_by_priority_and_shows_its_program() {
     use super::activity::{program_icon, tab_activity, tab_word};
-    use rex_linux::connection::activity::{BlockedKind, ProgramState::*};
+    use rex_rune::connection::activity::{BlockedKind, ProgramState::*};
     let (mut ws, _rx) = tabbed_workspace("single");
     let model = &mut ws.hosts[0].model;
     model.programs.insert("block:a".into(), "nvim".into());
@@ -2128,14 +2128,14 @@ fn background_bells_latch_until_their_tab_is_seen() {
 #[test]
 fn a_tabs_progress_report_is_a_bar_while_working_and_a_word_when_paused_or_failed() {
     use super::activity::{tab_activity, tab_progress, tab_word};
-    use rex_linux::connection::activity::{ProgramState::Blocked, TerminalProgress::*};
+    use rex_rune::connection::activity::{ProgramState::Blocked, TerminalProgress::*};
     let (mut ws, _rx) = tabbed_workspace("single");
     let model = &mut ws.hosts[0].model;
     let view = model.view().unwrap().clone();
-    let word = |model: &rex_linux::connection::HostModel, tab: usize, done: bool| {
+    let word = |model: &rex_rune::connection::HostModel, tab: usize, done: bool| {
         tab_word(&tab_activity(model, &view.windows[tab]), done, false).map(|(w, _)| w.into_owned())
     };
-    let bar = |model: &rex_linux::connection::HostModel, tab: usize| {
+    let bar = |model: &rex_rune::connection::HostModel, tab: usize| {
         tab_progress(&tab_activity(model, &view.windows[tab])).map(|(n, _)| n)
     };
     // A working program's report is a bar and no word; Done still shows while it works.
@@ -2178,7 +2178,7 @@ fn a_tabs_progress_report_is_a_bar_while_working_and_a_word_when_paused_or_faile
 
 #[test]
 fn a_working_progress_report_draws_a_bar_on_its_tab_and_pane() {
-    use rex_linux::connection::activity::TerminalProgress::Set;
+    use rex_rune::connection::activity::TerminalProgress::Set;
     let (mut ws, _rx) = tabbed_workspace("split");
     ws.hosts[0]
         .model
@@ -2224,7 +2224,7 @@ fn a_titled_pane_shows_its_title_but_renames_from_its_label() {
 #[test]
 fn each_pane_reports_its_own_activity_and_osc_7501_progress() {
     use super::activity::{pane_activity, program_icon, tab_activity, tab_progress, tab_word};
-    use rex_linux::connection::activity::{BlockedKind, ProgramState::*, TerminalProgress::Set};
+    use rex_rune::connection::activity::{BlockedKind, ProgramState::*, TerminalProgress::Set};
     let (mut ws, _rx) = tabbed_workspace("split");
     let model = &mut ws.hosts[0].model;
     let mut blocked = record(Blocked, true);
@@ -2292,7 +2292,7 @@ fn each_pane_reports_its_own_activity_and_osc_7501_progress() {
 
 #[test]
 fn background_tabs_latch_done_and_notify_only_about_live_changes() {
-    use rex_linux::connection::activity::ProgramState::*;
+    use rex_rune::connection::activity::ProgramState::*;
     let (mut ws, _rx) = tabbed_workspace("single");
     ws.track_activity(0);
     // A query restoring a blocked state isn't news.
@@ -2340,7 +2340,7 @@ fn background_tabs_latch_done_and_notify_only_about_live_changes() {
 
 #[test]
 fn notification_settings_gate_what_is_sent() {
-    use rex_linux::connection::activity::{DesktopNotice, ProgramState::*};
+    use rex_rune::connection::activity::{DesktopNotice, ProgramState::*};
     let (mut ws, _rx) = tabbed_workspace("single");
     ws.track_activity(0);
     ws.settings.notifications.done = false;
@@ -2367,7 +2367,7 @@ fn notification_settings_gate_what_is_sent() {
 
 #[test]
 fn tab_pills_carry_the_activity_word_and_hide_it_when_turned_off() {
-    use rex_linux::connection::activity::{BlockedKind, ProgramState::*};
+    use rex_rune::connection::activity::{BlockedKind, ProgramState::*};
     let pill = |show: bool| {
         let (mut ws, _rx) = tabbed_workspace("single");
         ws.settings.notifications.show_in_tabs = show;
@@ -2402,7 +2402,7 @@ fn a_default_tab_takes_its_programs_title_and_a_named_one_keeps_its_name() {
     let (mut ws, _rx) = tabbed_workspace("single");
     let model = &mut ws.hosts[0].model;
     let view = model.views.get_mut("s").unwrap();
-    view.windows[1].label = Some(rex_linux::connection::DEFAULT_TAB_LABEL.into());
+    view.windows[1].label = Some(rex_rune::connection::DEFAULT_TAB_LABEL.into());
     for (block, title) in [
         ("block:a", "vim notes"),
         ("block:b", "OC | USB device exploration"),
@@ -2515,7 +2515,7 @@ fn agent_commands_never_autostart_and_always_name_the_naming_choice() {
 
 /// A home directory with OMP's agent directory in it.
 fn omp_home(name: &str) -> std::path::PathBuf {
-    let home = std::env::temp_dir().join(format!("rex-linux-omp-{}-{name}", std::process::id()));
+    let home = std::env::temp_dir().join(format!("rex-rune-omp-{}-{name}", std::process::id()));
     std::fs::create_dir_all(home.join(".omp/agent")).unwrap();
     home
 }
@@ -2903,7 +2903,7 @@ fn a_missing_rex_explains_itself_and_naming_reapplies_to_installed_agents() {
 
 #[test]
 fn terminal_copies_reach_the_clipboard_once_and_only_in_the_foreground() {
-    use rex_linux::connection::clipboard::ClipboardCopy;
+    use rex_rune::connection::clipboard::ClipboardCopy;
     for (block, session, focused, modal, expected) in [
         ("block:a", "s", true, false, "terminal copy 世界"),
         ("block:b", "s", true, false, "sentinel"),
@@ -2963,7 +2963,7 @@ fn terminal_copies_reach_the_clipboard_once_and_only_in_the_foreground() {
 
 #[test]
 fn native_window_focus_gates_terminal_copies_and_the_cursor() {
-    use rex_linux::connection::{Connection, TerminalSender, clipboard::ClipboardCopy};
+    use rex_rune::connection::{Connection, TerminalSender, clipboard::ClipboardCopy};
     let (mut ws, rx) = tabbed_workspace("single");
     let (sender, _sent) = flume::unbounded();
     let connection = Connection {
@@ -2983,7 +2983,7 @@ fn native_window_focus_gates_terminal_copies_and_the_cursor() {
         m.connected = true;
         m.control_connected = true;
         m.frame = Some(std::sync::Arc::new(
-            rex_linux::terminal::Renderer::new()
+            rex_rune::terminal::Renderer::new()
                 .unwrap()
                 .frame(&terminal)
                 .unwrap(),
@@ -3129,7 +3129,7 @@ fn alt_arrows_belong_to_terminal_programs_and_ctrl_alt_arrows_move_pane_focus() 
 
 /// Make `block` a connected terminal whose input lands on `sender`.
 fn live_terminal(ws: &mut Workspace, block: &str, sender: &flume::Sender<HostCommand>) {
-    use rex_linux::connection::{Connection, TerminalSender};
+    use rex_rune::connection::{Connection, TerminalSender};
     let connection = Connection {
         model: Default::default(),
         commands: TerminalSender::new(sender.clone(), "s".into(), block.into()),
@@ -3149,7 +3149,7 @@ fn sent_keys(rx: &flume::Receiver<HostCommand>) -> Vec<serde_json::Value> {
     rx.try_iter()
         .filter_map(|c| match c {
             HostCommand::Terminal {
-                command: rex_linux::connection::Command::Key(key),
+                command: rex_rune::connection::Command::Key(key),
                 ..
             } => Some(key),
             _ => None,
@@ -3247,7 +3247,7 @@ fn modified_terminal_keys_reach_the_pty_and_reserved_combinations_stay_local() {
 
 #[test]
 fn a_clipboard_paste_reaches_only_the_pane_that_asked_while_it_stays_focused() {
-    use rex_linux::connection::Command;
+    use rex_rune::connection::Command;
     for (move_focus, expected) in [(false, Some("pasted")), (true, None)] {
         let (mut ws, _rx) = tabbed_workspace("split");
         let (sender, sent) = flume::unbounded();
@@ -3330,7 +3330,7 @@ fn pane_padding_controls_reach_zero_and_save() {
 
 #[test]
 fn pane_padding_changes_every_grid_without_changing_pane_placements() {
-    use rex_linux::settings::PaneDensity;
+    use rex_rune::settings::PaneDensity;
     for tab in ["single", "split"] {
         for density in [PaneDensity::Compact, PaneDensity::Comfortable] {
             let (mut ws, _rx) = tabbed_workspace(tab);
@@ -3552,7 +3552,7 @@ fn declared(host: &flume::Receiver<HostCommand>) -> Vec<Option<rexrs::api::termi
 
 #[test]
 fn a_chrome_palette_applies_at_once_and_brings_its_terminal_theme_until_one_is_chosen() {
-    use rex_linux::{settings::ChromeTheme, terminal_theme::TerminalTheme};
+    use rex_rune::{settings::ChromeTheme, terminal_theme::TerminalTheme};
     let mut ws = workspace_hosts(2);
     let hosts = [capture_host(&mut ws, 0), capture_host(&mut ws, 1)];
     ws.perform(Intent::Settings, &mut rune::Tx::default());
@@ -3661,7 +3661,7 @@ fn a_palette_round_trip_leaves_terminal_output_and_its_selection_alone() {
     // Compare geometry with this runtime's fonts, not a parallel test's TextSystem.
     // Runtime construction updates the scoped fonts as well as its own renderer.
     let _families = rune::text::with_families("Inter", "Inter");
-    use rex_linux::{
+    use rex_rune::{
         connection::{Connection, TerminalSender},
         settings::ChromeTheme,
     };
@@ -3680,7 +3680,7 @@ fn a_palette_round_trip_leaves_terminal_output_and_its_selection_alone() {
     .unwrap();
     terminal.vt_write(b"plain \x1b[31mred\x1b[0m");
     let frame = std::sync::Arc::new(
-        rex_linux::terminal::Renderer::new()
+        rex_rune::terminal::Renderer::new()
             .unwrap()
             .frame(&terminal)
             .unwrap(),
@@ -3724,7 +3724,7 @@ fn a_palette_round_trip_leaves_terminal_output_and_its_selection_alone() {
 
 #[test]
 fn files_dropped_on_a_pane_upload_there_and_focus_it() {
-    use rex_linux::connection::{Connection, TerminalSender};
+    use rex_rune::connection::{Connection, TerminalSender};
     let (mut ws, rx) = tabbed_workspace("split");
     let (sender, sent) = flume::unbounded();
     for block in ["block:b", "block:c"] {
@@ -3786,8 +3786,8 @@ fn files_dropped_on_a_pane_upload_there_and_focus_it() {
 /// A tailnet of four machines: a Rex server with built-in Tailscale, a Linux box with
 /// Tailscale SSH, an Android phone, and one that is offline, plus an iPhone that is never
 /// listed.
-fn tailnet() -> Vec<rex_linux::tailnet::Machine> {
-    let machine = |name: &str, os: &str, online: bool, ssh: bool| rex_linux::tailnet::Machine {
+fn tailnet() -> Vec<rex_rune::tailnet::Machine> {
+    let machine = |name: &str, os: &str, online: bool, ssh: bool| rex_rune::tailnet::Machine {
         name: name.into(),
         address: format!("{name}.tail1234.ts.net"),
         host_name: None,
@@ -3797,7 +3797,7 @@ fn tailnet() -> Vec<rex_linux::tailnet::Machine> {
         this_machine: false,
     };
     vec![
-        rex_linux::tailnet::Machine {
+        rex_rune::tailnet::Machine {
             this_machine: true,
             ..machine("here", "linux", true, false)
         },
@@ -3809,8 +3809,8 @@ fn tailnet() -> Vec<rex_linux::tailnet::Machine> {
     ]
 }
 
-fn rex_at(address: &str) -> rex_linux::tailnet::Probe {
-    rex_linux::tailnet::Probe::Rex {
+fn rex_at(address: &str) -> rex_rune::tailnet::Probe {
+    rex_rune::tailnet::Probe::Rex {
         endpoint: format!("https://{address}"),
         listeners: vec![],
         reason: None,
@@ -3841,12 +3841,12 @@ fn open_add_host(rt: &mut Runtime<Workspace>) {
         s.apply_probe(
             generation,
             "box.tail1234.ts.net",
-            rex_linux::tailnet::Probe::Nothing,
+            rex_rune::tailnet::Probe::Nothing,
         );
         s.apply_probe(
             generation,
             "pixel.tail1234.ts.net",
-            rex_linux::tailnet::Probe::Nothing,
+            rex_rune::tailnet::Probe::Nothing,
         );
     });
     for _ in 0..4 {
@@ -3907,7 +3907,7 @@ fn ssh_start_is_explicit_one_shot_and_defaults_to_not_now() {
     rt.update(|s, tx| {
         s.ssh_start_finished(
             "ssh://work-alias",
-            Ok(rex_linux::ssh::setup::Attachment::Automatic),
+            Ok(rex_rune::ssh::setup::Attachment::Automatic),
             tx,
         )
     });
@@ -3931,7 +3931,7 @@ fn ssh_setup_offers_explicit_socket_without_reconnecting_or_starting_again() {
     let commands = capture_host(&mut ws, 0);
     ws.ssh_start_finished(
         "ssh://box",
-        Ok(rex_linux::ssh::setup::Attachment::Review {
+        Ok(rex_rune::ssh::setup::Attachment::Review {
             reason: "Automatic lookup cannot find this socket".into(),
             endpoint: Some("ssh://box/custom/socket".into()),
         }),
@@ -3959,7 +3959,7 @@ fn uncertain_ssh_setup_reconnects_once_without_retrying_setup() {
     for _ in 0..2 {
         ws.ssh_start_finished(
             "ssh://box",
-            Err(rex_linux::ssh::setup::Failure {
+            Err(rex_rune::ssh::setup::Failure {
                 message: "Server may have started: timeout".into(),
                 may_have_started: true,
             }),
@@ -3990,7 +3990,7 @@ fn ssh_setup_completion_does_not_reconnect_removed_or_connected_hosts() {
         }
         ws.ssh_start_finished(
             "ssh://box",
-            Ok(rex_linux::ssh::setup::Attachment::Automatic),
+            Ok(rex_rune::ssh::setup::Attachment::Automatic),
             &mut rune::Tx::default(),
         );
         assert!(
@@ -4030,10 +4030,10 @@ fn discovered_listeners_are_reviewed_before_connecting() {
     ws.apply_probe(
         0,
         "box.tail1234.ts.net",
-        rex_linux::tailnet::Probe::Rex {
+        rex_rune::tailnet::Probe::Rex {
             endpoint: "https://box.tail1234.ts.net".into(),
             reason: None,
-            listeners: vec![rex_linux::tailnet::Listener {
+            listeners: vec![rex_rune::tailnet::Listener {
                 endpoint: "0.0.0.0:7297".into(),
                 addresses: vec!["[::]:7297".into()],
                 transport: "tcp".into(),
@@ -4098,12 +4098,12 @@ fn add_host_lists_the_tailnet_by_kind_and_hides_iphones_and_this_machine() {
     rt.state.apply_probe(
         generation,
         "box.tail1234.ts.net",
-        rex_linux::tailnet::Probe::Nothing,
+        rex_rune::tailnet::Probe::Nothing,
     );
     rt.state.apply_probe(
         generation,
         "pixel.tail1234.ts.net",
-        rex_linux::tailnet::Probe::Unknown("https 443: timed out".into()),
+        rex_rune::tailnet::Probe::Unknown("https 443: timed out".into()),
     );
     rt.state.apply_probe(
         generation - 1,
@@ -4162,7 +4162,7 @@ fn add_host_lists_the_tailnet_by_kind_and_hides_iphones_and_this_machine() {
     rt.state.apply_probe(
         generation,
         "box.tail1234.ts.net",
-        rex_linux::tailnet::Probe::Rex {
+        rex_rune::tailnet::Probe::Rex {
             endpoint: "https://box.tail1234.ts.net:7297".into(),
             listeners: vec![],
             reason: None,
@@ -4464,7 +4464,7 @@ fn an_endpoint_by_hand_takes_ssh_and_rejects_duplicates() {
 
 #[test]
 fn the_search_field_keeps_clicks_from_a_program_that_tracks_the_mouse() {
-    use rex_linux::connection::{Command, Connection, TerminalSender};
+    use rex_rune::connection::{Command, Connection, TerminalSender};
     let (mut ws, _rx) = tabbed_workspace("single");
     let (sender, sent) = flume::unbounded();
     let connection = Connection {
@@ -4484,7 +4484,7 @@ fn the_search_field_keeps_clicks_from_a_program_that_tracks_the_mouse() {
         m.connected = true;
         m.control_connected = true;
         m.frame = Some(std::sync::Arc::new(
-            rex_linux::terminal::Renderer::new()
+            rex_rune::terminal::Renderer::new()
                 .unwrap()
                 .frame(&terminal)
                 .unwrap(),
@@ -4533,7 +4533,7 @@ fn the_search_field_keeps_clicks_from_a_program_that_tracks_the_mouse() {
 
 #[test]
 fn ctrl_shift_f_searches_the_focused_terminal_without_typing_into_it() {
-    use rex_linux::connection::{Command, Connection, TerminalSender};
+    use rex_rune::connection::{Command, Connection, TerminalSender};
     let (mut ws, _rx) = tabbed_workspace("single");
     let (sender, sent) = flume::unbounded();
     let connection = Connection {
@@ -4630,7 +4630,7 @@ fn ctrl_shift_f_searches_the_focused_terminal_without_typing_into_it() {
 
 #[test]
 fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_newer() {
-    use rex_linux::update::{CheckOutcome, InstallChannel, UpdateState};
+    use rex_rune::update::{CheckOutcome, InstallChannel, UpdateState};
     let mut ws = workspace();
     let state_path = ws.settings_path.with_extension("update.json");
     ws.updates.config.state_path = state_path.clone();
@@ -4675,7 +4675,7 @@ fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_n
     assert!(
         toast_texts
             .iter()
-            .any(|t| t.contains("sudo pacman -Syu rex-linux-bin")),
+            .any(|t| t.contains("sudo pacman -Syu rex-rune-bin")),
         "toast carries pacman channel command: {toast_texts:?}"
     );
 
@@ -4749,7 +4749,7 @@ fn update_notice_toast_opens_whats_new_dismisses_for_version_and_resurfaces_on_n
 
 #[test]
 fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failures() {
-    use rex_linux::update::{CHECK_INTERVAL_SECS, InstallChannel, UpdateState};
+    use rex_rune::update::{CHECK_INTERVAL_SECS, InstallChannel, UpdateState};
     use std::time::{Duration, Instant};
     let mut ws = workspace();
     let state_path = ws.settings_path.with_extension("update-settings.json");
@@ -4852,7 +4852,7 @@ fn settings_updates_shows_channel_guidance_opt_out_and_silent_background_failure
         ),
         (
             InstallChannel::Deb { custom_hint: None },
-            "sudo apt install ./rex-linux_0.6.0_",
+            "sudo apt install ./rex-rune_0.6.0_",
         ),
         (InstallChannel::Nix, "nix flake update rex-rune"),
     ] {

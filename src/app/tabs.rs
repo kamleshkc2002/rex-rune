@@ -9,7 +9,7 @@ use super::{
     widgets::glyph,
     workspace::Workspace,
 };
-use rex_linux::{
+use rex_rune::{
     connection::{DEFAULT_TAB_LABEL, HostCommand},
     settings::MutedTab,
 };

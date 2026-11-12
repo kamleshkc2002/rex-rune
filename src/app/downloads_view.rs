@@ -11,7 +11,7 @@ use super::{
     widgets::{Pill, pill},
     workspace::{HostId, Workspace},
 };
-use rex_linux::download::{self, State, Transfer};
+use rex_rune::download::{self, State, Transfer};
 use rune::{El, KeyEvent, LiveRegion, Tx, col, el, row, text};
 use rune_kit::TextField;
 

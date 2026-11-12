@@ -214,7 +214,7 @@ pub async fn control_with_label(
     // This is an attachment-only client. Server lifetime and listener configuration
     // belong to the existing upstream Rex server, including its Tailscale identity.
     let socket = socket(endpoint, "/api/control", "rex.control.v1").await?;
-    connect(socket, reconnect, "Rex Linux", label).await
+    connect(socket, reconnect, "Rex Rune", label).await
 }
 
 pub(crate) async fn control_from_socket(

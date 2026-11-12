@@ -1,5 +1,5 @@
 use super::*;
-use rex_linux::keymap::{Overrides, resolve};
+use rex_rune::keymap::{Overrides, resolve};
 use rune::Mods;
 use serde_json::json;
 

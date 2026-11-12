@@ -139,7 +139,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
     }
     let target = panel.target.as_ref()?;
     let current = s.model().window()?;
-    let placement = rex_linux::layout::placements(current, None)
+    let placement = rex_rune::layout::placements(current, None)
         .0
         .into_iter()
         .find(|p| p.block == target.block)?;
@@ -148,7 +148,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
     let ([x, y, w, h], radius) = if bleed {
         ([0., 0., aw, ah], 0.)
     } else {
-        let radius = if s.settings.pane_density == rex_linux::settings::PaneDensity::Compact {
+        let radius = if s.settings.pane_density == rex_rune::settings::PaneDensity::Compact {
             0.
         } else {
             CARD_RADIUS

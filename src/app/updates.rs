@@ -7,7 +7,7 @@ use super::{
     widgets::{Pill, glyph, pill},
     workspace::Workspace,
 };
-use rex_linux::update::{
+use rex_rune::update::{
     AvailableUpdate, CHECK_INTERVAL_SECS, CheckConfig, CheckOutcome, InstallChannel, STARTUP_DELAY,
     UpdateState, check_for_updates,
     installer::{self, Progress},
@@ -55,7 +55,7 @@ impl Default for Updates {
             let id = NEXT.fetch_add(1, Ordering::Relaxed);
             let config = CheckConfig {
                 state_path: std::env::temp_dir().join(format!(
-                    "rex-linux-test-updates-{}-{id}.json",
+                    "rex-rune-test-updates-{}-{id}.json",
                     std::process::id()
                 )),
                 ..CheckConfig::default()
@@ -76,7 +76,7 @@ impl Default for Updates {
             let channel = InstallChannel::detect();
             let config = CheckConfig::default();
             let state = UpdateState::load(&config.state_path);
-            let env_opt_out = rex_linux::update::env_disabled();
+            let env_opt_out = rex_rune::update::env_disabled();
             Self {
                 channel,
                 state,
@@ -144,13 +144,13 @@ impl Updates {
 pub fn section(s: &Workspace) -> El {
     let k = kit();
     let u = &s.updates;
-    let current = &rex_linux::format_version(&u.config.current_version);
+    let current = &rex_rune::format_version(&u.config.current_version);
     let channel_label = u.channel.label();
     let auto_allowed = u.channel.checks_by_default() && !u.env_opt_out;
     let switch_on = s.settings.updates.check && auto_allowed;
 
     let toggle_detail = if u.env_opt_out {
-        "Turned off by REX_LINUX_NO_UPDATE_CHECK=1 in the environment."
+        "Turned off by REX_RUNE_NO_UPDATE_CHECK=1 in the environment."
     } else if !u.channel.checks_by_default() {
         "Source builds never check on their own; use Check now."
     } else {
@@ -166,16 +166,16 @@ pub fn section(s: &Workspace) -> El {
     } else if let Some(avail) = u.available() {
         match &avail.unsupported_floor {
             Some(floor) => format!(
-                "Rex Linux {} is available (requires upgrading to {floor}+ first).",
-                rex_linux::format_version(&avail.version)
+                "Rex Rune {} is available (requires upgrading to {floor}+ first).",
+                rex_rune::format_version(&avail.version)
             ),
             None => format!(
-                "Rex Linux {} is available.",
-                rex_linux::format_version(&avail.version)
+                "Rex Rune {} is available.",
+                rex_rune::format_version(&avail.version)
             ),
         }
     } else if u.state.last_checked.is_some() {
-        format!("Rex Linux {current} is up to date.")
+        format!("Rex Rune {current} is up to date.")
     } else {
         "Not checked yet.".into()
     };
@@ -291,7 +291,7 @@ pub fn section(s: &Workspace) -> El {
         };
         let mut rows = vec![
             setting(
-                &format!("Rex Linux {}", rex_linux::format_version(&avail.version)),
+                &format!("Rex Rune {}", rex_rune::format_version(&avail.version)),
                 &detail,
                 actions,
             )
@@ -347,8 +347,8 @@ pub fn toast_card(s: &Workspace) -> Option<El> {
     let guidance = s.updates.channel.guidance(&avail.version);
     let summary = match &avail.unsupported_floor {
         Some(floor) => format!(
-            "Rex Linux {} is available (manual upgrade via {floor}+ required).",
-            rex_linux::format_version(&avail.version)
+            "Rex Rune {} is available (manual upgrade via {floor}+ required).",
+            rex_rune::format_version(&avail.version)
         ),
         None => guidance.summary,
     };
@@ -612,7 +612,7 @@ impl Workspace {
                     }
                     CheckOutcome::UpToDate { version } => {
                         if manual {
-                            self.inform(format!("Rex Linux {version} is up to date."));
+                            self.inform(format!("Rex Rune {version} is up to date."));
                         }
                     }
                 }

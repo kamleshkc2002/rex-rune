@@ -8,7 +8,7 @@ use crate::app::{
     notify::NoteTarget,
     theme::{danger, warning},
 };
-use rex_linux::{
+use rex_rune::{
     connection::activity::{BlockedKind, ProgramState, StatusRecord, TerminalProgress},
     settings::interface::ToolbarBehavior,
 };
@@ -53,7 +53,7 @@ fn wake(rt: &mut Runtime<Workspace>, f: impl FnOnce(&mut Workspace)) {
     settle(rt);
 }
 fn bind(ws: &mut Workspace) {
-    ws.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(&json!([
+    ws.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(&json!([
         {"keys":"ctrl+alt+a","action":ACTION},
         {"keys":"ctrl+b>c","action":"client.tab.new"}
     ]));
@@ -81,7 +81,7 @@ fn prefix(rt: &mut Runtime<Workspace>) {
     settle(rt);
 }
 fn download(ws: &mut Workspace) {
-    let mut t = rex_linux::download::Transfer::new(
+    let mut t = rex_rune::download::Transfer::new(
         1,
         "s".into(),
         "front".into(),
@@ -90,7 +90,7 @@ fn download(ws: &mut Workspace) {
         1,
     );
     t.name = Some("build.log".into());
-    t.state = rex_linux::download::State::Receiving {
+    t.state = rex_rune::download::State::Receiving {
         received: 42,
         hint: 100,
     };
@@ -143,7 +143,7 @@ fn inventory_states_priority_words_and_host_session_identity() {
     }
     ws.hosts[1].model.connected = false;
     assert_eq!(label(&ws).as_deref(), Some("1 needs you"));
-    ws.settings.muted_tabs.push(rex_linux::settings::MutedTab {
+    ws.settings.muted_tabs.push(rex_rune::settings::MutedTab {
         endpoint: ws.settings.hosts[0].endpoint.clone(),
         session: "s".into(),
         window: "blocked".into(),

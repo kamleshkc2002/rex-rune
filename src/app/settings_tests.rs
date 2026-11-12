@@ -1,7 +1,7 @@
 //! The Settings shell and the building blocks its pages share (`settings_kit`).
 use super::*;
 use crate::app::panel::SettingsSection;
-use rex_linux::settings::NoticePosition;
+use rex_rune::settings::NoticePosition;
 
 /// Settings open on `section`, in a window large enough for the whole dialog, at rest.
 fn settings_at(section: SettingsSection, scale: f32, size: (f32, f32)) -> Runtime<Workspace> {

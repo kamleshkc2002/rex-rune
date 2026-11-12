@@ -2,7 +2,7 @@
 use super::pane_verb_tests::{Camera, framed_terminal, rect};
 use super::*;
 use crate::app::{pane_header, panel::SettingsSection, theme::*};
-use rex_linux::settings::{PaneDensity, PaneHeader};
+use rex_rune::settings::{PaneDensity, PaneHeader};
 
 fn settle(rt: &mut Runtime<Workspace>) {
     for _ in 0..90 {
@@ -38,7 +38,7 @@ fn assert_same(a: &[rune::ElementInfo], b: &[rune::ElementInfo]) {
 }
 
 fn cues(ws: &mut Workspace) {
-    use rex_linux::connection::activity::{ProgramState, TerminalProgress};
+    use rex_rune::connection::activity::{ProgramState, TerminalProgress};
     let error = record(ProgramState::Working, true);
     ws.hosts[0]
         .model

@@ -68,6 +68,39 @@ pub struct Options {
 }
 
 impl Options {
+    /// The command line of this process. Started through the old `rex-linux` name, it names
+    /// itself that way: the 0.7.x updater and older scripts check that `--version` prints
+    /// exactly `rex-linux X.Y.Z` before they install or accept the binary.
+    pub fn from_command_line() -> Self {
+        Self::from_arguments(std::env::args_os(), crate::legacy::invoked_as_legacy())
+    }
+
+    fn from_arguments(
+        arguments: impl IntoIterator<Item = std::ffi::OsString>,
+        legacy_name: bool,
+    ) -> Self {
+        use clap::{CommandFactory as _, FromArgMatches as _};
+        let mut command = Self::command();
+        if legacy_name {
+            command = command.name(crate::legacy::NAME);
+        }
+        let matches = command.get_matches_from(arguments);
+        Self::from_arg_matches(&matches).unwrap_or_else(|error| error.exit())
+    }
+
+    /// What `--version` prints, under the current name or the old one.
+    #[cfg(test)]
+    fn version_line(legacy_name: bool) -> String {
+        use clap::CommandFactory as _;
+        let mut command = Self::command();
+        if legacy_name {
+            command = command.name(crate::legacy::NAME);
+        }
+        command.render_version()
+    }
+}
+
+impl Options {
     pub fn startup_size(&self, settings: &crate::settings::Settings) -> (f32, f32) {
         self.window_size
             .as_deref()

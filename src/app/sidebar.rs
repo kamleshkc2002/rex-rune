@@ -11,7 +11,7 @@ use super::{
     widgets::{chrome_button, glyph},
     workspace::Workspace,
 };
-use rex_linux::connection::HostCommand;
+use rex_rune::connection::HostCommand;
 use rune::{
     Cursor, Cx, Edge, El, PointerButton, ScrollSpec, SpringPair, Transition, Tx, col, el, row, text,
 };

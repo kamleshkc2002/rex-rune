@@ -6,8 +6,8 @@ use crate::app::{
     panel::SettingsSection,
     tab_icons::*,
 };
-use rex_linux::connection::activity::{ProgramState, StatusRecord};
-use rex_linux::settings::interface::ToolbarBehavior;
+use rex_rune::connection::activity::{ProgramState, StatusRecord};
+use rex_rune::settings::interface::ToolbarBehavior;
 
 pub(super) fn settle(rt: &mut Runtime<Workspace>) {
     for _ in 0..3 {
@@ -390,7 +390,7 @@ fn icon_counts_preserve_visibility_modes_and_sidebar_fallback() {
 }
 #[test]
 fn counts_keep_overflow_downloads_status_and_menu_navigation() {
-    use rex_linux::{
+    use rex_rune::{
         connection::activity::TerminalProgress,
         download::{State, Transfer},
     };
@@ -500,7 +500,7 @@ fn counts_keep_overflow_downloads_status_and_menu_navigation() {
 
 #[test]
 fn cached_updates_keep_pane_order_and_sidebar_status_whole() {
-    use rex_linux::connection::activity::TerminalProgress;
+    use rex_rune::connection::activity::TerminalProgress;
     let _families = rune::text::with_families("Inter", "Inter");
     let (mut ws, host) = tabbed_workspace("single");
     five_programs(&mut ws);
@@ -633,7 +633,7 @@ fn tab_icons_draw() {
                 Some("long project name with program activity".into());
             m.progress.insert(
                 "block:c".into(),
-                rex_linux::connection::activity::TerminalProgress::Paused(Some(42)),
+                rex_rune::connection::activity::TerminalProgress::Paused(Some(42)),
             );
         });
         settle(&mut rt);

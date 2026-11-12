@@ -3,7 +3,7 @@ use super::{
     theme::{danger, warning},
     workspace::Workspace,
 };
-use rex_linux::connection::activity::ProgramState;
+use rex_rune::connection::activity::ProgramState;
 
 /// Toolbar width below which the chip is not drawn: at 640 pt it would take half the tab
 /// track.

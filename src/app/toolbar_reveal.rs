@@ -7,7 +7,7 @@
 //! can still be moved, closed and steered. A toolbar that floats never moves the panes under
 //! it: no terminal is resized.
 use super::{theme::*, workspace::Workspace};
-use rex_linux::settings::interface::ToolbarBehavior;
+use rex_rune::settings::interface::ToolbarBehavior;
 use rune::{Edge, El, SpringPair, Transition, Tx, el};
 use std::time::Duration;
 

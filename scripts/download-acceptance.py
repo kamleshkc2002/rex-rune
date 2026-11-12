@@ -2,7 +2,7 @@
 """File-download acceptance (API 13) through the real UI, on private servers and a private Xvfb.
 
 Requires rex with API 13 on PATH (the server under test), Xvfb and xdotool, and a built client
-(REX_BIN, default target/release/rex-linux). Optional, each skipped with its reason when
+(REX_BIN, default target/release/rex-rune). Optional, each skipped with its reason when
 missing: an API 12 rex (REX12_BIN, default ~/.cache/agent-ws/rex-preview14/bin/rex) for the
 "too old" case; sshd, ssh and ssh-keygen for the one real ssh:// transfer; `unshare` with
 unprivileged user namespaces for the low-space cases (a size-limited tmpfs is mounted over the
@@ -55,7 +55,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+APP = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 REX = shutil.which("rex")
 REX12 = os.environ.get("REX12_BIN") or str(Path.home() / ".cache/agent-ws/rex-preview14/bin/rex")
 for tool in ("rex", "Xvfb", "xdotool"):
@@ -397,7 +397,7 @@ def tree_names(tree):
 
 
 def open_controls(tree):
-    """The elements of a screen that offer Open on a download row: Rex Linux does not open files."""
+    """The elements of a screen that offer Open on a download row: Rex Rune does not open files."""
     return sorted(key for key, name in tree.items()
                   if key.startswith("download-open:")
                   or (key.startswith("download-") and not key.startswith(("download-name:", "download-state:"))
@@ -420,7 +420,7 @@ class Run:
         return tree
 
     def records(self):
-        path = self.state / "rex-linux/downloads.json"
+        path = self.state / "rex-rune/downloads.json"
         return json.loads(path.read_text()).get("partials", []) if path.exists() else []
 
     def listing(self):

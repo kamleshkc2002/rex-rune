@@ -1,7 +1,7 @@
 //! Settings → Terminal → Titles: whether a tab or pane without a name of its own is called by
 //! its foreground program and that program's directory (`vim - ~/rex`) in place of a title
 //! its shell set. What is generated, and which titles it replaces, is decided in
-//! `rex_linux::connection::titles`; every place that names a tab or pane passes the
+//! `rex_rune::connection::titles`; every place that names a tab or pane passes the
 //! preference to `activity::tab_name` or `activity::pane_name`.
 use super::{
     settings_kit::{card, footnote, section, setting},

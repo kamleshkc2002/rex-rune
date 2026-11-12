@@ -191,8 +191,8 @@ impl Target {
 /// Where every process's tunnel sockets live.
 fn tunnels_directory() -> PathBuf {
     match std::env::var("XDG_RUNTIME_DIR") {
-        Ok(runtime) if !runtime.is_empty() => PathBuf::from(runtime).join("rex-linux"),
-        _ => std::env::temp_dir().join(format!("rex-linux-{}", uid())),
+        Ok(runtime) if !runtime.is_empty() => PathBuf::from(runtime).join("rex-rune"),
+        _ => std::env::temp_dir().join(format!("rex-rune-{}", uid())),
     }
 }
 

@@ -2,7 +2,7 @@
 
 A typed Rust client for the [Rex](https://www.superlogical.com/rex) server's control API.
 
-> This is a vendored copy of [a10y/rexrs](https://github.com/a10y/rexrs) with local changes; see [REX-LINUX.md](REX-LINUX.md). Licensed `MIT OR Apache-2.0` (`LICENSE-MIT`, `LICENSE-APACHE`).
+> This is a vendored copy of [a10y/rexrs](https://github.com/a10y/rexrs) with local changes; see [REX-RUNE.md](REX-RUNE.md). Licensed `MIT OR Apache-2.0` (`LICENSE-MIT`, `LICENSE-APACHE`).
 
 ```rust
 use rexrs::RexClient;

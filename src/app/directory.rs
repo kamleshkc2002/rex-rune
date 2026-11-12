@@ -3,7 +3,7 @@ use super::{
     panel::{Entry, Intent, PaneTarget, PanelKind},
     workspace::Workspace,
 };
-use rex_linux::connection::{
+use rex_rune::connection::{
     HostCommand,
     directory::{Failure, Request},
 };
@@ -53,8 +53,8 @@ pub fn split_path(text: &str) -> (&str, &str) {
 }
 
 // Shared with settings load so edited history uses exactly the browser's refusal rules.
-pub use rex_linux::settings::recent_paths::refused;
-use rex_linux::settings::recent_paths::{LIMIT, PATH_MAX, valid};
+pub use rex_rune::settings::recent_paths::refused;
+use rex_rune::settings::recent_paths::{LIMIT, PATH_MAX, valid};
 const REFUSED: &str = "Paths with control or invisible formatting characters can't be inserted.";
 
 /// POSIX single quoting, never raw controls. Tilde is resolved by Rex before this call.

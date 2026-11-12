@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::actions::{self, Remote};
-use rex_linux::connection::perform::{Outcome, Pending, Request};
+use rex_rune::connection::perform::{Outcome, Pending, Request};
 use serde_json::{Value, json};
 use std::time::{Duration, Instant};
 
@@ -232,7 +232,7 @@ fn remote_scroll_is_local_and_requester_principal_is_display_only() {
         assert!(matches!(
             rx.recv().unwrap(),
             HostCommand::Terminal {
-                command: rex_linux::connection::Command::Scroll(-10),
+                command: rex_rune::connection::Command::Scroll(-10),
                 ..
             }
         ));
@@ -304,7 +304,7 @@ fn search_edits_and_consumed_keys_record_activity() {
 fn remote_actions_preserve_pending_key_sequences_even_after_a_pause() {
     let (mut ws, rx) = tabbed_workspace("single");
     ws.settings.hosts[0].remote_control = true;
-    ws.local_keymap = actions::resolve(&rex_linux::keymap::Overrides::parse(&json!([
+    ws.local_keymap = actions::resolve(&rex_rune::keymap::Overrides::parse(&json!([
         {"keys": "ctrl+b>c", "action": "client.sidebar.toggle"}
     ])));
     let mut rt = runtime(ws);
@@ -387,7 +387,7 @@ fn client_label_form_trims_and_rejects_empty_without_freezing_the_default() {
     ws.perform(Intent::ClientLabel, &mut tx);
     assert_eq!(
         ws.panel.as_ref().unwrap().inputs[0].text,
-        rex_linux::settings::hostname()
+        rex_rune::settings::hostname()
     );
     ws.panel.as_mut().unwrap().inputs[0] = rune::TextEdit::new("  \n  ");
     ws.submit(&mut tx);

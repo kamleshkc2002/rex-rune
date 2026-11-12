@@ -1,7 +1,7 @@
 //! About, the copied version and debug reports, and their Commands rows.
 use super::*;
 use crate::app::{about, panel::SettingsSection};
-use rex_linux::connection::server_info::{Answer, Build, Process, ServerInfo};
+use rex_rune::connection::server_info::{Answer, Build, Process, ServerInfo};
 
 fn shows(rt: &Runtime<Workspace>, words: &str) -> bool {
     rt.elements()
@@ -47,7 +47,7 @@ fn about_names_the_active_server_once_it_answers_and_says_what_it_did_not_report
     ws.hosts[0].model.server_info.api_revisions = Some((10, 13));
     let mut rt = about(ws);
     assert_eq!(rt.state.settings_section, SettingsSection::About);
-    assert!(shows(&rt, "Rex Linux"));
+    assert!(shows(&rt, "Rex Rune"));
     assert!(shows(
         &rt,
         &format!("Version {}", env!("CARGO_PKG_VERSION"))
@@ -236,7 +236,7 @@ fn commands_open_about_and_copy_both_reports() {
         });
         rt.frame(1. / 60.);
         let labels: Vec<_> = rt.state.entries().into_iter().map(|e| e.label).collect();
-        for row in ["About Rex Linux", "Copy version info", "Copy debug info"] {
+        for row in ["About Rex Rune", "Copy version info", "Copy debug info"] {
             assert!(labels.iter().any(|l| l == row), "{row} is a Commands row");
         }
         for c in query.chars() {
@@ -279,7 +279,7 @@ fn commands_open_about_and_copy_both_reports() {
 
 #[test]
 fn every_page_prints_the_client_version_one_way() {
-    let version = rex_linux::format_version(env!("CARGO_PKG_VERSION"));
+    let version = rex_rune::format_version(env!("CARGO_PKG_VERSION"));
     assert!(!version.starts_with('v'));
     let mut ws = workspace();
     ws.perform(Intent::Updates, &mut rune::Tx::default());
@@ -294,6 +294,6 @@ fn every_page_prints_the_client_version_one_way() {
     rt.update(|s, tx| s.perform(Intent::About, tx));
     settle(&mut rt);
     assert!(shows(&rt, &format!("Version {version}")));
-    assert!(about::version_info(&rt.state).starts_with(&format!("Rex Linux {version}\n")));
+    assert!(about::version_info(&rt.state).starts_with(&format!("Rex Rune {version}\n")));
     std::fs::remove_file(&rt.state.settings_path).ok();
 }

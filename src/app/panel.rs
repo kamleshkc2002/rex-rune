@@ -3,7 +3,7 @@ use super::splits::SplitWay;
 use super::tabs::{TabAction, TabTarget};
 use super::theme::{MONITOR, SERVER};
 use super::workspace::Workspace;
-use rex_linux::{
+use rex_rune::{
     settings::{ChromeTheme, TerminalThemeChoice},
     terminal_theme::{BUILTIN_PREFIX, BUILTINS, paired},
 };

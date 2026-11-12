@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check remembered window size, maximize exclusion, zoom and CLI precedence on X11.
 
-Requires a built client (REX_BIN, default target/debug/rex-linux), Xvfb, openbox,
+Requires a built client (REX_BIN, default target/debug/rex-rune), Xvfb, openbox,
 xdotool, xprop and ImageMagick's import. Uses a private display, HOME and preferences
 and a nonexistent socket: no Rex server or daily sessions are touched. Captures and
 logs remain in the printed temporary directory.
@@ -16,7 +16,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/debug/rex-rune"))
 for tool in ("Xvfb", "openbox", "xdotool", "xprop", "import"):
     assert shutil.which(tool), f"{tool} required"
 work = Path(tempfile.mkdtemp(prefix="rex-window-size-x11-"))

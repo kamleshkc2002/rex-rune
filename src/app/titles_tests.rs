@@ -1,7 +1,7 @@
 //! Generated names are display-only and agree across every chrome surface.
 use super::*;
 use crate::app::panel::SettingsSection;
-use rex_linux::connection::{activity::TERMINAL, titles::Place};
+use rex_rune::connection::{activity::TERMINAL, titles::Place};
 
 #[test]
 fn saving_an_untouched_tab_rename_keeps_the_server_label_not_the_generated_name() {

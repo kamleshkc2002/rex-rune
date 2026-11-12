@@ -1,21 +1,21 @@
 # Linux Nix packaging
 
-The flake exposes `packages.<system>.rex-linux` (also `default`), a development shell, a formatter and a package check for `x86_64-linux` and `aarch64-linux`. An output being exposed does not mean it has been built on that architecture.
+The flake exposes `packages.<system>.rex-rune` (also `default`), a development shell, a formatter and a package check for `x86_64-linux` and `aarch64-linux`. An output being exposed does not mean it has been built on that architecture.
 
 From a checkout:
 
 ```sh
-nix build .#rex-linux
-./result/bin/rex-linux --help
+nix build .#rex-rune
+./result/bin/rex-rune --help
 nix develop
 cargo test --locked --all-features
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
 ```
 
-`nix build .#rex-linux` uses only files tracked by git; use `path:.#rex-linux` to include uncommitted files. Another flake can take this repository as an input (`github:shuv1337/rex-rune`) and install `inputs.rex-rune.packages.${pkgs.stdenv.hostPlatform.system}.default`, for example in a Home Manager configuration. Keep this input's own nixpkgs pin: the build needs a newer Rust and Zig than some system configurations provide.
+`nix build .#rex-rune` uses only files tracked by git; use `path:.#rex-rune` to include uncommitted files. Another flake can take this repository as an input (`github:shuv1337/rex-rune`) and install `inputs.rex-rune.packages.${pkgs.stdenv.hostPlatform.system}.default`, for example in a Home Manager configuration. Keep this input's own nixpkgs pin: the build needs a newer Rust and Zig than some system configurations provide.
 
-The package installs `rex-linux` and the `rex-probe` / `rex-workspace-probe` / `rex-update-probe` diagnostic binaries, plus the desktop entry and icons. It wraps the GUI with the Linux graphics and input libraries and font discovery. The development shell puts the same runtime libraries, including the Vulkan loader, in `LD_LIBRARY_PATH` so `cargo run --locked --bin rex-linux` can load them. Your system must still provide a working Vulkan graphics driver. After a flake change, exit and enter `nix develop` again to update the environment. Run the probes only against disposable servers: they create and remove their own sessions.
+The package installs `rex-rune` and the `rex-probe` / `rex-workspace-probe` / `rex-update-probe` diagnostic binaries, plus the desktop entry and icons. It wraps the GUI with the Linux graphics and input libraries and font discovery. The development shell puts the same runtime libraries, including the Vulkan loader, in `LD_LIBRARY_PATH` so `cargo run --locked --bin rex-rune` can load them. Your system must still provide a working Vulkan graphics driver. After a flake change, exit and enter `nix develop` again to update the environment. Run the probes only against disposable servers: they create and remove their own sessions.
 
 The package's check phase runs rustfmt, Clippy with warnings denied, the Rust unit and headless UI tests, and `scripts/connection-only-smoke.py`, which checks that a missing or stale socket never makes the client execute `rex`. The icon has its own provenance and licensing notice in `resources/icons/README.md`; the application's MIT license does not cover that artwork.
 
@@ -24,11 +24,11 @@ The package's check phase runs rustfmt, Clippy with warnings denied, the Rust un
 | Install | Update |
 | --- | --- |
 | Flake input `github:shuv1337/rex-rune` | `nix flake update rex-rune`, then rebuild your configuration |
-| `nix profile install github:shuv1337/rex-rune#rex-linux` | `nix profile upgrade rex-linux` (use the name shown by `nix profile list`) |
-| Tag pin `github:shuv1337/rex-rune/vX.Y.Z#rex-linux` | Change the tag to the desired release, update the lock, then rebuild |
+| `nix profile install github:shuv1337/rex-rune#rex-rune` | `nix profile upgrade rex-rune` (use the name shown by `nix profile list`) |
+| Tag pin `github:shuv1337/rex-rune/vX.Y.Z#rex-rune` | Change the tag to the desired release, update the lock, then rebuild |
 
 The unqualified GitHub reference follows **master**, which can be ahead of a release.
-There is no `stable` branch. Nix builds set `REX_LINUX_CHANNEL=nix`; the app never
+There is no `stable` branch. Nix builds set `REX_RUNE_CHANNEL=nix`; the app never
 replaces a Nix store binary, and its in-app update notice shows the Nix flake/profile
 upgrade commands above.
 

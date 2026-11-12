@@ -21,11 +21,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = Path(os.environ.get("SHOT_OUT", ROOT / "docs/screenshot.png"))
-APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-rune")
 W, H, SCALE = 2160, 1350, 1.5
 # `cargo test` in the fixture shell prints only the suites that ran tests, one line per result.
 CARGO = r"""cargo() { command cargo "$@" 2>/dev/null | grep -E '^(running [1-9]|\.+$|test result: ok\. [1-9])' | sed -E 's/; 0 ignored.*finished in/ in/'; }"""
-PS1 = r"\[\e[38;5;110m\]rex-linux\[\e[0m\] \[\e[38;5;245m\]❯\[\e[0m\] "
+PS1 = r"\[\e[38;5;110m\]rex-rune\[\e[0m\] \[\e[38;5;245m\]❯\[\e[0m\] "
 
 
 def main():
@@ -73,7 +73,7 @@ def main():
         main_layout = {"split": {"direction": "horizontal", "ratio": 0.5, "before": shell,
                                  "after": {"split": {"direction": "vertical", "ratio": 0.58,
                                                      "before": shell, "after": shell}}}}
-        main_sid, blocks = session("rex-linux", [{"window_label": "dev", "layout": main_layout},
+        main_sid, blocks = session("rex-rune", [{"window_label": "dev", "layout": main_layout},
                                                  {"window_label": "server", "layout": shell},
                                                  {"window_label": "notes", "layout": shell}])
         for label, tab in (("api-gateway", "logs"), ("dotfiles", "main"), ("blog", "drafts")):
@@ -110,7 +110,7 @@ def main():
         (stub / "tailscale").chmod(0o755)
         spawn([str(APP), "--endpoint", endpoint, "--session", main_sid,
                "--config", str(config), "--window-size", f"{int(W / SCALE)}x{int(H / SCALE)}"],
-              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_LINUX_NO_UPDATE_CHECK="1"))
+              env=dict(env, PATH=f"{stub}{os.pathsep}{env['PATH']}", REX_RUNE_NO_UPDATE_CHECK="1"))
         # Run the fixture commands only once the client has attached and sized the panes.
         time.sleep(4)
         send(left, "eza --tree --color=always src")

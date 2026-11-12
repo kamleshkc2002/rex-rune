@@ -5,15 +5,15 @@ unchanged from the embedded `ic11` (32px), `ic07` (128px) and `ic13` (256px) rep
 the official macOS application's `.icns` file. Colours, transparency, padding, shadows and the
 BETA badge are preserved.
 
-**This is Rex/Superlogical artwork.** It is not original Rex Linux artwork and is not covered by
+**This is Rex/Superlogical artwork.** It is not original Rex Rune artwork and is not covered by
 this repository's MIT license or the dependencies' open-source licenses. It is included only so
 the client can identify itself as a client for Rex, and is used in the window icon, the identity
-chip, empty states and the desktop launcher. If you redistribute or package Rex Linux, check that
+chip, empty states and the desktop launcher. If you redistribute or package Rex Rune, check that
 doing so is acceptable to the icon's owner, or replace these files.
 
 The app embeds the 256px PNG once and reuses it for its identity and empty-state marks.
 `scripts/install-desktop.sh` copies the native-size files into the user's `hicolor` icon theme
-under the application ID `dev.shuv.rex-linux`.
+under the application ID `dev.shuv.rex-rune`.
 
 Source ICNS SHA-256: `d28fc64c3e6f6919d0c69e99056b7234b549ad6d88bd457404d9402833e0e1ed`.
 

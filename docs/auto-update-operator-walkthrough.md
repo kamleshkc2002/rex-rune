@@ -1,6 +1,6 @@
 # Operating the update system
 
-A walkthrough for whoever runs Rex Linux releases and update channels: the owner, or an agent working for them. It follows the [approved auto-update plan](https://github.com/shuv1337/rex-rune/blob/plan/auto-update/docs/plans/auto-update.md) as re-ordered in [the roadmap](plans/roadmap-0.5.2.md), and the scripts and workflow in this repository. [`docs/releases.md`](releases.md) stays the reference for the signing pipeline; this document is the order of work.
+A walkthrough for whoever runs Rex Rune releases and update channels: the owner, or an agent working for them. It follows the [approved auto-update plan](https://github.com/shuv1337/rex-rune/blob/plan/auto-update/docs/plans/auto-update.md) as re-ordered in [the roadmap](plans/roadmap-0.5.2.md), and the scripts and workflow in this repository. [`docs/releases.md`](releases.md) stays the reference for the signing pipeline; this document is the order of work.
 
 Written 2026-11-10 (PST) at `61e0f2a`. **Only signed releases exist today.** Every step that depends on something not yet built is marked with the piece that builds it: "(after PR U1)" and so on, using the roadmap's names:
 
@@ -36,7 +36,7 @@ Everything else is an agent's: release pull requests, test runs, tagging once to
 
 Built today. Steps 1 to 5 can run any time; step 6 starts the clock.
 
-1. **[Agent] Open the release pull request.** Set the version in `Cargo.toml`, the `rex-linux` entry in `Cargo.lock`, and `nix/package.nix`. Give `CHANGELOG.md` a `## X.Y.Z - YYYY-MM-DD` section; the workflow takes the release notes from it and fails if it is empty. Update the README's install examples.
+1. **[Agent] Open the release pull request.** Set the version in `Cargo.toml`, the `rex-rune` entry in `Cargo.lock`, and `nix/package.nix`. Give `CHANGELOG.md` a `## X.Y.Z - YYYY-MM-DD` section; the workflow takes the release notes from it and fails if it is empty. Update the README's install examples.
 2. **[Agent] Run the checks.**
 
    ```sh
@@ -75,7 +75,7 @@ Built today. Steps 1 to 5 can run any time; step 6 starts the clock.
 6. **[Agent] Tag**, once the owner has said to release.
 
    ```sh
-   git tag -a vX.Y.Z -m 'Rex Linux X.Y.Z' && git push origin vX.Y.Z
+   git tag -a vX.Y.Z -m 'Rex Rune X.Y.Z' && git push origin vX.Y.Z
    ```
 
 7. **CI builds and attests.** Both architectures are rebuilt and tested, the `attest` job records provenance for the packages, and `publish` stops at the `release` environment.
@@ -84,7 +84,7 @@ Built today. Steps 1 to 5 can run any time; step 6 starts the clock.
 10. **CI signs and publishes.** In `publish`, in this order:
     - writes `SHA256SUMS` and `latest.json`, and saves both as `unsigned-release-metadata`;
     - signs both with the CI minisign key;
-    - verifies each signature against `packaging/keys/`, checks the trusted comments (`rex-linux vX.Y.Z latest.json`), and rechecks packages against `SHA256SUMS` against `latest.json`;
+    - verifies each signature against `packaging/keys/`, checks the trusted comments (`rex-linux vX.Y.Z latest.json`; the product id kept its name through the rename), and rechecks packages against `SHA256SUMS` against `latest.json`;
     - creates a draft, uploads the assets, publishes, and marks it latest.
 
     Any failure before the draft publishes nothing. Assets per release:
@@ -126,7 +126,7 @@ What users run:
 curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh
 ```
 
-The same command upgrades. `… | sh -s -- --uninstall` removes the install and keeps preferences. Like every other channel (pacman `rex-linux-bin`, `.deb`, Nix and the tarball), it installs only the `rex-linux` desktop client (`~/.local/bin/rex-linux`), its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server.
+The same command upgrades. `… | sh -s -- --uninstall` removes the install and keeps preferences. Like every other channel (pacman `rex-rune-bin`, `.deb`, Nix and the tarball), it installs only the `rex-rune` desktop client (`~/.local/bin/rex-rune`), its `.desktop` launcher and icons, and never installs, replaces or shadows the `rex` server.
 
 1. **Publishing is part of the release.** The source is `packaging/install/install.sh`. `publish` signs it and uploads it with the other assets, so it passes the same approval click and is immutable afterwards. There is nothing separate to deploy.
 2. **Keeping it in step with the keys.** The script carries both public keys as constants. `scripts/test-release.py` fails if they differ from `packaging/keys/release.pub` and `release-backup.pub`, so a key change that misses the script cannot merge. **[Agent]** after any change under `packaging/keys/`, run that test and `bash scripts/install-script-test.sh`.
@@ -141,14 +141,14 @@ The same command upgrades. `… | sh -s -- --uninstall` removes the install and 
        useradd -m tester
        run() { su tester -c "curl --proto =https --tlsv1.2 -fsSL $url | sh -s -- $*"; }
        run                                          # installs
-       /home/tester/.local/bin/rex-linux --version
+       /home/tester/.local/bin/rex-rune --version
        run                                          # reports: already current
        run --uninstall
-       test ! -e /home/tester/.local/bin/rex-linux'
+       test ! -e /home/tester/.local/bin/rex-rune'
    done
    # aarch64, on shuvmbp-1, in a temporary home so the real install is untouched:
    env -u XDG_BIN_HOME -u XDG_DATA_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME HOME="$(mktemp -d)" \
-     sh -c 'curl --proto =https --tlsv1.2 -fsSL "$0" | sh && "$HOME/.local/bin/rex-linux" --version' "$url"
+     sh -c 'curl --proto =https --tlsv1.2 -fsSL "$0" | sh && "$HOME/.local/bin/rex-rune" --version' "$url"
    ```
 
    Neither container has `minisign`, so both exercise the OpenSSL route. The binary links only glibc at load time, so `--version` runs in a bare container.
@@ -279,14 +279,23 @@ SigLevel = Required DatabaseRequired
 Server = https://pkg.shuv.dev/arch/$arch
 ```
 
-Then `sudo pacman -Syu rex-linux-bin`. Both package and database signatures are
+The section is still called `[rex-linux]`, the client's name through 0.7.x: pacman
+fetches `<section>.db`, and every `pacman.conf` that already has the repository
+uses that name. The certificate file keeps its name for the same reason.
+
+Then `sudo pacman -Syu rex-rune-bin`. Both package and database signatures are
 mandatory. Future upgrades use `sudo pacman -Syu`, without an AUR helper.
 
-If `~/.local/bin/rex-linux` shadows `/usr/bin/rex-linux`, first uninstall the
+An install of `rex-linux-bin` needs no change to `pacman.conf`. Its next
+`sudo pacman -Syu` (`omarchy update` on Omarchy) asks `Replace rex-linux-bin with
+rex-linux/rex-rune-bin?`; answering yes removes the old package and installs the
+new one, which also provides the `rex-linux` command as a link.
+
+If `~/.local/bin/rex-rune` shadows `/usr/bin/rex-rune`, first uninstall the
 user copy with the install script's `--uninstall` (preferences are retained).
-After installing, `command -v rex-linux` must print `/usr/bin/rex-linux`;
-`pacman -Qi rex-linux-bin` should say `Validated By : Signature`, and
-`/usr/share/rex-linux/channel` must contain `channel=pacman`.
+After installing, `command -v rex-rune` must print `/usr/bin/rex-rune`;
+`pacman -Qi rex-rune-bin` should say `Validated By : Signature`, and
+`/usr/share/rex-rune/channel` must contain `channel=pacman`.
 A later `mise run install` creates a source install and shadows the package again.
 
 ### Publishing and rebuilding
@@ -327,13 +336,13 @@ A later `mise run install` creates a source install and shadows the package agai
 
 ### U3 channel markers and receipt
 
-Official CI builds embed `REX_LINUX_CHANNEL=official`; Nix embeds `nix`;
+Official CI builds embed `REX_RUNE_CHANNEL=official`; Nix embeds `nix`;
 ordinary builds default to `source`. The same official executable goes into
 all three package formats. Pacman and Debian add a marker next to the prefix's
-`share/rex-linux/`. Debian does **not** configure APT yet.
+`share/rex-rune/`. Debian does **not** configure APT yet.
 
-The tarball's `install.sh` writes `$XDG_DATA_HOME/rex-linux/install.json`
-(default `~/.local/share/rex-linux/install.json`), mode 0600, after successful
+The tarball's `install.sh` writes `$XDG_DATA_HOME/rex-rune/install.json`
+(default `~/.local/share/rex-rune/install.json`), mode 0600, after successful
 installation. Schema 1 is `{"schema":1,"path":"<resolved binary>","version":"X.Y.Z","sha256":"<hex>"}`.
 Source installs and uninstall remove it. U4 will consume these markers; no
 background update check or self-updater is added here.
@@ -343,35 +352,35 @@ background update check or self-updater is added here.
 First-time setup is section 4; nothing more is needed. What users do once (and from the first `.deb` built after U5, installing the `.deb` does it for them):
 
 ```sh
-sudo curl -fsSLo /etc/apt/sources.list.d/rex-linux.sources https://pkg.shuv.dev/rex-linux.sources
-sudo apt update && sudo apt install rex-linux
+sudo curl -fsSLo /etc/apt/sources.list.d/rex-rune.sources https://pkg.shuv.dev/rex-rune.sources
+sudo apt update && sudo apt install rex-rune
 ```
 
-1. **Publishing is part of the release.** The same site build adds `dists/stable/…`, `pool/…`, `InRelease`, `Release.gpg` and `rex-linux.sources`, from the newest five signed releases.
+1. **Publishing is part of the release.** The same site build adds `dists/stable/…`, `pool/…`, `InRelease`, `Release.gpg` and `rex-rune.sources`, from the newest five signed releases.
 2. **[Agent] After each release, check from a clean Ubuntu container:**
 
    ```sh
    docker run --rm ubuntu:24.04 bash -euxo pipefail -c '
      apt-get update && apt-get install -y curl ca-certificates
-     curl -fsSLo /etc/apt/sources.list.d/rex-linux.sources https://pkg.shuv.dev/rex-linux.sources
+     curl -fsSLo /etc/apt/sources.list.d/rex-rune.sources https://pkg.shuv.dev/rex-rune.sources
      apt-get update 2>&1 | tee /tmp/log
      ! grep -E "^(W|E):" /tmp/log
-     apt-get install -y rex-linux
-     rex-linux --version
-     apt-cache policy rex-linux
-     cat /usr/share/rex-linux/channel'
+     apt-get install -y rex-rune
+     rex-rune --version
+     apt-cache policy rex-rune
+     cat /usr/share/rex-rune/channel'
    ```
 
    Expect no warnings, the new version as the candidate from `https://pkg.shuv.dev`, and `channel=deb`. Repeat with `debian:trixie`.
-3. **[Agent] Check the upgrade path** once two versions are in the repository: install the older one (`apt-get install -y rex-linux=<previous>`), then `apt-get upgrade -y`, and confirm the version moved.
+3. **[Agent] Check the upgrade path** once two versions are in the repository: install the older one (`apt-get install -y rex-rune=<previous>`), then `apt-get upgrade -y`, and confirm the version moved.
 4. **Rebuilding without a release** is the same `repo.yml` run as for Arch.
 
 ## 7. The in-app notice (after PR U4) and the self-updater (after PR U6)
 
 ### What users see
 
-- **Once a day**, about 30 seconds after launch and then every 24 hours, the app reads `latest.json` and its signature from `releases/latest/download/`. Nothing about the user is sent. Source builds never check on their own. The check can be turned off in Settings or with `REX_LINUX_NO_UPDATE_CHECK=1`.
-- **One information notice per new version:** "Rex Linux X.Y.Z is available. Settings → Updates has the details."
+- **Once a day**, about 30 seconds after launch and then every 24 hours, the app reads `latest.json` and its signature from `releases/latest/download/`. Nothing about the user is sent. Source builds never check on their own. The check can be turned off in Settings or with `REX_RUNE_NO_UPDATE_CHECK=1`.
+- **One information notice per new version:** "Rex Rune X.Y.Z is available. Settings → Updates has the details."
 - **Settings → Updates** shows the installed version, how it was installed, the last check, a **Check now** button, and the action for that install:
 
   | Install | Action shown |
@@ -379,11 +388,11 @@ sudo apt update && sudo apt install rex-linux
   | pacman package | `sudo pacman -Syu`, with Copy |
   | `.deb` | The `apt` command with Copy (after PR U5); before that, a link to the `.deb` |
   | Tarball or install script | **Update now**, then **Restart to finish**; **Copy command** remains the fallback |
-  | Nix | `nix flake update rex-rune` or `nix profile upgrade rex-linux` |
+  | Nix | `nix flake update rex-rune` or `nix profile upgrade rex-rune` |
   | Source build | "Built from source. Update with git." |
   | Anything else | A link to the release |
 
-- A failed or offline check is silent. Only **Check now** and `rex-linux --check-update` report errors.
+- A failed or offline check is silent. Only **Check now** and `rex-rune --check-update` report errors.
 
 ### Testing before a release is published
 
@@ -392,7 +401,7 @@ The shipped app has no way to point at another address or key, on purpose. Test 
 1. **[Agent]** Take the packages and `test-release-metadata` from the manual workflow run (section 2, steps 3 and 4). They are the staged release: real packages, with metadata signed by a throwaway key whose public half is in the artifact.
 2. **[Agent]** Serve that directory on loopback and run the update probe (`src/bin/update_probe.rs`, after PR U4), which calls the same library code with the test key and address. Check that it reports the staged version and the right action for each channel.
 3. **[Agent]** Run `cargo test --locked --no-default-features update::installer`. The signed loopback fixture installs a stub `99.0.0` package into a temporary prefix through the real verification, extraction, desktop-file-utils and transaction code. Separate tests cover tampering, downgrade/floor refusals, hostile tar entries and rollback at every replacement. See [self-update validation](self-updates.md). There is no shipped test-key or alternate-download override.
-4. **[Agent]** After publishing, on a machine still on the previous version, run `rex-linux --check-update`. It must print the channel, the installed version, the new version and the action.
+4. **[Agent]** After publishing, on a machine still on the previous version, run `rex-rune --check-update`. It must print the channel, the installed version, the new version and the action.
 
 ### Pulling a bad release
 
@@ -412,7 +421,7 @@ Roll forward. Nobody is ever moved down a version automatically.
 2. **[Agent] Rebuild the package site without it** (after PR U2): `gh workflow run repo.yml --repo "$repo" --ref "$good" -f exclude="${bad#v}"`. **[User]** approves.
 3. **What each channel does now:**
    - The notice and the install script see the good version as latest. Installs already on the bad one are offered nothing and are not downgraded. The script says how to go back by hand (`--version`).
-   - pacman and APT stop offering the bad version. Someone who has it can go back with `sudo pacman -U https://pkg.shuv.dev/arch/$(uname -m)/rex-linux-bin-<good>-1-$(uname -m).pkg.tar.zst` or `sudo apt install rex-linux=<good>`.
+   - pacman and APT stop offering the bad version. Someone who has it can go back with `sudo pacman -U https://pkg.shuv.dev/arch/$(uname -m)/rex-rune-bin-<good>-1-$(uname -m).pkg.tar.zst` or `sudo apt install rex-rune=<good>`.
    - The tarball self-updater never downgrades. It automatically rolls back failed installation transactions, not completed releases. To deliberately return to an older release, run the verified install script with `--version X.Y.Z`; no **Roll back** button or `--rollback` CLI is shipped.
 4. **[Agent] Prepare the fixed patch release** through section 2. **[User]** approves it. Publishing it marks it latest again.
 
@@ -426,11 +435,11 @@ Docs only: the app never updates a Nix install.
    | Installed as | To update |
    | --- | --- |
    | A flake input, `github:shuv1337/rex-rune` | `nix flake update rex-rune`, then rebuild |
-   | `nix profile install github:shuv1337/rex-rune` | `nix profile upgrade rex-linux` |
+   | `nix profile install github:shuv1337/rex-rune` | `nix profile upgrade rex-rune` |
    | Pinned to a tag, `github:shuv1337/rex-rune/vX.Y.Z` | Change the tag |
 
    The plain reference follows `master`, which can be ahead of the latest release.
-3. **[Agent]** On a machine with Nix, after a release: `nix build github:shuv1337/rex-rune/vX.Y.Z#rex-linux && ./result/bin/rex-linux --version`.
+3. **[Agent]** On a machine with Nix, after a release: `nix build github:shuv1337/rex-rune/vX.Y.Z#rex-rune && ./result/bin/rex-rune --version`.
 4. (after PR U4) A Nix build shows the notice with the commands above and never a button.
 
 ## 9. Keys: rotation, revocation and incidents
@@ -439,7 +448,7 @@ Docs only: the app never updates a Nix install.
 | --- | --- | --- |
 | Minisign CI key, ID `A1FD78C27652816E` | `RELEASE_MINISIGN_KEY` and `RELEASE_MINISIGN_PASSWORD` in the `release` environment | `packaging/keys/release.pub`; the install script (after PR U1); the app (after PR U4) |
 | Minisign backup key, ID `368EA1A12E2721F3` | The owner's offline machine. Never on GitHub. | `packaging/keys/release-backup.pub`; the same clients |
-| OpenPGP package key (after PR U2) | Primary: offline. Signing subkey: `PACKAGE_SIGNING_KEY` in `release`. | pacman keyrings; `rex-linux.sources` (after PR U5) |
+| OpenPGP package key (after PR U2) | Primary: offline. Signing subkey: `PACKAGE_SIGNING_KEY` in `release`. | pacman keyrings; `rex-rune.sources` (after PR U5) |
 
 ### Planned rotation of the minisign CI key
 
@@ -473,14 +482,14 @@ A leaked key alone signs nothing useful: the attacker also has to control what g
 - The subkey expires three years after it was made (this one on 2029-11-09 PST). From about 2.5 years in, the release job fails when under 180 days remain, so rotation happens early.
 - **[User]**, offline: add a new signing subkey with the primary key and export the certificate and the new subkey, with the same script as in section 4.
 - **[Agent]:** commit the new certificate, replace the two secrets, and sign the repositories with **both** subkeys during the overlap; drop the old subkey from the secret before it has 180 days left, since the expiry check covers every subkey in CI. Rebuild the site (section 5, step 5).
-- **What users must do:** pacman users run the `pacman-key --add` command again; the primary key they signed locally has not changed. APT users get the new certificate with a normal package upgrade, because the `.deb` carries `rex-linux.sources`.
+- **What users must do:** pacman users run the `pacman-key --add` command again; the primary key they signed locally has not changed. APT users get the new certificate with a normal package upgrade, because the `.deb` carries `rex-rune.sources`.
 
 ### The OpenPGP subkey leaks (after PR U2)
 
 1. **[Agent]** delete `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE` from the environment.
 2. **[User]**, offline: revoke the subkey with the primary key, add a new one, export.
 3. **[Agent]:** commit the certificate, set the secrets, rebuild the site. **[User]** approves.
-4. APT installs that still hold the old certificate see a signature error on `apt update` until they fetch `rex-linux.sources` again; put the one-line command in the release notes. pacman users import the new certificate.
+4. APT installs that still hold the old certificate see a signature error on `apt update` until they fetch `rex-rune.sources` again; put the one-line command in the release notes. pacman users import the new certificate.
 5. As with minisign, the leaked subkey helps only someone who also controls the site or its DNS. Check both (section 10).
 
 ### What none of this covers
@@ -529,6 +538,6 @@ All **[Agent]**, read-only, about ten minutes. Report only what is wrong.
    ```
 
    Then the Arch container check (section 5, step 2) and, after PR U5, the Ubuntu one (section 6, step 2).
-7. **The notice** (after PR U4): `rex-linux --check-update` on shuvdev and shuvmbp-1.
+7. **The notice** (after PR U4): `rex-rune --check-update` on shuvdev and shuvmbp-1.
 8. **Pipeline upkeep:** open Dependabot pull requests for the pinned actions, and the pinned container digests.
 9. **[User], twice a year:** confirm that the backup minisign key and the OpenPGP primary key can be read from both offline copies. Nothing is signed.

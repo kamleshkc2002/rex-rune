@@ -9,7 +9,7 @@ use crate::app::{
     recorder::{self, FIELD, MENU, Verdict},
     shortcuts_page::Row,
 };
-use rex_linux::{
+use rex_rune::{
     keymap::{Chord, RECORDED},
     settings::shortcuts::Shortcuts,
 };
@@ -716,7 +716,7 @@ fn the_configuration_menu_copies_the_path_and_the_recordings_and_starts_empty() 
             {"keys": ["ctrl+shift+j"], "action": "pane.split", "args": {"direction": "right"}},
         ]})
     );
-    let parsed: rex_linux::settings::Settings = serde_json::from_value(copied).unwrap();
+    let parsed: rex_rune::settings::Settings = serde_json::from_value(copied).unwrap();
     assert_eq!(
         parsed.recorded_shortcuts,
         rt.state.settings.recorded_shortcuts
@@ -904,7 +904,7 @@ fn cancelling_composition_keeps_a_late_commit_out_of_the_terminal() {
     assert!(!sent.try_iter().any(|c| matches!(
         c,
         HostCommand::Terminal {
-            command: rex_linux::connection::Command::Paste(_),
+            command: rex_rune::connection::Command::Paste(_),
             ..
         }
     )));
@@ -915,10 +915,10 @@ fn cancelling_composition_keeps_a_late_commit_out_of_the_terminal() {
 fn reply_with(ws: &mut Workspace, host: usize, config: Vec<rexrs::api::client::Binding>) {
     use rexrs::api::client::{KeymapDefault, KeymapResponse};
     let layers = vec![
-        rex_linux::keymap::defaults(),
+        rex_rune::keymap::defaults(),
         KeymapDefault::new("host").bindings(config),
     ];
-    let resolved = rex_linux::keymap::resolve_all(
+    let resolved = rex_rune::keymap::resolve_all(
         &layers,
         &[
             &ws.settings.shortcut_file.overrides,
@@ -937,7 +937,7 @@ fn reply_with(ws: &mut Workspace, host: usize, config: Vec<rexrs::api::client::B
     };
     ws.hosts[host].model.connected = true;
     ws.hosts[host].model.keymap = Some(std::sync::Arc::new(
-        rex_linux::connection::keymap::Snapshot {
+        rex_rune::connection::keymap::Snapshot {
             generation: ws.keymap_generation,
             resolved,
             reply,
@@ -1138,7 +1138,7 @@ fn recorder_presses_repeats_releases_and_ime_never_leak_then_the_new_key_targets
     assert!(!sent.try_iter().any(|c| matches!(
         c,
         HostCommand::Terminal {
-            command: rex_linux::connection::Command::Paste(_),
+            command: rex_rune::connection::Command::Paste(_),
             ..
         }
     )));

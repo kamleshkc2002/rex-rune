@@ -5,7 +5,7 @@ use crate::app::{
     actions,
     toolbar_reveal::{self, Placement},
 };
-use rex_linux::settings::{
+use rex_rune::settings::{
     PaneDensity,
     interface::{InterfaceConfig, ToolbarBehavior},
 };
@@ -112,7 +112,7 @@ fn saved(rt: &Runtime<Workspace>) -> InterfaceConfig {
 
 /// Synthetic transfer: no disk or server traffic.
 fn add_download(s: &mut Workspace) {
-    let mut transfer = rex_linux::download::Transfer::new(
+    let mut transfer = rex_rune::download::Transfer::new(
         1,
         "s".into(),
         "block:a".into(),
@@ -121,7 +121,7 @@ fn add_download(s: &mut Workspace) {
         1,
     );
     transfer.name = Some("build.log".into());
-    transfer.state = rex_linux::download::State::Receiving {
+    transfer.state = rex_rune::download::State::Receiving {
         received: 42,
         hint: 100,
     };
@@ -490,7 +490,7 @@ fn reveal_toolbar_floats_it_from_the_keyboard_to_move_or_close_the_window() {
     assert!(matches!(spec.remote(), actions::Remote::Never(_)));
     assert!(spec.accepts(&Value::Null) && !spec.accepts(&serde_json::json!({"x": 1})));
     assert!(!spec.repeats() && !spec.global());
-    let keys: Vec<_> = rex_linux::keymap::defaults()
+    let keys: Vec<_> = rex_rune::keymap::defaults()
         .bindings
         .into_iter()
         .filter(|b| b.action == "client.toolbar.toggle")
@@ -556,7 +556,7 @@ fn a_waiting_key_sequence_still_shows_with_no_toolbar_to_hold_it() {
     use rune::{PhysicalInput, PhysicalKeyCode as Code};
     let (mut ws, _host) = tabbed_workspace("single");
     ws.settings.interface.toolbar = ToolbarBehavior::Hidden;
-    ws.settings.shortcut_file.overrides = rex_linux::keymap::Overrides::parse(
+    ws.settings.shortcut_file.overrides = rex_rune::keymap::Overrides::parse(
         &serde_json::json!([{"keys":"ctrl+b>c","action":"client.tab.new"}]),
     );
     ws.local_keymap = actions::resolve(&ws.settings.shortcut_file.overrides);

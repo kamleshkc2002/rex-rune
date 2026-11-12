@@ -6,21 +6,40 @@
 
 Complete the [owner setup](#owner-setup-before-the-first-signed-release) before the first signed tag. The owner approved CI custody: signing runs in `publish`, inside the protected `release` environment with shuv1337 as required reviewer. The isolated signing step can be replaced with [manual signing](#manual-or-offline-signing).
 
-1. Update the version in `Cargo.toml`, the `rex-linux` entry in `Cargo.lock`, and `nix/package.nix`; update `CHANGELOG.md` and installation examples as needed.
+1. Update the version in `Cargo.toml`, the `rex-rune` entry in `Cargo.lock`, and `nix/package.nix`; update `CHANGELOG.md` and installation examples as needed.
 2. Commit and push to `master`. Run **Binary release** manually in GitHub Actions to test without publishing. The `release-tools` job tests the manifest and signs/verifies fixture metadata using encrypted throwaway keys, deleted at test exit. The separate `manual-signing-test` job gathers real build artifacts, generates metadata, and signs/verifies it with an encrypted throwaway minisign key pair in `$RUNNER_TEMP`, then deletes the key pair. It has only `contents: read`, no environment, and no production secrets. **`publish` never runs on `workflow_dispatch`, even when run on a tag**. Manual runs do not create attestations or request environment approval.
-3. After checking the results, create and push an annotated tag matching the package version, for example `git tag -a v0.5.0 -m 'Rex Linux 0.5.0'` and `git push origin v0.5.0`. Only stable `vX.Y.Z` versions are supported by the manifest generator.
-4. The tag workflow rebuilds all six packages (two tarballs, two `.deb`s, two pacman packages), then the separate `attest` job downloads and attests them using `actions/attest-build-provenance`. `publish` requires successful attestation. Inspect the triggering commit and workflow, then approve the `release` environment as its required reviewer. Builds have no signing secrets; `publish` alone receives them.
+3. After checking the results, create and push an annotated tag matching the package version, for example `git tag -a v0.5.0 -m 'Rex Rune 0.5.0'` and `git push origin v0.5.0`. Only stable `vX.Y.Z` versions are supported by the manifest generator.
+4. The tag workflow rebuilds all eight packages (two `rex-rune` tarballs, two [bridge tarballs](#the-rex-linux-bridge), two `.deb`s, two pacman packages), then the separate `attest` job downloads and attests them using `actions/attest-build-provenance`. `publish` requires successful attestation. Inspect the triggering commit and workflow, then approve the `release` environment as its required reviewer. Builds have no signing secrets; `publish` alone receives them.
 5. `publish` gathers both architectures, writes `SHA256SUMS`, generates `latest.json`, and uploads both as the separate `unsigned-release-metadata` artifact **before signing**, so they remain available if signing fails. It also copies `packaging/install/install.sh` byte for byte into `dist/`, signs all three files (the two metadata files and installer), verifies each signature and exact trusted comment against the repository's public keys and candidate tag, and rechecks packages ↔ `SHA256SUMS` ↔ `latest.json` consistency. **A tag run fails closed** if either secret, either public-key file, or a valid signature is missing. Nothing is published on failure.
-6. Only after verification does the job create a draft and upload **all twelve assets** (six packages, two detached OpenPGP pacman signatures, `SHA256SUMS`, `SHA256SUMS.minisig`, `latest.json`, `latest.json.minisig`, `install.sh`, `install.sh.minisig`), then publish and mark latest. The same approved job rebuilds and signs the package repository; a separate Pages job deploys its public artifact. Check the assets and attestations. Never move published tags, replace assets, or retrofit signatures onto old releases.
+6. Only after verification does the job create a draft and upload **all sixteen assets** (eight packages, two detached OpenPGP pacman signatures, `SHA256SUMS`, `SHA256SUMS.minisig`, `latest.json`, `latest.json.minisig`, `install.sh`, `install.sh.minisig`), then publish and mark latest. The same approved job rebuilds and signs the package repository; a separate Pages job deploys its public artifact. Check the assets and attestations. Never move published tags, replace assets, or retrofit signatures onto old releases.
 
 The manifest is a release asset at:
 
 - `https://github.com/shuv1337/rex-rune/releases/latest/download/latest.json`
 - `https://github.com/shuv1337/rex-rune/releases/latest/download/latest.json.minisig`
 
-Its schema is `1`, product is `rex-linux`, and both `x86_64-linux-gnu` and `aarch64-linux-gnu` targets are mandatory. Each target has `min_glibc`, a version-specific tarball URL, Debian and pacman filenames, and sizes and SHA-256 digests for each package. The generator checks all six package hashes against `SHA256SUMS` (four for pre-0.5.3 legacy fixtures); missing, extra, duplicate, malformed or mismatched entries fail. Output is stable for fixed inputs. `published` records metadata generation time (before publication), using an RFC 3339 Pacific Time offset (PST/PDT); `--published` allows a fixed timestamp for reproducibility. There is **no expiry**.
+Its schema is `1`, product is `rex-linux` ([why](#the-rex-linux-bridge)), and both `x86_64-linux-gnu` and `aarch64-linux-gnu` targets are mandatory. Each target has `min_glibc`, two version-specific tarball URLs (`archive` for current clients, `tarball` for the 0.7.x updater), Debian and pacman filenames, and sizes and SHA-256 digests for each package. The generator checks all eight package hashes against `SHA256SUMS`; missing, extra, duplicate, malformed or mismatched entries fail. Output is stable for fixed inputs. `published` records metadata generation time (before publication), using an RFC 3339 Pacific Time offset (PST/PDT); `--published` allows a fixed timestamp for reproducibility. There is **no expiry**.
 
-`update_from` is currently `0.4.2`, the current compatible tarball layout, not a claim that that version already has an updater. Raise the workflow's explicit floor only when an installation-layout change requires a manual reinstall. `min_glibc` defaults to `2.39`; change `--min-glibc` with any future build baseline change. Trusted signature comments name the tag and file, for example `rex-linux v0.5.0 latest.json`.
+`update_from` is currently `0.4.2`, the current compatible tarball layout, not a claim that that version already has an updater. Raise the workflow's explicit floor only when an installation-layout change requires a manual reinstall. `min_glibc` defaults to `2.39`; change `--min-glibc` with any future build baseline change. Trusted signature comments name the product id, tag and file, for example `rex-linux v0.8.0 latest.json`.
+
+## The rex-linux bridge
+
+The client was `rex-linux` through 0.7.x. Four things keep that name so those installs can reach a renamed release, and each has a cost if it changes:
+
+| Kept | Where | Who depends on it |
+| --- | --- | --- |
+| Product id `rex-linux` | `latest.json`'s `product`; the trusted comment of all three signatures | The updater in every 0.7.x client refuses any other. Current clients and `install.sh` check the same id, so there is one signing namespace |
+| Bridge tarballs `rex-linux-<version>-<target>.tar.gz` | Release assets; `tarball` in `latest.json` | The 0.7.x updater's **Update now**. `scripts/test-bridge.py` holds them to its rules |
+| The `rex-linux` command | A link in the pacman package, the `.deb`, the Nix package and upgraded `install.sh` installs; `--version` answers `rex-linux X.Y.Z` through it | The 0.7.x updater, which runs `bin/rex-linux --version` before installing; users' scripts and key bindings |
+| Repository `[rex-linux]`, `rex-linux.db`, `rex-linux-archive-key.asc` | pkg.shuv.dev | Every `pacman.conf` that already has the repository. The package inside is `rex-rune-bin`, which replaces `rex-linux-bin` |
+
+[Self-update behavior](self-updates.md#updating-from-rex-linux-07x) describes what the client does after the old updater has installed it.
+
+Two things in installed 0.7.x clients cannot be met and are answered in words. Its update notice for a `.deb` install names `rex-linux_<version>_<arch>.deb`, which does not exist: the release notes' first paragraph says to take `rex-rune_*.deb`. And a copy of its `install.sh` that someone kept picks the bridge tarball by name and runs the `install.sh` inside it: that script installs nothing and names the current installer.
+
+**Retiring the bridge.** Keep it for as long as 0.7.x installs should update in place. To end it, in one release: raise `--update-from` in `release.yml` to the first renamed version, so a 0.7.x client reports that a manual upgrade is required and does not download; stop building the bridge tarballs and point `tarball` at the `rex-rune` archive; and remove the `rex-linux` links, `src/legacy.rs` and `migrate_legacy_install`. The product id and the repository name cost nothing to keep, and changing either cuts off installed clients, so leave them unless a second manifest or repository is published beside them first.
+
+`latest.json` cannot gain targets other than the two Linux ones while 0.7.x clients read it: their updater rejects a manifest that names any other target. Releases for another platform need their own manifest.
 
 ## Owner setup before the first signed release
 
@@ -94,7 +113,8 @@ Setup reference for a fresh repository or deliberate rotation (do not overwrite 
 `arch-package` runs `scripts/package-arch.py` after both native builds. It renders
 `packaging/arch/PKGBUILD.in` with both real tarball hashes, invokes real `makepkg`
 in a digest-pinned Arch container, and compares executable bytes. No signing
-secret is present. The package is `rex-linux-bin`; no AUR push is configured.
+secret is present. The package is `rex-rune-bin`, which provides, conflicts with
+and replaces `rex-linux-bin`, its name before the rename; no AUR push is configured.
 
 Inside the protected `publish` job, `sign-packages.py` imports only the signing
 subkey into a temporary GnuPG home. It refuses a secret primary, an uncommitted
@@ -102,7 +122,9 @@ key/subkey, and a subkey with under 180 days until expiry. Packages and detached
 signatures become immutable release assets. `build-repo-site.py` then rebuilds
 from the newest five signed immutable stable releases, verifies signed checksums
 and package signatures, embeds package signatures with real `repo-add`, and signs
-both databases. No secret is mounted into Docker. Pages deployment has only
+both databases. Only the newest release enters the database, so once that is
+`rex-rune-bin` every `pacman -Syu` offers the replacement; older package files of
+either name stay downloadable. No secret is mounted into Docker. Pages deployment has only
 `pages: write` and `id-token: write`, not signing secrets.
 
 For a failed site deploy or withdrawal, run `repo.yml` on a tag containing the
@@ -111,11 +133,12 @@ modifies releases. Before the first pacman release, its explicit `bootstrap`
 mode on master serves only the certificate and a not-yet-available landing page.
 The walkthrough has the exact pacman setup and hosting health checks.
 
-Official builds embed `REX_LINUX_CHANNEL=official`, Nix builds `nix`, and source
-builds default to `source`. Every install method (pacman `rex-linux-bin`, `.deb`,
-Nix, tarball or `install.sh`) installs only the `rex-linux` desktop client, its
+Official builds embed `REX_RUNE_CHANNEL=official`, Nix builds `nix`, and source
+builds default to `source`. Every install method (pacman `rex-rune-bin`, `.deb`,
+Nix, tarball or `install.sh`) installs only the `rex-rune` desktop client, its
 `.desktop` launcher and icons, and never installs, replaces or shadows the `rex`
-server. Packages carry a `share/rex-linux/channel` marker.
+server. Packages carry a `share/rex-rune/channel` marker and a `rex-linux` link
+to the client.
 Tarball installation writes the schema-1 path/version/SHA-256 receipt described
 in the walkthrough; source installation and uninstall invalidate it. The client
 reads these markers and receipts to show channel-specific upgrade guidance in
@@ -132,16 +155,20 @@ python3 scripts/test-release.py
 # OpenSSL 3.0, three shells, old-glibc/musl refusals. Requires Docker.
 bash scripts/install-script-test.sh
 python3 scripts/test-install-receipt.py # desktop-file-utils required
+# After packaging: the bridge tarball against the 0.7.x updater's rules.
+python3 scripts/test-bridge.py dist/rex-linux-*.tar.gz --binary target/release/rex-rune
+# The 0.7.5 updater installing this build, then the first start (a few minutes; see the script).
+bash scripts/bridge-e2e.sh
 python3 scripts/test-arch-repo.py       # Docker, gpg, minisign, zstd; throwaway keys only
 # If installed (also runs ShellCheck when available):
 actionlint .github/workflows/release.yml
 ```
 
-To package locally after a native `cargo build --locked --release --bin rex-linux`, run `python3 scripts/package-release.py` (tarball) or add `--deb` (also requires `dpkg-dev`). Outputs go into ignored `dist/`. Packages include source commit/toolchain information, desktop integration, dependency license declarations, available license texts, font licenses, and icon provenance. Icon redistribution is authorized by the project owner; it is not covered by the project's MIT license.
+To package locally after a native `cargo build --locked --release --bin rex-rune`, run `python3 scripts/package-release.py` (tarball) or add `--deb` (also requires `dpkg-dev`). Outputs go into ignored `dist/`. Packages include source commit/toolchain information, desktop integration, dependency license declarations, available license texts, font licenses, and icon provenance. Icon redistribution is authorized by the project owner; it is not covered by the project's MIT license.
 
 The standalone installer is separately signed with trusted comment
 `rex-linux vX.Y.Z install.sh`, attested alongside the packages, and excluded from
-`SHA256SUMS` (which still lists exactly four packages). The `install-script` job
+`SHA256SUMS` (which lists exactly the eight packages). The `install-script` job
 must pass before either manual signing or publication; it never sees secrets.
 `scripts/test-release.py` pins both embedded keys to `packaging/keys/` and tests
 installer tampering along with the two metadata signatures.
@@ -172,7 +199,7 @@ For the offline alternative in plan question 6 (key custody), keep building, att
    done
    ```
 
-2. Transfer all six packages plus `latest.json` and `SHA256SUMS` to `dist/` in a trusted offline checkout containing the reviewed signing/manifest scripts and both committed public keys. Confirm the tag/commit and trusted public keys independently. On that offline signing machine, minisign prompts for the key password; use the active or offline backup private key, never a throwaway key:
+2. Transfer all eight packages plus `latest.json` and `SHA256SUMS` to `dist/` in a trusted offline checkout containing the reviewed signing/manifest scripts and both committed public keys. Confirm the tag/commit and trusted public keys independently. On that offline signing machine, minisign prompts for the key password; use the active or offline backup private key, never a throwaway key:
 
    ```sh
    tag=v0.5.0
@@ -181,7 +208,7 @@ For the offline alternative in plan question 6 (key custody), keep building, att
      minisign -S -s /secure/path/rex-linux-release-backup.key -m "dist/$file" \
        -t "rex-linux $tag $file"
    done
-   # Same metadata verification gate as CI; requires all six packages but no secrets.
+   # Same metadata verification gate as CI; requires all eight packages but no secrets.
    python3 scripts/sign-release.py --tag "$tag" --verify-only
    ```
 
@@ -200,17 +227,17 @@ For the offline alternative in plan question 6 (key custody), keep building, att
    python3 scripts/sign-release.py --tag "$tag" --verify-only
    ```
 
-4. Prepare and review `RELEASE-NOTES.md` from this version's changelog and the workflow's standing installation notes. Create a draft against the existing remote tag, upload **all fourteen assets**, inspect the draft, then publish:
+4. Prepare and review `RELEASE-NOTES.md` from this version's changelog and the workflow's standing installation notes. Create a draft against the existing remote tag, upload **all sixteen assets**, inspect the draft, then publish:
 
    ```sh
    gh release create "$tag" --repo "$repo" --draft --verify-tag \
-     --title "Rex Linux ${tag#v}" --notes-file RELEASE-NOTES.md
+     --title "Rex Rune ${tag#v}" --notes-file RELEASE-NOTES.md
    gh release upload "$tag" --repo "$repo" \
      dist/*.tar.gz dist/*.deb dist/*.pkg.tar.zst dist/*.pkg.tar.zst.sig \
      dist/SHA256SUMS dist/SHA256SUMS.minisig \
      dist/latest.json dist/latest.json.minisig dist/install.sh dist/install.sh.minisig
    gh release view "$tag" --repo "$repo" --json isDraft,assets
-   # Only after confirming exactly the fourteen verified assets:
+   # Only after confirming exactly the sixteen verified assets:
    gh release edit "$tag" --repo "$repo" --draft=false --latest
    ```
 
@@ -218,7 +245,7 @@ Do not use `--clobber`; if a draft already exists, follow recovery below rather 
 
 ## Recovery and rotation
 
-If a publish job fails after creating a draft, inspect the draft before retrying; the workflow intentionally refuses to overwrite an existing release and never uses `--clobber`. Recover by downloading packages and the `release-metadata` artifact from **that exact workflow run**, checking all six hashes (`sha256sum -c SHA256SUMS`), all three minisign signatures (`scripts/sign-release.py --tag vX.Y.Z --verify-only`) and both OpenPGP package signatures, and uploading only missing assets to the draft. Publish only after all fourteen match. Do not rebuild and mix artifacts from unrelated commits or re-sign a different manifest under the same published tag.
+If a publish job fails after creating a draft, inspect the draft before retrying; the workflow intentionally refuses to overwrite an existing release and never uses `--clobber`. Recover by downloading packages and the `release-metadata` artifact from **that exact workflow run**, checking all eight hashes (`sha256sum -c SHA256SUMS`), all three minisign signatures (`scripts/sign-release.py --tag vX.Y.Z --verify-only`) and both OpenPGP package signatures, and uploading only missing assets to the draft. Publish only after all sixteen match. Do not rebuild and mix artifacts from unrelated commits or re-sign a different manifest under the same published tag.
 
 **Pulling a bad release:** publish a fixed patch version. Meanwhile mark the bad release as a prerelease so it is not offered as latest, and confirm the latest pointer serves the previous good manifest. Do not delete its assets or move the tag. No automatic downgrade is implied. Once the APT repository exists, rebuild it without the bad release as well.
 

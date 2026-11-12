@@ -1,7 +1,7 @@
 //! Named workspace actions shared by keyboard, pointer and Commands dispatch.
 //! The registry structure follows Andrea Zito (nivox), commit 8037d78.
 use super::{panel::Intent, splits::SplitWay, workspace::Workspace};
-use rex_linux::connection::Command;
+use rex_rune::connection::Command;
 use rune::Tx;
 use serde_json::{Value, json};
 
@@ -409,7 +409,7 @@ impl Spec {
             Handler::ChooseTheme => "Change terminal theme",
             Handler::CopyVersion => "Copy version info",
             Handler::ReportIssue => "Report an issue",
-            Handler::About => "About Rex Linux",
+            Handler::About => "About Rex Rune",
             Handler::CopyDebug => "Copy debug info",
         }
     }
@@ -816,10 +816,10 @@ pub(super) fn covers_context(
 /// Bindings that can actually win, including prefix-vs-key conflicts. Parsed chords,
 /// not display strings, decide equality. Mode bindings compete only within their mode.
 pub fn effective<'a>(
-    map: &'a rex_linux::keymap::Resolved,
+    map: &'a rex_rune::keymap::Resolved,
     server: &[rexrs::api::client::InspectResponseAction],
-) -> Vec<&'a rex_linux::keymap::ResolvedBinding> {
-    let mut result: Vec<&rex_linux::keymap::ResolvedBinding> = Vec::new();
+) -> Vec<&'a rex_rune::keymap::ResolvedBinding> {
+    let mut result: Vec<&rex_rune::keymap::ResolvedBinding> = Vec::new();
     for candidate in &map.bindings {
         let Some(chords) = candidate.chords.as_ref() else {
             continue;
@@ -899,16 +899,16 @@ pub fn declarations() -> Vec<rexrs::api::client::InspectResponseAction> {
 /// Resolve once per file generation, including argument diagnostics. Invalid bindings
 /// are skipped at match time, so a lower valid action can still be selected.
 #[cfg(test)]
-pub fn resolve(overrides: &rex_linux::keymap::Overrides) -> rex_linux::keymap::Resolved {
+pub fn resolve(overrides: &rex_rune::keymap::Overrides) -> rex_rune::keymap::Resolved {
     resolve_all(&[overrides])
 }
 
 /// [`resolve`] with every override layer, lowest first: the user's file, then what was
 /// recorded in Settings.
-pub fn resolve_all(overrides: &[&rex_linux::keymap::Overrides]) -> rex_linux::keymap::Resolved {
+pub fn resolve_all(overrides: &[&rex_rune::keymap::Overrides]) -> rex_rune::keymap::Resolved {
     let actions = declarations();
     let mut map =
-        rex_linux::keymap::resolve_all(&[rex_linux::keymap::defaults()], overrides, &actions);
+        rex_rune::keymap::resolve_all(&[rex_rune::keymap::defaults()], overrides, &actions);
     diagnose_compatibility(&mut map);
     for binding in &map.bindings {
         let binding = &binding.binding;
@@ -929,7 +929,7 @@ pub fn resolve_all(overrides: &[&rex_linux::keymap::Overrides]) -> rex_linux::ke
 }
 
 /// Client-specific limitations must also appear for bindings returned by a server.
-pub fn diagnose_compatibility(map: &mut rex_linux::keymap::Resolved) {
+pub fn diagnose_compatibility(map: &mut rex_rune::keymap::Resolved) {
     for row in &map.bindings {
         if let Some(message) = super::compatibility::unsupported(&row.binding.action)
             && !map.diagnostics.iter().any(|d| {
@@ -959,7 +959,7 @@ mod tests {
     fn registry_is_unique_and_covers_every_default() {
         let names: std::collections::HashSet<_> = SPECS.iter().map(|s| s.name).collect();
         assert_eq!(names.len(), SPECS.len());
-        for binding in rex_linux::keymap::defaults().bindings {
+        for binding in rex_rune::keymap::defaults().bindings {
             let spec = find(&binding.action).expect("default action is registered");
             assert!(
                 spec.accepts(binding.args.as_ref().unwrap_or(&Value::Null)),

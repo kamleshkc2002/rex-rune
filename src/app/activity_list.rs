@@ -6,7 +6,7 @@ use super::{
     theme::{accent, danger, muted, warning},
     workspace::Workspace,
 };
-use rex_linux::connection::{
+use rex_rune::connection::{
     HostModel,
     activity::{ProgramState, time::Age},
 };

@@ -118,7 +118,7 @@ pub(super) async fn receive(
         return reply(
             control,
             &call_id,
-            &Outcome::error("internal", "Rex Linux was busy; nothing was done."),
+            &Outcome::error("internal", "Rex Rune was busy; nothing was done."),
         )
         .await;
     }
@@ -147,7 +147,7 @@ pub(super) async fn expire(control: &mut Client, shared: &Shared) -> Result<()> 
             &pending.request.call_id,
             &Outcome::error(
                 "internal",
-                "Rex Linux did not act in time; nothing was done.",
+                "Rex Rune did not act in time; nothing was done.",
             ),
         )
         .await?;

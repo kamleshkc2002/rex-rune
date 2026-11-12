@@ -20,7 +20,7 @@ use super::{
     widgets::glyph,
     workspace::{HostId, Workspace},
 };
-use rex_linux::connection::Command;
+use rex_rune::connection::Command;
 use rexrs::api::session::Window;
 use rune::{Cursor, El, Icon, KeyEvent, TextEdit, Tx, el, row, text};
 use rune_kit::TextInput;

@@ -80,7 +80,7 @@ fn untrusted_equal_older_and_unsupported_releases_never_download_or_modify_insta
 fn layout(temp: &Path) -> InstallLayout {
     let layout = InstallLayout {
         local: temp.join(".local"),
-        binary: temp.join(".local/bin/rex-linux"),
+        binary: temp.join(".local/bin/rex-rune"),
         data: temp.join(".local/share"),
     };
     for path in layout.destinations() {
@@ -287,7 +287,7 @@ fn manual_install_repair_supersedes_interrupted_update() {
     let layout = layout(temp.path());
     interrupt(&layout, 5, false);
     let repair = temp.path().join("repair-binary");
-    fs::write(&repair, b"#!/bin/sh\necho 'rex-linux 99.0.0'\n").unwrap();
+    fs::write(&repair, b"#!/bin/sh\necho 'rex-rune 99.0.0'\n").unwrap();
     fs::set_permissions(&repair, fs::Permissions::from_mode(0o755)).unwrap();
     assert!(
         Command::new("bash")
@@ -672,16 +672,16 @@ fn signed_fixture_end_to_end() {
     let temp = tempfile::tempdir().unwrap();
     let layout = layout(temp.path());
     let target = format!("{}-linux-gnu", std::env::consts::ARCH);
-    let root = format!("rex-linux-99.0.0-{target}");
-    let binary = b"#!/bin/sh\necho 'rex-linux 99.0.0'\n";
-    let desktop = include_bytes!("../../../resources/dev.shuv.rex-linux.desktop");
+    let root = format!("rex-rune-99.0.0-{target}");
+    let binary = b"#!/bin/sh\necho 'rex-rune 99.0.0'\n";
+    let desktop = include_bytes!("../../../resources/dev.shuv.rex-rune.desktop");
     let mut names = vec![
-        format!("{root}/bin/rex-linux"),
+        format!("{root}/bin/rex-rune"),
         format!("{root}/resources/{DESKTOP}"),
     ];
     for size in [32, 128, 256] {
         names.push(format!(
-            "{root}/resources/icons/{size}x{size}/apps/dev.shuv.rex-linux.png"
+            "{root}/resources/icons/{size}x{size}/apps/dev.shuv.rex-rune.png"
         ));
     }
     let mut files = vec![
@@ -697,9 +697,9 @@ fn signed_fixture_end_to_end() {
         ),
     ];
     let icons: [&[u8]; 3] = [
-        include_bytes!("../../../resources/icons/32x32/apps/dev.shuv.rex-linux.png"),
-        include_bytes!("../../../resources/icons/128x128/apps/dev.shuv.rex-linux.png"),
-        include_bytes!("../../../resources/icons/256x256/apps/dev.shuv.rex-linux.png"),
+        include_bytes!("../../../resources/icons/32x32/apps/dev.shuv.rex-rune.png"),
+        include_bytes!("../../../resources/icons/128x128/apps/dev.shuv.rex-rune.png"),
+        include_bytes!("../../../resources/icons/256x256/apps/dev.shuv.rex-rune.png"),
     ];
     for (name, icon) in names[2..].iter().zip(icons) {
         files.push((name.as_str(), icon, tar::EntryType::Regular));
@@ -711,7 +711,7 @@ fn signed_fixture_end_to_end() {
         &super::super::tests::sample_manifest_json("99.0.0", "0.7.0"),
     )
     .unwrap();
-    let artifact = &mut manifest.targets.get_mut(&target).unwrap().tarball;
+    let artifact = &mut manifest.targets.get_mut(&target).unwrap().archive;
     artifact.size = tarball.len() as u64;
     artifact.sha256 = hex_sha256(&tarball);
     let bytes = serde_json::to_vec(&manifest).unwrap();
@@ -779,6 +779,228 @@ fn signed_fixture_end_to_end() {
             .output()
             .unwrap()
             .stdout,
-        b"rex-linux 99.0.0\n"
+        b"rex-rune 99.0.0\n"
     );
+}
+
+/// An installation as the 0.7.x updater leaves it after installing a renamed release:
+/// this binary and everything around it under the `rex-linux` names.
+fn legacy_install(temp: &Path) -> (PathBuf, PathBuf) {
+    let (bin, data) = (temp.join(".local/bin"), temp.join(".local/share"));
+    fs::create_dir_all(&bin).unwrap();
+    let binary = bin.join("rex-linux");
+    fs::write(&binary, b"#!/bin/sh\necho 'rex-linux 99.0.0'\n").unwrap();
+    fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+    let legacy = |path: &str| data.join(path.replace("rex-rune", "rex-linux"));
+    for (path, _) in INSTALL_FILES {
+        if path.is_empty() {
+            continue;
+        }
+        fs::create_dir_all(legacy(path).parent().unwrap()).unwrap();
+        if path.ends_with(".json") {
+            let receipt = InstallReceipt {
+                schema: 1,
+                path: binary.to_string_lossy().into(),
+                version: "99.0.0".into(),
+                sha256: hash_file(&binary).unwrap(),
+            };
+            fs::write(legacy(path), serde_json::to_vec(&receipt).unwrap()).unwrap();
+        } else {
+            fs::write(legacy(path), path.as_bytes()).unwrap();
+        }
+    }
+    (fs::canonicalize(&binary).unwrap(), data)
+}
+
+fn assert_migrated(temp: &Path, data: &Path) {
+    let bin = fs::canonicalize(temp.join(".local/bin")).unwrap();
+    let (old, new) = (bin.join("rex-linux"), bin.join("rex-rune"));
+    assert_eq!(fs::read_link(&old).unwrap(), Path::new("rex-rune"));
+    assert!(
+        fs::symlink_metadata(&new).unwrap().is_file(),
+        "the binary itself has the new name"
+    );
+    assert_eq!(
+        Command::new(&old).arg("--version").output().unwrap().stdout,
+        b"rex-linux 99.0.0\n",
+        "the old name still starts it"
+    );
+    assert!(verify_install_receipt(
+        &data.join("rex-rune/install.json"),
+        &new
+    ));
+    assert_eq!(
+        fs::metadata(data.join("rex-rune/install.json"))
+            .unwrap()
+            .mode()
+            & 0o777,
+        0o600
+    );
+    let launcher = fs::read_to_string(data.join("applications").join(DESKTOP)).unwrap();
+    assert!(launcher.contains(&format!("TryExec={}", new.display())));
+    assert!(launcher.contains("StartupWMClass=dev.shuv.rex-rune"));
+    for (path, _) in INSTALL_FILES {
+        if path.is_empty() {
+            continue;
+        }
+        assert!(data.join(path).is_file(), "{path} is installed");
+        assert!(
+            !data.join(path.replace("rex-rune", "rex-linux")).exists(),
+            "{path} has no old-name twin: one launcher, one set of icons"
+        );
+        if path.ends_with(".png") {
+            assert_eq!(fs::read(data.join(path)).unwrap(), path.as_bytes());
+        }
+    }
+    assert!(!data.join("rex-linux").exists());
+    // Nothing is left to do, so a second start changes nothing.
+    assert_eq!(migrate_legacy_install_at(&new, data).unwrap(), None);
+}
+
+#[test]
+fn an_installation_made_by_the_old_updater_takes_the_new_names() {
+    let temp = tempfile::tempdir().unwrap();
+    let (binary, data) = legacy_install(temp.path());
+    let new = binary.with_file_name("rex-rune");
+    assert_eq!(
+        migrate_legacy_install_at(&binary, &data).unwrap(),
+        Some(new)
+    );
+    assert_migrated(temp.path(), &data);
+}
+
+#[test]
+fn a_move_cut_short_after_the_rename_finishes_at_the_next_start() {
+    let temp = tempfile::tempdir().unwrap();
+    let (binary, data) = legacy_install(temp.path());
+    // The earlier start got as far as renaming the binary, then stopped.
+    let new = binary.with_file_name("rex-rune");
+    fs::rename(&binary, &new).unwrap();
+    assert_eq!(
+        migrate_legacy_install_at(&new, &data).unwrap(),
+        Some(new.clone())
+    );
+    assert_migrated(temp.path(), &data);
+}
+
+#[test]
+fn only_a_verified_old_installation_is_moved() {
+    // No receipt: a source build or a package, whatever it is called.
+    let temp = tempfile::tempdir().unwrap();
+    let (binary, data) = legacy_install(temp.path());
+    let receipt = data.join("rex-linux/install.json");
+    let saved = fs::read(&receipt).unwrap();
+    fs::remove_file(&receipt).unwrap();
+    assert_eq!(migrate_legacy_install_at(&binary, &data).unwrap(), None);
+
+    // A receipt for other bytes: not the binary install.sh or the updater put there.
+    fs::write(&receipt, &saved).unwrap();
+    fs::write(&binary, b"#!/bin/sh\necho changed\n").unwrap();
+    assert_eq!(migrate_legacy_install_at(&binary, &data).unwrap(), None);
+
+    // A `rex-rune` already beside it: left for the user to sort out.
+    let temp = tempfile::tempdir().unwrap();
+    let (binary, data) = legacy_install(temp.path());
+    fs::write(binary.with_file_name("rex-rune"), b"other").unwrap();
+    assert_eq!(migrate_legacy_install_at(&binary, &data).unwrap(), None);
+
+    // An update in progress keeps the installation to itself.
+    let temp = tempfile::tempdir().unwrap();
+    let (binary, data) = legacy_install(temp.path());
+    let lock = FileLock::try_acquire(&binary.with_file_name(".rex-update.lock")).unwrap();
+    assert_eq!(migrate_legacy_install_at(&binary, &data).unwrap(), None);
+    drop(lock);
+
+    // Refused each time, it was left exactly as the old updater made it.
+    assert!(binary.is_file() && !binary.is_symlink());
+    assert!(data.join("rex-linux/install.json").is_file());
+    assert!(!data.join("applications").join(DESKTOP).exists());
+}
+
+/// 0.7.5 journals the files it is replacing under their `rex-linux` names. If it is cut off
+/// after replacing the binary, the next start is this client's, under that name, and it has
+/// to undo the update by those names: the journal format itself did not change.
+#[test]
+fn an_update_from_the_old_client_cut_off_midway_is_rolled_back_by_its_old_names() {
+    if unsafe { libc::geteuid() } == 0 {
+        return;
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let layout = InstallLayout {
+        local: temp.path().join(".local"),
+        binary: temp.path().join(".local/bin/rex-linux"),
+        data: temp.path().join(".local/share"),
+    };
+    let destinations = layout.destinations();
+    assert_eq!(destinations.len(), 6);
+    for (path, (name, _)) in destinations.iter().zip(INSTALL_FILES) {
+        let name = name.replace("rex-rune", "rex-linux");
+        assert!(path.ends_with(if name.is_empty() {
+            "bin/rex-linux"
+        } else {
+            name.as_str()
+        }));
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, b"old").unwrap();
+    }
+    let old = contents(&layout);
+    // Icons, launcher and binary replaced with the receipt still to go, then all six
+    // replaced with the commit not yet marked: the two points at which this client, not
+    // the old one, is the binary that starts next.
+    for replaced in [5, 6] {
+        interrupt(&layout, replaced, false);
+        assert_ne!(contents(&layout), old);
+        assert_eq!(
+            recover_install_at(&layout, Duration::from_secs(2), false).unwrap(),
+            Recovery::Restored(layout.binary.clone()),
+            "the old client's binary is back, to be started again"
+        );
+        assert_eq!(contents(&layout), old);
+        assert!(!layout.transaction().exists());
+    }
+    // Nothing was looked for, or left, under the new names.
+    assert!(!layout.data.join("rex-rune").exists());
+    assert!(!layout.data.join("applications").join(DESKTOP).exists());
+
+    // A commit that was marked is finished, not undone: only its journal goes.
+    interrupt(&layout, 6, false);
+    fs::write(layout.transaction().join("committed"), b"").unwrap();
+    let new = contents(&layout);
+    assert_eq!(recover(&layout).unwrap(), Recovery::Unchanged);
+    assert_eq!(contents(&layout), new);
+    assert!(!layout.transaction().exists());
+}
+
+/// An update from 0.7.x is cut off, and then `install.sh` replaces the installation with
+/// `rex-rune` and a `rex-linux` link. The journal still names `rex-linux`. The client clears
+/// it as superseded instead of refusing it at every start and blocking every later update.
+#[test]
+fn an_old_clients_journal_left_behind_a_reinstall_is_cleared_as_superseded() {
+    if unsafe { libc::geteuid() } == 0 {
+        return;
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let old_layout = InstallLayout {
+        local: temp.path().join(".local"),
+        binary: temp.path().join(".local/bin/rex-linux"),
+        data: temp.path().join(".local/share"),
+    };
+    for path in old_layout.destinations() {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, b"old").unwrap();
+    }
+    interrupt(&old_layout, 5, false);
+    // install.sh: the new names, the old ones removed, the old command a link.
+    let layout = layout(temp.path());
+    for path in old_layout.destinations() {
+        fs::remove_file(path).unwrap();
+    }
+    std::os::unix::fs::symlink("rex-rune", &old_layout.binary).unwrap();
+    let installed = contents(&layout);
+    assert_eq!(layout.transaction(), old_layout.transaction());
+    assert_eq!(recover(&layout).unwrap(), Recovery::Superseded);
+    assert!(!layout.transaction().exists());
+    assert_eq!(contents(&layout), installed);
+    assert_eq!(recover(&layout).unwrap(), Recovery::Unchanged);
+    layout.validate_receipt("0.7.3").unwrap();
 }

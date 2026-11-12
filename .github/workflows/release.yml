@@ -46,7 +46,7 @@ jobs:
 
   build:
     env:
-      REX_LINUX_CHANNEL: official
+      REX_RUNE_CHANNEL: official
     permissions:
       contents: read
     strategy:
@@ -77,32 +77,77 @@ jobs:
           cargo test --locked --all-features
           cargo test --manifest-path vendor/rexrs/Cargo.toml --all-features
       - name: Build
-        run: cargo build --locked --release --bin rex-linux
+        run: cargo build --locked --release --bin rex-rune
       - name: Package
         run: |
           python3 scripts/package-release.py --deb
-          desktop-file-validate resources/dev.shuv.rex-linux.desktop
+          desktop-file-validate resources/dev.shuv.rex-rune.desktop
+          # The second tarball is for the updater inside 0.7.x clients, which knows the client
+          # as rex-linux: check it against that updater's rules.
+          python3 scripts/test-bridge.py dist/rex-linux-*.tar.gz --binary target/release/rex-rune
       - name: Test packaged install without touching the runner's real home
         run: |
           mkdir -p "$RUNNER_TEMP/package-test"
-          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/package-test"
+          tar -xzf dist/rex-rune-*.tar.gz -C "$RUNNER_TEMP/package-test"
           package=$(find "$RUNNER_TEMP/package-test" -mindepth 1 -maxdepth 1 -type d)
           export HOME="$RUNNER_TEMP/install-test"
           export XDG_DATA_HOME="$HOME/.local/share"
           export XDG_BIN_HOME="$HOME/.local/bin"
           mkdir -p "$HOME"
           bash "$package/install.sh"
-          cmp target/release/rex-linux "$XDG_BIN_HOME/rex-linux"
-          "$XDG_BIN_HOME/rex-linux" --version
-          desktop-file-validate "$XDG_DATA_HOME/applications/dev.shuv.rex-linux.desktop"
-          python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path(os.environ["XDG_BIN_HOME"])/"rex-linux"; r=json.load(open(pathlib.Path(os.environ["XDG_DATA_HOME"])/"rex-linux/install.json")); assert r["path"] == str(p.resolve()) and r["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()'
+          cmp target/release/rex-rune "$XDG_BIN_HOME/rex-rune"
+          "$XDG_BIN_HOME/rex-rune" --version
+          desktop-file-validate "$XDG_DATA_HOME/applications/dev.shuv.rex-rune.desktop"
+          python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path(os.environ["XDG_BIN_HOME"])/"rex-rune"; r=json.load(open(pathlib.Path(os.environ["XDG_DATA_HOME"])/"rex-rune/install.json")); assert r["path"] == str(p.resolve()) and r["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()'
           bash "$package/scripts/install-desktop.sh" --uninstall
-          test ! -e "$XDG_BIN_HOME/rex-linux"
-          test ! -e "$XDG_DATA_HOME/rex-linux/install.json"
+          test ! -e "$XDG_BIN_HOME/rex-rune"
+          test ! -e "$XDG_DATA_HOME/rex-rune/install.json"
+      - name: Take over real rex-linux 0.7.5 installs (tarball and .deb), in a temporary home
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          old="$RUNNER_TEMP/rex-linux-0.7.5"
+          mkdir -p "$old"
+          deb_arch=$(dpkg --print-architecture)
+          for name in "rex-linux-0.7.5-$ARCH-linux-gnu.tar.gz" "rex-linux_0.7.5_$deb_arch.deb"; do
+            curl --proto '=https' --tlsv1.2 -fsSLo "$old/$name" "https://github.com/shuv1337/rex-rune/releases/download/v0.7.5/$name"
+          done
+          tar -xzf "$old/rex-linux-0.7.5-$ARCH-linux-gnu.tar.gz" -C "$old"
+          export HOME="$RUNNER_TEMP/takeover-test"
+          export XDG_DATA_HOME="$HOME/.local/share"
+          export XDG_BIN_HOME="$HOME/.local/bin"
+          mkdir -p "$HOME"
+          bash "$old/rex-linux-0.7.5-$ARCH-linux-gnu/install.sh"
+          test "$("$XDG_BIN_HOME/rex-linux" --version)" = 'rex-linux 0.7.5'
+          test -e "$XDG_DATA_HOME/rex-linux/install.json"
+          package=$(find "$RUNNER_TEMP/package-test" -mindepth 1 -maxdepth 1 -type d)
+          bash "$package/install.sh"
+          cmp target/release/rex-rune "$XDG_BIN_HOME/rex-rune"
+          test "$(readlink "$XDG_BIN_HOME/rex-linux")" = rex-rune
+          # Started by its old name it answers by it, which is what the 0.7.x updater checks.
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          test "$("$XDG_BIN_HOME/rex-linux" --version)" = "rex-linux $version"
+          test "$("$XDG_BIN_HOME/rex-rune" --version)" = "rex-rune $version"
+          test "$(find "$XDG_DATA_HOME/applications" -name '*.desktop' | wc -l)" = 1
+          desktop-file-validate "$XDG_DATA_HOME/applications/dev.shuv.rex-rune.desktop"
+          test -z "$(find "$XDG_DATA_HOME" -name '*rex-linux*')"
+          test "$(find "$XDG_DATA_HOME/icons" -name 'dev.shuv.rex-rune.png' | wc -l)" = 3
+          bash "$package/scripts/install-desktop.sh" --uninstall
+          test ! -e "$XDG_BIN_HOME/rex-rune" && test ! -L "$XDG_BIN_HOME/rex-linux"
+          # apt replaces the old package with the renamed one in a single transaction.
+          sudo apt-get install -y "$old/rex-linux_0.7.5_$deb_arch.deb"
+          test "$(/usr/bin/rex-linux --version)" = 'rex-linux 0.7.5'
           dpkg-deb --info dist/*.deb
           sudo apt-get install -y ./dist/*.deb
-          /usr/bin/rex-linux --version
-          grep -qx channel=deb /usr/share/rex-linux/channel
+          test "$(dpkg-query -W -f='${db:Status-Abbrev}' rex-rune)" = 'ii '
+          if dpkg-query -W -f='${db:Status-Abbrev}' rex-linux 2>/dev/null | grep -q '^i'; then echo 'rex-linux is still installed'; exit 1; fi
+          test "$(/usr/bin/rex-rune --version)" = "rex-rune $version"
+          test "$(readlink /usr/bin/rex-linux)" = rex-rune
+          test "$(/usr/bin/rex-linux --version)" = "rex-linux $version"
+          grep -qx channel=deb /usr/share/rex-rune/channel
+          test ! -e /usr/share/applications/dev.shuv.rex-linux.desktop
+          test -e /usr/share/applications/dev.shuv.rex-rune.desktop
+          test ! -e /usr/share/rex-linux
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-${{ matrix.arch }}
@@ -306,10 +351,13 @@ jobs:
 
           ---
 
+          **Coming from Rex Linux?** The client was renamed Rex Rune in this line of releases. **Update now** in Rex Linux 0.7.x installs it, `sudo pacman -Syu` (or `omarchy update`) replaces `rex-linux-bin` with `rex-rune-bin`, and `install.sh` takes over an older install. A `.deb` install is told to download `rex-linux_*.deb`: download **`rex-rune_*.deb`** instead, which replaces `rex-linux`. See [Renamed from Rex Linux](https://github.com/shuv1337/rex-rune#renamed-from-rex-linux).
+
           **Downloads:** `x86_64` / `amd64` for Intel/AMD; `aarch64` / `arm64` for ARM64.
-          - **Debian/Ubuntu:** `sudo apt install ./rex-linux_*.deb` (choose your architecture).
+          - **Debian/Ubuntu:** `sudo apt install ./rex-rune_*.deb` (choose your architecture).
           - **User install/upgrade:** `curl --proto '=https' --tlsv1.2 -fsSL https://github.com/shuv1337/rex-rune/releases/latest/download/install.sh | sh`. Verifies the release before installing; needs `desktop-file-utils` and minisign or OpenSSL 3+.
-          - **Manual tarball:** extract the matching `.tar.gz` and run `bash install.sh` inside it. No root needed; requires `desktop-file-utils`.
+          - **Manual tarball:** extract the matching `rex-rune-*.tar.gz` and run `bash install.sh` inside it. No root needed; requires `desktop-file-utils`.
+          - **`rex-linux-*.tar.gz` is not for installing by hand.** Rex Rune was Rex Linux through 0.7.x; these two archives are this release in the layout the updater inside those clients expects, so **Update now** in 0.7.x still works.
           - `install.sh` has its own detached signature, `install.sh.minisig`, and embeds both release public keys. Pipe-to-shell is trust on first use; retain a reviewed copy for later upgrades.
           - Verify `SHA256SUMS.minisig` with a trusted release public key first, then run `sha256sum --ignore-missing -c SHA256SUMS`. See the README's **Verify a download** section.
           - `latest.json` and `latest.json.minisig` describe this release for future update clients; metadata has no expiry.
@@ -318,7 +366,7 @@ jobs:
 
           Requires an existing Rex server with API revision 10, 11, 12 or 13. Installing the client does not start, stop, or modify a Rex server.
           EOF
-          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Rex Linux ${GITHUB_REF_NAME#v}" --notes-file RELEASE-NOTES.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Rex Rune ${GITHUB_REF_NAME#v}" --notes-file RELEASE-NOTES.md
           gh release upload "$GITHUB_REF_NAME" ./*.tar.gz ./*.deb ./*.pkg.tar.zst ./*.pkg.tar.zst.sig SHA256SUMS SHA256SUMS.minisig latest.json latest.json.minisig install.sh install.sh.minisig
           gh release edit "$GITHUB_REF_NAME" --draft=false --latest
       - name: Rebuild signed repository from immutable releases

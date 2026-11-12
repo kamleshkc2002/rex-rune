@@ -18,7 +18,7 @@ import time
 import tkinter
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 BASE = Path(os.environ.get("REX_SELECTION_WORK", Path.home() / ".cache/agent-ws"))
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="rex-m25-x11-", dir=BASE))

@@ -34,9 +34,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-linux")
+APP = Path(os.environ.get("REX_BIN") or ROOT / "target/release/rex-rune")
 SIZE, SCALE = "1440x900", "1.5"
-PS1 = r"\[\e[38;5;110m\]rex-linux\[\e[0m\] \[\e[38;5;245m\]❯\[\e[0m\] "
+PS1 = r"\[\e[38;5;110m\]rex-rune\[\e[0m\] \[\e[38;5;245m\]❯\[\e[0m\] "
 # `cargo test -q` in the fixture shell prints fixed text, never a real run: timings, test counts
 # and compile output would differ from one capture to the next.
 CARGO = r"""cargo() { printf '%s\n' 'running 162 tests' '..................................................' \
@@ -115,7 +115,7 @@ def main():
         if k in ("WAYLAND_DISPLAY", "DISPLAY", "WAYLAND_SOCKET", "REX_SERVER", "REX_CONFIG") or k.startswith(
                 ("XDG_CONFIG", "XDG_STATE", "XDG_CACHE", "XDG_DATA", "HERDR_")):
             shell_env.pop(k)
-    shell_env["REX_LINUX_NO_UPDATE_CHECK"] = "1"
+    shell_env["REX_RUNE_NO_UPDATE_CHECK"] = "1"
     # The Add host list runs `tailscale status`. This one finds no tailnet, so the real one's
     # machine names never appear and none of its machines is probed.
     stub = work / "bin"
@@ -152,7 +152,7 @@ def main():
 
         layout = {"split": {"direction": "horizontal", "ratio": 0.5, "before": SHELL,
                             "after": {"split": {"direction": "vertical", "ratio": 0.58, "before": SHELL, "after": SHELL}}}}
-        sid = api("session.create", label="rex-linux", initial_windows=[
+        sid = api("session.create", label="rex-rune", initial_windows=[
             {"window_label": "dev", "layout": layout},
             {"window_label": "server", "layout": SHELL},
             {"window_label": "notes", "layout": SHELL}])["session_id"]

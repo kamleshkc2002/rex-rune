@@ -238,7 +238,7 @@ fn poll(s: &mut Spike, _: f64, tx: &mut Tx) -> bool {
 
 fn main() {
     let auto = std::env::args().any(|a| a == "--auto");
-    rune::set_app_id("dev.shuv.rex-linux.spike");
+    rune::set_app_id("dev.shuv.rex-rune.spike");
     rune::App::new(AppSpec {
         poll: Some(poll),
         ..AppSpec::new("Rex chrome spike", (800.0, 500.0), Spike::default, view)

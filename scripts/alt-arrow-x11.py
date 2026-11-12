@@ -3,7 +3,7 @@
 import importlib.util,json,os,shlex,subprocess,tempfile,time
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
-binary=os.environ.get("REX_BIN",str(BASE.parent/"target/debug/rex-linux"))
+binary=os.environ.get("REX_BIN",str(BASE.parent/"target/debug/rex-rune"))
 pi_keys=os.environ.get("REX_PI_KEYS_JS")
 work=Path(tempfile.mkdtemp(prefix="rex-alt-arrow-x11-"));print("Private Alt+Arrow artifacts:",work,flush=True)
 for key in list(os.environ):

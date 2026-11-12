@@ -19,13 +19,15 @@ ARCH_IMAGE = 'archlinux:latest@sha256:d4594bb2300cba11f41c2f27923eb56f63d9988909
 ARCHES = ('x86_64', 'aarch64')
 
 
-def package(dist, version):
+def package(dist, version, recipe=None, client='rex-rune'):
+    """Build <client>-bin from the <client> tarballs. The defaults are the release; the
+    repository test also builds the package as it was named before the rename."""
     if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
         raise ValueError('expected stable X.Y.Z')
     dist = dist.resolve()
-    recipe = (ROOT / 'packaging/arch/PKGBUILD.in').read_text().replace('@VERSION@', version)
+    recipe = (recipe or (ROOT / 'packaging/arch/PKGBUILD.in').read_text()).replace('@VERSION@', version)
     for arch in ARCHES:
-        source = dist / f'rex-linux-{version}-{arch}-linux-gnu.tar.gz'
+        source = dist / f'{client}-{version}-{arch}-linux-gnu.tar.gz'
         with source.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
         recipe = recipe.replace(f'@SHA256_{arch.upper()}@', digest)
@@ -36,7 +38,7 @@ def package(dist, version):
             stage = Path(tmp)
             stage.chmod(0o755)
             (stage / 'PKGBUILD').write_text(recipe)
-            source = dist / f'rex-linux-{version}-{arch}-linux-gnu.tar.gz'
+            source = dist / f'{client}-{version}-{arch}-linux-gnu.tar.gz'
             shutil.copy2(source, stage / source.name)
             subprocess.run([
                 'docker', 'run', '--rm', '--platform', 'linux/amd64',
@@ -51,13 +53,17 @@ def package(dist, version):
                     chown -R "$2:$3" /build
                 ''', 'bash', arch, str(os.getuid()), str(os.getgid()),
             ], check=True)
-            name = f'rex-linux-bin-{version}-1-{arch}.pkg.tar.zst'
+            name = f'{client}-bin-{version}-1-{arch}.pkg.tar.zst'
             built = stage / name
-            packaged = subprocess.check_output(['tar', '--zstd', '-xOf', str(built), 'usr/bin/rex-linux'])
+            packaged = subprocess.check_output(['tar', '--zstd', '-xOf', str(built), f'usr/bin/{client}'])
             with tarfile.open(source) as archive:
-                original = archive.extractfile(f'rex-linux-{version}-{arch}-linux-gnu/bin/rex-linux').read()
+                original = archive.extractfile(f'{client}-{version}-{arch}-linux-gnu/bin/{client}').read()
             if packaged != original:
                 raise ValueError(f'{arch}: makepkg changed the binary')
+            if client == 'rex-rune':
+                listing = subprocess.check_output(['tar', '--zstd', '-tvf', str(built), 'usr/bin/rex-linux'], text=True)
+                if not listing.startswith('l') or not listing.rstrip().endswith('usr/bin/rex-linux -> rex-rune'):
+                    raise ValueError(f'{arch}: the rex-linux command is not a link to rex-rune')
             shutil.copy2(built, dist / name)
             print(dist / name)
 

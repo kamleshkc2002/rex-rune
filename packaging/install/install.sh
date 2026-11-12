@@ -1,5 +1,5 @@
 #!/bin/sh
-# Rex Linux's release installer. The complete function must arrive before it runs.
+# Rex Rune's release installer. The complete function must arrive before it runs.
 rex_install() (
     set -eu
     umask 077
@@ -7,7 +7,7 @@ rex_install() (
     CI_KEY='RWRugVJ2wnj9oVdIvBhQFK1/BDvL1KkA4aH1HB2Q0uA30OBHXIvTlHwL'
     BACKUP_KEY='RWTzIScuoaGONtqf+4m48HAGuwNgUxvd/AFZareIgMwCGCKVjbTjcmJe'
 
-    die() { printf 'rex-linux installer: %s\n' "$*" >&2; exit 1; }
+    die() { printf 'rex-rune installer: %s\n' "$*" >&2; exit 1; }
     stable() {
         case "$1" in *[!0-9.]*|'') return 1 ;; esac
         printf '%s\n' "$1" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
@@ -40,11 +40,14 @@ rex_install() (
     done
     # Delete only the documented user-install files. Never remove preferences or directories.
     if $uninstall; then
-        rm -f -- "$bin/rex-linux" "$data/applications/dev.shuv.rex-linux.desktop" "$data/rex-linux/install.json"
-        for size in 32 128 256; do rm -f -- "$data/icons/hicolor/${size}x${size}/apps/dev.shuv.rex-linux.png"; done
+        # Both names: an install made before the rename from rex-linux is removed too.
+        for name in rex-rune rex-linux; do
+            rm -f -- "$bin/$name" "$data/applications/dev.shuv.$name.desktop" "$data/$name/install.json"
+            for size in 32 128 256; do rm -f -- "$data/icons/hicolor/${size}x${size}/apps/dev.shuv.$name.png"; done
+        done
         if command -v update-desktop-database >/dev/null 2>&1 && [ -d "$data/applications" ]; then update-desktop-database "$data/applications"; fi
         if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -d "$data/icons/hicolor" ]; then gtk-update-icon-cache -f -t "$data/icons/hicolor" >/dev/null 2>&1 || :; fi
-        printf '%s\n' 'Removed Rex Linux desktop client user install (rex-linux); preferences and any Rex server (rex) kept.'
+        printf '%s\n' 'Removed Rex Rune desktop client user install (rex-rune); preferences and any Rex server (rex) kept.'
         exit 0
     fi
     # /etc/os-release is root-owned, but source it in a subshell so its variables
@@ -58,7 +61,7 @@ rex_install() (
         *fedora*|*rhel*) hint='sudo dnf install curl tar coreutils bash desktop-file-utils openssl'; manager='sudo dnf upgrade' ;;
         *) hint='install curl, tar, coreutils, bash, desktop-file-utils and minisign or OpenSSL 3+'; manager='your package manager' ;;
     esac
-    if [ -e /usr/bin/rex-linux ] && ! $force; then die "package install detected; use $manager (or --force for a user install)"; fi
+    if { [ -e /usr/bin/rex-rune ] || [ -e /usr/bin/rex-linux ]; } && ! $force; then die "package install detected; use $manager (or --force for a user install)"; fi
     [ "$(uname -s)" = Linux ] || die 'only Linux is supported'
     case "$(uname -m)" in x86_64) target=x86_64-linux-gnu ;; aarch64|arm64) target=aarch64-linux-gnu ;; *) die 'supported architectures: x86_64 and aarch64' ;; esac
     for cmd in curl tar sha256sum bash desktop-file-install desktop-file-validate awk base64 dd od; do
@@ -71,10 +74,16 @@ rex_install() (
     elif command -v openssl >/dev/null 2>&1 && openssl version | grep -Eq '^OpenSSL ([3-9]|[1-9][0-9]+)\.'; then verifier=openssl
     else die "need minisign or OpenSSL 3+; $hint"; fi
 
-    if [ -e "$data/rex-linux/install.json" ] && ! $force; then
+    # An install made before the rename is a regular file called rex-linux with its own
+    # receipt. It is checked the same way, then replaced by rex-rune and a rex-linux link.
+    current="$bin/rex-rune" receipt="$data/rex-rune/install.json" legacy=false
+    if [ ! -e "$current" ] && [ -f "$bin/rex-linux" ] && [ ! -L "$bin/rex-linux" ]; then
+        current="$bin/rex-linux" receipt="$data/rex-linux/install.json" legacy=true
+    fi
+    if [ -e "$receipt" ] && ! $force; then
         # U3 writes the receipt. Python is only needed when a receipt actually exists.
         command -v python3 >/dev/null 2>&1 || die 'receipt present: install python3 to validate it (or --force)'
-        python3 - "$data/rex-linux/install.json" "$bin/rex-linux" <<'PY' || die 'receipt does not match the installed binary; use --force only to replace it deliberately'
+        python3 - "$receipt" "$current" <<'PY' || die 'receipt does not match the installed binary; use --force only to replace it deliberately'
 import hashlib, json, pathlib, sys
 r = json.loads(pathlib.Path(sys.argv[1]).read_text())
 p = pathlib.Path(sys.argv[2])
@@ -83,14 +92,14 @@ if pathlib.Path(r["path"]).resolve() != p.resolve() or r["sha256"] != hashlib.sh
 PY
     fi
     installed=''
-    if [ -e "$bin/rex-linux" ]; then
-        actual=$("$bin/rex-linux" --version) || actual=''
-        installed=${actual#rex-linux }
-        if [ "$actual" != "rex-linux $installed" ] || ! stable "$installed"; then
+    if [ -e "$current" ]; then
+        actual=$("$current" --version) || actual=''
+        installed=${actual#rex-rune }; installed=${installed#rex-linux }
+        if { [ "$actual" != "rex-rune $installed" ] && [ "$actual" != "rex-linux $installed" ]; } || ! stable "$installed"; then
             $force || die 'installed binary cannot report a stable version; --force to repair deliberately'
             installed=''
         fi
-        if [ ! -e "$data/rex-linux/install.json" ]; then printf '%s\n' 'Existing install has no receipt (normal before U3); checking its version.'; fi
+        if [ ! -e "$receipt" ]; then printf '%s\n' 'Existing install has no receipt (normal before U3); checking its version.'; fi
     fi
     mkdir -p "$cache"
     work=$(mktemp -d "$cache/rex-install.XXXXXXXX")
@@ -130,6 +139,7 @@ PY
         sig=$(awk 'NR==2 {print}' "$work/SHA256SUMS.minisig")
         comment=$(awk 'NR==3 {print}' "$work/SHA256SUMS.minisig")
         global=$(awk 'NR==4 {print}' "$work/SHA256SUMS.minisig")
+        # Release signatures keep the product id every published client checks: rex-linux.
         case "$comment" in 'trusted comment: rex-linux v'*' SHA256SUMS') ;; *) return 1 ;; esac
         comment=${comment#trusted comment: }
         version=${comment#rex-linux v}; version=${version% SHA256SUMS}
@@ -159,14 +169,20 @@ PY
         if fetch "$base/SHA256SUMS" "$work/SHA256SUMS" 65536 && fetch "$base/SHA256SUMS.minisig" "$work/SHA256SUMS.minisig" 4096 && verify; then verified=true; break; fi
     done
     $verified || die 'signature verification failed; nothing installed (unknown keys require explicit --trust-repo-keys)'
-    name="rex-linux-$version-$target"
+    name="rex-rune-$version-$target"
     archive="$name.tar.gz"
-    hash=$(awk -v f="$archive" '$2==f {n++; h=$1; if(NF!=2 || length($1)!=64 || $1 ~ /[^0-9a-f]/) bad=1} END {if(n!=1 || bad) exit 1; print h}' "$work/SHA256SUMS") || die 'signed checksums missing or ambiguous for this tarball'
+    hash=$(awk -v f="$archive" '$2==f {n++; h=$1; if(NF!=2 || length($1)!=64 || $1 ~ /[^0-9a-f]/) bad=1} END {if(n!=1 || bad) exit 1; print h}' "$work/SHA256SUMS") || {
+        # A verified release with only the old tarball predates the rename.
+        if awk -v f="rex-linux-$version-$target.tar.gz" '$2==f {n++} END {exit n!=1}' "$work/SHA256SUMS"; then
+            die "$version was published as rex-linux; install it with its own installer: curl -fsSL $REPO/releases/download/v$version/install.sh | sh -s -- --version $version"
+        fi
+        die 'signed checksums missing or ambiguous for this tarball'
+    }
     if [ -n "$installed" ]; then
-        if [ "$installed" = "$version" ]; then printf 'Rex Linux %s is already current.\n' "$version"; exit 0; fi
+        if [ "$installed" = "$version" ]; then printf 'Rex Rune %s is already current.\n' "$version"; exit 0; fi
         if newer "$installed" "$version" && [ -z "$requested" ]; then die "refusing downgrade $installed -> $version; use --version $version deliberately"; fi
     fi
-    if $check; then printf 'Rex Linux %s available (installed: %s).\n' "$version" "${installed:-none}"; exit 0; fi
+    if $check; then printf 'Rex Rune %s available (installed: %s).\n' "$version" "${installed:-none}"; exit 0; fi
     fetch "$REPO/releases/download/v$version/$archive" "$work/$archive" 268435456 || die 'tarball download failed (limit 256 MiB)'
     printf '%s  %s\n' "$hash" "$work/$archive" | sha256sum -c - || die 'tarball checksum mismatch; nothing installed'
     tar -tzf "$work/$archive" > "$work/entries" || die 'invalid tarball'
@@ -177,14 +193,15 @@ PY
     mkdir "$work/unpack"
     tar -xzf "$work/$archive" -C "$work/unpack" --no-same-owner --no-same-permissions || die 'cannot extract tarball'
     package="$work/unpack/$name"
-    [ "$("$package/bin/rex-linux" --version)" = "rex-linux $version" ] || die 'downloaded binary cannot run or reports wrong version; old install untouched'
+    [ "$("$package/bin/rex-rune" --version)" = "rex-rune $version" ] || die 'downloaded binary cannot run or reports wrong version; old install untouched'
     REX_INSTALL_QUIET_SUMMARY=1 bash "$package/install.sh" || die 'desktop installation failed'
-    printf 'Installed the Rex Linux desktop client (rex-linux %s) at %s/rex-linux and launcher %s/applications/dev.shuv.rex-linux.desktop.\n' "$version" "$bin" "$data"
+    printf 'Installed the Rex Rune desktop client (rex-rune %s) at %s/rex-rune and launcher %s/applications/dev.shuv.rex-rune.desktop.\n' "$version" "$bin" "$data"
+    if $legacy; then printf 'This replaces the rex-linux install: one launcher, your preferences kept, and %s/rex-linux is now a link to rex-rune.\n' "$bin"; fi
     printf '%s\n' 'This does not install or change the Rex server (rex).'
     if rex_path=$(command -v rex 2>/dev/null) && [ -n "$rex_path" ]; then
         printf 'Using your Rex server at %s.\n' "$rex_path"
     else
-        printf 'rex-linux needs a Rex server installed separately; see %s#build-requirements.\n' "$REPO"
+        printf 'rex-rune needs a Rex server installed separately; see %s#build-requirements.\n' "$REPO"
     fi
     case ":$PATH:" in *":$bin:"*) ;; *) printf 'Add %s to PATH.\n' "$bin" ;; esac
 )

@@ -6,7 +6,7 @@ use super::{
     theme::*,
     workspace::Workspace,
 };
-use rex_linux::settings::NoticePosition;
+use rex_rune::settings::NoticePosition;
 use rune::{Cursor, El, Tx, col, el, row, text};
 use rune_kit::TextField;
 
@@ -245,7 +245,7 @@ pub fn dialog(s: &Workspace, viewport: [f32; 2]) -> Option<El> {
             confirm_with(
                 &panel.title,
                 &format!(
-                    "Rex Linux stops connecting to {label} and forgets it. Its sessions and programs keep running on that server, and you can add it again later."
+                    "Rex Rune stops connecting to {label} and forgets it. Its sessions and programs keep running on that server, and you can add it again later."
                 ),
                 "Keep host",
                 "Remove host",

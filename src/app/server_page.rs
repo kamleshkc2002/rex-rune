@@ -5,7 +5,7 @@ use super::{
     widgets::Pill,
     workspace::Workspace,
 };
-use rex_linux::connection::server_info::Answer;
+use rex_rune::connection::server_info::Answer;
 use rune::{El, col, text};
 
 const MISSING: &str = "Not reported";

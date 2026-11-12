@@ -18,7 +18,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-rune"))
 REX = shutil.which("rex")
 EXPECTED_REVISION = os.environ.get("REX_EXPECT_REVISION")
 LABEL = "remote-accept"
