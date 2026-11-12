@@ -132,6 +132,11 @@ pub struct Workspace {
     pub notifier: Option<Notifier>,
     /// Notifications headless tests would have sent.
     pub outbox: Vec<Note>,
+    pub notification_health: super::notify::Health,
+    /// Tabs with a desktop notification sent since they were last on screen.
+    pub notified_tabs: std::collections::HashSet<super::notify::NoteTarget>,
+    #[cfg(test)]
+    pub notification_outbox: super::notify::Outbox,
     pub integrations: super::integrations::Integrations,
     pub ssh_setup: super::ssh_setup::Setup,
     /// The tailnet's machines, for Add host.
@@ -276,6 +281,10 @@ impl Workspace {
             activity_epochs: HashMap::new(),
             notifier: None,
             outbox: Vec::new(),
+            notification_health: Default::default(),
+            notified_tabs: Default::default(),
+            #[cfg(test)]
+            notification_outbox: Default::default(),
             integrations: Default::default(),
             ssh_setup: Default::default(),
             discovery: Default::default(),
@@ -1391,6 +1400,9 @@ impl Workspace {
                 let back = self.panel.take();
                 self.panel = Some(Panel::new(PanelKind::Settings, "Settings", &[]));
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
+                if self.settings_section == SettingsSection::Notifications {
+                    self.notification_command(super::notify::Command::Check);
+                }
             }
             Intent::Updates => self.open_updates_settings(),
             Intent::About => {
@@ -1826,6 +1838,9 @@ impl Workspace {
         self.settings_nav.sub = None;
         self.settings_section = section;
         self.recorder = None;
+        if section == SettingsSection::Notifications {
+            self.notification_command(super::notify::Command::Check);
+        }
         if section == SettingsSection::Shortcuts {
             self.reload_shortcuts();
         }

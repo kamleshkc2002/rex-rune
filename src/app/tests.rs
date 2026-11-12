@@ -20,6 +20,8 @@ mod header_fading_tests;
 mod menu_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
+#[path = "notification_tests.rs"]
+mod notification_tests;
 #[path = "pane_ergonomics_tests.rs"]
 mod pane_ergonomics_tests;
 #[path = "pane_header_tests.rs"]
@@ -2294,7 +2296,10 @@ fn background_tabs_latch_done_and_notify_only_about_live_changes() {
     assert!(ws.unseen("split"));
     assert_eq!(ws.outbox.len(), 1);
     assert_eq!(ws.outbox[0].summary, "dev · Done");
-    assert_eq!(ws.outbox[0].target.window.as_deref(), Some("split"));
+    assert_eq!(
+        ws.outbox[0].target.as_ref().unwrap().window.as_deref(),
+        Some("split")
+    );
     // A live error is news too.
     set_activity(&mut ws, "block:c", &[("", record(Error, true))]);
     assert_eq!(ws.outbox.len(), 2);

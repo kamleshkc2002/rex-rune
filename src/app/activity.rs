@@ -2,7 +2,7 @@
 //! window, the program its pill shows, the word trouble carries, and which changes become
 //! desktop notifications.
 use super::{
-    notify::{Note, NoteTarget, Notifier},
+    notify::{Command, Kind, Note, NoteTarget},
     theme::*,
     workspace::{HostId, Workspace},
 };
@@ -278,6 +278,7 @@ impl Workspace {
         }
         let mut now = HashMap::new();
         let mut notes = Vec::new();
+        let mut seen_tabs = Vec::new();
         let model = &self.hosts[index].model;
         for (session, view) in &model.views {
             for window in &view.windows {
@@ -287,6 +288,13 @@ impl Workspace {
                 let activity = tab_activity(model, window);
                 let key = (id, window_id.clone());
                 let seen = self.tab_seen(index, session, &window_id);
+                if seen {
+                    seen_tabs.push(NoteTarget {
+                        host: id,
+                        session: session.clone(),
+                        window: Some(window_id.clone()),
+                    });
+                }
                 let before = self.tab_states.get(&key).copied();
                 let state = activity.state;
                 let done = before.is_some_and(|b| finished(b, state));
@@ -317,6 +325,9 @@ impl Workspace {
         self.tab_states.retain(|(host, _), _| *host != id);
         self.tab_states
             .extend(now.into_iter().map(|(k, (state, ..))| (k, state)));
+        for target in seen_tabs {
+            self.close_tab_notification(target);
+        }
         for (state, session, window, activity) in notes {
             self.notify_state(index, state, session, window, &activity);
         }
@@ -361,11 +372,12 @@ impl Workspace {
         self.deliver(Note {
             summary,
             body,
-            target: NoteTarget {
+            target: Some(NoteTarget {
                 host,
                 session,
                 window: Some(window),
-            },
+            }),
+            kind: Kind::Activity(state),
         });
     }
 
@@ -410,11 +422,12 @@ impl Workspace {
             self.deliver(Note {
                 summary,
                 body,
-                target: NoteTarget {
+                target: Some(NoteTarget {
                     host,
                     session: notice.session,
                     window,
-                },
+                }),
+                kind: Kind::Program,
             });
         }
     }
@@ -444,17 +457,18 @@ impl Workspace {
 
     fn deliver(&mut self, note: Note) {
         if cfg!(test) {
-            self.outbox.push(note);
-            return;
+            self.outbox.push(note.clone());
         }
-        let handle = self.handle.clone();
-        self.notifier
-            .get_or_insert_with(|| Notifier::spawn(handle))
-            .send(note);
+        // Only a tab can be seen; a message whose tab is unknown closes on a click.
+        if let Some(target) = note.target.as_ref().filter(|t| t.window.is_some()) {
+            self.notified_tabs.insert(target.clone());
+        }
+        self.notification_command(Command::Send(note));
     }
 
     /// A notification was clicked: raise the window and show its session and tab.
     pub fn open_note(&mut self, target: NoteTarget, token: Option<String>, tx: &mut Tx) {
+        self.close_notifications(target.clone());
         self.handle.activate(token.unwrap_or_default());
         let Some(index) = self.host_index(target.host) else {
             return;

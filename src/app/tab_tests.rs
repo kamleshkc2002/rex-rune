@@ -308,7 +308,7 @@ fn a_muted_tab_shows_no_word_and_sends_no_notification() {
         .state
         .outbox
         .iter()
-        .map(|n| n.target.window.clone().unwrap())
+        .map(|n| n.target.as_ref().unwrap().window.clone().unwrap())
         .collect();
     assert_eq!(notified, ["c"], "only the other tab notified");
 
@@ -321,7 +321,15 @@ fn a_muted_tab_shows_no_word_and_sends_no_notification() {
     };
     rt.update(|s, _| s.deliver_program_notices(0, vec![notice("block:b"), notice("block:c")]));
     assert_eq!(rt.state.outbox.len(), 2);
-    assert_eq!(rt.state.outbox[1].target.window.as_deref(), Some("c"));
+    assert_eq!(
+        rt.state.outbox[1]
+            .target
+            .as_ref()
+            .unwrap()
+            .window
+            .as_deref(),
+        Some("c")
+    );
 
     // Finishing while muted latches nothing to show later; a bell neither.
     rt.update(|s, _| {
@@ -346,7 +354,15 @@ fn a_muted_tab_shows_no_word_and_sends_no_notification() {
     }
     assert!(has(&rt, "tab-word:b"));
     assert_eq!(rt.state.outbox.len(), 3);
-    assert_eq!(rt.state.outbox[2].target.window.as_deref(), Some("b"));
+    assert_eq!(
+        rt.state.outbox[2]
+            .target
+            .as_ref()
+            .unwrap()
+            .window
+            .as_deref(),
+        Some("b")
+    );
     std::fs::remove_file(&rt.state.settings_path).ok();
 }
 
