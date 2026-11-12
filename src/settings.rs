@@ -332,6 +332,7 @@ impl Settings {
             normalize_font_preferences(&settings.font_family, &settings.font_fallbacks)?;
         settings.font_size = settings.font_size.clamp(8., 48.);
         settings.pane_padding = settings.pane_padding.clamp(0., 32.);
+        settings.interface.normalize();
         settings.sidebar_width = settings.sidebar_width.clamp(200., 360.);
         settings.ui_scale = normalize_ui_scale(settings.ui_scale);
         // Import before the first save loses nivox's unknown keybindings field.

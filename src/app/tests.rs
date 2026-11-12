@@ -18,6 +18,8 @@ mod font_settings_tests;
 mod menu_tests;
 #[path = "navigation_tests.rs"]
 mod navigation_tests;
+#[path = "pane_ergonomics_tests.rs"]
+mod pane_ergonomics_tests;
 #[path = "pane_header_tests.rs"]
 mod pane_header_tests;
 #[path = "pane_verb_tests.rs"]
@@ -1758,6 +1760,10 @@ fn the_theme_picker_filters_declares_to_every_host_and_returns_to_settings() {
     ws.perform(Intent::Settings, &mut rune::Tx::default());
     let mut rt = runtime(ws);
     click(&mut rt, "settings-section:terminal");
+    rt.update(|_, tx| tx.scroll_into_view("terminal-theme"));
+    for _ in 0..90 {
+        rt.frame(1. / 60.);
+    }
     click(&mut rt, "terminal-theme");
     assert!(matches!(
         rt.state.panel.as_ref().map(|p| &p.kind),

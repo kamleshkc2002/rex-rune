@@ -397,6 +397,25 @@ fn typography(s: &Workspace, inks: &Inks) -> El {
     )
 }
 
+fn padding_row(key: &str, label: &str, value: f32, vertical: bool) -> El {
+    let step = move |by| {
+        move |s: &mut Workspace, tx: &mut rune::Tx| {
+            s.settings.step_padding(vertical, by);
+            s.save();
+            tx.instant();
+        }
+    };
+    setting(
+        label,
+        if vertical {
+            "Space above and below the terminal."
+        } else {
+            "Space to the left and right of the terminal."
+        },
+        stepper(key, format!("{value} pt"), step(-1.), step(1.)),
+    )
+}
+
 pub fn terminal(s: &Workspace) -> El {
     let inks = Inks::of(s);
     let shells = s.settings.hosts.iter().enumerate().map(|(i, host)| {
@@ -412,22 +431,25 @@ pub fn terminal(s: &Workspace) -> El {
         typography(s, &inks),
         section(
             "Layout",
-            [card([setting(
-                "Pane padding",
-                "Space around each terminal's content, from 0 to 32 pt.",
-                stepper(
-                    "pane-padding",
-                    format!("{} pt", s.settings.pane_padding),
-                    |s, _| {
-                        s.settings.pane_padding = (s.settings.pane_padding - 1.).max(0.);
-                        s.save();
-                    },
-                    |s, _| {
-                        s.settings.pane_padding = (s.settings.pane_padding + 1.).min(32.);
-                        s.save();
-                    },
+            [
+                card([
+                    padding_row(
+                        "pane-padding",
+                        "Horizontal padding",
+                        s.settings.padding().0,
+                        false,
+                    ),
+                    padding_row(
+                        "pane-padding-y",
+                        "Vertical padding",
+                        s.settings.padding().1,
+                        true,
+                    ),
+                ]),
+                footnote(
+                    "Space around each terminal's content, from 0 to 32 pt on each axis. Changing padding resizes only panes this client already owns.",
                 ),
-            )])],
+            ],
         ),
         section(
             "Colours",

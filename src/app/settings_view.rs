@@ -143,6 +143,26 @@ fn interface(s: &Workspace) -> El {
                         tx.instant();
                     },
                 ),
+                select_row(
+                    "active-pane-outline",
+                    "Active pane outline",
+                    "Auto follows density. A single edge-to-edge pane has no outline.",
+                    &["Auto", "On", "Off"],
+                    match s.settings.interface.highlight_active_pane {
+                        None => 0,
+                        Some(true) => 1,
+                        Some(false) => 2,
+                    },
+                    |s, i, tx| {
+                        s.settings.interface.highlight_active_pane = match i {
+                            1 => Some(true),
+                            2 => Some(false),
+                            _ => None,
+                        };
+                        s.save();
+                        tx.instant();
+                    },
+                ),
             ])],
         ),
         section(

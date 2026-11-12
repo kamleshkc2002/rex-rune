@@ -238,7 +238,7 @@ fn typing_padding_lists_the_row_and_enter_marks_it() {
     type_text(&mut rt, "padding");
     assert_eq!(
         hits(&rt)[0],
-        ("Pane padding".to_owned(), "Terminal".to_owned())
+        ("Horizontal padding".to_owned(), "Terminal".to_owned())
     );
     // The arrows walk the hits, around the ends.
     let count = hits(&rt).len();
@@ -261,7 +261,7 @@ fn typing_padding_lists_the_row_and_enter_marks_it() {
         .expect("the found row's mark");
     let (fill, _) = crate::app::theme::selection(false);
     assert_eq!(mark.fill, fill);
-    let helper = "Space around each terminal's content, from 0 to 32 pt.";
+    let helper = "Space to the left and right of the terminal.";
     assert_eq!(
         rt.elements()
             .iter()

@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Pane ergonomics (partial M2.7):** independent horizontal/vertical padding (0–32 pt) and an Active pane outline choice (Auto/On/Off). Defaults preserve legacy uniform padding and density-following decoration. These preferences never claim ownership, alter shared split layout or dim/recolour terminal output. Focus follows mouse and header fading remain deferred. See [checks and limits](docs/parity-2026-11/M2.7-panes.md).
+
 - **Font controls (M2.6):** cached searchable font-family picker with Monospaced/All filters, current checks and requested-face samples; font style and an Advanced font settings subpage with line height, character spacing, program bold/italic choices and an ordered editable fallback list. Family changes still apply on reopen and CLI overrides still win. Live metrics share one grid across drawing, input and owned-pane resize reports; defaults and ownership boundaries are unchanged. See [verification and limits](docs/parity-2026-11/M2.6.md).
 
 - **Terminal display and selection controls (M2.5):** steady Typography, Cursor and Selection previews; default cursor shape and an optional Force style; opt-in copy on selection, PRIMARY selection/middle-click paste, and rounded selection corners; cell-derived selection colour choices and a switch for shortcut-sequence hints. Existing title/font keys and default rendering remain unchanged. Cursor policy is local, program mouse reporting takes precedence over PRIMARY paste, and copying never claims pane ownership. See [verification and limits](docs/parity-2026-11/M2.5.md).
