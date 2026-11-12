@@ -6,6 +6,7 @@ mod bindings;
 mod commands;
 mod compatibility;
 mod dialogs;
+mod directory;
 mod discover;
 mod downloads;
 mod downloads_view;

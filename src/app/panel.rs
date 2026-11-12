@@ -29,6 +29,7 @@ pub enum Intent {
     HostShell(usize),
     /// The download folder form (Settings).
     DownloadFolder,
+    InsertPath(usize),
     Pane(PaneTarget, PaneAction),
     Session(SessionTarget, SessionAction),
     /// A tab action on a named tab of any host and session.
@@ -111,6 +112,7 @@ impl Intent {
                 PaneAction::Zoom => ("pane.zoom", Value::Null),
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
                 PaneAction::Download => (super::actions::DOWNLOAD, Value::Null),
+                PaneAction::InsertPath => (super::directory::ACTION, Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
                 PaneAction::Copy => ("pane.copy", Value::Null),
                 PaneAction::Paste => ("pane.paste", Value::Null),
@@ -129,7 +131,8 @@ impl Intent {
     pub fn opens_followup(&self) -> bool {
         matches!(
             self,
-            Intent::Switcher
+            Intent::InsertPath(_)
+                | Intent::Switcher
                 | Intent::ClientAction(
                     "client.settings" | "session.switch" | super::about::ABOUT | super::recorder::EDIT,
                     _
@@ -174,7 +177,7 @@ impl Intent {
                 | Intent::RemoveHost(_)
                 | Intent::Pane(
                     _,
-                    PaneAction::Rename | PaneAction::Close | PaneAction::Download
+                    PaneAction::Rename | PaneAction::Close | PaneAction::Download | PaneAction::InsertPath
                 )
                 | Intent::Session(_, SessionAction::Rename | SessionAction::Close)
         )
@@ -219,6 +222,7 @@ pub enum PaneAction {
     Reconnect,
     /// Open the Download from <host> dialog for this pane.
     Download,
+    InsertPath,
     /// The pane's selected text to the clipboard.
     Copy,
     /// The clipboard into the pane, as Ctrl Shift V does for the focused one.
@@ -362,6 +366,7 @@ pub enum PanelKind {
     },
     /// Download a file from the captured pane's machine; see `downloads.rs`.
     Download(super::downloads::Dialog),
+    Directory(super::directory::Browser),
     /// The Downloads popover: this launch's transfers.
     Downloads,
 }
@@ -435,6 +440,7 @@ impl Panel {
                 | PanelKind::Choice(_)
                 | PanelKind::Discover
                 | PanelKind::ShortcutMenu
+                | PanelKind::Directory(_)
         )
     }
 }
@@ -673,6 +679,9 @@ impl Workspace {
         let Some(panel) = &self.panel else {
             return vec![];
         };
+        if let PanelKind::Directory(browser) = &panel.kind {
+            return self.directory_entries(browser);
+        }
         let query = self.query();
         let lower = query.to_lowercase();
         if let PanelKind::Fonts(pick) = panel.kind {

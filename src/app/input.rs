@@ -237,7 +237,11 @@ pub fn list_key(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
             }
         }
         // Lists have one control; Tab must not walk focus out to the window behind them.
-        Key::Tab => {}
+        Key::Tab => {
+            if !ev.mods.shift {
+                s.descend_directory();
+            }
+        }
         _ if ctrl(ev)
             && ev.mods.shift
             && space(ev, tx)

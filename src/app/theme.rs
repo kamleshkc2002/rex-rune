@@ -393,6 +393,12 @@ icon!(
     r#"circle cx="9" cy="9" r="5""#,
     r#"path d="m13 13 3.5 3.5""#
 );
+// Insert path's field: a path on the terminal's machine, not a search.
+icon!(
+    FOLDER,
+    "rex-folder",
+    r#"path d="M3.5 6.5A1.5 1.5 0 0 1 5 5h3l1.75 2H15a1.5 1.5 0 0 1 1.5 1.5V14a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 14z""#
+);
 icon!(
     COMMAND,
     "rex-command",

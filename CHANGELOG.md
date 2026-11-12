@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Insert path… (partial M3.1):** browse the focused terminal's files and folders from Commands, then paste one POSIX-shell-quoted absolute path without Enter. The captured pane never changes; browsing only lists paths, errors stay inline and nothing retries automatically. The action is local-only and unbound by default. Go to Directory and recents remain deferred. See [checks and limits](docs/parity-2026-11/M3.1-insert-path.md).
+
 - **Server settings (partial M3.3):** a read-only page shows the active host's cached version, API, process, listeners and built-in Tailscale facts, with explicit missing/stale states and sanitized address copy. Opening the page makes no requests or server changes. Pairing and server controls remain deferred. See [checks and limits](docs/parity-2026-11/M3.3-server-settings.md).
 
 - **Notification quality and health (partial M3.4):** activity notifications replace the previous one for their tab, use critical urgency for Needs you/Error and close when the tab is seen. Failed sends stay dropped without ending the worker. Settings → Notifications reports service health and offers an explicit test, even with desktop notifications off. Program messages remain separate. See [checks and limits](docs/parity-2026-11/M3.4-notification-quality.md).

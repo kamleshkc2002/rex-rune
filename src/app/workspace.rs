@@ -555,9 +555,9 @@ impl Workspace {
             self.keymap_generation,
         );
         for queued in client_actions {
-            // Only this person's own key or click starts a download, whatever a host returns.
-            if super::actions::find(&queued.action.action).is_some_and(|s| s.starts_download()) {
-                self.inform("Returned client action skipped: a host cannot start a download.");
+            // File dialogs need this person's own key or click, whatever a host returns.
+            if super::actions::find(&queued.action.action).is_some_and(|s| s.requires_person()) {
+                self.inform("Returned client action skipped: a host cannot start a download or open the path browser.");
                 continue;
             }
             // Focus events following the reply may legitimately move to another pane.
@@ -609,6 +609,7 @@ impl Workspace {
         }
         self.sync_tabs(index, tx);
         self.process_downloads(index, tx);
+        self.process_directory(index);
         if index == self.active && old_session != self.hosts[index].model.selected {
             self.drag = None;
         }
@@ -1255,7 +1256,10 @@ impl Workspace {
         // Only pane actions carry a captured pane, and session actions a captured session,
         // into the panel they open.
         if let Some(panel) = &mut self.panel {
-            if !matches!(action, Intent::Pane(..) | Intent::MovePaneTo(_)) {
+            if !matches!(
+                action,
+                Intent::Pane(..) | Intent::MovePaneTo(_) | Intent::InsertPath(_)
+            ) {
                 panel.target = None;
             }
             if !matches!(action, Intent::Session(..)) {
@@ -1271,6 +1275,7 @@ impl Workspace {
             }
             Intent::ClientAction(name, args) => { super::actions::run(self, name, &args, tx); }
             Intent::Switcher => self.picker(true),
+            Intent::InsertPath(index) => self.insert_path(index, tx),
             Intent::NewSession => self.create_session(self.active, None, tx),
             Intent::CreateOn(host, name) => self.create_session(host, name, tx),
             Intent::SwitchHost(host) => { self.close_panel(tx); self.activate_host(host, tx); }
@@ -1690,6 +1695,7 @@ impl Workspace {
                 self.terminal_command(&key, Command::Reconnect);
             }
             PaneAction::Download => self.download_dialog(target),
+            PaneAction::InsertPath => self.insert_path_dialog(target),
             PaneAction::Copy
             | PaneAction::Paste
             | PaneAction::SelectAll
@@ -1921,6 +1927,14 @@ impl Workspace {
     }
 
     pub fn query_changed(&mut self) {
+        if self
+            .panel
+            .as_ref()
+            .is_some_and(|p| matches!(p.kind, PanelKind::Directory(_)))
+        {
+            self.list_directory();
+            return;
+        }
         let first = self.entries().iter().position(|e| e.enabled).unwrap_or(0);
         if let Some(panel) = &mut self.panel {
             panel.selected = first;

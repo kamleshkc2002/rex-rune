@@ -8,6 +8,8 @@ mod bindings_integration_tests;
 mod command_tests;
 #[path = "compatibility_tests.rs"]
 mod compatibility_tests;
+#[path = "directory_tests.rs"]
+mod directory_tests;
 #[path = "downloads_tests.rs"]
 mod downloads_tests;
 #[path = "find_tests.rs"]

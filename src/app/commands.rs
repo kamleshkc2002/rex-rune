@@ -629,6 +629,9 @@ impl Workspace {
             pane("pane.download", "Download file…", PaneAction::Download)
                 .keywords("save fetch get file transfer")
                 .section(4),
+            pane("pane.insert_path", "Insert path…", PaneAction::InsertPath)
+                .keywords("file folder directory paste")
+                .section(4),
             pane("pane.clear", "Clear terminal", PaneAction::Clear)
                 .keywords("screen scrollback")
                 .section(5),

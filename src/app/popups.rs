@@ -132,6 +132,7 @@ pub fn target_outline(s: &Workspace) -> Option<El> {
         PanelKind::Pane
             | PanelKind::Form(super::panel::Form::RenamePane(_))
             | PanelKind::Download(_)
+            | PanelKind::Directory(_)
             | PanelKind::Confirm { .. }
     ) {
         return None;
@@ -237,9 +238,15 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     } else {
         40.
     };
+    let directory_extra = if let PanelKind::Directory(browser) = &panel.kind {
+        26. + if browser.truncated { 28. } else { 0. }
+    } else {
+        0.
+    };
     let mut list_max = match room {
         Some((below, above)) => (below.max(above) - input_height - 42.).clamp(60., 360.),
-        None => (vh - top - 16. - input_height - footer_count as f32 * 29. - 56.).max(60.),
+        None => (vh - top - 16. - input_height - directory_extra - footer_count as f32 * 29. - 56.)
+            .max(60.),
     };
     if commands {
         list_max = list_max.min(COMMAND_ROWS * (row_height + 1.));
@@ -426,6 +433,10 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     }
     if list_rows == 0 {
         let empty = match panel.kind {
+            PanelKind::Directory(_) => panel
+                .error
+                .clone()
+                .unwrap_or_else(|| "Reading folder…".into()),
             PanelKind::Themes => "No matching themes.".to_owned(),
             PanelKind::Discover => s.discovery_empty_message(),
             _ => "No matches. Try another name or create a session.".to_owned(),
@@ -523,6 +534,16 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     )
     .clip_rounded(12.)
     .transition(pop_in());
+    if matches!(panel.kind, PanelKind::Directory(_)) {
+        surface = surface.child(
+            row().h(26.).px(10.).center_y().child(
+                text(panel.title.clone())
+                    .font(medium(11.5))
+                    .color(rgb(muted()))
+                    .truncate(),
+            ),
+        );
+    }
     if titled && panel.inputs.is_empty() {
         surface = surface.child(
             row().h(26.).px(10.).center_y().child(
@@ -552,7 +573,12 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     TextInput::new(&panel.inputs[0])
                         .placeholder(placeholder)
                         .active_descendant(Some(format!("entry:{}", panel.selected)))
-                        .leading_icon(&SEARCH)
+                        // A magnifying glass marks search fields only.
+                        .leading_icon(if matches!(panel.kind, PanelKind::Directory(_)) {
+                            &FOLDER
+                        } else {
+                            &SEARCH
+                        })
                         .leading_icon_size(14.)
                         .text_style(ui(13.))
                         .height(32.)
@@ -573,6 +599,17 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         results = results.child(fx.thumb_el());
     }
     surface = surface.child(results);
+    if let PanelKind::Directory(browser) = &panel.kind
+        && browser.truncated
+    {
+        surface = surface.child(
+            row().px(10.).py(6.).child(
+                text("Some entries aren't shown. Type more of the name.")
+                    .font(ui(11.5))
+                    .color(rgb(muted())),
+            ),
+        );
+    }
     if overflow {
         surface = surface.child(fx.hint_el().w_full());
     }
@@ -583,6 +620,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     }
     // Keep the whole surface on screen: an estimate of its height bounds the anchor.
     let estimated = input_height
+        + directory_extra
         + view_h
         + if pane { 24. } else { 0. }
         + footer_count as f32 * 29.
