@@ -21,6 +21,7 @@ mod keycaps;
 mod keys;
 mod navigation;
 mod notify;
+mod server_page;
 pub use notify::notify_restart_failure;
 mod pane_header;
 mod pane_moves;

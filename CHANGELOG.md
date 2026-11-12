@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- **Server settings (partial M3.3):** a read-only page shows the active host's cached version, API, process, listeners and built-in Tailscale facts, with explicit missing/stale states and sanitized address copy. Opening the page makes no requests or server changes. Pairing and server controls remain deferred. See [checks and limits](docs/parity-2026-11/M3.3-server-settings.md).
+
 ## 0.7.4 - 2026-11-11
 
 One-click updates for eligible installer users, optional header fading, toolbar tab fill, and configurable tab icons with a preview.

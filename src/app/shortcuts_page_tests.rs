@@ -750,9 +750,14 @@ fn a_connected_hosts_actions_are_rows_under_server() {
 
     let rt = shortcuts_open(ws);
     assert_eq!(
-        text_rects(&rt, "Server").len(),
+        rt.elements()
+            .iter()
+            .filter(|e| !e.exiting
+                && e.path.contains("settings-scroll:shortcuts")
+                && e.text.as_deref() == Some("Server"))
+            .count(),
         2,
-        "the heading and a source"
+        "the page heading and a source (not the Server navigation row)"
     );
     assert!(has(&rt, "shortcut:layout_tall") && has(&rt, "shortcut:layout_wide"));
     std::fs::remove_file(&rt.state.settings_path).ok();

@@ -265,6 +265,7 @@ pub struct Choice {
 /// The sections of Settings, in the order its sidebar lists them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SettingsSection {
+    Server,
     #[default]
     Interface,
     Terminal,
@@ -276,7 +277,8 @@ pub enum SettingsSection {
     About,
 }
 impl SettingsSection {
-    pub const ALL: [SettingsSection; 8] = [
+    pub const ALL: [SettingsSection; 9] = [
+        SettingsSection::Server,
         SettingsSection::Interface,
         SettingsSection::Terminal,
         SettingsSection::Shortcuts,
@@ -288,6 +290,7 @@ impl SettingsSection {
     ];
     pub fn title(self) -> &'static str {
         match self {
+            SettingsSection::Server => "Server",
             SettingsSection::Interface => "Interface",
             SettingsSection::Terminal => "Terminal",
             SettingsSection::Notifications => "Notifications",
@@ -300,6 +303,7 @@ impl SettingsSection {
     }
     pub fn key(self) -> &'static str {
         match self {
+            SettingsSection::Server => "server",
             SettingsSection::Interface => "interface",
             SettingsSection::Terminal => "terminal",
             SettingsSection::Notifications => "notifications",

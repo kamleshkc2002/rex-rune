@@ -121,7 +121,7 @@ fn section_icon(section: SettingsSection) -> &'static Icon {
         SettingsSection::Shortcuts => &SHORTCUTS,
         SettingsSection::Integrations => &INTEGRATIONS,
         SettingsSection::Notifications => &NOTIFICATIONS,
-        SettingsSection::Hosts => &SERVER,
+        SettingsSection::Server | SettingsSection::Hosts => &SERVER,
         SettingsSection::Updates => &UPDATES,
         SettingsSection::About => &ABOUT,
     }
@@ -148,7 +148,7 @@ fn tile(section: SettingsSection, on: bool) -> El {
 fn starts_group(section: SettingsSection) -> bool {
     matches!(
         section,
-        SettingsSection::Terminal | SettingsSection::Updates
+        SettingsSection::Interface | SettingsSection::Terminal | SettingsSection::Updates
     )
 }
 

@@ -556,6 +556,7 @@ pub(super) fn body(s: &Workspace, page: super::settings_nav::Page) -> El {
         }
     };
     match section {
+        SettingsSection::Server => super::server_page::section(s),
         SettingsSection::Interface => interface(s),
         SettingsSection::Terminal => terminal(s),
         SettingsSection::Notifications => notifications(s),

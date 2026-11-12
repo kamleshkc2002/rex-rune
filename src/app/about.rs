@@ -108,7 +108,7 @@ fn kind(endpoint: &str) -> &'static str {
 
 /// A host's connection state in a fixed word. Its status text is never copied: a failure
 /// there can quote the address it failed to reach.
-fn state(host: &HostModel) -> &'static str {
+pub(super) fn state(host: &HostModel) -> &'static str {
     if host.connected {
         "connected"
     } else if host.ssh_server_missing {

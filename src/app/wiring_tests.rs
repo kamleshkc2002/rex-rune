@@ -104,8 +104,12 @@ fn a_bound_action_is_listed_on_settings_shortcuts_by_its_title() {
     for _ in 0..30 {
         rt.frame(1. / 60.);
     }
-    let words: std::collections::HashSet<String> =
-        rt.elements().into_iter().filter_map(|e| e.text).collect();
+    let words: std::collections::HashSet<String> = rt
+        .elements()
+        .into_iter()
+        .filter(|e| !e.exiting && e.path.contains("settings-scroll:shortcuts"))
+        .filter_map(|e| e.text)
+        .collect();
     for heading in SHORTCUT_CATEGORIES {
         // "Server" lists the host's own actions; this workspace has no keymap from a server.
         assert_eq!(

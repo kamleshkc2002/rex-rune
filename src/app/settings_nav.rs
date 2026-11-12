@@ -75,6 +75,9 @@ fn keywords(page: Page) -> &'static str {
             SettingsSection::Interface => {
                 "appearance layout window scale zoom sidebar tabs downloads colors colours palette"
             }
+            SettingsSection::Server => {
+                "active host connection version build process listeners tailscale"
+            }
             SettingsSection::Terminal => "font shell text padding",
             SettingsSection::Shortcuts => "keys keyboard bindings keymap hotkeys",
             SettingsSection::Integrations => "agents skill hooks claude codex opencode pi",

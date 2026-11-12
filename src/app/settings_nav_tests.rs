@@ -109,6 +109,7 @@ fn the_sidebar_lists_the_sections_in_groups_behind_their_tiles() {
     assert_eq!(
         keys,
         [
+            "server",
             "interface",
             "terminal",
             "shortcuts",
@@ -119,13 +120,13 @@ fn the_sidebar_lists_the_sections_in_groups_behind_their_tiles() {
             "about"
         ]
     );
-    // Three groups: a gap before Terminal and before Updates, and nowhere else.
+    // Four groups: Server; Interface; terminal/host preferences; app information.
     let gaps: Vec<f32> = rows
         .windows(2)
         .map(|pair| pair[1].rect[1] - (pair[0].rect[1] + pair[0].rect[3]))
         .collect();
     for (index, gap) in gaps.iter().enumerate() {
-        let wide = matches!(keys[index + 1], "terminal" | "updates");
+        let wide = matches!(keys[index + 1], "interface" | "terminal" | "updates");
         assert_eq!(
             *gap > 10.,
             wide,
