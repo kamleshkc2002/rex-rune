@@ -1,6 +1,7 @@
 # M3.7 — prompt navigation verified and implemented
 
-Verified 2026-11-11 (PST), from base `c24f8c4`. Version remains **0.7.0**.
+Initially verified 2026-11-11 (PST), from base `c24f8c4` (then version 0.7.0).
+Integrated onto `b070f90` after 0.7.1 shipped; this change does not alter the version.
 This closes the prompt-navigation portion of #44 (d3 T35, d4 D24), not the
 separate move-to-new-tab gap.
 
