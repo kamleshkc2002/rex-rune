@@ -96,6 +96,7 @@ const IDS: &[&str] = &[
     "view.font.increase",
     "view.font.decrease",
     "view.font.reset",
+    "app.shortcuts",
     "app.settings",
     "app.downloads",
     "app.check_updates",

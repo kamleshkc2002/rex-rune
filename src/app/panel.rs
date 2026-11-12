@@ -76,6 +76,8 @@ pub enum Intent {
     Choose(usize),
     /// A Commands row that is not a named action.
     Command(super::commands::Run),
+    /// A row of Settings → Shortcuts' Configuration menu.
+    Shortcuts(super::recorder::Menu),
 }
 impl Intent {
     pub(super) fn shortcut(&self) -> Option<(&'static str, Value)> {
@@ -127,9 +129,10 @@ impl Intent {
             self,
             Intent::Switcher
                 | Intent::ClientAction(
-                    "client.settings" | "session.switch" | super::about::ABOUT,
+                    "client.settings" | "session.switch" | super::about::ABOUT | super::recorder::EDIT,
                     _
                 )
+                | Intent::Shortcuts(super::recorder::Menu::ResetAll)
                 // Each asks or lists before anything happens.
                 | Intent::ClientAction(
                     "client.close"
@@ -341,6 +344,10 @@ pub enum PanelKind {
     StartSsh {
         endpoint: String,
     },
+    /// Configuration menu anchored beside the Shortcuts filter.
+    ShortcutMenu,
+    /// Confirmation for forgetting the app-owned shortcut layer.
+    ResetShortcuts,
     /// The preview of a `rex skill` change, waiting for Keep or Apply.
     AgentChange {
         change: super::integrations::AgentChange,
@@ -419,6 +426,7 @@ impl Panel {
                 | PanelKind::Chromes
                 | PanelKind::Choice(_)
                 | PanelKind::Discover
+                | PanelKind::ShortcutMenu
         )
     }
 }
@@ -739,6 +747,9 @@ impl Workspace {
                         .then(|| Entry::new(title, "", "", Intent::MovePaneTo(id)))
                 })
                 .collect();
+        }
+        if matches!(panel.kind, PanelKind::ShortcutMenu) {
+            return self.shortcut_menu_entries();
         }
         if let PanelKind::Hosts(name) = &panel.kind {
             return self

@@ -25,6 +25,7 @@ mod pane_verbs;
 mod panel;
 mod panes;
 mod popups;
+mod recorder;
 mod remote;
 mod settings_kit;
 mod settings_nav;

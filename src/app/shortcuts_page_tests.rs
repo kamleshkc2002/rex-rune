@@ -574,14 +574,22 @@ fn the_page_draws_a_row_for_every_action_with_its_keys_or_not_set() {
         .map(Vec::len)
         .sum();
     assert_eq!(caps, bound, "a chip a key");
-    // An unbound action reads Not set; the pointer's two say how the pointer runs them.
+    // Valid unbound actions offer recording; references stay read-only. Pointer hints remain words.
     let unbound = rt
         .state
         .shortcut_rows()
         .iter()
-        .filter(|row| row.keys.is_empty() && row.pointer.is_none())
+        .filter(|row| row.keys.is_empty() && !row.recordable)
         .count();
     assert_eq!(text_rects(&rt, "Not set").len(), unbound);
+    assert_eq!(
+        text_rects(&rt, "Record shortcut").len(),
+        rt.state
+            .shortcut_rows()
+            .iter()
+            .filter(|row| row.keys.is_empty() && row.recordable)
+            .count()
+    );
     assert_eq!(text_rects(&rt, "Mouse Back").len(), 1);
     assert_eq!(text_rects(&rt, "Mouse Forward").len(), 1);
     // Named as Commands and the menus name them, each once.
@@ -611,7 +619,8 @@ fn the_filter_stays_above_the_rows_and_narrows_them_by_key() {
     let field = rect(&rt, "shortcut-filter");
     let scroll = rect(&rt, "settings-scroll:shortcuts");
     assert!(
-        field[1] + field[3] <= scroll[1] && close(field[0] + field[2], scroll[0] + scroll[2] - 20.),
+        field[1] + field[3] <= scroll[1]
+            && close(field[0] + field[2] + 8. + 32., scroll[0] + scroll[2] - 20.),
         "the filter is above the scroll region, inset as the page is: {field:?} over {scroll:?}"
     );
     // Scrolled, the rows move and the filter does not.
@@ -1040,7 +1049,7 @@ fn the_helper_names_the_layers_and_the_filter() {
         .find(|e| e.key.as_deref() == Some("shortcuts-help"))
         .and_then(|e| e.text)
         .expect("the helper");
-    for words in ["shortcuts.json", "ctrl+k", "Filter"] {
+    for words in ["Record shortcut", "ctrl+k", "Filter"] {
         assert!(help.contains(words), "{words}: {help}");
     }
     // It is the first thing on the page, above the first heading.

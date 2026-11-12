@@ -840,6 +840,13 @@ impl Workspace {
     fn app_commands(&self) -> Vec<Command> {
         use Group::App as G;
         let mut rows = vec![
+            Command::action(
+                "app.shortcuts",
+                G,
+                "Change shortcuts…",
+                super::recorder::EDIT,
+            )
+            .keywords("keys keyboard bindings keymap rebind record"),
             Command::action("app.settings", G, "Settings…", "client.settings")
                 .keywords("preferences options"),
             Command::new("app.downloads", G, "Downloads", Intent::Downloads)

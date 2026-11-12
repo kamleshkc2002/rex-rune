@@ -567,6 +567,9 @@ impl Resolved {
     }
 }
 
+/// The name of the layer of shortcuts recorded in Settings, which sits above the user's file.
+pub const RECORDED: &str = "recorded";
+
 /// Local fallback until the active host answers (or while it is offline).
 /// Action-specific argument checks belong to the UI's action registry.
 pub fn resolve(
@@ -574,12 +577,24 @@ pub fn resolve(
     overrides: &Overrides,
     actions: &[InspectResponseAction],
 ) -> Resolved {
+    resolve_all(defaults, &[overrides], actions)
+}
+
+/// [`resolve`] with every override layer, lowest first: the user's file, then what was
+/// recorded in Settings.
+pub fn resolve_all(
+    defaults: &[KeymapDefault],
+    overrides: &[&Overrides],
+    actions: &[InspectResponseAction],
+) -> Resolved {
     let mut layers = defaults.to_vec();
-    layers.push(overrides.layer.clone());
+    layers.extend(overrides.iter().map(|layer| layer.layer.clone()));
     let mut resolved = resolve_layers(&layers, defaults.len(), actions);
-    resolved
-        .diagnostics
-        .splice(0..0, overrides.diagnostics.clone());
+    let diagnostics: Vec<Diagnostic> = overrides
+        .iter()
+        .flat_map(|layer| layer.diagnostics.iter().cloned())
+        .collect();
+    resolved.diagnostics.splice(0..0, diagnostics);
     resolved
 }
 

@@ -123,6 +123,67 @@ pub fn matches(chord: &Chord, input: Input<'_>) -> bool {
     }
 }
 
+/// The chord a key press spells, for recording a shortcut: one [`matches`] finds this press
+/// by. A named key by its name, a character as the layout's own when that is ASCII, else as
+/// the key's US character, so a shortcut recorded on any layout is spelled as the defaults
+/// are; a key with neither by its physical code. None for a modifier on its own, a dead key
+/// and a key that has no spelling.
+pub fn chord_of(input: Input<'_>) -> Option<Chord> {
+    if matches!(input.event.key, Key::Modifier { .. } | Key::Dead(_)) {
+        return None;
+    }
+    let m = input.event.mods;
+    let modifiers = Modifiers {
+        ctrl: m.ctrl || m.cmd,
+        alt: m.alt,
+        shift: m.shift,
+        logo: m.logo,
+    };
+    let typed = character(&input.event.key);
+    let mut spellings: Vec<String> = Vec::new();
+    match &input.event.key {
+        Key::Enter => spellings.push("enter".into()),
+        Key::Escape => spellings.push("escape".into()),
+        Key::Tab => spellings.push("tab".into()),
+        Key::Backspace => spellings.push("backspace".into()),
+        Key::Delete => spellings.push("delete".into()),
+        Key::Left => spellings.push("left".into()),
+        Key::Right => spellings.push("right".into()),
+        Key::Up => spellings.push("up".into()),
+        Key::Down => spellings.push("down".into()),
+        Key::Home => spellings.push("home".into()),
+        Key::End => spellings.push("end".into()),
+        Key::PageUp => spellings.push("pageup".into()),
+        Key::PageDown => spellings.push("pagedown".into()),
+        Key::Function(n) => spellings.push(format!("f{n}")),
+        _ if typed == Some(' ') => spellings.push("space".into()),
+        _ => {}
+    }
+    let characters = [input.base, typed, input.code.and_then(us_character)];
+    for ascii in [true, false] {
+        for c in characters.into_iter().flatten() {
+            if c.is_ascii() == ascii {
+                spellings.extend(c.to_lowercase().next().map(String::from));
+            }
+        }
+    }
+    if let Some(code) = input.code {
+        spellings.push(match code {
+            Code::SuperLeft => "[MetaLeft]".into(),
+            Code::SuperRight => "[MetaRight]".into(),
+            code => format!("[{code:?}]"),
+        });
+    }
+    spellings
+        .iter()
+        .filter_map(|key| {
+            let mut chord = Chord::parse(key).ok()?;
+            chord.modifiers = modifiers;
+            Some(chord)
+        })
+        .find(|chord| matches(chord, input))
+}
+
 #[derive(Default)]
 pub struct Sequence {
     candidates: Vec<usize>,

@@ -25,6 +25,9 @@ fn space(ev: &KeyEvent, tx: &Tx) -> bool {
 
 /// Global actions also reach fields and dialogs. Matching is still data-driven.
 pub fn global_key(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
+    if s.recording().is_some() {
+        return super::recorder::key(s, ev, tx);
+    }
     dispatch(s, ev, tx, true)
 }
 
@@ -211,6 +214,15 @@ pub fn list_key(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
             s.navigate_panel(if ev.key == Key::Up { -1 } else { 1 });
             tx.instant();
         }
+        // Commands: the highlighted command's shortcut, in Settings.
+        Key::Enter
+            if ctrl(ev)
+                && s.panel
+                    .as_ref()
+                    .is_some_and(|p| matches!(p.kind, PanelKind::Picker(false))) =>
+        {
+            s.edit_selected_shortcut(tx)
+        }
         Key::Enter => s.submit(tx),
         Key::Escape => s.cancel_panel(tx),
         Key::Function(2) => {
@@ -271,6 +283,9 @@ pub fn rename_key(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
 }
 
 pub fn on_key(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
+    if s.recording().is_some() {
+        return super::recorder::key(s, ev, tx);
+    }
     if let Some(panel) = &s.panel {
         if panel.is_list() && tx.focused().is_none() {
             return list_key(s, ev, tx);
@@ -360,6 +375,12 @@ pub fn on_key_up(s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx) -> bool {
 }
 
 pub fn on_ime(s: &mut Workspace, ime: &Ime, _: &mut Tx) -> bool {
+    // A shortcut being recorded takes no composed text, and none of it reaches a terminal.
+    if super::recorder::ime(s, ime) || s.panel.is_some() {
+        // Text inputs handle their own IME first. A modal's unhandled commit (including
+        // composition cancelled by the recorder) must never become terminal paste.
+        return true;
+    }
     let Some(term) = s.active_terminal_mut() else {
         return false;
     };

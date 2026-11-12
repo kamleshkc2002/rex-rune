@@ -261,3 +261,161 @@ fn send_key_uses_payload_builder_for_both_edges_and_rejects_f13() {
     assert_eq!(press["key"], "key_t");
     assert_eq!(press["unshifted_codepoint"], 0);
 }
+
+#[test]
+fn a_press_spells_the_chord_that_finds_it_on_any_layout() {
+    let ctrl = Mods {
+        ctrl: true,
+        cmd: true,
+        ..Mods::default()
+    };
+    let shift = Mods {
+        shift: true,
+        ..Mods::default()
+    };
+    let ctrl_shift = Mods {
+        shift: true,
+        ..ctrl
+    };
+    for (key, mods, code, base, spelled) in [
+        // A native Ctrl chord: the lowercased character, with or without its code.
+        (Key::Command('j'), ctrl_shift, None, None, "ctrl+shift+j"),
+        (
+            Key::Command('j'),
+            ctrl_shift,
+            Some(Code::KeyJ),
+            Some('j'),
+            "ctrl+shift+j",
+        ),
+        (
+            Key::Text("J".into()),
+            ctrl_shift,
+            None,
+            None,
+            "ctrl+shift+j",
+        ),
+        // Russian: the key's US character, which the defaults are spelled with.
+        (
+            Key::Text("Е".into()),
+            ctrl_shift,
+            Some(Code::KeyT),
+            Some('е'),
+            "ctrl+shift+t",
+        ),
+        // Dvorak: the letter the layout types, not the key's position.
+        (
+            Key::Text("T".into()),
+            ctrl_shift,
+            Some(Code::KeyK),
+            Some('t'),
+            "ctrl+shift+t",
+        ),
+        // AZERTY's digit row and a shifted symbol: the unshifted key.
+        (
+            Key::Text("à".into()),
+            ctrl,
+            Some(Code::Digit0),
+            Some('à'),
+            "ctrl+0",
+        ),
+        (
+            Key::Text("%".into()),
+            ctrl_shift,
+            Some(Code::Digit5),
+            Some('5'),
+            "ctrl+shift+5",
+        ),
+        // German: plus is a key of its own.
+        (
+            Key::Text("+".into()),
+            ctrl,
+            Some(Code::BracketRight),
+            Some('+'),
+            "ctrl++",
+        ),
+        (Key::Command(','), ctrl, None, None, "ctrl+,"),
+        (
+            Key::Text(" ".into()),
+            ctrl_shift,
+            Some(Code::Space),
+            None,
+            "ctrl+shift+space",
+        ),
+        (Key::Enter, ctrl_shift, None, None, "ctrl+shift+enter"),
+        (Key::PageUp, shift, None, None, "shift+pageup"),
+        (Key::Function(3), Mods::default(), None, None, "f3"),
+        (Key::Tab, ctrl, None, None, "ctrl+tab"),
+        (
+            Key::Left,
+            Mods { alt: true, ..ctrl },
+            None,
+            None,
+            "ctrl+alt+left",
+        ),
+        // The numpad's plus is the character it types.
+        (
+            Key::Text("+".into()),
+            ctrl,
+            Some(Code::NumpadAdd),
+            None,
+            "ctrl++",
+        ),
+        // A key with no character and no name: its physical code.
+        (
+            Key::Insert,
+            Mods::default(),
+            Some(Code::Insert),
+            None,
+            "[Insert]",
+        ),
+        (
+            Key::Command('k'),
+            Mods {
+                logo: true,
+                ..Mods::default()
+            },
+            None,
+            None,
+            "cmd+k",
+        ),
+    ] {
+        let event = KeyEvent { key, mods };
+        let input = Input {
+            event: &event,
+            code,
+            base,
+            repeat: false,
+        };
+        let chord = chord_of(input).unwrap_or_else(|| panic!("{spelled}: no chord"));
+        assert_eq!(chord.spelling(), spelled);
+        assert!(matches(&chord, input), "{spelled} finds its own press");
+        // And it reads back as the same chord from a file.
+        assert_eq!(Chord::parse(spelled).unwrap(), chord);
+    }
+    // A modifier going down, a dead key and a key with nothing to call it are no chord.
+    for (key, code) in [
+        (
+            Key::Modifier {
+                modifier: rune::Modifier::ControlLeft,
+                pressed: true,
+            },
+            Some(Code::ControlLeft),
+        ),
+        (Key::Dead(Some('´')), Some(Code::Equal)),
+        (Key::Insert, None),
+    ] {
+        let event = KeyEvent {
+            key,
+            mods: Mods::default(),
+        };
+        assert!(
+            chord_of(Input {
+                event: &event,
+                code,
+                base: None,
+                repeat: false
+            })
+            .is_none()
+        );
+    }
+}

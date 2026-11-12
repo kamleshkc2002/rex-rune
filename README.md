@@ -327,7 +327,27 @@ pane wider than it is tall, otherwise below it); `pane.focus` accepts `left`,
 
 ### Configuring shortcuts
 
-For the default workspace, edit `$XDG_CONFIG_HOME/rex-linux/shortcuts.json` (normally
+In **Settings → Shortcuts**, press a row’s keys to replace or remove them, or
+**Record shortcut** to give an unbound action a key. Type a chord or a sequence of
+up to four chords; **Enter** or **Save** saves, **Escape**, **Cancel** or a click
+outside cancels. **Backspace** takes back a chord; with none typed it removes the
+old binding, as the Remove button does. Start with Ctrl, Alt, Super, a function
+key or Shift with a named key. Plain typing and IME composition are not recorded.
+Workspace shortcuts are captured, not run, while the recorder has the keyboard.
+Conflicts are warned about before saving, including overlapping sequences.
+
+Recordings live in **`recorded_shortcuts` in workspace.json**, above the user’s
+file, and are declared to every saved host. Replacing a mode-scoped binding keeps
+its mode; conditional bindings keep their arguments. Actions needing arguments
+that the row cannot supply stay read-only references. The **⋯** menu beside the
+filter copies the shortcuts-file path or the recorded layer as JSON, and offers
+**Reset all…** with confirmation. The copied JSON is a **workspace.json fragment**,
+not a shortcuts.json file: it preserves named modes and action-scoped removals.
+Reset forgets only recordings, never edits either user or server configuration.
+**Change shortcuts…** in Commands opens this page; **Ctrl Enter** on a command
+opens its recorder when that command has a valid binding target.
+
+For file-based overrides, edit `$XDG_CONFIG_HOME/rex-linux/shortcuts.json` (normally
 `~/.config/rex-linux/shortcuts.json`). With a custom `--config /path/demo.json`,
 edit `/path/demo.shortcuts.json`. The app never writes this file, except for the
 one-time import of custom bindings from nivox's legacy `keybindings` field.
@@ -346,8 +366,8 @@ uses defaults and appears in Settings → Shortcuts → Problems.
 }
 ```
 
-Layers run lowest to highest: **Linux defaults → each server’s Rex config → client overrides**.
-The app sends its defaults, override layer and action registry to `client.keymap`;
+Layers run lowest to highest: **Linux defaults → each server’s Rex config → shortcuts.json → recorded shortcuts**.
+The app sends its defaults, override layers and action registry to `client.keymap`;
 `rex.bind`, `rex.unbind`, Lua-function sequences and config-file actions participate
 in the same resolution. The active host’s map is used—not a union of hosts.
 When that host is offline, has not answered, or rejects the keymap request, local
@@ -441,21 +461,21 @@ No cross-server `servers` list is advertised. A returned action whose original
 host, session, pane or local keymap generation is no longer current is skipped
 with an informational notice rather than applied to a different target.
 
-Settings → Shortcuts is a read-only, searchable list of supported actions, including
-unbound actions marked **Not set** and aliases that are bound. Alternate bindings
+Settings → Shortcuts is a searchable list and recorder for supported actions,
+including unbound actions and aliases that are bound. Alternate bindings
 share a row; keycaps spell a literal `+` as **Plus** and join sequence steps with
 “then”. Filter by action name, category or keys (for example `ctrl+shift+d` or
 `ctrl+b>c`). Key matches include shadowed bindings in priority order within each
 mode, with source, mode and conflict notes. Escape clears the filter, then closes
 Settings. Persistent Problems include unsupported-action diagnostics; Files lists
-both config paths. This page does not record shortcuts or write `shortcuts.json`. Commands shows the highest
+both config paths. Recording never writes `shortcuts.json`. Commands shows the highest
 binding for each action and argument set, or no shortcut when unbound. Only
 settings-source diagnostic sets toast, once per distinct set per host; file and
 default-layer diagnostics stay in Problems. A pending sequence shows `Ctrl B …`
 in the toolbar. Host/pane/session/focus/map changes and opening a dialog cancel it.
 
-Only popup navigation/editing keys and Escape cancelling a sequence stay reserved;
-zoom is global (including fields), but it is still rebindable. Hold-to-repeat works
+Outside the recorder, only popup navigation/editing keys and Escape cancelling a
+sequence stay reserved; zoom is global (including fields), but still rebindable. Hold-to-repeat works
 for zoom, terminal font size, pane focus (by direction or next/previous) and scroll, within-session tab navigation (Ctrl PageUp/PageDown)
 and global tab cycling. Other completed shortcuts and
 prefix repeats are suppressed, and releases only reach terminals when presses did.
@@ -572,6 +592,12 @@ Lua forwarding, queued client actions, file/server reload, removals and the
 send-key escape hatch and explicit remote-action refusal on its own disposable Rex server and Xvfb display. It uses
 `target/release/rex-linux` unless `REX_BIN` selects another build, and preserves
 logs/captures in the printed temporary directory.
+
+`python3 scripts/shortcut-recorder-acceptance.py` exercises the row recorder through
+native X11 input on another private server: capture isolation, precedence above
+server/file bindings, default removal, restart persistence, sequences and removal.
+It also honors `REX_BIN` and preserves its artifacts. See the
+[M4.4 verification record](docs/parity-2026-11/M4.4.md) for headless and rendered checks.
 
 The `scripts/` directory holds integration checks; each script's docstring lists its requirements (Xvfb, xdotool, a `rex` binary, `wayland-info`, …). `x11-smoke.py`, `rune-acceptance-x11.py` and `wayland-seat-smoke.py` use a server you start: they require `REX_SERVER` to name a disposable one (autostart is off, and they exit rather than fall back to the default server); every other script starts its own private server. Every script that launches the client honours `REX_BIN`, and runs it with a `tailscale` that finds no tailnet and no update check. X11 checks use an isolated display, and those that select text by pointer pin the pane padding in their private `workspace.json`, so pointer positions come from the layout they set rather than the app's default. Of the Wayland scripts, `mouse-check.py`, `readme-screenshot.py` and `demo-record.py` start a private headless compositor; `wayland-seat-smoke.py` opens its window on the compositor `WAYLAND_DISPLAY` names, so point it at a disposable one.
 

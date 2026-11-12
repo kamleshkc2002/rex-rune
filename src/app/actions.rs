@@ -18,6 +18,7 @@ enum Handler {
     Compatibility,
     Palette,
     Settings,
+    Shortcuts,
     Sidebar,
     Close,
     Search,
@@ -91,6 +92,7 @@ macro_rules! specs {
 specs! {
     "client.palette.toggle" => Palette,
     "client.settings" => Settings,
+    super::recorder::EDIT => Shortcuts,
     "client.sidebar.toggle" => Sidebar,
     "client.close" => Close,
     SEARCH => Search,
@@ -233,7 +235,7 @@ impl Spec {
             Download => Remote::Never(
                 "Only the person at this computer can choose a file to download; nothing a host sends can start one.",
             ),
-            Palette | Settings | Search | SwitchSession | PaneActions => {
+            Palette | Settings | Search | SwitchSession | PaneActions | Shortcuts => {
                 Remote::Never("Only the person at this computer can open dialogs and popups.")
             }
             ZoomIn | ZoomOut | ZoomReset => Remote::Never(
@@ -332,6 +334,7 @@ impl Spec {
             Handler::Compatibility => super::compatibility::title(self.name),
             Handler::Palette => "Commands",
             Handler::Settings => "Settings",
+            Handler::Shortcuts => "Change shortcuts",
             Handler::Sidebar => "Toggle sidebar",
             Handler::Close => "Close pane or tab",
             Handler::Search => "Search terminal",
@@ -407,7 +410,8 @@ impl Spec {
             | Handler::CopyVersion
             | Handler::ReportIssue
             | Handler::About
-            | Handler::CopyDebug => "Interface",
+            | Handler::CopyDebug
+            | Handler::Shortcuts => "Interface",
             Handler::NextTab
             | Handler::PreviousTab
             | Handler::NextGlobal
@@ -563,6 +567,7 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
         Handler::Compatibility => super::compatibility::run(s, name, args, tx),
         Handler::Palette => s.picker(false),
         Handler::Settings => s.perform(Intent::Settings, tx),
+        Handler::Shortcuts => s.open_shortcuts(tx),
         Handler::Sidebar => s.perform(Intent::Sidebar, tx),
         Handler::PaneHeaders => s.toggle_pane_headers(),
         Handler::Close => s.close_focused(tx),
@@ -852,9 +857,17 @@ pub fn declarations() -> Vec<rexrs::api::client::InspectResponseAction> {
 
 /// Resolve once per file generation, including argument diagnostics. Invalid bindings
 /// are skipped at match time, so a lower valid action can still be selected.
+#[cfg(test)]
 pub fn resolve(overrides: &rex_linux::keymap::Overrides) -> rex_linux::keymap::Resolved {
+    resolve_all(&[overrides])
+}
+
+/// [`resolve`] with every override layer, lowest first: the user's file, then what was
+/// recorded in Settings.
+pub fn resolve_all(overrides: &[&rex_linux::keymap::Overrides]) -> rex_linux::keymap::Resolved {
     let actions = declarations();
-    let mut map = rex_linux::keymap::resolve(&[rex_linux::keymap::defaults()], overrides, &actions);
+    let mut map =
+        rex_linux::keymap::resolve_all(&[rex_linux::keymap::defaults()], overrides, &actions);
     diagnose_compatibility(&mut map);
     for binding in &map.bindings {
         let binding = &binding.binding;

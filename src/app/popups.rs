@@ -191,7 +191,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let discover = matches!(panel.kind, PanelKind::Discover);
     let width = (if values {
         220.
-    } else if pane {
+    } else if pane || matches!(panel.kind, PanelKind::ShortcutMenu) {
         280.
     } else if sessions {
         340.
@@ -257,6 +257,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Session => "session-menu",
         PanelKind::Host(_) => "host-menu",
         PanelKind::Window => "tab-menu",
+        PanelKind::ShortcutMenu => "shortcut-menu",
         _ => "pane-menu",
     };
     let mut spans: Vec<(f32, f32, Hidden)> = Vec::new();
