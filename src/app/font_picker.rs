@@ -365,6 +365,7 @@ fn font_row(s: &Workspace, index: usize) -> El {
             activity: None,
             label: &family.name,
             detail,
+            tone: None,
             keys: &[],
             height: ROW - 1.,
             check: Some(marked),

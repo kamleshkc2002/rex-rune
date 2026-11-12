@@ -391,6 +391,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                     activity: entry.activity.as_ref(),
                     label: &entry.label,
                     detail: &entry.detail,
+                    tone: entry.tone,
                     keys: &entry.keys,
                     height: if entry.footer { 28. } else { row_height },
                     // The Add host list marks an added machine with its chip instead.

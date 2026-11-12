@@ -528,6 +528,11 @@ impl Workspace {
         session: &str,
     ) -> Option<(Cow<'static, str>, u32, String)> {
         let model = &self.hosts[host].model;
+        // What a host said before its connection dropped is not news: the Activity list
+        // and the toolbar chip leave such hosts out too.
+        if !model.connected {
+            return None;
+        }
         let generated = self.generated_titles();
         model
             .views

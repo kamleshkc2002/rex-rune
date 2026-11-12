@@ -121,6 +121,8 @@ pub struct Row<'a> {
     pub surface: &'a str,
     pub label: &'a str,
     pub detail: &'a str,
+    /// The detail is an activity word in this colour: it stays beside the row's actions.
+    pub tone: Option<u32>,
     /// The row's shortcut, drawn as keycaps in place of the detail text.
     pub keys: &'a [Vec<String>],
     pub height: f32,
@@ -140,6 +142,9 @@ pub struct Row<'a> {
 /// The width every list row keeps for its follow-up chevron, drawn or not, so the hints of a
 /// list end on one line.
 pub const CHEVRON_COLUMN: f32 = 14.;
+/// The room a switcher row's two [`row_action`] buttons take: 22 pt each, a 2 pt gap,
+/// and 4 pt given back at the end.
+const ACTIONS: f32 = 42.;
 /// The height a [`separator`] takes in a list, its margins included.
 pub const SEPARATOR: f32 = 9.;
 
@@ -186,6 +191,8 @@ pub fn list_row(
     });
     let detail = if let Some(activity) = r.activity {
         rgb(activity.tone)
+    } else if let Some(tone) = r.tone {
+        rgb(tone)
     } else if r.selected {
         rgb(ink()).alpha(0.75)
     } else {
@@ -195,7 +202,12 @@ pub fn list_row(
     let mut e = row()
         .key(r.key)
         .role("menuitem")
-        .label(r.label.to_owned())
+        // The highlighted row is what assistive technology announces: an activity word
+        // is part of that, where a hint is not.
+        .label(match r.tone {
+            Some(_) if !r.detail.is_empty() => format!("{}, {}", r.label, r.detail),
+            _ => r.label.to_owned(),
+        })
         .w_full()
         .h(r.height)
         .px(9.)
@@ -264,13 +276,30 @@ pub fn list_row(
     } else {
         label
     });
+    let has_actions = r.actions.is_some();
     match r.actions.filter(|_| r.selected) {
-        Some(actions) => e
-            .child(actions)
-            .child(el().pin(Some(0.), Some(0.), Some(0.), Some(0.))),
+        Some(actions) => {
+            // A hint gives way to the actions; an activity word is news and stays.
+            if r.tone.is_some() && !r.detail.is_empty() {
+                e = e.child(text(r.detail.to_owned()).font(medium(11.)).color(detail));
+            }
+            e.child(actions)
+                .child(el().pin(Some(0.), Some(0.), Some(0.), Some(0.)))
+        }
         None => e
             .child(match columns {
                 Some(columns) => columns,
+                // A word keeps its place when the row's actions come and go: the room
+                // they take, less the chevron column and one gap.
+                None if r.keys.is_empty() && r.tone.is_some() => row()
+                    .gap(8.)
+                    .center_y()
+                    .child(text(r.detail.to_owned()).font(medium(11.)).color(detail))
+                    .child(el().w(if has_actions {
+                        ACTIONS - CHEVRON_COLUMN - 8.
+                    } else {
+                        0.
+                    })),
                 None if r.keys.is_empty() => text(r.detail.to_owned()).font(ui(11.)).color(detail),
                 // An unavailable row's keys recede with its label.
                 None => {
