@@ -73,9 +73,12 @@ counter and unchanged `session.view.windows` (including layout and ownership).
 - Navigation sends no keys, claims no ownership, changes no server geometry and
   does not animate. It remains local while the host reconnects; input is still
   discarded rather than replayed.
-- A pane shorter than the server terminal keeps the top of a scrolled viewport
-  visible instead of cropping away the prompt. Active-area cursor following and
-  search-match visibility retain their existing rules.
+- A pane shorter than the server terminal anchors the viewport top only after an
+  explicit prompt jump that actually moves it. Ordinary wheel/page scrolling keeps
+  its prior bottom/cursor crop, so a first scroll notch does not skip hidden rows.
+  Scroll, Bottom, search navigation and a fresh snapshot clear the prompt anchor;
+  reaching the active area clears it too. While anchored, an old search match does
+  not displace the selected prompt.
 
 ## Reproduce and checks
 
@@ -96,9 +99,10 @@ creating server sessions. The script opts into that test against its own socket.
 Checks passed:
 
 - Formatting and clippy with `-D warnings`.
-- All-features tests: **661 passed**, three ignored (two existing tests and the
-  explicit live contract); the live contract passed separately.
-- Five terminal tests cover restored scrollback boundaries, repeated steps,
+- All-features tests after the review fix: **662 passed**, three ignored (two existing tests and the
+  explicit live contract); the live contract passed separately, including anchor resets on
+  ordinary scrolling and search navigation.
+- Six terminal tests cover ordinary scrolling in a cropped pane, restored scrollback boundaries, repeated steps,
   manual viewport origin, active-area clamping, no marks, alternate screen,
   explicit/soft-wrapped continuations, split live OSC sequences and resize.
 - Headless app tests cover dispatch, aliases, no input/layout requests, removed

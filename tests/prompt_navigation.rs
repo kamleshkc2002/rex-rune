@@ -46,7 +46,9 @@ fn restored_scrollback_repeated_steps_stop_at_boundaries_and_render_immediately(
     for expected in [9, 6, 3, 0, 0, 0] {
         assert_eq!(jump(t, true), expected);
         let mut decoder = Renderer::new().unwrap();
-        let frame = decoder.frame(t).unwrap();
+        let mut frame = decoder.frame(t).unwrap();
+        // The data worker sets this only for an explicit, successful prompt jump.
+        frame.prompt_anchor = true;
         let line: String = frame.cells[0].iter().map(|c| c.text.as_str()).collect();
         assert!(
             line.starts_with(&format!("prompt {}>", expected / 3)),
@@ -64,6 +66,35 @@ fn restored_scrollback_repeated_steps_stop_at_boundaries_and_render_immediately(
     // Navigation does not move the program cursor, change text or write more output.
     assert_eq!((t.cursor_x().unwrap(), t.cursor_y().unwrap()), cursor);
     assert_eq!(stream.text().unwrap(), text);
+}
+
+#[test]
+fn ordinary_scrolling_in_a_cropped_pane_keeps_every_row_reachable() {
+    let mut t = terminal(10);
+    for i in 0..40 {
+        t.vt_write(format!("line{i:02}\r\n").as_bytes());
+    }
+    t.vt_write(b"$ ");
+    let mut renderer = Renderer::new().unwrap();
+    for first in [37, 36, 35, 34, 33] {
+        let frame = renderer.frame(&t).unwrap();
+        let start = frame.display_row_start(4);
+        assert_eq!(start, 6);
+        let line: String = frame.cells[start].iter().map(|c| c.text.as_str()).collect();
+        assert!(line.starts_with(&format!("line{first:02}")), "{line}");
+        assert!(!frame.prompt_anchor);
+        t.scroll_viewport(ScrollViewport::Delta(-1));
+    }
+    // An old search result must not push an explicitly selected prompt out of view.
+    let mut frame = renderer.frame(&t).unwrap();
+    frame.prompt_anchor = true;
+    let mut search = rex_linux::terminal::search::Results::default();
+    search.selected = Some(rex_linux::terminal::search::Match {
+        start: (0, 7),
+        end: (2, 7),
+    });
+    frame.search = Some(search);
+    assert_eq!(frame.display_row_start(4), 0);
 }
 
 #[test]

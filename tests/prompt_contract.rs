@@ -238,6 +238,44 @@ async fn run() -> Result<()> {
             .await??;
             visited.push(expected);
         }
+        // Ordinary scrolling and explicit bottom/search navigation must not inherit the
+        // prompt crop. A subsequent successful prompt jump can anchor the top again.
+        for (command, anchored) in [
+            (Command::Scroll(-1), false),
+            (Command::PromptStep(true), true),
+            (Command::Search(String::new()), false),
+            (Command::PromptStep(true), true),
+            (Command::SearchStep(true), false),
+            (Command::PromptStep(true), true),
+            (Command::Scroll(10_000), false),
+        ] {
+            let revision = connection.model.lock().unwrap().revision;
+            connection.commands.try_send(command)?;
+            tokio::time::timeout(Duration::from_secs(10), async {
+                loop {
+                    let frame = {
+                        let model = connection.model.lock().unwrap();
+                        (model.revision > revision)
+                            .then(|| model.frame.clone())
+                            .flatten()
+                    };
+                    if let Some(frame) = frame {
+                        ensure!(frame.prompt_anchor == anchored, "wrong prompt anchor");
+                        if anchored {
+                            ensure!(frame.display_row_start(3) == 0, "prompt crop lost");
+                        } else {
+                            ensure!(
+                                frame.display_row_start(3) == usize::from(frame.rows) - 3,
+                                "ordinary scroll crop changed"
+                            );
+                        }
+                        break Ok::<_, anyhow::Error>(());
+                    }
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+            })
+            .await??;
+        }
         ensure!(
             connection.model.lock().unwrap().input_events == 0,
             "navigation sent input"
