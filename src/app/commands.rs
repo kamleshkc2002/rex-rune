@@ -774,6 +774,18 @@ impl Workspace {
             )
             .keywords("density style headers"),
             Command::action(
+                "view.toolbar",
+                G,
+                if self.toolbar_reveal.pinned {
+                    "Hide toolbar"
+                } else {
+                    "Reveal toolbar"
+                },
+                super::toolbar_reveal::TOGGLE,
+            )
+            .enabled(super::toolbar_reveal::can_reveal(self))
+            .keywords("show hidden hover window"),
+            Command::action(
                 "view.pane_headers",
                 G,
                 if self.header_reveal.pinned {

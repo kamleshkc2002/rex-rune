@@ -4,6 +4,8 @@
 
 Searchable Shortcuts and a shortcut recorder, previous and next shell prompt navigation, Settings search and Back/Forward navigation, and opt-in generated pane and tab titles adapted from Matt Porter's work.
 
+- **Toolbar visibility (focused M2.7):** Settings → Interface → Toolbar visibility offers Always show (unchanged default), Show on hover and Hidden. Hidden modes give the 52 pt row to the terminals; hovering the top edge or **Reveal toolbar** (`Ctrl Alt Shift T`, Commands and Shortcuts) floats it without resizing their content. The action is local-only and temporary. Downloads and pending key sequences still have visible chips; notices and window-manager Move/Close remain available. This recovers only the toolbar slice of preserved W2, not its other interface changes. See [scope and checks](docs/plans/m2.7-toolbar-visibility.md).
+
 ### Added
 
 - **Shortcut recorder (M4.4):** replace, remove or record a chord/sequence on a Settings → Shortcuts row; focus, Cancel, IME isolation and conflict warnings stay local. An app-owned `recorded_shortcuts` layer in workspace.json wins above shortcuts.json without rewriting it, retaining named modes and conditional arguments. Configuration offers path/JSON copy and confirmed Reset all; Commands supports Change shortcuts… and Ctrl Enter to edit a valid command binding. Argument-only references remain read-only.

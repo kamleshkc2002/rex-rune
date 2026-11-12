@@ -13,7 +13,9 @@ use super::{
     widgets::{Pill, glyph},
     workspace::Workspace,
 };
-use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity, PaneHeader};
+use rex_linux::settings::{
+    NoticePosition, NotificationsConfig, PaneDensity, PaneHeader, interface::ToolbarBehavior,
+};
 use rune::{El, KeyEvent, PointerButton, ScrollPos, ScrollSpec, Tx, col, el, row, text};
 use rune_kit::Switch;
 
@@ -26,6 +28,12 @@ const PANE_HEADERS: [PaneHeader; 4] = [
     PaneHeader::Always,
     PaneHeader::OnHover,
     PaneHeader::Hidden,
+];
+
+const TOOLBARS: [ToolbarBehavior; 3] = [
+    ToolbarBehavior::Always,
+    ToolbarBehavior::OnHover,
+    ToolbarBehavior::Hidden,
 ];
 
 fn interface(s: &Workspace) -> El {
@@ -65,6 +73,33 @@ fn interface(s: &Workspace) -> El {
                         })),
                 ),
             ])],
+        ),
+        section(
+            "Toolbar",
+            [
+                card([select_row(
+                    "toolbar-behavior",
+                    "Toolbar visibility",
+                    "Show on hover and Hidden give its row to the terminals.",
+                    &["Always show", "Show on hover", "Hidden"],
+                    TOOLBARS
+                        .iter()
+                        .position(|t| *t == s.settings.interface.toolbar)
+                        .unwrap_or_default(),
+                    |s, i, tx| s.set_toolbar(TOOLBARS[i.min(TOOLBARS.len() - 1)], tx),
+                )]),
+                {
+                    let keys =
+                        s.shortcut_detail(super::toolbar_reveal::TOGGLE, &serde_json::Value::Null);
+                    let reveal = if keys.is_empty() {
+                        "Reveal toolbar, in Commands,".to_owned()
+                    } else {
+                        format!("Reveal toolbar ({keys}, and in Commands)")
+                    };
+                    footnote(format!("{reveal} floats the toolbar until run again. Window-manager Move and Close still work."))
+                        .key("toolbar-reveal-note")
+                },
+            ],
         ),
         section(
             "Panes",
@@ -530,7 +565,8 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
     let body = super::settings_nav::draw(s, section);
     let width = PANEL_WIDTH.min(viewport[0] * 0.92);
     // Under the toolbar, which stays whole above it, with a margin at both ends.
-    let height = PANEL_HEIGHT.min((viewport[1] - TOOLBAR - 2. * CLEARANCE).max(0.));
+    let height = PANEL_HEIGHT
+        .min((viewport[1] - super::toolbar_reveal::row_height(s) - 2. * CLEARANCE).max(0.));
     let nav_width = NAV_WIDTH.min(width * 0.3);
     let pinned = (section == SettingsSection::Shortcuts)
         .then(|| super::shortcuts_page::filter_field(s, PAGE_INSET));
@@ -601,10 +637,20 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
 }
 
 pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
-    modal_layer(s, surface(s, viewport), false, TOOLBAR)
+    modal_layer(
+        s,
+        surface(s, viewport),
+        false,
+        super::toolbar_reveal::row_height(s),
+    )
 }
 
 /// Settings under a list opened from one of its controls: drawn where it was, taking no input.
 pub fn settings_under(s: &Workspace, viewport: [f32; 2]) -> El {
-    modal_layer(s, surface(s, viewport), true, TOOLBAR)
+    modal_layer(
+        s,
+        surface(s, viewport),
+        true,
+        super::toolbar_reveal::row_height(s),
+    )
 }

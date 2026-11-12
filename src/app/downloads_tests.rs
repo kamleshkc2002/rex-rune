@@ -1972,6 +1972,8 @@ fn settings_interface_holds_the_download_folder_and_its_form_checks_like_change(
         has(&rt, "download-folder"),
         "a Download folder row on the Interface page"
     );
+    rt.update(|_, tx| tx.scroll_into_view("download-folder"));
+    settle(&mut rt);
     click(&mut rt, "download-folder");
     let panel = rt.state.panel.as_ref().expect("the form");
     assert!(matches!(
@@ -2004,6 +2006,8 @@ fn settings_interface_holds_the_download_folder_and_its_form_checks_like_change(
     );
     assert_eq!(rt.state.download_folder(), other);
     // Escape leaves it as it was; an empty folder goes back to the system's.
+    rt.update(|_, tx| tx.scroll_into_view("download-folder"));
+    settle(&mut rt);
     click(&mut rt, "download-folder");
     set_field(&mut rt, 0, "/never/saved");
     press(&mut rt, Key::Escape);
@@ -2011,6 +2015,8 @@ fn settings_interface_holds_the_download_folder_and_its_form_checks_like_change(
         rt.state.settings.downloads.directory.as_deref(),
         Some(other.display().to_string().as_str())
     );
+    rt.update(|_, tx| tx.scroll_into_view("download-folder"));
+    settle(&mut rt);
     click(&mut rt, "download-folder");
     set_field(&mut rt, 0, "");
     press(&mut rt, Key::Enter);

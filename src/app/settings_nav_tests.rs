@@ -310,6 +310,7 @@ fn search_reads_the_rows_the_pages_are_built_from() {
     for (query, label, place) in [
         ("font size", "Font size", "Terminal"),
         ("zoom", "Interface zoom", "Interface"),
+        ("toolbar", "Toolbar visibility", "Interface"),
         ("download folder", "Download folder", "Interface"),
         ("client label", "Client label", "Remote Hosts"),
         (

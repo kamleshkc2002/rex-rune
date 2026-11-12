@@ -375,6 +375,7 @@ pub fn defaults() -> KeymapDefault {
         ("ctrl+shift+p", "client.palette.toggle"),
         ("ctrl+,", "client.settings"),
         ("ctrl+shift+b", "client.sidebar.toggle"),
+        ("ctrl+alt+shift+t", "client.toolbar.toggle"),
         ("ctrl+shift+n", "session.new"),
         ("ctrl+shift+t", "client.tab.new"),
         ("ctrl+shift+w", "client.close"),
@@ -818,7 +819,7 @@ mod tests {
         let layer = defaults();
         assert_eq!(layer.name, "linux");
         assert!(layer.removals.is_empty());
-        assert_eq!(layer.bindings.len(), 37);
+        assert_eq!(layer.bindings.len(), 38);
         // The terminal font size actions have no default: Ctrl Alt + / - / 0 belong to the
         // program in the terminal until the user binds them.
         assert!(

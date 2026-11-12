@@ -1,3 +1,4 @@
+pub mod interface;
 pub mod recorded;
 pub mod shortcuts;
 
@@ -200,6 +201,7 @@ pub struct Settings {
     /// The last non-maximized window size in window points, independent of interface zoom.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window_size: Option<[f32; 2]>,
+    pub interface: interface::InterfaceConfig,
     pub vertical_tabs: bool,
     pub pane_density: PaneDensity,
     pub pane_header: PaneHeader,
@@ -254,6 +256,7 @@ impl Default for Settings {
             sidebar_width: 236.,
             sidebar_open: false,
             window_size: None,
+            interface: interface::InterfaceConfig::default(),
             vertical_tabs: false,
             pane_density: PaneDensity::default(),
             pane_header: PaneHeader::default(),

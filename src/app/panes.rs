@@ -31,9 +31,9 @@ fn inner(s: &Workspace) -> [f32; 4] {
     }
     [
         MARGIN,
-        0.,
+        super::toolbar_reveal::top_margin(s),
         (aw - 2. * MARGIN).max(0.),
-        (ah - MARGIN).max(0.),
+        (ah - MARGIN - super::toolbar_reveal::top_margin(s)).max(0.),
     ]
 }
 

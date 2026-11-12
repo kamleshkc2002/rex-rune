@@ -329,7 +329,12 @@ pub fn toasts(s: &Workspace) -> Option<El> {
     }
     let region = col().key("toasts").role("status").w(340.).gap(8.);
     let mut region = match s.settings.notice_position {
-        NoticePosition::TopRight => region.pin(None, Some(TOOLBAR + 4.), Some(MARGIN + 6.), None),
+        NoticePosition::TopRight => region.pin(
+            None,
+            Some((super::toolbar_reveal::shown_height(s) + 4.).max(MARGIN)),
+            Some(MARGIN + 6.),
+            None,
+        ),
         NoticePosition::BottomRight => region.pin(None, None, Some(MARGIN + 6.), Some(MARGIN + 6.)),
     };
     if let Some(card) = update {

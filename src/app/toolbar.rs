@@ -367,6 +367,42 @@ fn download_chip(s: &Workspace) -> El {
     ))
 }
 
+/// A pending key sequence remains visible even without the toolbar row.
+pub fn sequence_chip(s: &Workspace) -> Option<El> {
+    let label = s.bindings.pending_label(s.effective_keymap())?;
+    Some(chip(
+        el().key("pending-sequence")
+            .h(28.)
+            .max_w(170.)
+            .px(8.)
+            .center_y()
+            .help(format!(
+                "{label} — waiting for the next key; Escape cancels"
+            ))
+            .child(
+                text(format!("{label} …"))
+                    .font(medium(11.5))
+                    .color(rgb(ink()))
+                    .truncate(),
+            ),
+    ))
+}
+
+/// Only live status chips float when the toolbar is absent, never invisible bar controls.
+pub fn floating_status(s: &Workspace) -> Option<El> {
+    let sequence = sequence_chip(s);
+    let download = super::downloads_view::chip_label(s).is_some();
+    if sequence.is_none() && !download {
+        return None;
+    }
+    Some(
+        row()
+            .gap(8.)
+            .children(sequence)
+            .children(download.then(|| download_chip(s))),
+    )
+}
+
 pub fn toolbar(s: &Workspace) -> El {
     row()
         .key("toolbar")
@@ -386,25 +422,7 @@ pub fn toolbar(s: &Workspace) -> El {
         ))
         .child(identity(s))
         .child(if s.sidebar_tabs() { el() } else { tab_track(s) })
-        .child(match s.bindings.pending_label(s.effective_keymap()) {
-            Some(label) => chip(
-                el().key("pending-sequence")
-                    .h(28.)
-                    .max_w(170.)
-                    .px(8.)
-                    .center_y()
-                    .help(format!(
-                        "{label} — waiting for the next key; Escape cancels"
-                    ))
-                    .child(
-                        text(format!("{label} …"))
-                            .font(medium(11.5))
-                            .color(rgb(ink()))
-                            .truncate(),
-                    ),
-            ),
-            None => el(),
-        })
+        .child(sequence_chip(s).unwrap_or_else(el))
         .child(download_chip(s))
         // Always at least 48pt of window to drag, outside the tabs.
         .child(el().key("title-drag").grow(1.).min_w(48.).h_full())

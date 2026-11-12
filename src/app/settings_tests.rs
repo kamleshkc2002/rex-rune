@@ -239,6 +239,9 @@ fn a_picker_opens_over_settings_against_its_control_and_gives_focus_back() {
 #[test]
 fn a_select_row_lists_its_values_and_applies_the_chosen_one() {
     let mut rt = settings_at(SettingsSection::Interface, 1., (1440., 1000.));
+    rt.pointer_move(900., 500.);
+    rt.wheel(900., 500., -4000.);
+    settle(&mut rt);
     click(&mut rt, "notice-position");
     settle(&mut rt);
     let Some(PanelKind::Choice(choice)) = kind(&rt) else {
@@ -260,7 +263,10 @@ fn a_select_row_lists_its_values_and_applies_the_chosen_one() {
     );
     let (control, list) = (rect(&rt, "notice-position"), rect(&rt, "menu-surface"));
     assert!(close(list[0] + list[2], control[0] + control[2]));
-    assert!(close(list[1], control[1] + control[3] + 4.), "{list:?}");
+    assert!(
+        close(list[1], control[1] + control[3] + 4.) || close(list[1] + list[3], control[1] - 4.),
+        "list {list:?}, control {control:?}"
+    );
     assert!(
         !rt.elements()
             .iter()

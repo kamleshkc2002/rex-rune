@@ -181,7 +181,11 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let [vw, vh] = viewport;
     // The control a Settings popup button opened this list from, `[x, y, w, h]` where layout
     // put it: the list goes right under it, or right above when there is more room there.
-    let control = panel.anchor_to.as_deref().and_then(rune::memo::layout);
+    // Include the page's scroll so choices stay beside a row reached by scrolling/search.
+    let control = panel
+        .anchor_to
+        .as_deref()
+        .and_then(rune::memo::window_layout);
     let room = control.map(|[_, y, _, h]| {
         let below = vh - (y + h + CONTROL_GAP) - 8.;
         let above = y - CONTROL_GAP - 8.;

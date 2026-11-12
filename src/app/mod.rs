@@ -42,6 +42,7 @@ mod term;
 mod theme;
 mod titles;
 mod toolbar;
+mod toolbar_reveal;
 mod updates;
 mod upload;
 mod widgets;
@@ -82,7 +83,7 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
     let mut body = row().key("body").grow(1.).w_full().min_h(0.);
     if s.sidebar.is_open() {
         body = body
-            .child(sidebar::sidebar(s, cx))
+            .child(sidebar::sidebar(s, cx).pt(toolbar_reveal::top_margin(s)))
             .child(sidebar::sidebar_edge(s));
     }
     // Device pixels per point, so terminal box drawing lands on whole pixels.
@@ -94,15 +95,28 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
         .origin(0., 0.)
         .scale(scale)
         .scale_motion(STILL)
-        .fill(rgb(ground()))
-        .child(
-            col()
-                .absolute(0., 0.)
-                .size(viewport[0], viewport[1])
-                .pt(TOOLBAR)
-                .child(body),
-        )
-        .child(toolbar::toolbar(s).absolute(0., 0.));
+        .fill(rgb(ground()));
+    // Hover tracks position even behind content. Keep the band below both panes and
+    // toolbar so secondary presses reach their context menus rather than this sibling.
+    if s.settings.interface.toolbar == rex_linux::settings::interface::ToolbarBehavior::OnHover {
+        root = root.child(toolbar_reveal::band(s));
+    }
+    root = root.child(
+        col()
+            .absolute(0., 0.)
+            .size(viewport[0], viewport[1])
+            .pt(toolbar_reveal::row_height(s))
+            .child(body),
+    );
+    root = match toolbar_reveal::placement(s) {
+        toolbar_reveal::Placement::Row => root.child(toolbar::toolbar(s).absolute(0., 0.)),
+        toolbar_reveal::Placement::Floating => {
+            root.child(toolbar_reveal::floating(toolbar::toolbar(s)))
+        }
+        toolbar_reveal::Placement::None => {
+            root.children(toolbar::floating_status(s).map(toolbar_reveal::sequence_float))
+        }
+    };
     if let Some(toasts) = dialogs::toasts(s) {
         root = root.child(toasts);
     }
