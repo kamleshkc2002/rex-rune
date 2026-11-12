@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.7.3 - 2026-11-11
+
+Toolbar visibility, terminal display and selection controls, font picker and metrics, and pane padding and active-pane outline preferences.
+
 ### Added
 
 - **Pane ergonomics (partial M2.7):** independent horizontal/vertical padding (0–32 pt) and an Active pane outline choice (Auto/On/Off). Defaults preserve legacy uniform padding and density-following decoration. These preferences never claim ownership, alter shared split layout or dim/recolour terminal output. Focus follows mouse and header fading remain deferred. See [checks and limits](docs/parity-2026-11/M2.7-panes.md).
