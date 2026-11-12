@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.7.5 - 2026-11-12
+
+### Changed
+
+- **README screenshots:** refreshed the workspace image and added current Settings screenshots with reproducible native capture notes (#77).
+
 ### Added
 
 - **Session activity in the sidebar (partial M3.2):** a sidebar session row whose tabs are out of sight now shows the most pressing word one of them would: a needs-you word, Error, Bell or Paused, or an unseen Done. The session on screen and sessions with their tabs listed under them are unchanged; muted tabs and the Activity in tabs switch keep it quiet. See [checks and limits](docs/parity-2026-11/M3.2-session-words.md).
