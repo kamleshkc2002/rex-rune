@@ -40,6 +40,7 @@ mod splits;
 mod sprites;
 mod ssh_setup;
 mod stats;
+mod tab_icons;
 mod tabs;
 mod term;
 mod terminal_page;

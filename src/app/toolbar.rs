@@ -2,8 +2,9 @@
 //! Commands, New tab and Settings, a divider, and Close. Tooltips name each control's shortcut
 //! from the effective keymap (`keycaps.rs`), never from a literal.
 use super::{
-    activity::{program_icon, progress_bar, tab_activity, tab_name, tab_progress, tab_word},
+    activity::{progress_bar, tab_activity, tab_name, tab_programs, tab_progress, tab_word},
     panel::Intent,
+    tab_icons,
     tabs::{muted_mark, target_ring},
     theme::*,
     widgets::{chrome_button, glyph},
@@ -96,11 +97,10 @@ fn identity(s: &Workspace) -> El {
     ))
 }
 
-/// The fill-mode floor reserves 40 pt of name, the existing icon and padding, and
+/// The fill-mode floor reserves 40 pt of name, the actual icon strip and padding, and
 /// whole activity/mute marks. Status words are short; 7 pt per character is generous.
-fn fill_floor(word: Option<&str>, quiet: bool) -> f32 {
-    (28. + 15.
-        + 8.
+fn fill_floor(icons: usize, word: Option<&str>, quiet: bool) -> f32 {
+    (28. + tab_icons::leading_width(icons)
         + 40.
         + word.map_or(0., |word| 8. + word.chars().count() as f32 * 7.)
         + if quiet { 8. + 14. } else { 0. })
@@ -133,6 +133,10 @@ fn tab_track(s: &Workspace) -> El {
             let active = view.active_window_id.as_ref() == Some(&id);
             let label = tab_name(model, tab, s.generated_titles());
             let activity = tab_activity(model, tab);
+            let icons = tab_icons::icons_of(
+                &tab_programs(model, tab),
+                s.settings.interface.tab_icon_count,
+            );
             let shown = s.tab_activity_shown(s.active, &id);
             let quiet = s.tab_muted(s.active, &id);
             let word =
@@ -171,7 +175,11 @@ fn tab_track(s: &Workspace) -> El {
                     s.tab_menu(s.active, &menu_session, &menu_id, (p.x, p.y))
                 });
             tab_el = if fill {
-                let floor = fill_floor(word.as_ref().map(|(word, _)| word.as_ref()), quiet);
+                let floor = fill_floor(
+                    icons.len(),
+                    word.as_ref().map(|(word, _)| word.as_ref()),
+                    quiet,
+                );
                 floors += floor + 2.;
                 tab_el.grow(1.).min_w(floor).justify_center()
             } else {
@@ -192,18 +200,10 @@ fn tab_track(s: &Workspace) -> El {
             } else {
                 tab_el = tab_el.radius(8.).hover(white(0.05));
             }
-            let program = activity.program.as_deref();
-            let mut icon = el().key(format!("tab-icon:{id}")).child(glyph(
-                program_icon(program),
-                15.,
-                rgb(if active { ink() } else { muted() }),
-            ));
-            if let Some(program) = program {
-                icon = icon.help(program.to_owned());
-            }
-            tab_el = tab_el.child(icon);
+            tab_el = tab_icons::append(tab_el, &format!("tab-icon:{id}"), &icons, active);
             tab_el = tab_el.child(
                 text(label.clone())
+                    .key(format!("tab-name:{id}"))
                     .font(if active { medium(12.5) } else { ui(12.5) })
                     .color(rgb(if active { ink() } else { muted() }))
                     .truncate()

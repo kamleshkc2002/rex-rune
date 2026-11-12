@@ -95,6 +95,28 @@ pub fn pane_name(model: &HostModel, block: &session::LayerBlock, generated: bool
     title.as_deref().or(label).unwrap_or("Terminal").to_owned()
 }
 
+/// A pane's legacy icon source: its deciding status record's app, else foreground process.
+/// Kept shared so count one is exactly the old TabActivity.program policy.
+fn block_program(model: &HostModel, block: &str) -> Option<String> {
+    model
+        .activity
+        .get(block)
+        .and_then(|records| deciding(records.values()))
+        .and_then(|r| r.app.clone())
+        .or_else(|| model.programs.get(block).cloned())
+}
+
+/// Cached programs, focused pane first then stable server layer/block order.
+/// Aggregate tab severity never sorts panes. Missing focus falls back to the first block.
+pub fn tab_programs(model: &HostModel, window: &session::Window) -> Vec<Option<String>> {
+    let focused = focused_block(window);
+    focused
+        .into_iter()
+        .chain(blocks(window).filter(|b| Some(*b) != focused))
+        .map(|b| block_program(model, b))
+        .collect()
+}
+
 /// Fold a tab's records with Blocked > Error > Working > Done > Idle.
 pub fn tab_activity(model: &HostModel, window: &session::Window) -> TabActivity {
     fold_activity(model, blocks(window), focused_block(window))
@@ -122,14 +144,7 @@ fn fold_activity<'a>(
             .filter_map(|b| model.activity.get(b))
             .flat_map(|records| records.values()),
     );
-    let program = focused.and_then(|b| {
-        model
-            .activity
-            .get(b)
-            .and_then(|records| deciding(records.values()))
-            .and_then(|r| r.app.clone())
-            .or_else(|| model.programs.get(b).cloned())
-    });
+    let program = focused.and_then(|b| block_program(model, b));
     // A program's own OSC 9;4 report wins over the percentage in its status record.
     let progress = blocks
         .filter_map(|b| model.progress.get(b).copied())

@@ -12,12 +12,14 @@ pub enum ToolbarBehavior {
     Always,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct InterfaceConfig {
     pub toolbar: ToolbarBehavior,
     /// Share spare toolbar tab-track width; sidebar rows keep their existing layout.
     pub tabs_fill_available_space: bool,
+    /// Maximum distinct cached program glyphs per tab (0–5); one preserves legacy behavior.
+    pub tab_icon_count: u8,
     /// None keeps the legacy `pane_padding` on all four sides. With a value here,
     /// `pane_padding` is horizontal only.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -30,8 +32,25 @@ pub struct InterfaceConfig {
     pub fade_pane_headers_in_inactive_window: bool,
 }
 
+impl Default for InterfaceConfig {
+    fn default() -> Self {
+        Self {
+            toolbar: ToolbarBehavior::default(),
+            tabs_fill_available_space: false,
+            tab_icon_count: 1,
+            pane_padding_vertical: None,
+            highlight_active_pane: None,
+            fade_inactive_pane_headers: false,
+            fade_pane_headers_in_inactive_window: false,
+        }
+    }
+}
+
 impl InterfaceConfig {
+    pub const MAX_TAB_ICONS: u8 = 5;
+
     pub(super) fn normalize(&mut self) {
+        self.tab_icon_count = self.tab_icon_count.min(Self::MAX_TAB_ICONS);
         self.pane_padding_vertical = self
             .pane_padding_vertical
             .filter(|padding| padding.is_finite())
@@ -206,6 +225,29 @@ mod tests {
             let back = Settings::load(&path).unwrap();
             assert_eq!(back.interface, settings.interface);
             assert!(back.vertical_tabs);
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn tab_icon_defaults_partial_files_bounds_and_disk_roundtrip() {
+        for value in [
+            json!({}),
+            json!({"interface": {}}),
+            json!({"interface": {"tabs_fill_available_space": true}}),
+        ] {
+            let settings: Settings = serde_json::from_value(value).unwrap();
+            assert_eq!(settings.interface.tab_icon_count, 1);
+        }
+        let path = std::env::temp_dir().join(format!("rex-tab-icons-{}.json", std::process::id()));
+        for count in [0, 1, 2, 3, 4, 5, 6, 255] {
+            let mut settings = Settings::default();
+            settings.interface.tab_icon_count = count;
+            settings.interface.tabs_fill_available_space = true;
+            settings.save(&path).unwrap();
+            let back = Settings::load(&path).unwrap();
+            assert_eq!(back.interface.tab_icon_count, count.min(5));
+            assert!(back.interface.tabs_fill_available_space);
         }
         std::fs::remove_file(path).unwrap();
     }

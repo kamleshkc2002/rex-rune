@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Tab icons (partial M2.8):** **Show tab icons** in Interface → Sidebar and tabs saves a 0–5 count with a small live preview. The default preserves the existing single monochrome icon; additional icons use distinct cached pane programs, focused first, in toolbar and sidebar tabs. Colour and shell-theme modes remain deferred. See [checks and limits](docs/parity-2026-11/M2.8-tab-icons.md).
+
 - **Tab fill (partial M2.8):** default-off **Tabs fill available space** in Interface → Sidebar and tabs shares spare toolbar track width without changing sidebar rows, terminal geometry or ownership. Existing scroll arrows, tab menus, live chips and native drag space remain. See [checks and limits](docs/parity-2026-11/M2.8-tab-fill.md).
 
 - **Header fading (partial M2.7):** two default-off Interface → Panes switches fade header names and available buttons on inactive panes or in inactive windows. Activity, progress, exceptions and terminal content stay unchanged; no server/layout/ownership change from preferences. Focus follows mouse remains deferred. See [checks and limits](docs/parity-2026-11/M2.7-header-fading.md).

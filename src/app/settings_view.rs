@@ -238,6 +238,17 @@ fn interface(s: &Workspace) -> El {
                     ),
                 ),
                 setting(
+                    "Show tab icons",
+                    "0–5 distinct programs; focused pane first.",
+                    stepper(
+                        "tab-icons",
+                        s.settings.interface.tab_icon_count.to_string(),
+                        |s, _| s.step_tab_icons(-1),
+                        |s, _| s.step_tab_icons(1),
+                    ),
+                ),
+                super::tab_icons::preview(s),
+                setting(
                     "Tabs fill available space",
                     "Only toolbar tabs share the available width.",
                     Switch::new(s.settings.interface.tabs_fill_available_space)

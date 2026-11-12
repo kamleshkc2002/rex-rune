@@ -42,6 +42,8 @@ mod settings_tests;
 mod shortcuts_page_tests;
 #[path = "tab_fill_tests.rs"]
 mod tab_fill_tests;
+#[path = "tab_icon_tests.rs"]
+mod tab_icon_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
 #[path = "terminal_settings_tests.rs"]
