@@ -85,7 +85,7 @@ impl Row {
         self.title.to_lowercase().contains(needle)
             || self.action.contains(needle)
             || self.category.to_lowercase().contains(needle)
-            || (self.keys.is_empty() && "not set".contains(needle))
+            || (self.keys.is_empty() && needle == "not set")
             || self
                 .pointer
                 .is_some_and(|words| words.to_lowercase().contains(needle))
@@ -126,7 +126,7 @@ fn bound<'a>(map: &'a Resolved, server: &[InspectResponseAction]) -> Vec<Bound<'
         }
         let taken_by = list.iter().position(|higher| {
             higher.taken_by.is_none()
-                && higher.binding.mode == candidate.binding.mode
+                && actions::covers_context(higher.binding, &candidate.binding)
                 && (higher.chords.starts_with(chords) || chords.starts_with(higher.chords))
         });
         list.push(Bound {
@@ -570,7 +570,7 @@ pub fn listing(rows: Vec<Row>, query: &str) -> Listing {
     for row in rows {
         match chords.as_deref().and_then(|chords| place(&row, chords)) {
             Some(place) => on_key.push((place, row)),
-            None if row.mentions(&needle) => rest.push(row),
+            None if chords.is_none() && row.mentions(&needle) => rest.push(row),
             None => {}
         }
     }

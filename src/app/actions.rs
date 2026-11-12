@@ -752,6 +752,21 @@ pub fn classify(
     }
 }
 
+/// Whether a higher binding applies everywhere a lower one does. A find-only binding
+/// cannot hide an ordinary binding that still runs while the find bar is closed.
+pub(super) fn covers_context(
+    higher: &rexrs::api::client::Binding,
+    lower: &rexrs::api::client::Binding,
+) -> bool {
+    let searching = |binding: &rexrs::api::client::Binding| {
+        binding
+            .args
+            .as_ref()
+            .is_some_and(|args| args["when"] == "searching")
+    };
+    higher.mode == lower.mode && (!searching(higher) || searching(lower))
+}
+
 /// Bindings that can actually win, including prefix-vs-key conflicts. Parsed chords,
 /// not display strings, decide equality. Mode bindings compete only within their mode.
 pub fn effective<'a>(
@@ -767,7 +782,7 @@ pub fn effective<'a>(
             continue;
         }
         if result.iter().any(|higher| {
-            if higher.binding.mode != candidate.binding.mode {
+            if !covers_context(&higher.binding, &candidate.binding) {
                 return false;
             }
             let keys = higher.chords.as_ref().unwrap();

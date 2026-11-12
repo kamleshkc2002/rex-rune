@@ -750,6 +750,50 @@ fn a_connected_hosts_actions_are_rows_under_server() {
 }
 
 #[test]
+fn find_only_bindings_do_not_hide_the_search_opener_or_its_command_hint() {
+    let map = local(json!([
+        {"keys":"ctrl+shift+f", "action":"client.find.next", "args":{"when":"searching"}}
+    ]));
+    let all = rows(&map, &[], &[]);
+    let opener = titled(&all, "Search terminal");
+    assert_eq!(opener.keys, [caps(&[&["Ctrl", "Shift", "F"]])]);
+    assert!(!opener.notes.iter().any(|n| n.contains("taken by")));
+    let next = all.iter().find(|r| r.action == "client.find.next").unwrap();
+    assert_eq!(next.keys, opener.keys);
+    assert!(!next.notes.iter().any(|n| n.contains("Also bound to")));
+    let effective = actions::effective(&map, &[]);
+    assert!(
+        effective
+            .iter()
+            .any(|b| b.binding.action == actions::SEARCH)
+    );
+    assert!(
+        effective
+            .iter()
+            .any(|b| b.binding.action == "client.find.next")
+    );
+    let mut ws = workspace();
+    ws.local_keymap = map;
+    assert_eq!(
+        ws.shortcut_chords(actions::SEARCH, &Value::Null),
+        caps(&[&["Ctrl", "Shift", "F"]])
+    );
+}
+
+#[test]
+fn only_the_complete_not_set_phrase_matches_unbound_status() {
+    let all = default_rows();
+    assert!(!listing(all.clone(), "not set").rows.is_empty());
+    for query in ["set", "ot", "se"] {
+        let found = listing(all.clone(), query);
+        assert!(
+            !found.rows.iter().any(|r| r.action == "pane.balance"),
+            "{query}"
+        );
+    }
+}
+
+#[test]
 fn modes_only_conflict_within_their_own_scope_and_remain_searchable() {
     let reply = rexrs::api::client::KeymapResponse {
         bindings: vec![
@@ -813,7 +857,7 @@ fn modes_only_conflict_within_their_own_scope_and_remain_searchable() {
 fn bound_aliases_and_unsupported_bindings_keep_their_identity_and_diagnostics() {
     let overrides = json!([
         {"keys":"ctrl+j","action":"pane.split.right"},
-        {"keys":"ctrl+up","action":"client.prompt.previous"},
+        {"keys":"ctrl+up","action":"pane.move_to_new_tab"},
         {"keys":"alt+j","action":"client.find.next","args":{"when":"searching"}}
     ]);
     let map = local(overrides.clone());
@@ -835,7 +879,7 @@ fn bound_aliases_and_unsupported_bindings_keep_their_identity_and_diagnostics() 
     assert!(!listing(all.clone(), "pane.split.right").rows.is_empty());
     let unsupported = all
         .iter()
-        .find(|r| r.action == "client.prompt.previous")
+        .find(|r| r.action == "pane.move_to_new_tab")
         .unwrap();
     assert!(
         unsupported
