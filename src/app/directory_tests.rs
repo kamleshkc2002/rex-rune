@@ -443,6 +443,145 @@ fn enter_uses_captured_panes_paste_once_without_enter_or_space() {
     rt.state.insert_path(2, &mut rune::Tx::default());
     assert!(rx.is_empty());
 }
+fn go(ws: &mut Workspace) {
+    assert!(actions::run(
+        ws,
+        directory::GO,
+        &serde_json::Value::Null,
+        &mut rune::Tx::default()
+    ));
+}
+
+#[test]
+fn go_to_directory_lists_folders_and_types_cd_without_enter() {
+    let _fonts = rune::text::with_families("Inter", "Inter");
+    let (mut ws, rx) = fixture();
+    go(&mut ws);
+    assert_eq!(
+        ws.panel.as_ref().unwrap().title,
+        format!("Go to directory · {}", ws.settings.hosts[0].label)
+    );
+    let r = request(&rx);
+    assert_eq!(r.args.files, Some(false), "folders only");
+    assert_eq!(r.block, "block:b");
+    // A server that lists files anyway does not get them offered.
+    let mut listing = response();
+    listing.entries.push(Entry {
+        name: "my dir".into(),
+        file: Some(false),
+        symlink: None,
+    });
+    reply(&mut ws, &r, Ok(listing));
+    let rows: Vec<_> = ws
+        .entries()
+        .iter()
+        .map(|e| (e.label.clone(), e.detail.clone()))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            ("~".to_owned(), "Go to typed folder".to_owned()),
+            ("folder".to_owned(), "Folder".to_owned()),
+            ("my dir".to_owned(), "Folder".to_owned()),
+        ]
+    );
+    // Focus moving elsewhere does not move the target.
+    ws.hosts[0].model.views.get_mut("s").unwrap().windows[1].focused_block_id =
+        Some("block:c".into());
+    let mut rt = runtime(ws);
+    press(&mut rt, Key::Down);
+    press(&mut rt, Key::Down);
+    press(&mut rt, Key::Enter);
+    assert!(rt.state.panel.is_none());
+    let sent: Vec<_> = rx.try_iter().collect();
+    assert_eq!(sent.len(), 1, "one paste: no Enter, no other key, no claim");
+    match &sent[0] {
+        HostCommand::Terminal {
+            block,
+            command: Command::Paste(text),
+            ..
+        } => {
+            assert_eq!(block, "block:b");
+            assert_eq!(text, "cd '/home/dev/my dir'");
+            assert!(!text.contains(['\n', '\r']));
+        }
+        _ => panic!("expected only paste"),
+    }
+}
+
+#[test]
+fn go_to_directory_types_the_typed_folder_and_refuses_what_insert_path_refuses() {
+    let (mut ws, rx) = fixture();
+    go(&mut ws);
+    let r = request(&rx);
+    reply(&mut ws, &r, Ok(response()));
+    ws.submit(&mut rune::Tx::default());
+    match rx.try_recv().unwrap() {
+        HostCommand::Terminal {
+            command: Command::Paste(text),
+            ..
+        } => assert_eq!(text, "cd /home/dev"),
+        _ => panic!(),
+    }
+    assert!(rx.is_empty());
+    // A name with a control character is never typed after cd either.
+    go(&mut ws);
+    let r = request(&rx);
+    reply(&mut ws, &r, Ok(response()));
+    edit(&mut ws, "~/bad\nname");
+    assert!(rx.is_empty());
+    assert!(error(&ws).contains("control or invisible formatting characters"));
+    // Tab descends, and the next read is still folders only.
+    edit(&mut ws, "~/");
+    let r = request(&rx);
+    reply(&mut ws, &r, Ok(response()));
+    ws.panel.as_mut().unwrap().selected = 1;
+    ws.descend_directory();
+    let r = request(&rx);
+    assert_eq!(r.args.path.as_deref(), Some("/home/dev/folder/"));
+    assert_eq!(r.args.files, Some(false));
+}
+
+#[test]
+fn go_to_directory_is_never_remote_and_a_host_cannot_open_it() {
+    use crate::app::actions::Remote;
+    let spec = actions::find(directory::GO).expect("registered");
+    assert!(matches!(spec.remote(), Remote::Never(_)));
+    assert!(spec.requires_person());
+    assert_eq!(spec.title(), "Go to directory");
+    let (mut ws, rx) = fixture();
+    ws.settings.hosts[0].remote_control = true;
+    ws.remote_perform(
+        0,
+        crate::app::tests::remote_tests::pending(directory::GO, serde_json::json!({})),
+        &mut rune::Tx::default(),
+    );
+    crate::app::tests::remote_tests::code(
+        crate::app::tests::remote_tests::reply(&rx),
+        "not_supported",
+    );
+    assert!(ws.panel.is_none(), "no browser");
+    let mut model = ws.hosts[0].model.clone();
+    model
+        .client_actions
+        .push(rex_linux::connection::actions::Queued {
+            generation: ws.keymap_generation,
+            session: Some("s".into()),
+            block: Some("block:b".into()),
+            action: rexrs::api::client::ClientAction {
+                action: directory::GO.into(),
+                args: None,
+            },
+        });
+    *ws.hosts[0].connection.model.lock().unwrap() = model;
+    ws.sync(0, &mut rune::Tx::default());
+    assert!(ws.panel.is_none());
+    assert!(
+        rx.try_iter()
+            .all(|c| !matches!(c, HostCommand::ListDir(_) | HostCommand::Terminal { .. }))
+    );
+}
+
 #[test]
 fn typed_directory_enter_and_paused_refusal() {
     let (mut ws, rx) = fixture();
@@ -473,7 +612,7 @@ fn typed_directory_enter_and_paused_refusal() {
     assert!(ws.panel.is_none());
     assert_eq!(
         ws.notices.last().unwrap().text,
-        "A path can be inserted only into a live terminal."
+        "Nothing was typed: the terminal is not live."
     );
 }
 #[test]
@@ -623,6 +762,55 @@ fn draw(size: (f32, f32), name: &str) {
     reply(&mut rt.state, &r, Ok(answer));
     settle(&mut rt);
     camera.snap(&mut rt, &format!("{name}-missing"));
+}
+/// Go to directory at both sizes: the folder-only list with a row selected.
+fn draw_go(size: (f32, f32), name: &str) {
+    let Some(mut camera) = Camera::new() else {
+        return;
+    };
+    let fonts = crate::app::fonts::load("IBM Plex Mono", &[]);
+    let _families = rune::text::with_families("Inter", "IBM Plex Mono");
+    let (mut ws, rx) = fixture();
+    ws.viewport = [size.0, size.1];
+    ws.settings.hosts[0].label = "Build machine".into();
+    go(&mut ws);
+    let r = request(&rx);
+    let mut answer = response();
+    for name in ["my dir", "src", "target"] {
+        answer.entries.push(Entry {
+            name: name.into(),
+            file: Some(false),
+            symlink: None,
+        });
+    }
+    reply(&mut ws, &r, Ok(answer));
+    let mut rt = Runtime::with_text(
+        ws,
+        view,
+        size,
+        Env::new(true, 1.),
+        rune::text::TextSystem::new(fonts.files, fonts.families),
+    );
+    rt.on_key = Some(crate::app::input::on_key);
+    settle(&mut rt);
+    press(&mut rt, Key::Down);
+    press(&mut rt, Key::Down);
+    camera.snap(&mut rt, name);
+    let surface = super::pane_verb_tests::rect(&rt, "menu-surface");
+    assert!(
+        surface[0] >= 0.
+            && surface[1] >= 0.
+            && surface[0] + surface[2] <= size.0
+            && surface[1] + surface[3] <= size.1
+    );
+}
+#[test]
+fn go_to_directory_draw_large() {
+    draw_go((1024., 700.), "go-to-directory-1024");
+}
+#[test]
+fn go_to_directory_draw_minimum() {
+    draw_go((640., 480.), "go-to-directory-640");
 }
 #[test]
 fn insert_path_draw_large() {

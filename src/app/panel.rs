@@ -114,6 +114,7 @@ impl Intent {
                 PaneAction::Reconnect => ("pane.reconnect", Value::Null),
                 PaneAction::Download => (super::actions::DOWNLOAD, Value::Null),
                 PaneAction::InsertPath => (super::directory::ACTION, Value::Null),
+                PaneAction::GoToDirectory => (super::directory::GO, Value::Null),
                 PaneAction::Close => ("pane.close", Value::Null),
                 PaneAction::Copy => ("pane.copy", Value::Null),
                 PaneAction::Paste => ("pane.paste", Value::Null),
@@ -178,7 +179,7 @@ impl Intent {
                 | Intent::RemoveHost(_)
                 | Intent::Pane(
                     _,
-                    PaneAction::Rename | PaneAction::Close | PaneAction::Download | PaneAction::InsertPath
+                    PaneAction::Rename | PaneAction::Close | PaneAction::Download | PaneAction::InsertPath | PaneAction::GoToDirectory
                 )
                 | Intent::Session(_, SessionAction::Rename | SessionAction::Close)
         )
@@ -224,6 +225,8 @@ pub enum PaneAction {
     /// Open the Download from <host> dialog for this pane.
     Download,
     InsertPath,
+    /// The same browser over folders only; it types `cd <folder>` without Enter.
+    GoToDirectory,
     /// The pane's selected text to the clipboard.
     Copy,
     /// The clipboard into the pane, as Ctrl Shift V does for the focused one.

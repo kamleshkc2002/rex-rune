@@ -639,6 +639,13 @@ impl Workspace {
             pane("pane.insert_path", "Insert path…", PaneAction::InsertPath)
                 .keywords("file folder directory paste")
                 .section(4),
+            pane(
+                "pane.go_to_directory",
+                "Go to directory…",
+                PaneAction::GoToDirectory,
+            )
+            .keywords("cd change folder")
+            .section(4),
             pane("pane.clear", "Clear terminal", PaneAction::Clear)
                 .keywords("screen scrollback")
                 .section(5),

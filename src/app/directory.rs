@@ -18,6 +18,9 @@ use std::{
 };
 
 pub const ACTION: &str = "pane.insert_path";
+/// The same browser, listing folders only: it types `cd <folder>` and leaves Enter to the
+/// person, because the client cannot see what the prompt already holds.
+pub const GO: &str = "pane.go_to_directory";
 
 #[derive(Clone, Debug, Default)]
 pub struct Browser {
@@ -26,6 +29,8 @@ pub struct Browser {
     epoch: Option<u64>,
     pub rows: Vec<PathRow>,
     pub truncated: bool,
+    /// Go to directory rather than Insert path.
+    pub go: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -155,11 +160,27 @@ pub fn rows(reply: &ListDirResponse, prefix: &str) -> Vec<PathRow> {
 
 impl Workspace {
     pub fn insert_path_dialog(&mut self, target: PaneTarget) {
+        self.directory_dialog(target, false);
+    }
+
+    pub fn go_to_directory_dialog(&mut self, target: PaneTarget) {
+        self.directory_dialog(target, true);
+    }
+
+    fn directory_dialog(&mut self, target: PaneTarget, go: bool) {
         let host = self.settings.hosts[target.host].label.clone();
+        let (title, placeholder) = if go {
+            ("Go to directory", "Folder on the terminal's machine…")
+        } else {
+            ("Insert path", "Path on the terminal's machine…")
+        };
         self.open_panel(
-            PanelKind::Directory(Browser::default()),
-            &format!("Insert path · {host}"),
-            &[("", "Path on the terminal's machine…", "")],
+            PanelKind::Directory(Browser {
+                go,
+                ..Browser::default()
+            }),
+            &format!("{title} · {host}"),
+            &[("", placeholder, "")],
         );
         self.panel.as_mut().unwrap().target = Some(target);
         self.list_directory();
@@ -206,7 +227,8 @@ impl Workspace {
             epoch,
             session: target.session,
             block: target.block,
-            args: ListDir::new().path(path).prefix(prefix).files(true),
+            // Only folders can be gone to.
+            args: ListDir::new().path(path).prefix(prefix).files(!browser.go),
             deadline: Instant::now() + Duration::from_secs(8),
             open: Arc::downgrade(&browser.open),
         };
@@ -278,6 +300,14 @@ impl Workspace {
                     return;
                 }
                 browser.rows = rows(reply, split_path(&text).1);
+                if browser.go {
+                    // The server was asked for folders only; a file it lists anyway is
+                    // not somewhere to go. The typed path stays first.
+                    let mut typed = true;
+                    browser
+                        .rows
+                        .retain(|row| std::mem::take(&mut typed) || row.directory);
+                }
                 panel.reveal = true;
                 browser.truncated = reply.truncated;
                 if text.is_empty() {
@@ -300,7 +330,9 @@ impl Workspace {
             .map(|(index, row)| {
                 let mut entry = Entry::new(
                     &row.label,
-                    if index == 0 {
+                    if index == 0 && browser.go {
+                        "Go to typed folder"
+                    } else if index == 0 {
                         "Insert typed path"
                     } else if row.directory {
                         "Folder"
@@ -341,6 +373,9 @@ impl Workspace {
             return;
         };
         let text = match quote(&row.path) {
+            // Typed, never run: Enter stays with the person. The path is absolute, so it
+            // cannot be read as an option.
+            Ok(text) if browser.go => format!("cd {text}"),
             Ok(text) => text,
             Err(error) => {
                 self.panel.as_mut().unwrap().error = Some(error.into());

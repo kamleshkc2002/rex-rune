@@ -10,7 +10,8 @@ use std::path::PathBuf;
 
 impl Workspace {
     /// Text into a captured pane as a paste, the event clipboard text is sent as: for Insert
-    /// path. Sent once, with no key after it; a pane that is gone or not live is told so.
+    /// path and Go to directory. Sent once, with no key after it; a pane that is gone or
+    /// not live is told so.
     pub fn paste_text(&mut self, target: &super::panel::PaneTarget, text: String) {
         if !self.target_exists(target) {
             self.inform("That pane is no longer available.");
@@ -20,7 +21,7 @@ impl Workspace {
         if !self.hosts[target.host].model.connected
             || !self.terminals.get(&key).is_some_and(|t| t.status().live)
         {
-            self.inform("A path can be inserted only into a live terminal.");
+            self.inform("Nothing was typed: the terminal is not live.");
             return;
         }
         self.terminals

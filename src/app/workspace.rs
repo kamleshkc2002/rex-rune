@@ -1702,6 +1702,7 @@ impl Workspace {
             }
             PaneAction::Download => self.download_dialog(target),
             PaneAction::InsertPath => self.insert_path_dialog(target),
+            PaneAction::GoToDirectory => self.go_to_directory_dialog(target),
             PaneAction::Copy
             | PaneAction::Paste
             | PaneAction::SelectAll

@@ -52,6 +52,7 @@ enum Handler {
     SendKey,
     Download,
     InsertPath,
+    GoToDirectory,
     SelectAll,
     CopyPaneId,
     ClearTerminal,
@@ -129,6 +130,7 @@ specs! {
     "pane.send_key" => SendKey,
     DOWNLOAD => Download,
     super::directory::ACTION => InsertPath,
+    super::directory::GO => GoToDirectory,
     "pane.select_all" => SelectAll,
     "pane.copy_id" => CopyPaneId,
     "pane.clear" => ClearTerminal,
@@ -238,7 +240,7 @@ impl Spec {
             ),
             RenameTab => Remote::Never("Use rex window rename instead."),
             RenameSession => Remote::Never("Use rex session rename instead."),
-            InsertPath => Remote::Never(
+            InsertPath | GoToDirectory => Remote::Never(
                 "Only the person at this computer can browse paths and paste into a terminal.",
             ),
             Download => Remote::Never(
@@ -297,7 +299,10 @@ impl Spec {
     /// An action only this person's own key or click may run: a returned client action must
     /// not start it.
     pub fn requires_person(&self) -> bool {
-        matches!(self.handler, Handler::Download | Handler::InsertPath)
+        matches!(
+            self.handler,
+            Handler::Download | Handler::InsertPath | Handler::GoToDirectory
+        )
     }
     pub fn global(&self) -> bool {
         matches!(
@@ -378,6 +383,7 @@ impl Spec {
             Handler::SendKey => "Send key",
             Handler::Download => "Download file",
             Handler::InsertPath => "Insert path",
+            Handler::GoToDirectory => "Go to directory",
             Handler::SelectAll => "Select all",
             Handler::CopyPaneId => "Copy pane ID",
             Handler::ClearTerminal => "Clear terminal",
@@ -456,6 +462,7 @@ impl Spec {
             | Handler::PaneActions
             | Handler::Download
             | Handler::InsertPath
+            | Handler::GoToDirectory
             | Handler::Reconnect
             | Handler::CopyPaneId
             | Handler::ClearTerminal
@@ -672,6 +679,14 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) -> bool {
             if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
                 s.perform(
                     Intent::Pane(target, super::panel::PaneAction::InsertPath),
+                    tx,
+                );
+            }
+        }
+        Handler::GoToDirectory => {
+            if let Some(target) = s.focused_block().and_then(|b| s.target(&b)) {
+                s.perform(
+                    Intent::Pane(target, super::panel::PaneAction::GoToDirectory),
                     tx,
                 );
             }

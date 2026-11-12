@@ -92,6 +92,8 @@ try:
     for name in ("a space", "Alice's", ".hidden", "bad\nname"):
         (tree / name).touch()
     (tree / "folder").mkdir()
+    (tree / "my dir").mkdir()
+    (tree / "my file").touch()
     (tree / "folder" / "child").touch()
     server = subprocess.Popen(["rex", "server", "run", "--listen", endpoint, "--restore=false",
                                "--config", "/dev/null", "--state-dir", str(work / "rex-state")],
@@ -167,20 +169,61 @@ try:
         records.append({"name": name, "expected_buffer": expected, "actual_buffer": actual,
                         "prompts_before": len(prompts), "prompts_after_explicit_enter": len(counter.read_bytes()),
                         "ls_exit_status": statuses.read_text().splitlines()[-1]})
+    # Go to directory: `cd <quoted folder>` is typed and nothing runs until the script's Enter.
+    prompts = counter.read_bytes()
+    desk.key("ctrl+shift+p")
+    desk.type("Go to directory")
+    desk.key("Return")
+    time.sleep(.5)
+    field("~/tree/my")
+    words = capture("go-browser")
+    assert "my dir" in words, "folder not listed"
+    # Folders only: the file sharing the typed prefix is not offered.
+    assert "my file" not in words, words
+    desk.key("Down", "Return")
+    time.sleep(.5)
+    assert counter.read_bytes() == prompts, "choosing a folder executed a line"
+    desk.key("ctrl+g")
+    wait(line.exists, "readline buffer not recorded")
+    go_buffer = line.read_text()
+    line.unlink()
+    go_expected = "cd '" + str(tree / "my dir") + "'"
+    assert go_buffer == go_expected, (go_buffer, go_expected)
+    assert counter.read_bytes() == prompts, "typing cd accepted a prompt"
+    capture("go-typed")
+    desk.key("Return")  # Only the test script presses Enter.
+    wait(lambda: len(counter.read_bytes()) == len(prompts) + 1, "explicit Enter did not complete cd")
+    assert statuses.read_text().splitlines()[-1] == "0", "cd did not resolve the typed folder"
+    where = work / "pwd"
+    paste("pwd > " + shlex.quote(str(where)))
+    enter()
+    wait(where.exists, "pwd not recorded")
+    time.sleep(.2)
+    assert where.read_text().strip() == str(tree / "my dir"), where.read_text()
+    # Back to the tree, so the checks below list it again rather than the empty folder.
+    prompts = counter.read_bytes()
+    paste("cd " + shlex.quote(str(tree)))
+    enter()
+    wait(lambda: len(counter.read_bytes()) == len(prompts) + 1, "could not return to the tree")
     desk.x("windowsize", window, 640, 480)
     time.sleep(.5)
     browser()
-    assert "a space" in capture("browser-640")
+    # `folder` appears only in the browser's rows, never in the terminal behind it.
+    words = capture("browser-640")
+    assert "a space" in words and "folder" in words, words
     field("~/tree/does-not-exist/")
     words = capture("missing-640")
     assert "doesn't exist" in words, words
     desk.key("Escape")
     (work / "results.json").write_text(json.dumps({"records": records,
+        "go_to_directory": {"expected_buffer": go_expected, "actual_buffer": go_buffer,
+                            "ran_only_after_script_enter": True, "pwd_after": where.read_text().strip()},
         "browse_preserved_size_owner_and_view": True,
         "real_list_hidden_descent_missing": True, "sizes": [[1024, 700], [640, 480]],
         "native_clipboard": "not used", "client_wire_requests": "not intercepted"}, indent=2))
     print("PASS real list, hidden filter, Tab descent, Escape, missing folder; size/owner/view unchanged by browsing", flush=True)
     print("PASS exact space/apostrophe readline buffers; no Enter until script; explicit Enter resolved both paths", flush=True)
+    print("PASS Go to directory typed cd with the quoted folder, ran nothing, and the script's Enter changed directory", flush=True)
 finally:
     if desk:
         desk.close()
