@@ -63,6 +63,8 @@ const IDS: &[&str] = &[
     "pane.resize.down",
     "pane.balance",
     "pane.move_to_tab",
+    "pane.prompt_previous",
+    "pane.prompt_next",
     "pane.page_up",
     "pane.page_down",
     "pane.rename",
@@ -368,7 +370,8 @@ fn a_search_is_one_list_with_the_best_match_first() {
     assert_eq!(labels(&ws).len(), 12, "every View command");
     // A shortcut is found as typed, not by its letters.
     search(&mut ws, "ctrl shift d");
-    assert_eq!(labels(&ws), ["Split right"]);
+    // The exact D shortcut ranks ahead of the Down prefix.
+    assert_eq!(labels(&ws), ["Split right", "Next prompt"]);
     // What is on screen is not a keyword for the commands that act on it.
     search(&mut ws, "editor");
     assert!(labels(&ws).is_empty());
@@ -414,6 +417,8 @@ fn hints_are_the_effective_bindings() {
         ("pane.split.right", "Ctrl Shift D"),
         ("pane.focus.left", "Ctrl Alt Left"),
         ("pane.copy", "Ctrl Shift C"),
+        ("pane.prompt_previous", "Ctrl Shift Up"),
+        ("pane.prompt_next", "Ctrl Shift Down"),
         ("pane.close_focused", "Ctrl Shift W"),
         ("view.sidebar", "Ctrl Shift B"),
         // The main block's keys, not the numpad's.

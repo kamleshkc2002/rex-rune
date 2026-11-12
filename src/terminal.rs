@@ -240,6 +240,8 @@ pub struct Frame {
     pub fg: u32,
     pub bg: u32,
     pub cursor: Option<(u16, u16)>,
+    /// False when the user has scrolled into history (including a prompt jump).
+    pub viewport_active: bool,
     pub cursor_color: u32,
     pub cursor_shape: CursorShape,
     /// The program asked for mouse reports (DEC 9, 1000, 1002 or 1003).
@@ -308,13 +310,18 @@ impl Frame {
         }
         Some((row * cols + start, row * cols + end))
     }
-    /// Local viewport cropping must retain the newest rows, or the cursor when
+    /// A smaller pane keeps the top of a scrolled viewport so prompt jumps stay visible.
+    /// In the active area, cropping must retain the newest rows, or the cursor when
     /// a TUI has positioned it above them, or the selected search match while the user steps
     /// through them. This never changes the server size.
     pub fn display_row_start(&self, visible_rows: usize) -> usize {
         let visible = visible_rows.max(1);
         let bottom = (self.rows as usize).saturating_sub(visible);
-        let start = self.cursor.map_or(bottom, |(_, y)| bottom.min(y as usize));
+        let start = if self.viewport_active {
+            self.cursor.map_or(bottom, |(_, y)| bottom.min(y as usize))
+        } else {
+            0
+        };
         let Some(found) = self.search.as_ref().and_then(|s| s.selected) else {
             return start;
         };
@@ -396,6 +403,7 @@ impl Renderer {
             } else {
                 None
             },
+            viewport_active: terminal.is_viewport_active()?,
             cursor_color: snapshot.cursor_color()?.map(rgb).unwrap_or(fg),
             // Blinking is ignored: terminal content never animates.
             cursor_shape: match snapshot.cursor_visual_style()? {

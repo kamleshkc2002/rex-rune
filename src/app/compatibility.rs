@@ -12,12 +12,10 @@ use rex_linux::{
 use rune::Tx;
 use serde_json::{Value, json};
 
-pub const PROMPTS: &str = "Prompt navigation is recognized but not supported: Rex Linux does not yet track OSC 133 prompt positions in scrollback.";
 pub const NEW_TAB: &str = "Move pane to new tab is recognized but not supported by the supported Rex server API: session.new_window creates new programs, not a window for an existing pane. Move to an existing tab instead.";
 
 pub fn unsupported(name: &str) -> Option<&'static str> {
     match name {
-        "client.prompt.previous" | "client.prompt.next" => Some(PROMPTS),
         "pane.move_to_new_tab" => Some(NEW_TAB),
         _ => None,
     }
@@ -38,6 +36,8 @@ pub fn alias(name: &str) -> Option<(&'static str, Value)> {
         return Some(("pane.move", json!({"direction":direction})));
     }
     Some(match name {
+        "pane.prompt_previous" => ("client.prompt.previous", Value::Null),
+        "pane.prompt_next" => ("client.prompt.next", Value::Null),
         "client.find.open" => (actions::SEARCH, Value::Null),
         "client.find.next" => (super::find::NEXT, Value::Null),
         "client.find.previous" => (super::find::PREVIOUS, Value::Null),
@@ -52,8 +52,8 @@ pub fn title(name: &str) -> &'static str {
     match name {
         "client.config.reload" => "Reload config",
         "client.config.copy_path" => "Copy config file path",
-        "client.prompt.previous" => "Previous prompt (not supported)",
-        "client.prompt.next" => "Next prompt (not supported)",
+        "client.prompt.previous" | "pane.prompt_previous" => "Previous prompt",
+        "client.prompt.next" | "pane.prompt_next" => "Next prompt",
         "pane.resize" => "Resize pane",
         "pane.balance" => "Balance splits",
         "pane.rename" => "Rename pane",
@@ -278,6 +278,11 @@ pub fn run(s: &mut Workspace, name: &str, args: &Value, tx: &mut Tx) {
             s.bindings.exit_mode();
         }
         "client.mode.exit_all" => s.bindings.clear_modes(),
+        "client.prompt.previous" | "client.prompt.next" => {
+            if let Some(term) = s.active_terminal_mut() {
+                term.send(Command::PromptStep(name == "client.prompt.previous"));
+            }
+        }
         "client.scroll.page_up" | "client.scroll.page_down" => {
             let cell = super::term::metrics(s.settings.font_size).cell;
             if let Some(term) = s.active_terminal_mut() {

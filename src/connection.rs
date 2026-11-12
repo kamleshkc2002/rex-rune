@@ -122,6 +122,8 @@ pub enum Command {
     Search(String),
     /// Select the next older search match (`true`) or the next newer one.
     SearchStep(bool),
+    /// Move this client viewport to the previous (true) or next OSC 133 prompt.
+    PromptStep(bool),
     TakeControl,
     Reconnect,
     /// `terminal.reset`: the terminal back to its starting state, screen and scrollback
@@ -678,6 +680,7 @@ enum DataCommand {
     Scroll(isize),
     Search(String),
     SearchStep(bool),
+    PromptStep(bool),
     Bottom,
     Reconnect,
     Stop,
@@ -1655,13 +1658,14 @@ fn reject_navigation(shared: &Shared, id: u64) {
     });
 }
 
-/// A search runs on the pane's own terminal, so it needs no server: it reaches the pane's worker
-/// even while the host reconnects, or closing a search then would leave its highlights behind.
+/// Search and prompt navigation run on the pane's own terminal, so they need no server.
+/// They reach the pane's worker even while the host reconnects.
 /// False for any other command.
 fn forward_search(workers: &HashMap<String, PaneWorker>, block: &str, command: &Command) -> bool {
     let command = match command {
         Command::Search(needle) => DataCommand::Search(needle.clone()),
         Command::SearchStep(older) => DataCommand::SearchStep(*older),
+        Command::PromptStep(older) => DataCommand::PromptStep(*older),
         _ => return false,
     };
     if let Some(worker) = workers.get(block) {
@@ -1933,6 +1937,9 @@ async fn handle_command(
                 Command::SearchStep(older) => {
                     let _ = worker.commands.send(DataCommand::SearchStep(older));
                 }
+                Command::PromptStep(older) => {
+                    let _ = worker.commands.send(DataCommand::PromptStep(older));
+                }
                 Command::Reconnect => {
                     let _ = worker.commands.send(DataCommand::Reconnect);
                 }
@@ -2143,6 +2150,7 @@ async fn run_data(
                         Ok(DataCommand::Selection(input)) => if input.generation == shared.model.lock().expect("terminal model").restore_generation && let Some(terminal) = &stream.terminal { selection.apply(terminal, input)?; dirty = true; },
                         Ok(DataCommand::Visible(value)) => { if value && !visible { dirty = true; } else if !value && let Some(terminal) = &stream.terminal { selection.stop(terminal)?; } visible = value; }
                         Ok(DataCommand::Scroll(delta)) => if let Some(terminal) = &mut stream.terminal { terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Delta(delta)); selection.after_scroll(terminal)?; dirty = true; },
+                        Ok(DataCommand::PromptStep(older)) => if let Some(terminal) = &mut stream.terminal { terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::DeltaPrompt(if older { -1 } else { 1 })); selection.after_scroll(terminal)?; dirty = true; },
                         Ok(DataCommand::Bottom) => if let Some(terminal) = &mut stream.terminal { terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Bottom); dirty = true; },
                         // A search that fails is dropped with a notice; the terminal's stream is not its to end.
                         Ok(DataCommand::Search(needle)) => { if let Err(error) = search.set_needle(stream.terminal.as_ref(), needle) { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); } dirty = true; },

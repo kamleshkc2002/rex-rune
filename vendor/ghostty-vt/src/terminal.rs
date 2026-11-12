@@ -1416,6 +1416,10 @@ pub enum ScrollViewport {
     Delta(isize),
     /// Scroll to an absolute row offset from the top of the scrollback.
     Row(usize),
+    /// Scroll by prompts relative to the viewport top (negative moves backward).
+    /// Requires shell semantic marks; zero or no matching prompt is a no-op.
+    /// Clamps to the active area. A final continuation may snap to the active area.
+    DeltaPrompt(isize),
 }
 impl From<ScrollViewport> for ffi::TerminalScrollViewport {
     fn from(value: ScrollViewport) -> Self {
@@ -1435,6 +1439,10 @@ impl From<ScrollViewport> for ffi::TerminalScrollViewport {
             ScrollViewport::Row(row) => Self {
                 tag: ffi::TerminalScrollViewportTag::ROW,
                 value: ffi::TerminalScrollViewportValue { row },
+            },
+            ScrollViewport::DeltaPrompt(delta_prompt) => Self {
+                tag: ffi::TerminalScrollViewportTag::DELTA_PROMPT,
+                value: ffi::TerminalScrollViewportValue { delta_prompt },
             },
         }
     }

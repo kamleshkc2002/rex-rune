@@ -39,12 +39,12 @@ pub const REPORT_ISSUE: &str = "client.issue.report";
 #[cfg(test)]
 pub const NOT_LISTED: [(&str, &str); 29] = [
     (
-        "client.prompt.previous",
-        "recognized but prompt navigation is not implemented",
+        "pane.prompt_previous",
+        "compatibility alias of an existing Commands row",
     ),
     (
-        "client.prompt.next",
-        "recognized but prompt navigation is not implemented",
+        "pane.prompt_next",
+        "compatibility alias of an existing Commands row",
     ),
     (
         "pane.move.left",
@@ -602,6 +602,17 @@ impl Workspace {
                 "pane.move_to_tab",
             )
             .section(3),
+            Command::action(
+                "pane.prompt_previous",
+                G,
+                "Previous prompt",
+                "client.prompt.previous",
+            )
+            .enabled(self.active_terminal().is_some())
+            .section(3),
+            Command::action("pane.prompt_next", G, "Next prompt", "client.prompt.next")
+                .enabled(self.active_terminal().is_some())
+                .section(3),
             Command::action("pane.page_up", G, "Scroll page up", "client.scroll.page_up")
                 .section(3),
             Command::action(

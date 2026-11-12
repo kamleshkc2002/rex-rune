@@ -57,6 +57,56 @@ fn server_map(
 }
 
 #[test]
+fn prompt_shortcuts_consume_presses_repeats_and_releases_but_are_removable() {
+    let (mut ws, rx) = tabbed_workspace("single");
+    let (sender, sent) = flume::unbounded();
+    live_terminal(&mut ws, "block:a", &sender);
+    let mut rt = runtime(ws);
+    for (code, named, older) in [
+        (Code::ArrowUp, Key::Up, true),
+        (Code::ArrowDown, Key::Down, false),
+    ] {
+        let event = KeyEvent {
+            key: named,
+            mods: Mods {
+                ctrl: true,
+                shift: true,
+                ..Mods::default()
+            },
+        };
+        for (pressed, repeat) in [(true, false), (true, true), (false, false)] {
+            key(&mut rt, code, event.clone(), pressed, repeat);
+        }
+        let calls: Vec<_> = sent.try_iter().collect();
+        assert_eq!(calls.len(), 2, "press and repeat only");
+        assert!(calls.iter().all(|c| matches!(c, HostCommand::Terminal {
+            command: Command::PromptStep(direction), ..
+        } if *direction == older)));
+    }
+    assert!(requests(&rx).is_empty());
+    rt.update(|s, _| {
+        overrides(
+            s,
+            json!([
+                {"keys":"ctrl+shift+up", "action":null},
+                {"keys":"ctrl+shift+down", "action":null}
+            ]),
+        )
+    });
+    let event = KeyEvent {
+        key: Key::Up,
+        mods: Mods {
+            ctrl: true,
+            shift: true,
+            ..Mods::default()
+        },
+    };
+    key(&mut rt, Code::ArrowUp, event.clone(), true, false);
+    key(&mut rt, Code::ArrowUp, event, false, false);
+    assert_eq!(sent_keys(&sent).len(), 2, "unbound keys flow to client.key");
+}
+
+#[test]
 fn forward_wins_over_local_and_sequence_echoes_original_prefix_with_release() {
     use rexrs::api::client::Binding;
     let (mut ws, rx) = tabbed_workspace("single");
