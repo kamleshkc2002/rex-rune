@@ -2,6 +2,10 @@
 //! socket that does not exist).
 #[path = "about_tests.rs"]
 mod about_tests;
+#[path = "activity_chip_capture_tests.rs"]
+mod activity_chip_capture_tests;
+#[path = "activity_chip_tests.rs"]
+mod activity_chip_tests;
 #[path = "activity_list_tests.rs"]
 mod activity_list_tests;
 #[path = "bindings_integration_tests.rs"]

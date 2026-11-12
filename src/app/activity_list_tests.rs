@@ -9,7 +9,7 @@ use crate::app::{
 use rex_linux::connection::activity::{BlockedKind, ProgramState, StatusRecord};
 use serde_json::{Value, json};
 
-fn fixture() -> (Workspace, Vec<flume::Receiver<HostCommand>>) {
+pub(super) fn fixture() -> (Workspace, Vec<flume::Receiver<HostCommand>>) {
     let mut ws = workspace_hosts(2);
     ws.window_focused = true;
     ws.settings.notifications.system_notifications = false;

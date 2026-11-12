@@ -349,6 +349,31 @@ fn bar_button(
         )
 }
 
+/// One chip while a tab out of sight waits on the person, or failing that has errored:
+/// `3 need you`, `1 error`. A press opens the Activity list. It is drawn only in the
+/// toolbar, never floated over the terminal: a tab can wait for hours.
+fn activity_chip(s: &Workspace) -> Option<El> {
+    let summary = s.activity_chip_shown()?;
+    let label = summary.label();
+    Some(chip_press(chip(
+        row()
+            .key("activity-chip")
+            .role("button")
+            .label(format!("Activity: {label}"))
+            .h(28.)
+            .px(8.)
+            .center_y()
+            .hover(white(0.08))
+            .help(format!(
+                "{label} · {}",
+                s.shortcut_help("Show activity", super::activity_list::ACTION)
+            ))
+            // The list's first field takes focus, just as it does from Commands.
+            .on_press(|s: &mut Workspace| s.show_activity())
+            .child(text(label).font(medium(11.5)).color(rgb(summary.tone()))),
+    )))
+}
+
 /// One chip while a transfer receives, `↓ build.log 42%` or `↓ 3 files`, and none otherwise,
 /// like the pending-sequence chip. When the bar is short of room it is `↓ 42%` (see
 /// `downloads_view::chip_label`). A press opens the Downloads popover under the chip.
@@ -462,6 +487,7 @@ pub fn toolbar(s: &Workspace) -> El {
         .child(identity(s))
         .child(if s.sidebar_tabs() { el() } else { tab_track(s) })
         .child(sequence_chip(s).unwrap_or_else(el))
+        .children(activity_chip(s))
         .child(download_chip(s))
         // Always at least 48pt of window to drag, outside the tabs.
         .child(

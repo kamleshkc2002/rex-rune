@@ -425,7 +425,7 @@ pub struct ChipText {
 
 /// Window width below which the chip is `↓ 42%`, so the tab strip keeps room for the active
 /// tab. The full text stays in its tooltip and accessible name.
-const CHIP_FULL_WIDTH: f32 = 1000.;
+pub(super) const CHIP_FULL_WIDTH: f32 = 1000.;
 
 /// The chip's text, or `None` when nothing is being received. A transfer still waiting for
 /// Rex or for an answer to a question is not running yet: its dialog is the place for it.

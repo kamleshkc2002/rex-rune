@@ -1,6 +1,6 @@
 //! A read-only index of already-known tab activity. No queries or subscriptions.
 use super::{
-    activity::{blocked_word, program_icon, tab_activity},
+    activity::{TabActivity, blocked_word, program_icon, tab_activity},
     notify::NoteTarget,
     panel::{Entry, Intent, PanelKind},
     theme::{accent, danger, muted, warning},
@@ -27,58 +27,66 @@ impl Workspace {
         );
     }
 
-    pub fn activity_entries(&self, lower: &str) -> Vec<Entry> {
-        let mut entries = Vec::new();
-        for (index, host) in self
-            .hosts
+    /// The list and its toolbar entry point share this cached, connected, unmuted inventory.
+    /// Server session/window order is preserved; nothing is fetched or marked seen.
+    pub fn activity_tabs(&self) -> impl Iterator<Item = (usize, &str, &str, TabActivity)> {
+        self.hosts
             .iter()
             .enumerate()
             .filter(|(_, h)| h.model.connected)
-        {
-            // Session and window vectors are server ordered, never HashMap iteration order.
-            for session in &host.model.sessions {
-                let Some(view) = host.model.views.get(&session.session_id) else {
-                    continue;
-                };
-                for window in &view.windows {
-                    let Some(id) = &window.window_id else {
-                        continue;
-                    };
-                    if self.tab_muted(index, id) {
-                        continue;
-                    }
-                    let activity = tab_activity(&host.model, window);
-                    let (rank, group, word, tone) = match activity.state {
-                        ProgramState::Blocked => {
-                            (0, "Needs you", blocked_word(activity.kind), warning())
-                        }
-                        ProgramState::Error => (1, "Error", "Error", danger()),
-                        ProgramState::Working => (3, "Working", "Working", muted()),
-                        _ if self.unseen_on(index, id) => (2, "Done", "Done", accent()),
-                        _ => continue,
-                    };
-                    let (title, place) = self.describe_tab(index, &session.session_id, Some(id));
-                    if !format!("{title} {place}").to_lowercase().contains(lower) {
-                        continue;
-                    }
-                    let mut entry = Entry::new(
-                        title,
-                        word,
-                        group,
-                        Intent::ActivityTab(NoteTarget {
-                            host: host.id,
-                            session: session.session_id.clone(),
-                            window: Some(id.clone()),
-                        }),
-                    );
-                    entry.activity = Some(Presentation {
-                        icon: program_icon(activity.program.as_deref()),
-                        place,
-                        tone,
-                    });
-                    entries.push((rank, entry));
-                }
+            .flat_map(move |(index, host)| {
+                host.model.sessions.iter().flat_map(move |session| {
+                    host.model
+                        .views
+                        .get(&session.session_id)
+                        .into_iter()
+                        .flat_map(move |view| {
+                            view.windows.iter().filter_map(move |window| {
+                                let id = window.window_id.as_deref()?;
+                                (!self.tab_muted(index, id)).then(|| {
+                                    (
+                                        index,
+                                        session.session_id.as_str(),
+                                        id,
+                                        tab_activity(&host.model, window),
+                                    )
+                                })
+                            })
+                        })
+                })
+            })
+    }
+
+    pub fn activity_entries(&self, lower: &str) -> Vec<Entry> {
+        let mut entries = Vec::new();
+        for (index, session, id, activity) in self.activity_tabs() {
+            let (rank, group, word, tone) = match activity.state {
+                ProgramState::Blocked => (0, "Needs you", blocked_word(activity.kind), warning()),
+                ProgramState::Error => (1, "Error", "Error", danger()),
+                ProgramState::Working => (3, "Working", "Working", muted()),
+                _ if self.unseen_on(index, id) => (2, "Done", "Done", accent()),
+                _ => continue,
+            };
+            let (title, place) = self.describe_tab(index, session, Some(id));
+            if !format!("{title} {place}").to_lowercase().contains(lower) {
+                continue;
             }
+            let mut entry = Entry::new(
+                title,
+                word,
+                group,
+                Intent::ActivityTab(NoteTarget {
+                    host: self.hosts[index].id,
+                    session: session.to_owned(),
+                    window: Some(id.to_owned()),
+                }),
+            );
+            entry.activity = Some(Presentation {
+                icon: program_icon(activity.program.as_deref()),
+                place,
+                tone,
+            });
+            entries.push((rank, entry));
         }
         entries.sort_by_key(|(rank, _)| *rank);
         entries.into_iter().map(|(_, entry)| entry).collect()

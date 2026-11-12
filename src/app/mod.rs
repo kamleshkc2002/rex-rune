@@ -2,6 +2,7 @@
 mod about;
 mod actions;
 mod activity;
+mod activity_chip;
 mod activity_list;
 mod bindings;
 mod commands;

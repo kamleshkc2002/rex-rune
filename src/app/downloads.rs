@@ -286,11 +286,13 @@ impl Workspace {
         }
     }
 
-    /// Which chips share the bar with the tabs (bit 0 downloads, bit 1 a pending key sequence),
+    /// Which chips share the bar with the tabs (bit 0 downloads, bit 1 a pending key sequence,
+    /// bit 2 activity),
     /// so the active tab is scrolled back into view when one comes or goes.
     pub fn bar_chips(&self) -> u8 {
         u8::from(super::downloads_view::chip_label(self).is_some())
             | u8::from(self.bindings.sequence.depth > 0) << 1
+            | u8::from(self.activity_chip_shown().is_some()) << 2
     }
 
     /// Every host's transfers, running ones first, newest first within each group.
