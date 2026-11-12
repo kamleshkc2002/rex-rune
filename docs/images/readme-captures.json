@@ -1,0 +1,49 @@
+{
+  "source_commit": "9af5bf5d0a7cc1ba5c61e2d2784035a66e30e19b",
+  "app_version": "0.7.4",
+  "binary_sha256": "179b19a4d1f773b5b67d0dedbf2f0b6098b67d33491a319782d33b7cbde69375",
+  "capture_script": "scripts/readme-gallery.py",
+  "capture_script_sha256": "97a635a25de19737252a63fd99c2f5472de074819ed6353b0752bedfbd68a0f2",
+  "captured_date": "2026-11-12 PST",
+  "renderer": "native X11 / Xvfb / real fonts",
+  "fixture": "fictional Orbit workspace; private Rex API 13 server",
+  "optimization": "Pillow RGB optimize; oxipng -o 4 --strip all (lossless)",
+  "images": [
+    {
+      "path": "docs/screenshot.png",
+      "pixels": [
+        1280,
+        800
+      ],
+      "bytes": 88591,
+      "sha256": "b6e3e16f21b0f70c92a669bfc4802bbaef7c77f615a18b5be21cadf77d66165b"
+    },
+    {
+      "path": "docs/images/settings-fonts.png",
+      "pixels": [
+        840,
+        704
+      ],
+      "bytes": 78904,
+      "sha256": "8cf134c62402d484bf98da7c2d5bbc28098bd1d02f535408c85fcc978164474f"
+    },
+    {
+      "path": "docs/images/settings-search.png",
+      "pixels": [
+        840,
+        704
+      ],
+      "bytes": 95643,
+      "sha256": "5b8c40a911ac6a44e053c183ec3d182884012560b3c53a1b47b775346030452e"
+    },
+    {
+      "path": "docs/images/settings-tabs.png",
+      "pixels": [
+        840,
+        704
+      ],
+      "bytes": 74425,
+      "sha256": "38c99482db281bd8c92f8bca9e8f4230b2ecfb60cc429dc810189074f6b12f48"
+    }
+  ]
+}

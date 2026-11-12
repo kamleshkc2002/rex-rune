@@ -78,13 +78,15 @@ verify:
       requires_env: [CARGO_HOME, RUSTUP_HOME]
       optional: true
     - id: scripts-compile
-      run: ["python3", "-m", "py_compile", "scripts/readme-screenshot.py", "scripts/docs-captures.py", "scripts/x11-smoke.py", "scripts/wayland-seat-smoke.py", "scripts/connection-only-smoke.py", "scripts/revision8-check.py", "scripts/rune-acceptance-x11.py", "scripts/chrome-spike-x11.py", "scripts/mouse-check.py", "scripts/demo-record.py"]
+      run: ["python3", "-m", "py_compile", "scripts/readme-screenshot.py", "scripts/readme-gallery.py", "scripts/docs-captures.py", "scripts/x11-smoke.py", "scripts/wayland-seat-smoke.py", "scripts/connection-only-smoke.py", "scripts/rune-acceptance-x11.py", "scripts/chrome-spike-x11.py", "scripts/mouse-check.py", "scripts/demo-record.py"]
       cwd: .
       timeout_s: 60
       expect_exit: 0
       requires_env: []
       optional: false
 
+# Native X11 captures: scripts/readme-gallery.py; provenance in docs/readme-captures.md.
+# WTFM's web-only capture planner does not model Rune desktop windows.
 capture:
   terminal: []
 
