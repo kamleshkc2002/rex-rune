@@ -666,14 +666,17 @@ impl Workspace {
 
 /// Keys the filter takes: Escape empties it, and closes Settings once it is empty.
 fn filter_key(s: &mut Workspace, event: &KeyEvent, tx: &mut Tx) -> bool {
-    if super::input::global_key(s, event, tx) {
+    // TextInput would otherwise use Alt+arrows for caret movement before the dialog sees them.
+    if event.mods.alt && s.settings_key(event, tx) || super::input::global_key(s, event, tx) {
         return true;
     }
     if event.key != Key::Escape {
         return false;
     }
     if s.shortcut_filter.text.is_empty() {
-        s.cancel_panel(tx);
+        if !s.settings_key(event, tx) {
+            s.cancel_panel(tx);
+        }
     } else {
         s.clear_shortcut_filter(tx);
     }

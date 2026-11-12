@@ -371,6 +371,7 @@ impl Workspace {
     }
 
     pub fn open_updates_settings(&mut self) {
+        self.settings_nav.opened();
         self.bindings.sequence.clear();
         self.reload_shortcuts();
         let back = self.panel.take();

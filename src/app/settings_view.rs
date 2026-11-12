@@ -1,5 +1,6 @@
 //! Settings: a section list on the left and the chosen section's page on the right. Pages are
 //! built from `settings_kit` (sections, cards, rows and their controls).
+use super::settings_nav::{HEADER, PAGE_INSET};
 use super::{
     dialogs::modal_layer,
     panel::{Intent, SettingsSection},
@@ -13,15 +14,11 @@ use super::{
     workspace::Workspace,
 };
 use rex_linux::settings::{NoticePosition, NotificationsConfig, PaneDensity, PaneHeader};
-use rune::{Cursor, El, ScrollPos, ScrollSpec, Tx, col, el, row, text};
-use rune_kit::{IconButton, Switch};
+use rune::{El, KeyEvent, PointerButton, ScrollPos, ScrollSpec, Tx, col, el, row, text};
+use rune_kit::Switch;
 
-/// The page's header row, above its scroll region.
-const HEADER: f32 = 56.;
 /// The least space between the dialog and the toolbar above it, and the window's bottom edge.
 const CLEARANCE: f32 = 12.;
-/// The page's inset from the section list and from the dialog's trailing edge.
-const PAGE_INSET: f32 = 20.;
 
 /// The Pane headers choices, in the order the control lists them.
 const PANE_HEADERS: [PaneHeader; 4] = [
@@ -512,69 +509,9 @@ pub(super) const SHORTCUT_CATEGORIES: [&str; 6] = [
     "Server",
 ];
 
-/// The section list, in gapped groups: the window, what runs in it, and the app itself.
-fn nav(s: &Workspace, width: f32) -> El {
-    let mut list = col()
-        .key("settings-sections")
-        .role("tablist")
-        .focus_group()
-        .gap(2.);
-    for section in SettingsSection::ALL {
-        let selected = s.settings_section == section;
-        let mut item = row()
-            .key(format!("settings-section:{}", section.key()))
-            .role("tab")
-            .label(section.title())
-            .w_full()
-            .h(32.)
-            .px(10.)
-            .center_y()
-            .radius(8.)
-            .continuous_corners()
-            .cursor(Cursor::Pointer)
-            .focusable(true)
-            .focus_selected(selected)
-            .focus_ring(2., 0., rgb(accent()))
-            .on_press(move |s: &mut Workspace| s.open_section(section))
-            .child(
-                text(section.title())
-                    .font(if selected { medium(13.) } else { ui(13.) })
-                    .color(rgb(if selected { ink() } else { muted() })),
-            );
-        if matches!(
-            section,
-            SettingsSection::Terminal | SettingsSection::Updates
-        ) {
-            item = item.mt(12.);
-        }
-        item = if selected {
-            item.fill(white(0.09))
-        } else {
-            item.hover(white(0.05))
-        };
-        list = list.child(item);
-    }
-    col()
-        .w(width)
-        .h_full()
-        .padding(14.)
-        .gap(12.)
-        .child(
-            text("Settings")
-                .font(strong(15.))
-                .color(rgb(ink()))
-                .px(10.)
-                .pt(6.),
-        )
-        .child(list)
-}
-
-/// The dialog's surface: the section list, and the page under its header. The page scrolls
-/// with a fade at whichever edge hides content and a thumb while there is more than fits.
-fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
-    let k = kit();
-    let section = s.settings_section;
-    let body = match section {
+/// Build only the page content. Search reads these same labelled Settings-kit rows.
+pub(super) fn body(s: &Workspace, section: SettingsSection) -> El {
+    match section {
         SettingsSection::Interface => interface(s),
         SettingsSection::Terminal => terminal(s),
         SettingsSection::Notifications => notifications(s),
@@ -583,7 +520,14 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
         SettingsSection::Shortcuts => super::shortcuts_page::page(s),
         SettingsSection::Updates => super::updates::section(s),
         SettingsSection::About => super::about::section(s),
-    };
+    }
+}
+
+/// The dialog's surface: the section list, and the page under its header. The page scrolls
+/// with a fade at whichever edge hides content and a thumb while there is more than fits.
+fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
+    let section = s.settings_section;
+    let body = super::settings_nav::draw(s, section);
     let width = PANEL_WIDTH.min(viewport[0] * 0.92);
     // Under the toolbar, which stays whole above it, with a margin at both ends.
     let height = PANEL_HEIGHT.min((viewport[1] - TOOLBAR - 2. * CLEARANCE).max(0.));
@@ -596,6 +540,7 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
             .map_or(0., |_| super::shortcuts_page::FILTER);
     let (page_width, page_height) = (width - nav_width - 1., height - above);
     let thumb = s.settings_fx.thumb.clone();
+    let offset = s.settings_nav.offset();
     let scroller = col()
         .key(format!("settings-scroll:{}", section.key()))
         .grow(1.)
@@ -606,6 +551,7 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
         })
         .scroll_edge_fade(16.)
         .on_scroll_offset(move |at: ScrollPos| {
+            offset.set(at.offset[1]);
             let hidden = at.max[1];
             if hidden < 1. {
                 thumb.set([0.; 4]);
@@ -620,22 +566,7 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
         .grow(1.)
         .min_w(0.)
         .h_full()
-        .child(
-            row()
-                .h(HEADER)
-                .pl(PAGE_INSET + super::settings_kit::INSET)
-                .pr(PAGE_INSET)
-                .center_y()
-                .justify_between()
-                .child(text(section.title()).font(strong(17.)).color(rgb(ink())))
-                .child(
-                    IconButton::new(&CLOSE)
-                        .label("Close")
-                        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| s.close_panel(tx))
-                        .build(k)
-                        .key("close-settings"),
-                ),
-        )
+        .child(super::settings_shell::header(s, section))
         .children(pinned)
         .child(
             col()
@@ -645,12 +576,28 @@ fn surface(s: &Workspace, viewport: [f32; 2]) -> El {
                 .child(scroller)
                 .child(s.settings_fx.thumb_el()),
         );
+    let frame = row()
+        .key("settings-frame")
+        .w_full()
+        .h_full()
+        .pointer_buttons([PointerButton::Back, PointerButton::Forward])
+        .preserve_focus_on_press(true)
+        .on_press_tx(|s: &mut Workspace, tx: &mut Tx| {
+            let direction = match tx.button() {
+                PointerButton::Back => -1,
+                PointerButton::Forward => 1,
+                _ => return,
+            };
+            s.settings_history(direction, tx);
+        })
+        .child(super::settings_shell::sidebar(s, nav_width))
+        .child(el().w(1.).h_full().fill(white(0.06)))
+        .child(content);
     row()
         .w(width)
         .h(height)
-        .child(nav(s, nav_width))
-        .child(el().w(1.).h_full().fill(white(0.06)))
-        .child(content)
+        .on_key(|s: &mut Workspace, ev: &KeyEvent, tx: &mut Tx| s.settings_key(ev, tx))
+        .child(frame)
 }
 
 pub fn settings(s: &Workspace, viewport: [f32; 2]) -> El {
