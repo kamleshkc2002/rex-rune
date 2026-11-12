@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """M3.4 sound dispatch, NEVER audible: private Rex, Xvfb, bus, HOME and PATH.
 
-Requires built REX_BIN (default target/release/rex-linux), Rex API 13,
+Requires built REX_BIN (default target/release/rex-rune), Rex API 13,
 Xvfb/openbox/xdotool/ImageMagick, Mesa lavapipe and Python. Only fake audio executables exist
 on the child's PATH; all three names are checked before every launch. No real
 notification daemon or audio player is started. Evidence stays under
@@ -17,7 +17,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = Path(os.environ.get("REX_BIN", ROOT / "target/release/rex-linux")).resolve()
+BINARY = Path(os.environ.get("REX_BIN", ROOT / "target/release/rex-rune")).resolve()
 BASE = Path.home() / ".cache/agent-ws/rex-m34-sounds"
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="native-", dir=BASE))

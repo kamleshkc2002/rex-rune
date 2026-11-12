@@ -4,7 +4,7 @@ use crate::app::{
     panel::SettingsSection,
     sounds::{Health, Request, Sound},
 };
-use rex_linux::connection::activity::ProgramState::*;
+use rex_rune::connection::activity::ProgramState::*;
 use std::time::Duration;
 
 fn flush(ws: &mut Workspace) {
@@ -99,7 +99,7 @@ fn sound_uses_existing_visibility_mute_and_kind_rules_but_never_readback_or_work
         match case {
             "working" => state = Working,
             "readback" => live = false,
-            "muted" => ws.settings.muted_tabs.push(rex_linux::settings::MutedTab {
+            "muted" => ws.settings.muted_tabs.push(rex_rune::settings::MutedTab {
                 endpoint: ws.settings.hosts[0].endpoint.clone(),
                 session: "s".into(),
                 window: "split".into(),
@@ -172,7 +172,7 @@ fn unfocused_front_tab_plays_once_but_messages_and_repeats_never_do() {
     set_activity(&mut ws, "block:a", &[("", record(Blocked, true))]);
     ws.deliver_program_notices(
         0,
-        vec![rex_linux::connection::activity::DesktopNotice {
+        vec![rex_rune::connection::activity::DesktopNotice {
             session: "s".into(),
             block: "block:b".into(),
             title: "--evil".into(),

@@ -1,7 +1,7 @@
 //! Optional local activity audio. Only typed, fixed sound names cross this boundary.
 //! One coalescing slot, no playback queue; all discovery and player I/O is worker-only.
 use super::workspace::Workspace;
-use rex_linux::connection::activity::ProgramState;
+use rex_rune::connection::activity::ProgramState;
 use std::{
     sync::{Arc, Mutex},
     thread::JoinHandle,
