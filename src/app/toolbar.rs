@@ -96,6 +96,17 @@ fn identity(s: &Workspace) -> El {
     ))
 }
 
+/// The fill-mode floor reserves 40 pt of name, the existing icon and padding, and
+/// whole activity/mute marks. Status words are short; 7 pt per character is generous.
+fn fill_floor(word: Option<&str>, quiet: bool) -> f32 {
+    (28. + 15.
+        + 8.
+        + 40.
+        + word.map_or(0., |word| 8. + word.chars().count() as f32 * 7.)
+        + if quiet { 8. + 14. } else { 0. })
+    .max(96.)
+}
+
 /// The session's tabs on their track. With no tab to show (no session on screen, or one whose
 /// view hasn't arrived) there is no track: an empty one would be a sliver of chip.
 fn tab_track(s: &Workspace) -> El {
@@ -107,6 +118,8 @@ fn tab_track(s: &Workspace) -> El {
         return el();
     }
     let session = model.selected.clone().unwrap_or_default();
+    let fill = s.settings.interface.tabs_fill_available_space;
+    let mut floors = -2.;
     let mut names = row()
         .key("tab-names")
         .h(28.)
@@ -136,8 +149,6 @@ fn tab_track(s: &Workspace) -> El {
                     None => label.clone(),
                 })
                 .h_full()
-                .min_w(96.)
-                .max_w(240.)
                 .px(14.)
                 .gap(8.)
                 .center_y()
@@ -159,6 +170,13 @@ fn tab_track(s: &Workspace) -> El {
                 .on_secondary_press(move |s: &mut Workspace, p, _| {
                     s.tab_menu(s.active, &menu_session, &menu_id, (p.x, p.y))
                 });
+            tab_el = if fill {
+                let floor = fill_floor(word.as_ref().map(|(word, _)| word.as_ref()), quiet);
+                floors += floor + 2.;
+                tab_el.grow(1.).min_w(floor).justify_center()
+            } else {
+                tab_el.min_w(96.).max_w(240.)
+            };
             if active {
                 tab_el = tab_el.child(
                     el().pin(Some(0.), Some(0.), Some(0.), Some(0.))
@@ -216,9 +234,12 @@ fn tab_track(s: &Workspace) -> El {
             names = names.child(tab_el);
         }
     }
+    if fill {
+        names = names.grow(1.).min_w(floors.max(0.));
+    }
     let overflow = s.tab_strip.overflows();
     let (fade, pos) = (s.tab_fade.clone(), s.tab_pos.clone());
-    let strip = row()
+    let mut strip = row()
         .key("tabs")
         .min_w(0.)
         .shrink()
@@ -244,6 +265,10 @@ fn tab_track(s: &Workspace) -> El {
         .center_y()
         .min_w(0.)
         .shrink();
+    if fill {
+        track = track.grow(1.);
+        strip = strip.grow(1.);
+    }
     if overflow {
         track = track.child(
             chrome_button(
@@ -407,6 +432,11 @@ pub fn floating_status(s: &Workspace) -> Option<El> {
 }
 
 pub fn toolbar(s: &Workspace) -> El {
+    let fill = s.settings.interface.tabs_fill_available_space
+        && !s.sidebar_tabs()
+        && s.model()
+            .view()
+            .is_some_and(|v| v.windows.iter().any(|t| t.window_id.is_some()));
     row()
         .key("toolbar")
         .w_full()
@@ -428,7 +458,12 @@ pub fn toolbar(s: &Workspace) -> El {
         .child(sequence_chip(s).unwrap_or_else(el))
         .child(download_chip(s))
         // Always at least 48pt of window to drag, outside the tabs.
-        .child(el().key("title-drag").grow(1.).min_w(48.).h_full())
+        .child(
+            el().key("title-drag")
+                .grow(if fill { 0. } else { 1. })
+                .min_w(48.)
+                .h_full(),
+        )
         .child(
             row()
                 .center_y()

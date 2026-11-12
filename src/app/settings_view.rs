@@ -237,6 +237,21 @@ fn interface(s: &Workspace) -> El {
                         |s, i, _| s.set_vertical_tabs(i == 1),
                     ),
                 ),
+                setting(
+                    "Tabs fill available space",
+                    "Only toolbar tabs share the available width.",
+                    Switch::new(s.settings.interface.tabs_fill_available_space)
+                        .label("Tabs fill available space")
+                        .hide_label()
+                        .on_toggle(|s: &mut Workspace| {
+                            s.settings.interface.tabs_fill_available_space =
+                                !s.settings.interface.tabs_fill_available_space;
+                            s.reveal_tab_again = true;
+                            s.save();
+                        })
+                        .build(k)
+                        .key("tabs-fill"),
+                ),
             ])],
         ),
         section(

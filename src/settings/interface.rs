@@ -16,6 +16,8 @@ pub enum ToolbarBehavior {
 #[serde(default)]
 pub struct InterfaceConfig {
     pub toolbar: ToolbarBehavior,
+    /// Share spare toolbar tab-track width; sidebar rows keep their existing layout.
+    pub tabs_fill_available_space: bool,
     /// None keeps the legacy `pane_padding` on all four sides. With a value here,
     /// `pane_padding` is horizontal only.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -177,6 +179,33 @@ mod tests {
                 settings.save(&path).unwrap();
                 assert_eq!(Settings::load(&path).unwrap().interface, settings.interface);
             }
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn tab_fill_defaults_serde_and_disk_roundtrip() {
+        for value in [
+            json!({}),
+            json!({"interface": {}}),
+            json!({"vertical_tabs": true}),
+        ] {
+            let settings: Settings = serde_json::from_value(value).unwrap();
+            assert!(!settings.interface.tabs_fill_available_space);
+        }
+        let path = std::env::temp_dir().join(format!("rex-tab-fill-{}.json", std::process::id()));
+        for fill in [true, false] {
+            let mut settings = Settings::default();
+            settings.interface.tabs_fill_available_space = fill;
+            settings.vertical_tabs = true;
+            let encoded = serde_json::to_value(&settings).unwrap();
+            assert_eq!(encoded["interface"]["tabs_fill_available_space"], fill);
+            let back: Settings = serde_json::from_value(encoded).unwrap();
+            assert_eq!(back.interface, settings.interface);
+            settings.save(&path).unwrap();
+            let back = Settings::load(&path).unwrap();
+            assert_eq!(back.interface, settings.interface);
+            assert!(back.vertical_tabs);
         }
         std::fs::remove_file(path).unwrap();
     }
