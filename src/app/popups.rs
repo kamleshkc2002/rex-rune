@@ -175,6 +175,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
         PanelKind::Pane | PanelKind::Session | PanelKind::Host(_) | PanelKind::Window
     );
     let commands = matches!(panel.kind, PanelKind::Picker(false));
+    let activity = matches!(panel.kind, PanelKind::Activity);
     // The values of one setting: a short list with the current one checked.
     let values = matches!(panel.kind, PanelKind::Choice(_) | PanelKind::Chromes);
     // Lists that mark the current value keep the check's column on every row, so names align.
@@ -227,7 +228,13 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     // A machine already added carries a chip, in a column every row of the list keeps.
     let added_column = discover && entries.iter().any(|e| e.current);
     let name_limit = super::discover::name_limit(width, added_column);
-    let row_height = if commands { 30. } else { 28. };
+    let row_height = if activity {
+        44.
+    } else if commands {
+        30.
+    } else {
+        28.
+    };
     let footer_count = entries.iter().filter(|e| e.footer).count();
     // A list under its control needs no title: the control's row names it.
     let titled = control.is_none() || !panel.inputs.is_empty();
@@ -245,7 +252,14 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     };
     let mut list_max = match room {
         Some((below, above)) => (below.max(above) - input_height - 42.).clamp(60., 360.),
-        None => (vh - top - 16. - input_height - directory_extra - footer_count as f32 * 29. - 56.)
+        None => (vh
+            - top
+            - 16.
+            - input_height
+            - directory_extra
+            - if activity { 28. } else { 0. }
+            - footer_count as f32 * 29.
+            - 56.)
             .max(60.),
     };
     if commands {
@@ -258,6 +272,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     let mut list = col().key("results").w_full().pr(4.).gap(1.);
     let mut footer = col().w_full().gap(1.);
     let surface_id = match panel.kind {
+        PanelKind::Activity => "activity",
         PanelKind::Picker(true) => "switcher",
         PanelKind::Picker(false) => "commands",
         PanelKind::Hosts(_) => "hosts",
@@ -373,6 +388,7 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 Row {
                     key: format!("entry:{i}"),
                     surface: surface_id,
+                    activity: entry.activity.as_ref(),
                     label: &entry.label,
                     detail: &entry.detail,
                     keys: &entry.keys,
@@ -433,6 +449,8 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
     }
     if list_rows == 0 {
         let empty = match panel.kind {
+            PanelKind::Activity if s.query().is_empty() => "Nothing needs you.".into(),
+            PanelKind::Activity => "No matching activity.".into(),
             PanelKind::Directory(_) => panel
                 .error
                 .clone()
@@ -592,6 +610,16 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                         .key("popup-search")
                         .w_full(),
                 ),
+        );
+    }
+    if activity {
+        surface = surface.child(
+            row().h(28.).px(10.).center_y().child(
+                text(super::activity_list::COVERAGE)
+                    .font(ui(11.))
+                    .color(rgb(muted()))
+                    .truncate(),
+            ),
         );
     }
     let mut results = el().w_full().min_h(0.).child(scroller);

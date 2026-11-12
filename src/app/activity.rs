@@ -241,7 +241,7 @@ pub fn progress_bar(key: String, (percent, tone): (Option<u8>, u32), inset: f32)
     }
 }
 
-fn blocked_word(kind: Option<BlockedKind>) -> &'static str {
+pub(super) fn blocked_word(kind: Option<BlockedKind>) -> &'static str {
     match kind {
         Some(BlockedKind::Permission) => "Needs approval",
         Some(BlockedKind::Question) => "Question",
@@ -433,7 +433,12 @@ impl Workspace {
     }
 
     /// A tab's label, and "session · host" for a notification body.
-    fn describe_tab(&self, index: usize, session: &str, window: Option<&str>) -> (String, String) {
+    pub(super) fn describe_tab(
+        &self,
+        index: usize,
+        session: &str,
+        window: Option<&str>,
+    ) -> (String, String) {
         let model = &self.hosts[index].model;
         let view = model.views.get(session);
         let tab = view
@@ -468,8 +473,14 @@ impl Workspace {
 
     /// A notification was clicked: raise the window and show its session and tab.
     pub fn open_note(&mut self, target: NoteTarget, token: Option<String>, tx: &mut Tx) {
-        self.close_notifications(target.clone());
         self.handle.activate(token.unwrap_or_default());
+        self.show_noted_tab(target, tx);
+    }
+
+    /// Show the tab a notification or an Activity row is about, and close what this client
+    /// sent about it. The window is already in front for a row; only a click raises it.
+    pub fn show_noted_tab(&mut self, target: NoteTarget, tx: &mut Tx) {
+        self.close_notifications(target.clone());
         let Some(index) = self.host_index(target.host) else {
             return;
         };

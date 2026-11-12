@@ -466,6 +466,7 @@ impl Workspace {
     }
 
     pub fn sync(&mut self, index: usize, tx: &mut Tx) {
+        let activity_selection = self.activity_selection();
         let id = self.hosts[index].id;
         let old_session = self.hosts[index].model.selected.clone();
         let (mut model, notices, clipboard, bells, client_actions, performs) = {
@@ -597,6 +598,7 @@ impl Workspace {
         self.observe_navigation();
         self.ring_bells(index, bells);
         self.track_activity(index);
+        self.restore_activity_selection(activity_selection);
         self.deliver_program_notices(index, notices);
         if self
             .panel
@@ -673,7 +675,10 @@ impl Workspace {
         if focused {
             self.claimed.clear();
             self.claim_visible();
+            // Seeing the tab on screen can take its row out of an open Activity list.
+            let selection = self.activity_selection();
             self.track_activity(self.active);
+            self.restore_activity_selection(selection);
         }
     }
 
@@ -1268,6 +1273,7 @@ impl Workspace {
         }
         match action {
             Intent::Select(host, id) => self.select(host, id, tx),
+            Intent::ActivityTab(target) => self.choose_activity(target, tx),
             Intent::Tab(id) => {
                 if let Some(session) = self.model().selected.clone() {
                     self.select_window(self.active, session, id, tx);

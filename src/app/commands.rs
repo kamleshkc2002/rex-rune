@@ -415,6 +415,13 @@ impl Workspace {
             Command::new("session.switch", G, "Switch session…", Intent::Switcher)
                 .keywords("change find go to"),
             Command::action(
+                super::activity_list::ACTION,
+                G,
+                "Show activity…",
+                super::activity_list::ACTION,
+            )
+            .keywords("working needs you error done"),
+            Command::action(
                 "session.new",
                 G,
                 format!("New session on {host}"),

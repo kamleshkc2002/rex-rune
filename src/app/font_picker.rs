@@ -362,6 +362,7 @@ fn font_row(s: &Workspace, index: usize) -> El {
         Row {
             key: format!("font:{index}"),
             surface: "fonts",
+            activity: None,
             label: &family.name,
             detail,
             keys: &[],

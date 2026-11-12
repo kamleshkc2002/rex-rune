@@ -1,7 +1,7 @@
 //! Building blocks on the Midnight tokens: chrome icon buttons, pill buttons, list rows with a
 //! sliding highlight, scroll thumbs and hint lines.
 use super::{keycaps::keycaps, theme::*, workspace::Workspace};
-use rune::{Color, Cursor, El, Icon, Live, LiveText, ScrollPos, Tx, el, icon, row, text};
+use rune::{Color, Cursor, El, Icon, Live, LiveText, ScrollPos, Tx, col, el, icon, row, text};
 
 pub fn glyph(i: &'static Icon, size: f32, color: Color) -> El {
     icon(i, size).color(color)
@@ -115,6 +115,7 @@ pub fn pill(
 }
 
 pub struct Row<'a> {
+    pub activity: Option<&'a super::activity_list::Presentation>,
     pub key: String,
     /// The surface's own highlight id, so it slides within one list only.
     pub surface: &'a str,
@@ -183,7 +184,9 @@ pub fn list_row(
     } else {
         ink()
     });
-    let detail = if r.selected {
+    let detail = if let Some(activity) = r.activity {
+        rgb(activity.tone)
+    } else if r.selected {
         rgb(ink()).alpha(0.75)
     } else {
         rgb(muted())
@@ -227,6 +230,9 @@ pub fn list_row(
             el()
         }));
     }
+    if let Some(activity) = r.activity {
+        e = e.child(glyph(activity.icon, 15., rgb(muted())));
+    }
     let label = text(r.label.to_owned())
         .font(if r.selected { medium(13.) } else { ui(13.) })
         .color(fg)
@@ -240,9 +246,24 @@ pub fn list_row(
                 .child(label.help_when_truncated(r.label.to_owned())),
             Some(columns),
         ),
+        None if r.activity.is_some() => (label.w_full().shrink(), None),
         None => (label.grow(1.).shrink(), None),
     };
-    e = e.child(label);
+    e = e.child(if let Some(activity) = r.activity {
+        col().grow(1.).shrink().min_w(0.).child(label).child(
+            text(activity.place.clone())
+                .font(ui(11.))
+                .color(if r.selected {
+                    rgb(ink()).alpha(0.75)
+                } else {
+                    rgb(muted())
+                })
+                .truncate()
+                .help_when_truncated(activity.place.clone()),
+        )
+    } else {
+        label
+    });
     match r.actions.filter(|_| r.selected) {
         Some(actions) => e
             .child(actions)

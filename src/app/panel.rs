@@ -14,6 +14,7 @@ use serde_json::Value;
 pub enum Intent {
     Select(usize, String),
     Tab(String),
+    ActivityTab(super::notify::NoteTarget),
     /// A named client action shared with the shortcut dispatcher.
     ClientAction(&'static str, Value),
     Switcher,
@@ -134,7 +135,7 @@ impl Intent {
             Intent::InsertPath(_)
                 | Intent::Switcher
                 | Intent::ClientAction(
-                    "client.settings" | "session.switch" | super::about::ABOUT | super::recorder::EDIT,
+                    "client.settings" | "session.switch" | super::activity_list::ACTION | super::about::ABOUT | super::recorder::EDIT,
                     _
                 )
                 | Intent::Shortcuts(super::recorder::Menu::ResetAll)
@@ -324,6 +325,7 @@ impl SettingsSection {
 pub enum PanelKind {
     /// `true`: the session switcher; `false`: Commands.
     Picker(bool),
+    Activity,
     Hosts(String),
     SwitchHost,
     MovePane,
@@ -429,6 +431,7 @@ impl Panel {
             PanelKind::SwitchHost
                 | PanelKind::MovePane
                 | PanelKind::Picker(_)
+                | PanelKind::Activity
                 | PanelKind::Hosts(_)
                 | PanelKind::Pane
                 | PanelKind::Session
@@ -446,6 +449,7 @@ impl Panel {
 }
 
 pub struct Entry {
+    pub activity: Option<super::activity_list::Presentation>,
     pub label: String,
     pub detail: String,
     pub action: Intent,
@@ -477,6 +481,7 @@ impl Entry {
         action: Intent,
     ) -> Self {
         Self {
+            activity: None,
             label: label.into(),
             detail: detail.into(),
             group: group.into(),
@@ -714,6 +719,9 @@ impl Workspace {
                     e
                 })
                 .collect();
+        }
+        if matches!(panel.kind, PanelKind::Activity) {
+            return self.activity_entries(&lower);
         }
         if matches!(panel.kind, PanelKind::SwitchHost) {
             return self
