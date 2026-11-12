@@ -1,6 +1,6 @@
 # M2.10 — generated titles (unreleased)
 
-Implemented independently on `00c07aa`, without the broader W2 Terminal/font/settings-navigation work. The setting is a single Titles section on the existing Terminal page, implemented in `src/app/titles.rs`; it does not change the Settings shell or Shortcuts page.
+Initially implemented independently on `00c07aa`, then integrated onto `628cb5d` after PR #59, without the broader W2 Terminal/font/settings-navigation work. The setting is a single Titles section on the existing Terminal page, implemented in `src/app/titles.rs`; it does not change the Settings shell or Shortcuts page.
 
 ## Behavior
 
@@ -12,7 +12,7 @@ For a default tab or terminal-pane label:
 2. When the preference is on, a title set by the terminal's own shell, or no title, yields to the foreground program and directory: `vim - ~/rex`.
 3. Without a directory, show the program alone. Without a program, keep the current title or default label.
 
-User labels always win. As before, a name identical to the default (`Shell` for a tab, `shell` for a shell pane, or that window's generated `Window <suffix>`) is indistinguishable from an unrenamed label. Rename fields still start from the server label, not the generated display name.
+User labels always win. As before, a name identical to the default (`Shell` for a tab, `shell` for a shell pane, or that window's generated `Window <suffix>`) is indistinguishable from an unrenamed label. Rename fields start from the server label, not the generated display name. The Opus review caught the tab form retaining the display name; the fix and a headless open-form/save-unchanged regression now cover default, explicit and missing labels.
 
 One resolver supplies toolbar/sidebar tabs, pane headers and menus, Commands and search results, notification context, close targets and the window title. Names are display-only: no title/label writes, output changes, ownership claims or layout changes.
 
@@ -35,6 +35,7 @@ Adapted its unnamed-pane program/directory fallback, retained-home behavior and 
 - `cargo fmt --all -- --check`: passed.
 - `cargo clippy --locked --all-targets --all-features -- -D warnings`: passed; existing dependency warnings in vendored Rune remain.
 - `cargo test --locked --all-features`: passed, **272 library + 395 app + 7 integration tests**. Three existing ignores remain: Ghostty restored/resized search order, environment-dependent CJK fallback and the private-server OSC 133 contract.
+- After integration with #59 and the rename-form review fix, parent verification passed with **693 tests**, three ignored; fmt and clippy passed again.
 - Debug client build: passed. Built-client captures on a disposable Rex server, private HOME/config/state/socket: generated `vim - ~/rex` in both pane and tab; sidebar consistency; switch off restores the shell title; program-set title and explicit pane/tab renames win. The server was stopped by its owned PID.
 - Rendered and inspected Settings at **1440×1000** and **1024×700**, including the scrolled Titles row, switch, wrapped footnote and narrow-window layout. The existing card/switch tokens are unchanged. Impeccable's mechanical check reported no findings.
 - `.wtfm.yaml` manifest validation passed. README link/drift lint retains three pre-existing findings: missing TL;DR, missing tour heading, and the repository's intentional `Co-authored-by` policy text. Do not scrub required contributor attribution to satisfy that generic lint rule. The new evidence/harvest links resolve; linting the historical GAP-REPORT also finds its existing untracked screenshot-archive links, and applying README-only style/visual rules to supporting notes is not a clean docs check. These are reported, not silently rewritten.

@@ -493,7 +493,7 @@ struct ControlState {
     bootstrap_seq: u64,
     list_seq: u64,
     view_seq: HashMap<String, u64>,
-    /// Blocks whose program status (and process, if not streamed) were asked for.
+    /// Blocks whose program status, title and initial process metadata were asked for.
     queried: HashSet<String>,
     /// Unattached sessions fetched once with session.view to place their block events.
     viewed: HashSet<String>,
