@@ -67,6 +67,24 @@ fn enabled(rt: &Runtime<Workspace>, key: &str) -> bool {
 }
 
 #[test]
+fn about_project_rows_are_searchable_by_their_section_heading() {
+    let mut rt = settings(1, (1024., 700.));
+    rt.update(|s, _| {
+        s.settings_nav.search.text = "project".into();
+        s.settings_search_changed();
+    });
+    let found = hits(&rt);
+    for name in ["Repository", "Release notes", "License", "Issues"] {
+        assert!(
+            found
+                .iter()
+                .any(|(label, place)| label == name && place == "About"),
+            "{name}: {found:?}"
+        );
+    }
+}
+
+#[test]
 fn the_sidebar_lists_the_sections_in_groups_behind_their_tiles() {
     let rt = settings(1, (1440., 1000.));
     let elements = rt.elements();

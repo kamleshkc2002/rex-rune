@@ -360,6 +360,9 @@ pub fn section(s: &Workspace) -> El {
             .key("about-server"),
         );
     }
+    // Finish the metadata section before building Project rows so Settings search
+    // associates each row with the section it is actually drawn under.
+    let build = settings_kit::section("", [card(build)]);
     let links = [
         (
             "about-repository",
@@ -401,7 +404,7 @@ pub fn section(s: &Workspace) -> El {
     });
     page([
         header(s),
-        settings_kit::section("", [card(build)]),
+        build,
         settings_kit::section("Project", [card(links)]),
     ])
 }
