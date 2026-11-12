@@ -690,13 +690,7 @@ impl Workspace {
 
     #[cfg(not(test))]
     fn show_in_folder(&mut self, path: PathBuf) {
-        self.on_desktop("show", move || {
-            // The file manager's own call, which selects the file; else its folder.
-            if show_items(&path).is_ok() {
-                return Ok(());
-            }
-            xdg_open(path.parent().unwrap_or(Path::new("/")))
-        });
+        self.on_desktop("show", move || super::platform::open::reveal(&path));
     }
 
     /// Run a desktop call off the UI thread; a failure becomes a notice.
@@ -735,58 +729,4 @@ impl Workspace {
             })
             .ok()
     }
-}
-
-/// The `xdg-open` call for one absolute path, which is its only argument. `None` for a relative
-/// path, which `xdg-open` could read as an option or an URL.
-pub(super) fn xdg_open_command(target: &Path) -> Option<std::process::Command> {
-    use std::process::{Command, Stdio};
-    if !target.is_absolute() {
-        return None;
-    }
-    let mut command = Command::new("xdg-open");
-    command
-        .arg(target)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    Some(command)
-}
-
-/// Hand an absolute folder to the desktop's opener and wait for it. A failure is its text.
-#[cfg(not(test))]
-fn xdg_open(target: &Path) -> Result<(), String> {
-    let mut command = xdg_open_command(target).ok_or("not an absolute path")?;
-    match command.status() {
-        Ok(status) if status.success() => Ok(()),
-        Ok(status) => Err(status.to_string()),
-        Err(error) => Err(error.to_string()),
-    }
-}
-
-/// `org.freedesktop.FileManager1.ShowItems`: the file manager opens the folder with the file
-/// selected.
-#[cfg(not(test))]
-fn show_items(path: &Path) -> Result<(), String> {
-    let uri = url::Url::from_file_path(path).map_err(|()| "not an absolute path".to_owned())?;
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(|e| e.to_string())?;
-    runtime.block_on(async {
-        const NAME: &str = "org.freedesktop.FileManager1";
-        let call = async {
-            let conn = zbus::Connection::session().await?;
-            let proxy =
-                zbus::Proxy::new(&conn, NAME, "/org/freedesktop/FileManager1", NAME).await?;
-            proxy
-                .call::<_, _, ()>("ShowItems", &(vec![uri.to_string()], ""))
-                .await
-        };
-        match tokio::time::timeout(std::time::Duration::from_secs(5), call).await {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(error)) => Err(error.to_string()),
-            Err(_) => Err("the file manager did not answer".into()),
-        }
-    })
 }

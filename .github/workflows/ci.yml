@@ -1,0 +1,102 @@
+name: CI
+
+# Every pull request and every push to master, on the three platforms the client builds
+# for. Linux is the released platform and runs everything. macOS builds the app and runs
+# the tests. Windows is a compile probe for now; it grows as the port does
+# (docs/plans/cross-platform.md).
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Native and desktop integration dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config desktop-file-utils libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libegl1-mesa-dev libgl1-mesa-dev libvulkan-dev mesa-vulkan-drivers
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+      - name: Formatting
+        run: cargo fmt --all -- --check
+      - name: Library and probes, without the UI
+        run: cargo check --locked --no-default-features
+      - name: Lint every target and feature
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Unit, headless UI and signed updater tests
+        run: cargo test --locked --all-features
+      - name: Vendored SDK tests
+        run: cargo test --manifest-path vendor/rexrs/Cargo.toml --all-features
+
+  macos:
+    name: macOS
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+      - name: Library and probes, without the UI
+        run: cargo check --locked --no-default-features
+      - name: Lint every target and feature
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Build the app
+        run: cargo build --locked --bin rex-rune
+      - name: The app starts
+        run: |
+          test "$(target/debug/rex-rune --version)" = "rex-rune $(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          target/debug/rex-rune --help > /dev/null
+      - name: Unit and headless UI tests
+        run: cargo test --locked --all-features
+
+  windows:
+    name: Windows (compile probe)
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+      # ghostty-vt-sys downloads the Ghostty source itself, but through the system TLS stack,
+      # which rejects the host's certificate chain on this runner. Fetch the same pinned
+      # archive with curl, check it against the hash in the crate's GHOSTTY.lock, and hand
+      # the build script the extracted tree.
+      - name: Ghostty source
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSLo "$RUNNER_TEMP/ghostty.tar.gz" https://tip.files.ghostty.org/83fb95624b0439ee660c2679b43b38c8b63769cd/libghostty-vt-source.tar.gz
+          echo "ed57ae9b95581c88f2614e976c1d3f146c02d443a3c26139200eb9de6e645eb4  $RUNNER_TEMP/ghostty.tar.gz" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/ghostty"
+          "$SYSTEMROOT/System32/tar.exe" -xzf "$(cygpath -w "$RUNNER_TEMP/ghostty.tar.gz")" -C "$(cygpath -w "$RUNNER_TEMP/ghostty")" --strip-components=1
+          echo "GHOSTTY_SOURCE_DIR=$(cygpath -w "$RUNNER_TEMP/ghostty")" >> "$GITHUB_ENV"
+      - name: libghostty-vt with Zig for MSVC
+        shell: bash
+        run: cargo build --locked -p ghostty-vt

@@ -230,8 +230,8 @@ impl Partial {
         let mut file = self.file.take().context("The download file is closed")?;
         file.flush().await.context("Writing the file")?;
         file.sync_all().await.context("Writing the file to disk")?;
-        let mode = 0o644 & !current_umask();
-        check(unsafe { libc::fchmod(file.as_raw_fd(), mode) })
+        let mode = 0o644 & !crate::platform::process::umask();
+        check(unsafe { libc::fchmod(file.as_raw_fd(), mode as libc::mode_t) })
             .context("Setting file permissions")?;
         drop(file);
         let dir = self.dir.fd.as_raw_fd();
@@ -289,28 +289,12 @@ impl Drop for Partial {
 /// partial name is gone, `Ok(false)` when the file is saved but the partial name remains as a
 /// second hard link (only the link-and-unlink fallback can leave it).
 fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<bool> {
-    const RENAME_NOREPLACE: libc::c_uint = 1;
     if how == Placement::Auto {
-        let result = unsafe {
-            libc::syscall(
-                libc::SYS_renameat2,
-                dir,
-                from.as_ptr(),
-                dir,
-                to.as_ptr(),
-                RENAME_NOREPLACE,
-            )
-        };
-        if result == 0 {
-            return Ok(true);
-        }
-        let error = io::Error::last_os_error();
-        // The filesystem, or an old kernel, doesn't know the flag.
-        if !matches!(
-            error.raw_os_error(),
-            Some(libc::EINVAL | libc::ENOSYS | libc::EOPNOTSUPP)
-        ) {
-            return Err(error);
+        match crate::platform::fs::rename_no_replace(dir, from, to) {
+            Ok(()) => return Ok(true),
+            // The system, the filesystem or an old kernel can't: link and unlink instead.
+            Err(error) if crate::platform::fs::no_replace_unsupported(&error) => {}
+            Err(error) => return Err(error),
         }
     }
     // linkat fails if the name exists and never replaces it.
@@ -324,22 +308,10 @@ fn place(dir: RawFd, from: &CStr, to: &CStr, how: Placement) -> io::Result<bool>
     Ok(unlink_at(dir, from).is_ok())
 }
 
-/// The process umask, read without changing it (`umask(2)` can only set it).
-fn current_umask() -> u32 {
-    std::fs::read_to_string("/proc/self/status")
-        .ok()
-        .and_then(|status| {
-            let line = status.lines().find_map(|l| l.strip_prefix("Umask:"))?;
-            u32::from_str_radix(line.trim(), 8).ok()
-        })
-        .unwrap_or(0o022)
-        & 0o777
-}
-
 // -- Folder choice --------------------------------------------------------------------------
 
 fn home_dir() -> PathBuf {
-    PathBuf::from(std::env::var_os("HOME").unwrap_or_default())
+    crate::platform::dirs::home()
 }
 
 fn config_home() -> PathBuf {
@@ -419,7 +391,8 @@ struct RecordFile {
     partials: Vec<Record>,
 }
 
-/// `$XDG_STATE_HOME/rex-rune/downloads.json`: the partial files this app has made. Only these
+/// `downloads.json` in the state folder ([`crate::platform::dirs::state`]): the partial files
+/// this app has made. Only these
 /// are ever deleted after a crash, and only if they still look like a partial file. Updates are
 /// serialised within the process; two running apps updating the file at the same instant can
 /// still lose an entry (the file is replaced whole, never half written).
@@ -430,16 +403,8 @@ pub struct Records {
 
 impl Default for Records {
     fn default() -> Self {
-        Self::at(crate::update::xdg_state_dir().join("rex-rune/downloads.json"))
+        Self::at(crate::platform::dirs::state().join("downloads.json"))
     }
-}
-
-/// The start time of a process in clock ticks, which with its id names it for good.
-fn process_start(pid: u32) -> Option<u64> {
-    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    // The command name is in parentheses and may hold anything; the fields follow its last one.
-    let rest = &stat[stat.rfind(')')? + 1..];
-    rest.split_whitespace().nth(19)?.parse().ok()
 }
 
 /// Serialises every load-modify-save of a records file in this process: each host runs on its
@@ -450,6 +415,20 @@ static TEMPORARIES: AtomicU64 = AtomicU64::new(0);
 
 fn records_lock() -> std::sync::MutexGuard<'static, ()> {
     RECORDS_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+impl Record {
+    /// Whether the client that made this partial file is still running, so the file is
+    /// left alone. A wrong "no" deletes a download in progress, so doubt counts as yes: a
+    /// record made where the start time could not be read is running for as long as any
+    /// process has its id.
+    fn running(&self) -> bool {
+        use crate::platform::process;
+        if self.started == 0 {
+            return process::exists(self.pid);
+        }
+        process::start_time(self.pid) == Some(self.started)
+    }
 }
 
 impl Records {
@@ -494,7 +473,7 @@ impl Records {
             dir: dir.into(),
             name: name.into(),
             pid,
-            started: process_start(pid).unwrap_or(0),
+            started: crate::platform::process::start_time(pid).unwrap_or(0),
             created: unix_now(),
         });
         self.save(&file)
@@ -538,8 +517,7 @@ impl Records {
         let mut keep = Vec::new();
         let mut deleted = Vec::new();
         for mut record in file.partials {
-            let running = record.started != 0 && process_start(record.pid) == Some(record.started);
-            if running {
+            if record.running() {
                 keep.push(record);
                 continue;
             }

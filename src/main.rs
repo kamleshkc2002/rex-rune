@@ -1,6 +1,8 @@
 mod app;
 
 fn main() -> anyhow::Result<()> {
+    // Read once while this is the only thread: off Linux it is read by setting it.
+    rex_rune::platform::process::umask();
     let options = rex_rune::connection::Options::from_command_line();
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     use rex_rune::update::installer::Recovery;

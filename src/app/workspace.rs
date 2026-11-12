@@ -812,7 +812,7 @@ impl Workspace {
         self.push_notice(text.into(), false);
     }
 
-    /// Hand `uri` to the desktop's handler with `xdg-open`, off the UI thread. A failure
+    /// Hand `uri` to the desktop's handler (`platform::open`), off the UI thread. A failure
     /// becomes a notice.
     pub fn open_link(&mut self, uri: String) {
         #[cfg(test)]
@@ -827,17 +827,9 @@ impl Workspace {
         let _ = std::thread::Builder::new()
             .name("rex-open-link".into())
             .spawn(move || {
-                use std::process::{Command, Stdio};
-                let error = match Command::new("xdg-open")
-                    .arg(&uri)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .status()
-                {
-                    Ok(status) if status.success() => return,
-                    Ok(status) => status.to_string(),
-                    Err(error) => error.to_string(),
+                use super::platform::open;
+                let Err(error) = open::run(open::command(&uri)) else {
+                    return;
                 };
                 handle.update(move |s, _| s.notify(format!("Couldn't open {uri}: {error}")));
             });

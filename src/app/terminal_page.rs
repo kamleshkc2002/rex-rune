@@ -196,67 +196,75 @@ fn selection(s: &Workspace, inks: &Inks) -> El {
     section(
         "Selection",
         [
-            card([
-                preview(
-                    s,
-                    "selection-preview",
-                    "Selection preview: selected terminal text in the chosen colours.",
-                    inks,
-                    &sample,
-                ),
-                setting(
-                    "Copy on selection",
-                    "Copy selected text when you release the pointer.",
-                    toggle(
-                        "copy-on-selection",
+            card(
+                [
+                    preview(
+                        s,
+                        "selection-preview",
+                        "Selection preview: selected terminal text in the chosen colours.",
+                        inks,
+                        &sample,
+                    ),
+                    setting(
                         "Copy on selection",
-                        config.copy_on_selection,
-                        |c| &mut c.copy_on_selection,
+                        "Copy selected text when you release the pointer.",
+                        toggle(
+                            "copy-on-selection",
+                            "Copy on selection",
+                            config.copy_on_selection,
+                            |c| &mut c.copy_on_selection,
+                        ),
                     ),
-                ),
-                setting(
-                    "Primary selection",
-                    "Selecting also sets the primary selection, and a middle-click pastes it.",
-                    toggle(
-                        "primary-selection",
+                ]
+                .into_iter()
+                // A desktop without a primary selection is not offered the setting.
+                .chain(super::platform::selection::AVAILABLE.then(|| {
+                    setting(
                         "Primary selection",
-                        config.primary_selection,
-                        |c| &mut c.primary_selection,
+                        "Selecting also sets the primary selection, and a middle-click pastes it.",
+                        toggle(
+                            "primary-selection",
+                            "Primary selection",
+                            config.primary_selection,
+                            |c| &mut c.primary_selection,
+                        ),
+                    )
+                }))
+                .chain([
+                    select_row(
+                        "selection-foreground",
+                        "Foreground",
+                        "",
+                        &names,
+                        at(config.selection_foreground),
+                        |s, i, _| {
+                            s.settings.terminal.selection_foreground = selection_color(i);
+                            s.save();
+                        },
                     ),
-                ),
-                select_row(
-                    "selection-foreground",
-                    "Foreground",
-                    "",
-                    &names,
-                    at(config.selection_foreground),
-                    |s, i, _| {
-                        s.settings.terminal.selection_foreground = selection_color(i);
-                        s.save();
-                    },
-                ),
-                select_row(
-                    "selection-background",
-                    "Background",
-                    "",
-                    &names,
-                    at(config.selection_background),
-                    |s, i, _| {
-                        s.settings.terminal.selection_background = selection_color(i);
-                        s.save();
-                    },
-                ),
-                setting(
-                    "Rounded corners",
-                    "",
-                    toggle(
-                        "selection-rounded",
+                    select_row(
+                        "selection-background",
+                        "Background",
+                        "",
+                        &names,
+                        at(config.selection_background),
+                        |s, i, _| {
+                            s.settings.terminal.selection_background = selection_color(i);
+                            s.save();
+                        },
+                    ),
+                    setting(
                         "Rounded corners",
-                        config.selection_rounded,
-                        |c| &mut c.selection_rounded,
+                        "",
+                        toggle(
+                            "selection-rounded",
+                            "Rounded corners",
+                            config.selection_rounded,
+                            |c| &mut c.selection_rounded,
+                        ),
                     ),
-                ),
-            ]),
+                ]),
+            ),
             footnote(
                 "Theme uses the terminal theme's selection colours; Cell foreground and Cell background use each selected cell's own.",
             ),

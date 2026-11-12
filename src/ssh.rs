@@ -190,10 +190,7 @@ impl Target {
 
 /// Where every process's tunnel sockets live.
 fn tunnels_directory() -> PathBuf {
-    match std::env::var("XDG_RUNTIME_DIR") {
-        Ok(runtime) if !runtime.is_empty() => PathBuf::from(runtime).join("rex-rune"),
-        _ => std::env::temp_dir().join(format!("rex-rune-{}", uid())),
-    }
+    crate::platform::dirs::runtime()
 }
 
 /// Remove the socket directories of processes that are gone, which a crash or a kill leaves
@@ -211,24 +208,10 @@ fn sweep_stale_tunnels(directory: &std::path::Path) {
         else {
             continue;
         };
-        if pid != std::process::id() && !process_exists(pid) {
+        if pid != std::process::id() && !crate::platform::process::exists(pid) {
             let _ = std::fs::remove_dir_all(entry.path());
         }
     }
-}
-
-fn process_exists(pid: u32) -> bool {
-    std::path::Path::new("/proc").join(pid.to_string()).exists()
-}
-
-fn uid() -> String {
-    std::fs::metadata("/proc/self")
-        .ok()
-        .map(|m| {
-            use std::os::unix::fs::MetadataExt;
-            m.uid().to_string()
-        })
-        .unwrap_or_else(|| "user".into())
 }
 
 /// Finds the Rex socket on the other machine, trying in order: the path `rex server status`
@@ -272,19 +255,14 @@ impl Tunnel {
         let remote = resolve(target).await?;
         let local = target.local_socket();
         if let Some(parent) = local.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .with_context(|| format!("create {}", parent.display()))?;
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                for directory in [parent, parent.parent().unwrap_or(parent)] {
-                    let _ = tokio::fs::set_permissions(
-                        directory,
-                        std::fs::Permissions::from_mode(0o700),
+            // Every process's folder, then this one's: each ours alone, or no tunnel.
+            for directory in [parent.parent().unwrap_or(parent), parent] {
+                crate::platform::dirs::private(directory).with_context(|| {
+                    format!(
+                        "{} is not a private folder for the tunnel",
+                        directory.display()
                     )
-                    .await;
-                }
+                })?;
             }
             if let Some(all) = parent.parent() {
                 sweep_stale_tunnels(all);

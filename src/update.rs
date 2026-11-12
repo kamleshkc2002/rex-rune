@@ -1,6 +1,11 @@
 //! Low-cost, privacy-respecting release metadata check, Minisign verification, install-channel
 //! detection, and persistent update state. Metadata checks never download binaries.
-//! `installer` explicitly updates verified, user-writable install.sh installations.
+//! `installer` explicitly updates verified, user-writable install.sh installations, on Linux;
+//! other platforms get the same interface with nothing behind it.
+#[cfg(target_os = "linux")]
+pub mod installer;
+#[cfg(not(target_os = "linux"))]
+#[path = "update/no_installer.rs"]
 pub mod installer;
 use anyhow::{Context, Result, bail, ensure};
 use base64::Engine as _;
@@ -462,8 +467,12 @@ struct InstallReceipt {
 }
 
 impl InstallChannel {
-    /// Detect the install channel of the running process.
+    /// Detect the install channel of the running process. Only Linux has releases, packages
+    /// and receipts; anywhere else the client was built from source.
     pub fn detect() -> Self {
+        if !crate::platform::HAS_RELEASES {
+            return Self::Source;
+        }
         let exe = std::env::current_exe().ok();
         let data_dir = xdg_data_dir();
         let os_release = fs::read_to_string("/etc/os-release").ok();
@@ -753,7 +762,7 @@ fn hex_sha256(bytes: &[u8]) -> String {
     out
 }
 
-/// Persistent update check state stored in `$XDG_STATE_HOME/rex-rune/update.json`.
+/// Persistent update check state: `update.json` in [`crate::platform::dirs::state`].
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UpdateState {
@@ -769,7 +778,7 @@ pub struct UpdateState {
 
 impl UpdateState {
     pub fn default_path() -> PathBuf {
-        xdg_state_dir().join("rex-rune/update.json")
+        crate::platform::dirs::state().join("update.json")
     }
 
     pub fn load(path: &Path) -> Self {
@@ -1143,15 +1152,6 @@ fn xdg_data_dir() -> PathBuf {
         .filter(|p| p.is_absolute())
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".local/share")
-        })
-}
-
-pub(crate) fn xdg_state_dir() -> PathBuf {
-    std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .filter(|p| p.is_absolute())
-        .unwrap_or_else(|| {
-            PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".local/state")
         })
 }
 

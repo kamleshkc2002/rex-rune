@@ -28,6 +28,8 @@ use std::{
 const MIB: u64 = 1024 * 1024;
 
 fn main() -> Result<()> {
+    // Read once while this is the only thread: off Linux it is read by setting it.
+    rex_rune::platform::process::umask();
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -201,9 +203,19 @@ async fn run() -> Result<()> {
         .context("usage: rex-download-probe <endpoint> <work-dir> [server-pid]")?;
     let work = PathBuf::from(args.next().context("work directory")?);
     let server_pid = args.next().map(|p| p.parse()).transpose()?;
+    // Never this user's own server, however its socket is spelled.
+    let resolved = |path: &std::path::Path| std::fs::canonicalize(path).unwrap_or(path.into());
+    let own = resolved(&rex_rune::platform::local::default_socket());
+    let disposable = endpoint
+        .strip_prefix("unix://")
+        .is_some_and(|path| resolved(std::path::Path::new(path)) != own);
     ensure!(
-        endpoint.starts_with("unix://") && !endpoint.contains("/run/user/"),
+        disposable && !endpoint.contains("/run/user/"),
         "refusing {endpoint}: pass the socket of a disposable server you started"
+    );
+    ensure!(
+        server_pid.is_none_or(|pid: u32| std::path::Path::new(&format!("/proc/{pid}/fd")).is_dir()),
+        "a server pid can only be checked where /proc lists its open files; leave it out here"
     );
     let work = std::fs::canonicalize({
         std::fs::create_dir_all(&work)?;

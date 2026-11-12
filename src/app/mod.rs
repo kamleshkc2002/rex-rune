@@ -32,6 +32,7 @@ mod pane_moves;
 mod pane_verbs;
 mod panel;
 mod panes;
+mod platform;
 mod popups;
 mod recorder;
 mod remote;

@@ -694,13 +694,9 @@ async fn a_partial_file_is_private_until_finished_then_world_readable_never_exec
     assert!(records.list().is_empty());
 }
 
+/// The umask as the store reads it: the real one on Linux, 022 where it cannot be read.
 fn umask() -> u32 {
-    let status = std::fs::read_to_string("/proc/self/status").unwrap();
-    let line = status
-        .lines()
-        .find_map(|l| l.strip_prefix("Umask:"))
-        .unwrap();
-    u32::from_str_radix(line.trim(), 8).unwrap()
+    crate::platform::process::umask()
 }
 
 #[tokio::test]
@@ -1382,4 +1378,27 @@ fn the_low_space_failure_rounds_like_the_question() {
     );
     assert!(text.contains("105 MB free"), "{text}");
     assert!(!text.contains("104"), "{text}");
+}
+
+/// A record whose start time could not be read when it was made (`started` is 0, which is
+/// every record on a platform that cannot say) must not count as abandoned while a process
+/// has its id: deleting a download in progress is the worse mistake.
+#[test]
+fn a_record_without_a_start_time_is_kept_while_its_process_id_is_in_use() {
+    let temp = Temp::new("no-start-time");
+    let dir = temp.dir("out");
+    let records = temp.records();
+    let live = format!(".live.{UUID_A}.rex-part");
+    let dead = format!(".dead.{UUID_B}.rex-part");
+    for name in [&live, &dead] {
+        std::fs::write(dir.join(name), b"partial").unwrap();
+    }
+    let ours = leftover(&dir, &live, std::process::id(), 0);
+    write_records(&records, &[ours.clone(), leftover(&dir, &dead, DEAD, 0)]);
+    assert_eq!(
+        records.clean_up_leftovers_at(1_800_000_000),
+        [dir.join(&dead)]
+    );
+    assert_eq!(names(&dir), [live.as_str()]);
+    assert_eq!(records.list(), [ours]);
 }

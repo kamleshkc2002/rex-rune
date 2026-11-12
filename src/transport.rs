@@ -16,10 +16,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin + Send> Io for T {}
 pub type Socket = WebSocketStream<tokio_tungstenite::MaybeTlsStream<Box<dyn Io>>>;
 
 pub fn local_endpoint() -> String {
-    std::env::var("REX_SERVER").unwrap_or_else(|_| {
-        let runtime = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".into());
-        format!("unix://{runtime}/rex/server.sock")
-    })
+    crate::platform::local::default_endpoint()
 }
 
 async fn io(endpoint: &str, url: &url::Url) -> Result<Box<dyn Io>> {
@@ -48,7 +45,7 @@ fn detect_silent_peer(tcp: &tokio::net::TcpStream) -> std::io::Result<()> {
             .with_interval(Duration::from_secs(5))
             .with_retries(3),
     )?;
-    socket.set_tcp_user_timeout(Some(Duration::from_secs(30)))
+    crate::platform::net::set_unacknowledged_limit(tcp, Duration::from_secs(30))
 }
 
 pub async fn socket(endpoint: &str, path: &str, protocol: &str) -> Result<Socket> {
@@ -281,9 +278,12 @@ mod tests {
             Duration::from_secs(5)
         );
         assert_eq!(socket.tcp_keepalive_retries().unwrap(), 3);
-        assert_eq!(
-            socket.tcp_user_timeout().unwrap(),
-            Some(Duration::from_secs(30))
-        );
+        // Linux and macOS have an option for it; elsewhere keepalive is all there is.
+        let limit = crate::platform::net::unacknowledged_limit(&tcp).unwrap();
+        if cfg!(any(target_os = "linux", target_os = "macos")) {
+            assert_eq!(limit, Some(Duration::from_secs(30)));
+        } else {
+            assert_eq!(limit, None);
+        }
     }
 }

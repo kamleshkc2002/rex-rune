@@ -21,11 +21,10 @@ pub fn invoked_as_legacy() -> bool {
 /// only while the new one does not exist, so nothing is ever merged or overwritten, and a
 /// failure leaves both names as they were. Returns what was moved, for the caller to report.
 pub fn migrate_user_dirs() -> Vec<(PathBuf, PathBuf)> {
-    let roots = [
-        crate::settings::Settings::config_dir(),
-        crate::update::xdg_state_dir(),
-    ];
-    roots.iter().filter_map(|root| migrate_dir(root)).collect()
+    crate::platform::dirs::legacy_bases()
+        .iter()
+        .filter_map(|root| migrate_dir(root))
+        .collect()
 }
 
 fn migrate_dir(root: &Path) -> Option<(PathBuf, PathBuf)> {

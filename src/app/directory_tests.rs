@@ -684,10 +684,13 @@ fn typing_in_the_real_field_only_lists_and_closed_replies_are_ignored() {
     let r = request(&rx);
     reply(&mut ws, &r, Ok(response()));
     let mut rt = runtime(ws);
+    // Select all, with the modifier this platform's keyboard sends for it: Command on
+    // macOS; Control elsewhere, where Rune reports `cmd` along with it.
     rt.key(KeyEvent {
         key: Key::Command('a'),
         mods: Mods {
-            ctrl: true,
+            ctrl: !cfg!(target_os = "macos"),
+            cmd: true,
             ..Default::default()
         },
     });

@@ -351,7 +351,7 @@ fn pane_card(
                     Cursor::Text
                 });
             // Middle presses go to mouse-reporting programs, or opt-in PRIMARY paste.
-            if t.tracking() || s.settings.terminal.primary_selection {
+            if t.tracking() || s.primary_selection() {
                 grid = grid.pointer_buttons([PointerButton::Middle]);
             }
             let grid = grid
@@ -380,8 +380,7 @@ fn pane_card(
                 .on_drag(move |s: &mut Workspace, d, tx| {
                     let cell = s.metrics().cell;
                     let focused = s.focused_block().as_deref() == Some(k2.1.as_str());
-                    let copies = s.settings.terminal.copy_on_selection
-                        || s.settings.terminal.primary_selection;
+                    let copies = s.settings.terminal.copy_on_selection || s.primary_selection();
                     let Some(t) = s.terminals.get_mut(&k2) else {
                         return;
                     };

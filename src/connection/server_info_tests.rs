@@ -48,6 +48,8 @@ async fn identity_is_read_once_per_connection_and_a_refusal_is_quiet() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}", listener.local_addr().unwrap());
     let (hang_up, hung_up) = tokio::sync::oneshot::channel::<()>();
+    // The test reads the status the bootstrap brought before the server replaces it.
+    let (first_read, first_seen) = tokio::sync::oneshot::channel::<()>();
     let server = tokio::spawn(async move {
         // A current server: the welcome carries the range, the bootstrap reply the status,
         // and the version read answers.
@@ -85,6 +87,7 @@ async fn identity_is_read_once_per_connection_and_a_refusal_is_quiet() {
         .await;
         // The server says its Tailscale state changed: the status is read again, the
         // version is not.
+        first_seen.await.unwrap();
         send(&mut ws, json!({"type":"event","seq":2,"payload":{"type":"tailscale_status_changed","payload":{}}})).await;
         let again = recv(&mut ws).await;
         assert_eq!(again["method"], "server.status");
@@ -127,6 +130,7 @@ async fn identity_is_read_once_per_connection_and_a_refusal_is_quiet() {
     assert_eq!((process.pid, process.session_count), (Some(4242), Some(2)));
     assert_eq!(process.instance_id.as_deref(), Some("instance:1"));
     assert_eq!(process.started_at.as_deref(), Some("2026-11-10T08:00:00Z"));
+    first_read.send(()).unwrap();
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let state = {

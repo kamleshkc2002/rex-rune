@@ -308,15 +308,8 @@ impl Settings {
             .unwrap_or_else(hostname)
     }
 
-    pub(crate) fn config_dir() -> PathBuf {
-        std::env::var_os("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
-            })
-    }
     pub fn path() -> PathBuf {
-        Self::config_dir().join("rex-rune/workspace.json")
+        crate::platform::dirs::config().join("workspace.json")
     }
     pub fn load_default() -> Result<(Self, PathBuf)> {
         let path = Self::path();
