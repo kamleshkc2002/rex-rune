@@ -1,0 +1,3110 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 101,
+  "snapshot_id": "s2wmqwodggd1hl",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s2wmqwodggd1hl:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s2wmqwodggd1hl:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s2wmqwodggd1hl:e9",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s2wmqwodggd1hl:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s2wmqwodggd1hl:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s2wmqwodggd1hl:e22",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s2wmqwodggd1hl:e25",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s2wmqwodggd1hl:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s2wmqwodggd1hl:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s2wmqwodggd1hl:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s2wmqwodggd1hl:e39",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2wmqwodggd1hl:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2wmqwodggd1hl:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s2wmqwodggd1hl:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s2wmqwodggd1hl:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 523.0,
+                      "x": 1372.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 523.0,
+                          "x": 1372.0,
+                          "y": 170.0
+                        },
+                        "name": "Filter Shortcuts",
+                        "ref_id": "@s2wmqwodggd1hl:e41",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s2wmqwodggd1hl:e40",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 2430.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": -707.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 42.0,
+                              "x": 1349.0,
+                              "y": -707.0
+                            },
+                            "name": "Global",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 96.0,
+                              "x": 1349.0,
+                              "y": -670.0
+                            },
+                            "name": "Toggle Visibility",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Toggle Visibility"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -674.0
+                            },
+                            "name": "Record a shortcut for Toggle Visibility",
+                            "ref_id": "@s2wmqwodggd1hl:e43",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 295.0,
+                              "x": 1349.0,
+                              "y": -635.0
+                            },
+                            "name": "Works from any app: shows Rex, or hides it when it's in front.",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Works from any app: shows Rex, or hides it when it's in front."
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 52.0,
+                              "x": 1349.0,
+                              "y": -592.0
+                            },
+                            "name": "Window",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 79.0,
+                              "x": 1349.0,
+                              "y": -555.0
+                            },
+                            "name": "New Window",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "New Window"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -559.0
+                            },
+                            "name": "Change the shortcut for New Window",
+                            "ref_id": "@s2wmqwodggd1hl:e44",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command N"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 87.0,
+                              "x": 1349.0,
+                              "y": -516.0
+                            },
+                            "name": "Close Window",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close Window"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -520.0
+                            },
+                            "name": "Change the shortcut for Close Window",
+                            "ref_id": "@s2wmqwodggd1hl:e45",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command W"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 112.0,
+                              "x": 1349.0,
+                              "y": -477.0
+                            },
+                            "name": "Toggle Full Screen",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Toggle Full Screen"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -481.0
+                            },
+                            "name": "Change the shortcut for Toggle Full Screen",
+                            "ref_id": "@s2wmqwodggd1hl:e46",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Control Command F"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 35.0,
+                              "x": 1349.0,
+                              "y": -438.0
+                            },
+                            "name": "Close",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -442.0
+                            },
+                            "name": "Change the shortcut for Close",
+                            "ref_id": "@s2wmqwodggd1hl:e47",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command W"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 27.0,
+                              "x": 1349.0,
+                              "y": -381.0
+                            },
+                            "name": "App",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 118.0,
+                              "x": 1349.0,
+                              "y": -344.0
+                            },
+                            "name": "Command Palette\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command Palette\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -348.0
+                            },
+                            "name": "Change the shortcut for Command Palette\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e48",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command P"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 61.0,
+                              "x": 1349.0,
+                              "y": -305.0
+                            },
+                            "name": "Settings\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Settings\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -309.0
+                            },
+                            "name": "Change the shortcut for Settings\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e49",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command ,"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 97.0,
+                              "x": 1349.0,
+                              "y": -266.0
+                            },
+                            "name": "Rex Diagnostics",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Rex Diagnostics"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -270.0
+                            },
+                            "name": "Change the shortcut for Rex Diagnostics",
+                            "ref_id": "@s2wmqwodggd1hl:e50",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command ,"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 169.0,
+                              "x": 1349.0,
+                              "y": -227.0
+                            },
+                            "name": "Open Onboarding Session\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Open Onboarding Session\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -231.0
+                            },
+                            "name": "Record a shortcut for Open Onboarding Session\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e51",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 170.0,
+                              "x": 1349.0,
+                              "y": -188.0
+                            },
+                            "name": "Grant System Permissions\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Grant System Permissions\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -192.0
+                            },
+                            "name": "Record a shortcut for Grant System Permissions\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e52",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 107.0,
+                              "x": 1349.0,
+                              "y": -149.0
+                            },
+                            "name": "Copy Version Info",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Copy Version Info"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -153.0
+                            },
+                            "name": "Record a shortcut for Copy Version Info",
+                            "ref_id": "@s2wmqwodggd1hl:e53",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 102.0,
+                              "x": 1349.0,
+                              "y": -110.0
+                            },
+                            "name": "Copy Debug Info",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Copy Debug Info"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -114.0
+                            },
+                            "name": "Record a shortcut for Copy Debug Info",
+                            "ref_id": "@s2wmqwodggd1hl:e54",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 165.0,
+                              "x": 1349.0,
+                              "y": -71.0
+                            },
+                            "name": "Pair Device with QR Code\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Pair Device with QR Code\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -75.0
+                            },
+                            "name": "Record a shortcut for Pair Device with QR Code\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e55",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 84.0,
+                              "x": 1349.0,
+                              "y": -32.0
+                            },
+                            "name": "Install Update",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Install Update"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -36.0
+                            },
+                            "name": "Change the shortcut for Install Update",
+                            "ref_id": "@s2wmqwodggd1hl:e56",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command U"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 118.0,
+                              "x": 1349.0,
+                              "y": 7.0
+                            },
+                            "name": "Relaunch when Idle",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Relaunch when Idle"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 3.0
+                            },
+                            "name": "Change the shortcut for Relaunch when Idle",
+                            "ref_id": "@s2wmqwodggd1hl:e57",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Shift Command U"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 204.0,
+                              "x": 1349.0,
+                              "y": 46.0
+                            },
+                            "name": "Check for Updates in Background",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Check for Updates in Background"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 42.0
+                            },
+                            "name": "Record a shortcut for Check for Updates in Background",
+                            "ref_id": "@s2wmqwodggd1hl:e58",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 131.0,
+                              "x": 1349.0,
+                              "y": 85.0
+                            },
+                            "name": "Report Update Status",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Report Update Status"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 81.0
+                            },
+                            "name": "Record a shortcut for Report Update Status",
+                            "ref_id": "@s2wmqwodggd1hl:e59",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 169.0,
+                              "x": 1349.0,
+                              "y": 124.0
+                            },
+                            "name": "Install Update and Relaunch",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Install Update and Relaunch"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 120.0
+                            },
+                            "name": "Record a shortcut for Install Update and Relaunch",
+                            "ref_id": "@s2wmqwodggd1hl:e60",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 141.0,
+                              "x": 1349.0,
+                              "y": 163.0
+                            },
+                            "name": "Set Update Automation",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Set Update Automation"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 159.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e61",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 122.0,
+                              "x": 1349.0,
+                              "y": 202.0
+                            },
+                            "name": "Set Update Channel",
+                            "role": "statictext",
+                            "value": "Set Update Channel"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 198.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e62",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 241.0
+                            },
+                            "name": "Dismiss Notice",
+                            "role": "statictext",
+                            "value": "Dismiss Notice"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 237.0
+                            },
+                            "name": "Change the shortcut for Dismiss Notice",
+                            "ref_id": "@s2wmqwodggd1hl:e63",
+                            "role": "button",
+                            "value": "Shift Command ."
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 113.0,
+                              "x": 1349.0,
+                              "y": 280.0
+                            },
+                            "name": "Change Shortcut\u2026",
+                            "role": "statictext",
+                            "value": "Change Shortcut\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 276.0
+                            },
+                            "name": "Record a shortcut for Change Shortcut\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e64",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 128.0,
+                              "x": 1349.0,
+                              "y": 319.0
+                            },
+                            "name": "Install Rex for Agents",
+                            "role": "statictext",
+                            "value": "Install Rex for Agents"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 315.0
+                            },
+                            "name": "Record a shortcut for Install Rex for Agents",
+                            "ref_id": "@s2wmqwodggd1hl:e65",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 97.0,
+                              "x": 1349.0,
+                              "y": 358.0
+                            },
+                            "name": "Restart Server\u2026",
+                            "role": "statictext",
+                            "value": "Restart Server\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 354.0
+                            },
+                            "name": "Record a shortcut for Restart Server\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e66",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 51.0,
+                              "x": 1349.0,
+                              "y": 415.0
+                            },
+                            "name": "Session",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 78.0,
+                              "x": 1349.0,
+                              "y": 452.0
+                            },
+                            "name": "New Session",
+                            "role": "statictext",
+                            "value": "New Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 448.0
+                            },
+                            "name": "Change the shortcut for New Session",
+                            "ref_id": "@s2wmqwodggd1hl:e67",
+                            "role": "button",
+                            "value": "Shift Command N"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 108.0,
+                              "x": 1349.0,
+                              "y": 491.0
+                            },
+                            "name": "Change Session\u2026",
+                            "role": "statictext",
+                            "value": "Change Session\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 487.0
+                            },
+                            "name": "Change the shortcut for Change Session\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e68",
+                            "role": "button",
+                            "value": "Command K"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 84.0,
+                              "x": 1349.0,
+                              "y": 530.0
+                            },
+                            "name": "Go to Session",
+                            "role": "statictext",
+                            "value": "Go to Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 526.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e69",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 79.0,
+                              "x": 1349.0,
+                              "y": 569.0
+                            },
+                            "name": "Next Session",
+                            "role": "statictext",
+                            "value": "Next Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 565.0
+                            },
+                            "name": "Record a shortcut for Next Session",
+                            "ref_id": "@s2wmqwodggd1hl:e70",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 103.0,
+                              "x": 1349.0,
+                              "y": 608.0
+                            },
+                            "name": "Previous Session",
+                            "role": "statictext",
+                            "value": "Previous Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 604.0
+                            },
+                            "name": "Record a shortcut for Previous Session",
+                            "ref_id": "@s2wmqwodggd1hl:e71",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 100.0,
+                              "x": 1349.0,
+                              "y": 647.0
+                            },
+                            "name": "Rename Session",
+                            "role": "statictext",
+                            "value": "Rename Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 643.0
+                            },
+                            "name": "Record a shortcut for Rename Session",
+                            "ref_id": "@s2wmqwodggd1hl:e72",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 85.0,
+                              "x": 1349.0,
+                              "y": 686.0
+                            },
+                            "name": "Close Session",
+                            "role": "statictext",
+                            "value": "Close Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 682.0
+                            },
+                            "name": "Record a shortcut for Close Session",
+                            "ref_id": "@s2wmqwodggd1hl:e73",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": 725.0
+                            },
+                            "name": "Refresh Sessions",
+                            "role": "statictext",
+                            "value": "Refresh Sessions"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 721.0
+                            },
+                            "name": "Change the shortcut for Refresh Sessions",
+                            "ref_id": "@s2wmqwodggd1hl:e74",
+                            "role": "button",
+                            "value": "Command R"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": 764.0
+                            },
+                            "name": "Collapse Session",
+                            "role": "statictext",
+                            "value": "Collapse Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 760.0
+                            },
+                            "name": "Record a shortcut for Collapse Session",
+                            "ref_id": "@s2wmqwodggd1hl:e75",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 96.0,
+                              "x": 1349.0,
+                              "y": 803.0
+                            },
+                            "name": "Expand Session",
+                            "role": "statictext",
+                            "value": "Expand Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 799.0
+                            },
+                            "name": "Record a shortcut for Expand Session",
+                            "ref_id": "@s2wmqwodggd1hl:e76",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 148.0,
+                              "x": 1349.0,
+                              "y": 842.0
+                            },
+                            "name": "Collapse Other Sessions",
+                            "role": "statictext",
+                            "value": "Collapse Other Sessions"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 838.0
+                            },
+                            "name": "Record a shortcut for Collapse Other Sessions",
+                            "ref_id": "@s2wmqwodggd1hl:e77",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 31.0,
+                              "x": 1349.0,
+                              "y": 899.0
+                            },
+                            "name": "Host",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 73.0,
+                              "x": 1349.0,
+                              "y": 936.0
+                            },
+                            "name": "Switch Host",
+                            "role": "statictext",
+                            "value": "Switch Host"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 932.0
+                            },
+                            "name": "Record a shortcut for Switch Host",
+                            "ref_id": "@s2wmqwodggd1hl:e78",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 117.0,
+                              "x": 1349.0,
+                              "y": 975.0
+                            },
+                            "name": "Add Remote Host\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Add Remote Host\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 971.0
+                            },
+                            "name": "Record a shortcut for Add Remote Host\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e79",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 1014.0
+                            },
+                            "name": "Remove Host\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Remove Host\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1010.0
+                            },
+                            "name": "Record a shortcut for Remove Host\u2026",
+                            "ref_id": "@s2wmqwodggd1hl:e80",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 24.0,
+                              "x": 1349.0,
+                              "y": 1071.0
+                            },
+                            "name": "Tab",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 53.0,
+                              "x": 1349.0,
+                              "y": 1108.0
+                            },
+                            "name": "New Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "New Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1104.0
+                            },
+                            "name": "Change the shortcut for New Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e81",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command T"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 60.0,
+                              "x": 1349.0,
+                              "y": 1147.0
+                            },
+                            "name": "Close Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1143.0
+                            },
+                            "name": "Change the shortcut for Close Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e82",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command W"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 105.0,
+                              "x": 1349.0,
+                              "y": 1186.0
+                            },
+                            "name": "Close Other Tabs",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close Other Tabs"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1182.0
+                            },
+                            "name": "Record a shortcut for Close Other Tabs",
+                            "ref_id": "@s2wmqwodggd1hl:e83",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 75.0,
+                              "x": 1349.0,
+                              "y": 1225.0
+                            },
+                            "name": "Rename Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Rename Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1221.0
+                            },
+                            "name": "Record a shortcut for Rename Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e84",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 1264.0
+                            },
+                            "name": "Show Next Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Show Next Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1260.0
+                            },
+                            "name": "Change the shortcut for Show Next Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e85",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command ]"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1288.0
+                            },
+                            "name": "Change the shortcut for Show Next Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e86",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Control Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 115.0,
+                              "x": 1349.0,
+                              "y": 1330.0
+                            },
+                            "name": "Show Previous Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Show Previous Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1326.0
+                            },
+                            "name": "Change the shortcut for Show Previous Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e87",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command ["
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1354.0
+                            },
+                            "name": "Change the shortcut for Show Previous Tab",
+                            "ref_id": "@s2wmqwodggd1hl:e88",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Control Shift Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 59.0,
+                              "x": 1349.0,
+                              "y": 1392.0
+                            },
+                            "name": "Go to Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Go to Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1419.0
+                            },
+                            "name": "index: 1",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 1"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1414.0
+                            },
+                            "name": "Command 1",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1449.0
+                            },
+                            "name": "index: 2",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 2"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1444.0
+                            },
+                            "name": "Command 2",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1479.0
+                            },
+                            "name": "index: 3",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 3"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1474.0
+                            },
+                            "name": "Command 3",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1509.0
+                            },
+                            "name": "index: 4",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 4"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1504.0
+                            },
+                            "name": "Command 4",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1539.0
+                            },
+                            "name": "index: 5",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 5"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1534.0
+                            },
+                            "name": "Command 5",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1569.0
+                            },
+                            "name": "index: 6",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 6"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1564.0
+                            },
+                            "name": "Command 6",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1599.0
+                            },
+                            "name": "index: 7",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 7"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1594.0
+                            },
+                            "name": "Command 7",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 1629.0
+                            },
+                            "name": "index: 8",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: 8"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1624.0
+                            },
+                            "name": "Command 8",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 62.0,
+                              "x": 1349.0,
+                              "y": 1659.0
+                            },
+                            "name": "index: -1",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "index: -1"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 1654.0
+                            },
+                            "name": "Command 9",
+                            "role": "unknown",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 59.0,
+                              "x": 1349.0,
+                              "y": 1696.0
+                            },
+                            "name": "Move Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 1692.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e89",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          }
+                        ],
+                        "role": "unknown"
+                      },
+                      {
+                        "available_actions": [
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 740.5,
+                          "width": 19.0,
+                          "x": 1902.0,
+                          "y": 203.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetValue"
+                            ],
+                            "bounds": {
+                              "height": 109.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 331.0
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e91",
+                            "role": "handle",
+                            "value": "0.20000000298023224"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 204.0
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e92",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 204.0
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e93",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 498.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 441.0
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e94",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 124.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 207.0
+                            },
+                            "ref_id": "@s2wmqwodggd1hl:e95",
+                            "role": "button"
+                          }
+                        ],
+                        "ref_id": "@s2wmqwodggd1hl:e90",
+                        "role": "scrollbar",
+                        "value": "0.20000000298023224"
+                      }
+                    ],
+                    "ref_id": "@s2wmqwodggd1hl:e42",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s2wmqwodggd1hl:e96",
+                    "role": "button"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s2wmqwodggd1hl:e97",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 87.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 89.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Shortcuts",
+                "role": "statictext",
+                "value": "Shortcuts"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "SetFocus",
+              "Expand",
+              "Collapse"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 40.0,
+              "x": 1876.0,
+              "y": 100.0
+            },
+            "name": "Configuration",
+            "ref_id": "@s2wmqwodggd1hl:e98",
+            "role": "menubutton"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s2wmqwodggd1hl:e99",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 1169.0,
+                  "y": 119.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s2wmqwodggd1hl:e100",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s2wmqwodggd1hl:e101",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Shortcuts",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Shortcuts"
+  }
+}

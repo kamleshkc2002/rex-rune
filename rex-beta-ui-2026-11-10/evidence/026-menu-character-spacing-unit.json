@@ -1,0 +1,60 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 2,
+  "snapshot_id": "s2w20id4lc60m9",
+  "tree": {
+    "bounds": {
+      "height": 58.0,
+      "width": 60.0,
+      "x": 1824.0,
+      "y": 231.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 60.0,
+          "x": 1824.0,
+          "y": 236.0
+        },
+        "name": "px",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2w20id4lc60m9:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 60.0,
+          "x": 1824.0,
+          "y": 260.0
+        },
+        "name": "%",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2w20id4lc60m9:e2",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Advanced Font Settings"
+  }
+}

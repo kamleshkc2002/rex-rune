@@ -1,0 +1,60 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 2,
+  "snapshot_id": "stynazqe4l41z",
+  "tree": {
+    "bounds": {
+      "height": 58.0,
+      "width": 90.0,
+      "x": 1807.0,
+      "y": 904.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 90.0,
+          "x": 1807.0,
+          "y": 909.0
+        },
+        "name": "Top",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@stynazqe4l41z:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 90.0,
+          "x": 1807.0,
+          "y": 933.0
+        },
+        "name": "Bottom",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@stynazqe4l41z:e2",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Developer"
+  }
+}

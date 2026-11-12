@@ -12,6 +12,10 @@
 
 - **Activity toolbar chip (partial M3.2):** a chip in the toolbar opens Activity while known, unmuted tabs other than the one on screen need you (`3 need you`) or, with none waiting, have errors (`2 errors`). Working, Done and Bell keep the toolbar quiet, and so does the Activity in tabs switch. It never floats over the terminal, is not drawn below 720 pt of window width, waits for a key sequence or a download chip in windows under 1000 pt, never marks tabs seen and sends nothing to servers. Coverage now includes the per-connection status pass described above; an absent chip is not an all-clear while reading, after failed reads, or for missing events and suppressed activity. See [checks and limits](docs/parity-2026-11/M3.2-activity-chip.md).
 
+### Fixed
+
+- **Update instructions on Omarchy:** the update notice and Settings → Updates no longer offer `sudo pacman -Syu rex-linux-bin` as an alternative on Omarchy, where Omarchy's update guard refuses a direct system upgrade. They name `omarchy update` only. Arch without Omarchy is unchanged.
+
 ## 0.7.5 - 2026-11-12
 
 ### Changed

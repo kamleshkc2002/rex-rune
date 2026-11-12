@@ -1,0 +1,248 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 11,
+  "snapshot_id": "s1kfhezt5r52n6",
+  "tree": {
+    "bounds": {
+      "height": 237.0,
+      "width": 211.0,
+      "x": 114.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 36.0
+        },
+        "name": "New Window",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e1",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 60.0
+        },
+        "name": "New Session",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e2",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 84.0
+        },
+        "name": "Add Remote Host\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e3",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 108.0
+        },
+        "name": "New Tab",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e4",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 132.0
+        },
+        "name": "Go to Directory\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e5",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 156.0
+        },
+        "ref_id": "@s1kfhezt5r52n6:e6",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 167.0
+        },
+        "ref_id": "@s1kfhezt5r52n6:e7",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 167.0
+        },
+        "name": "Close",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e8",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 191.0
+        },
+        "name": "Close Tab",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e9",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 215.0
+        },
+        "name": "Close Session",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e10",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 211.0,
+          "x": 114.0,
+          "y": 239.0
+        },
+        "name": "Close Window",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1kfhezt5r52n6:e11",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      }
+    ],
+    "name": "File",
+    "role": "menu",
+    "states": [
+      "offscreen"
+    ]
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Rex Beta"
+  }
+}

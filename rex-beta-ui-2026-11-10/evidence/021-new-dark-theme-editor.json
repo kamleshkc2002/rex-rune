@@ -1,0 +1,1681 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 77,
+  "snapshot_id": "s16zjsrrrb4tyd",
+  "tree": {
+    "bounds": {
+      "height": 658.0,
+      "width": 614.0,
+      "x": 1205.0,
+      "y": 196.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 658.0,
+          "width": 614.0,
+          "x": 1205.0,
+          "y": 196.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Scroll",
+              "SetFocus"
+            ],
+            "bounds": {
+              "height": 20.0,
+              "width": 250.0,
+              "x": 1278.0,
+              "y": 218.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "RightClick",
+                  "SetValue",
+                  "SetFocus",
+                  "TypeText"
+                ],
+                "bounds": {
+                  "height": 20.0,
+                  "width": 250.0,
+                  "x": 1278.0,
+                  "y": 218.0
+                },
+                "name": "New Theme Name",
+                "ref_id": "@s16zjsrrrb4tyd:e2",
+                "role": "textfield",
+                "states": [
+                  "focused"
+                ],
+                "value": "Untitled Dark Theme"
+              }
+            ],
+            "ref_id": "@s16zjsrrrb4tyd:e1",
+            "role": "scrollarea"
+          },
+          {
+            "bounds": {
+              "height": 23.0,
+              "width": 92.0,
+              "x": 1711.0,
+              "y": 217.0
+            },
+            "name": "Dark Theme",
+            "role": "statictext",
+            "value": "Dark Theme"
+          },
+          {
+            "available_actions": [
+              "Scroll"
+            ],
+            "bounds": {
+              "height": 530.0,
+              "width": 614.0,
+              "x": 1205.0,
+              "y": 261.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 16.0,
+                  "width": 41.0,
+                  "x": 1235.0,
+                  "y": 281.0
+                },
+                "name": "Colors",
+                "role": "heading"
+              },
+              {
+                "bounds": {
+                  "height": 16.0,
+                  "width": 48.0,
+                  "x": 1697.0,
+                  "y": 281.0
+                },
+                "name": "Preview",
+                "role": "statictext",
+                "value": "Preview"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "Toggle",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 16.0,
+                  "width": 36.0,
+                  "x": 1753.0,
+                  "y": 281.0
+                },
+                "name": "Preview",
+                "ref_id": "@s16zjsrrrb4tyd:e4",
+                "role": "switch",
+                "states": [
+                  "checked"
+                ],
+                "value": "1"
+              },
+              {
+                "bounds": {
+                  "height": 316.0,
+                  "width": 574.0,
+                  "x": 1225.0,
+                  "y": 307.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 15.0,
+                      "width": 50.0,
+                      "x": 1235.0,
+                      "y": 317.0
+                    },
+                    "name": "Terminal",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 63.0,
+                      "x": 1235.0,
+                      "y": 340.0
+                    },
+                    "name": "Background",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 83.0,
+                      "x": 1235.0,
+                      "y": 362.0
+                    },
+                    "name": "Background",
+                    "ref_id": "@s16zjsrrrb4tyd:e5",
+                    "role": "colorwell",
+                    "value": "rgb 0.05098 0.066667 0.090196 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 73.0,
+                      "x": 1240.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 73.0,
+                          "x": 1240.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Background",
+                        "ref_id": "@s16zjsrrrb4tyd:e7",
+                        "role": "textfield",
+                        "value": "#0D1117"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e6",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 22.000000000000014,
+                      "x": 1323.6666666666667,
+                      "y": 340.0
+                    },
+                    "name": "Text",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 82.0,
+                      "x": 1324.0,
+                      "y": 362.0
+                    },
+                    "name": "Text",
+                    "ref_id": "@s16zjsrrrb4tyd:e8",
+                    "role": "colorwell",
+                    "value": "rgb 0.901961 0.929412 0.952941 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 72.0,
+                      "x": 1329.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 72.0,
+                          "x": 1329.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Text",
+                        "ref_id": "@s16zjsrrrb4tyd:e10",
+                        "role": "textfield",
+                        "value": "#E6EDF3"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e9",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 36.00000000000003,
+                      "x": 1426.3333333333333,
+                      "y": 340.0
+                    },
+                    "name": "Cursor",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 83.0,
+                      "x": 1426.0,
+                      "y": 362.0
+                    },
+                    "name": "Cursor",
+                    "ref_id": "@s16zjsrrrb4tyd:e11",
+                    "role": "colorwell",
+                    "value": "rgb 0.184314 0.505882 0.968627 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 73.0,
+                      "x": 1431.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 73.0,
+                          "x": 1431.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Cursor",
+                        "ref_id": "@s16zjsrrrb4tyd:e13",
+                        "role": "textfield",
+                        "value": "#2F81F7"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e12",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 61.0,
+                      "x": 1515.0,
+                      "y": 340.0
+                    },
+                    "name": "Cursor Text",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 83.0,
+                      "x": 1515.0,
+                      "y": 362.0
+                    },
+                    "name": "Cursor Text",
+                    "ref_id": "@s16zjsrrrb4tyd:e14",
+                    "role": "colorwell",
+                    "value": "rgb 0.937255 0.972549 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 73.0,
+                      "x": 1520.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 73.0,
+                          "x": 1520.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Cursor Text",
+                        "ref_id": "@s16zjsrrrb4tyd:e16",
+                        "role": "textfield",
+                        "value": "#EFF8FF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e15",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 49.0,
+                      "x": 1617.6666666666667,
+                      "y": 340.0
+                    },
+                    "name": "Selection",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 82.0,
+                      "x": 1618.0,
+                      "y": 362.0
+                    },
+                    "name": "Selection",
+                    "ref_id": "@s16zjsrrrb4tyd:e17",
+                    "role": "colorwell",
+                    "value": "rgb 0.901961 0.929412 0.952941 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 72.0,
+                      "x": 1623.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 72.0,
+                          "x": 1623.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Selection",
+                        "ref_id": "@s16zjsrrrb4tyd:e19",
+                        "role": "textfield",
+                        "value": "#E6EDF3"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e18",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 72.0,
+                      "x": 1706.3333333333335,
+                      "y": 340.0
+                    },
+                    "name": "Selected Text",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 83.0,
+                      "x": 1706.0,
+                      "y": 362.0
+                    },
+                    "name": "Selected Text",
+                    "ref_id": "@s16zjsrrrb4tyd:e20",
+                    "role": "colorwell",
+                    "value": "rgb 0.05098 0.066667 0.090196 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 73.0,
+                      "x": 1711.0,
+                      "y": 387.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 73.0,
+                          "x": 1711.0,
+                          "y": 387.0
+                        },
+                        "name": "Hex value for Selected Text",
+                        "ref_id": "@s16zjsrrrb4tyd:e22",
+                        "role": "textfield",
+                        "value": "#0D1117"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e21",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 15.0,
+                      "width": 85.0,
+                      "x": 1235.0,
+                      "y": 421.0
+                    },
+                    "name": "ANSI Standard",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 29.0,
+                      "x": 1235.0,
+                      "y": 444.0
+                    },
+                    "name": "Black",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 21.0,
+                      "x": 1305.0,
+                      "y": 444.0
+                    },
+                    "name": "Red",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 32.0,
+                      "x": 1375.0,
+                      "y": 444.0
+                    },
+                    "name": "Green",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 34.0,
+                      "x": 1445.0,
+                      "y": 444.0
+                    },
+                    "name": "Yellow",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 23.0,
+                      "x": 1515.0,
+                      "y": 444.0
+                    },
+                    "name": "Blue",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 46.0,
+                      "x": 1585.0,
+                      "y": 444.0
+                    },
+                    "name": "Magenta",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 27.0,
+                      "x": 1655.0,
+                      "y": 444.0
+                    },
+                    "name": "Cyan",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 31.0,
+                      "x": 1725.0,
+                      "y": 444.0
+                    },
+                    "name": "White",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1235.0,
+                      "y": 466.0
+                    },
+                    "name": "Black #0",
+                    "ref_id": "@s16zjsrrrb4tyd:e23",
+                    "role": "colorwell",
+                    "value": "rgb 0.282353 0.309804 0.345098 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1240.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1240.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Black #0",
+                        "ref_id": "@s16zjsrrrb4tyd:e25",
+                        "role": "textfield",
+                        "value": "#484F58"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e24",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1305.0,
+                      "y": 466.0
+                    },
+                    "name": "Red #1",
+                    "ref_id": "@s16zjsrrrb4tyd:e26",
+                    "role": "colorwell",
+                    "value": "rgb 1 0.482353 0.447059 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1310.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1310.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Red #1",
+                        "ref_id": "@s16zjsrrrb4tyd:e28",
+                        "role": "textfield",
+                        "value": "#FF7B72"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e27",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1375.0,
+                      "y": 466.0
+                    },
+                    "name": "Green #2",
+                    "ref_id": "@s16zjsrrrb4tyd:e29",
+                    "role": "colorwell",
+                    "value": "rgb 0.247059 0.72549 0.313725 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1380.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1380.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Green #2",
+                        "ref_id": "@s16zjsrrrb4tyd:e31",
+                        "role": "textfield",
+                        "value": "#3FB950"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e30",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1445.0,
+                      "y": 466.0
+                    },
+                    "name": "Yellow #3",
+                    "ref_id": "@s16zjsrrrb4tyd:e32",
+                    "role": "colorwell",
+                    "value": "rgb 0.823529 0.6 0.133333 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1450.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1450.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Yellow #3",
+                        "ref_id": "@s16zjsrrrb4tyd:e34",
+                        "role": "textfield",
+                        "value": "#D29922"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e33",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1515.0,
+                      "y": 466.0
+                    },
+                    "name": "Blue #4",
+                    "ref_id": "@s16zjsrrrb4tyd:e35",
+                    "role": "colorwell",
+                    "value": "rgb 0.345098 0.65098 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1520.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1520.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Blue #4",
+                        "ref_id": "@s16zjsrrrb4tyd:e37",
+                        "role": "textfield",
+                        "value": "#58A6FF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e36",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1585.0,
+                      "y": 466.0
+                    },
+                    "name": "Magenta #5",
+                    "ref_id": "@s16zjsrrrb4tyd:e38",
+                    "role": "colorwell",
+                    "value": "rgb 0.737255 0.54902 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1590.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1590.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Magenta #5",
+                        "ref_id": "@s16zjsrrrb4tyd:e40",
+                        "role": "textfield",
+                        "value": "#BC8CFF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e39",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1655.0,
+                      "y": 466.0
+                    },
+                    "name": "Cyan #6",
+                    "ref_id": "@s16zjsrrrb4tyd:e41",
+                    "role": "colorwell",
+                    "value": "rgb 0.223529 0.772549 0.811765 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1660.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1660.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for Cyan #6",
+                        "ref_id": "@s16zjsrrrb4tyd:e43",
+                        "role": "textfield",
+                        "value": "#39C5CF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e42",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1725.0,
+                      "y": 466.0
+                    },
+                    "name": "White #7",
+                    "ref_id": "@s16zjsrrrb4tyd:e44",
+                    "role": "colorwell",
+                    "value": "rgb 0.694118 0.729412 0.768627 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1730.0,
+                      "y": 491.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1730.0,
+                          "y": 491.0
+                        },
+                        "name": "Hex value for White #7",
+                        "ref_id": "@s16zjsrrrb4tyd:e46",
+                        "role": "textfield",
+                        "value": "#B1BAC4"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e45",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 15.0,
+                      "width": 68.0,
+                      "x": 1235.0,
+                      "y": 525.0
+                    },
+                    "name": "ANSI Bright",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 29.0,
+                      "x": 1235.0,
+                      "y": 548.0
+                    },
+                    "name": "Black",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 21.0,
+                      "x": 1305.0,
+                      "y": 548.0
+                    },
+                    "name": "Red",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 32.0,
+                      "x": 1375.0,
+                      "y": 548.0
+                    },
+                    "name": "Green",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 34.0,
+                      "x": 1445.0,
+                      "y": 548.0
+                    },
+                    "name": "Yellow",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 23.0,
+                      "x": 1515.0,
+                      "y": 548.0
+                    },
+                    "name": "Blue",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 46.0,
+                      "x": 1585.0,
+                      "y": 548.0
+                    },
+                    "name": "Magenta",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 27.0,
+                      "x": 1655.0,
+                      "y": 548.0
+                    },
+                    "name": "Cyan",
+                    "role": "heading"
+                  },
+                  {
+                    "bounds": {
+                      "height": 14.0,
+                      "width": 31.0,
+                      "x": 1725.0,
+                      "y": 548.0
+                    },
+                    "name": "White",
+                    "role": "heading"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1235.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Black #8",
+                    "ref_id": "@s16zjsrrrb4tyd:e47",
+                    "role": "colorwell",
+                    "value": "rgb 0.431373 0.462745 0.505882 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1240.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1240.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Black #8",
+                        "ref_id": "@s16zjsrrrb4tyd:e49",
+                        "role": "textfield",
+                        "value": "#6E7681"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e48",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1305.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Red #9",
+                    "ref_id": "@s16zjsrrrb4tyd:e50",
+                    "role": "colorwell",
+                    "value": "rgb 1 0.631373 0.596078 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1310.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1310.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Red #9",
+                        "ref_id": "@s16zjsrrrb4tyd:e52",
+                        "role": "textfield",
+                        "value": "#FFA198"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e51",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1375.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Green #10",
+                    "ref_id": "@s16zjsrrrb4tyd:e53",
+                    "role": "colorwell",
+                    "value": "rgb 0.337255 0.827451 0.392157 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1380.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1380.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Green #10",
+                        "ref_id": "@s16zjsrrrb4tyd:e55",
+                        "role": "textfield",
+                        "value": "#56D364"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e54",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1445.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Yellow #11",
+                    "ref_id": "@s16zjsrrrb4tyd:e56",
+                    "role": "colorwell",
+                    "value": "rgb 0.890196 0.701961 0.254902 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1450.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1450.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Yellow #11",
+                        "ref_id": "@s16zjsrrrb4tyd:e58",
+                        "role": "textfield",
+                        "value": "#E3B341"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e57",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1515.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Blue #12",
+                    "ref_id": "@s16zjsrrrb4tyd:e59",
+                    "role": "colorwell",
+                    "value": "rgb 0.47451 0.752941 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1520.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1520.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Blue #12",
+                        "ref_id": "@s16zjsrrrb4tyd:e61",
+                        "role": "textfield",
+                        "value": "#79C0FF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e60",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1585.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Magenta #13",
+                    "ref_id": "@s16zjsrrrb4tyd:e62",
+                    "role": "colorwell",
+                    "value": "rgb 0.823529 0.658824 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1590.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1590.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Magenta #13",
+                        "ref_id": "@s16zjsrrrb4tyd:e64",
+                        "role": "textfield",
+                        "value": "#D2A8FF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e63",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1655.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright Cyan #14",
+                    "ref_id": "@s16zjsrrrb4tyd:e65",
+                    "role": "colorwell",
+                    "value": "rgb 0.337255 0.831373 0.866667 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1660.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1660.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright Cyan #14",
+                        "ref_id": "@s16zjsrrrb4tyd:e67",
+                        "role": "textfield",
+                        "value": "#56D4DD"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e66",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 22.0,
+                      "width": 64.0,
+                      "x": 1725.0,
+                      "y": 570.0
+                    },
+                    "name": "Bright White #15",
+                    "ref_id": "@s16zjsrrrb4tyd:e68",
+                    "role": "colorwell",
+                    "value": "rgb 1 1 1 1"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 54.0,
+                      "x": 1730.0,
+                      "y": 595.5
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 13.0,
+                          "width": 54.0,
+                          "x": 1730.0,
+                          "y": 595.0
+                        },
+                        "name": "Hex value for Bright White #15",
+                        "ref_id": "@s16zjsrrrb4tyd:e70",
+                        "role": "textfield",
+                        "value": "#FFFFFF"
+                      }
+                    ],
+                    "ref_id": "@s16zjsrrrb4tyd:e69",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 16.0,
+                  "width": 108.0,
+                  "x": 1235.0,
+                  "y": 653.0
+                },
+                "name": "Extended Palette",
+                "role": "heading"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "Toggle"
+                ],
+                "bounds": {
+                  "height": 16.0,
+                  "width": 36.0,
+                  "x": 1753.0,
+                  "y": 653.0
+                },
+                "name": "Extended Palette",
+                "ref_id": "@s16zjsrrrb4tyd:e71",
+                "role": "switch",
+                "states": [
+                  "checked"
+                ],
+                "value": "1"
+              },
+              {
+                "bounds": {
+                  "height": 532.0,
+                  "width": 574.0,
+                  "x": 1225.0,
+                  "y": 679.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 198.0,
+                      "x": 1235.0,
+                      "y": 685.0
+                    },
+                    "name": "Automatically regenerate palette",
+                    "role": "statictext",
+                    "value": "Automatically regenerate palette"
+                  },
+                  {
+                    "bounds": {
+                      "height": 13.0,
+                      "width": 457.0,
+                      "x": 1235.0,
+                      "y": 705.0
+                    },
+                    "name": "Changes to the base theme colors and the ANSI Standard palette update the extended palette.",
+                    "role": "statictext",
+                    "value": "Changes to the base theme colors and the ANSI Standard palette update the extended palette."
+                  },
+                  {
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 36.0,
+                      "x": 1753.0,
+                      "y": 694.0
+                    },
+                    "name": "Automatically regenerate palette",
+                    "ref_id": "@s16zjsrrrb4tyd:e72",
+                    "role": "switch",
+                    "states": [
+                      "checked"
+                    ],
+                    "value": "1"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 35.0,
+                      "width": 554.0,
+                      "x": 1235.0,
+                      "y": 725.0
+                    },
+                    "name": "Hide extended palette",
+                    "ref_id": "@s16zjsrrrb4tyd:e73",
+                    "role": "button",
+                    "value": "Expanded"
+                  },
+                  {
+                    "bounds": {
+                      "height": 15.0,
+                      "width": 65.0,
+                      "x": 1235.0,
+                      "y": 771.0
+                    },
+                    "name": "Color Cube",
+                    "role": "heading"
+                  },
+                  {
+                    "role": "unknown"
+                  },
+                  {
+                    "bounds": {
+                      "height": 15.0,
+                      "width": 94.0,
+                      "x": 1235.0,
+                      "y": 1118.0
+                    },
+                    "name": "Grayscale Ramp",
+                    "role": "heading",
+                    "states": [
+                      "offscreen"
+                    ]
+                  },
+                  {
+                    "role": "unknown"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 24.0,
+                      "width": 134.0,
+                      "x": 1235.0,
+                      "y": 1177.0
+                    },
+                    "name": "Reset Overrides",
+                    "ref_id": "@s16zjsrrrb4tyd:e74",
+                    "role": "button",
+                    "states": [
+                      "disabled",
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "ref_id": "@s16zjsrrrb4tyd:e3",
+            "role": "scrollarea"
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 30.0,
+              "width": 80.0,
+              "x": 1221.0,
+              "y": 808.0
+            },
+            "name": "Revert\u2026",
+            "ref_id": "@s16zjsrrrb4tyd:e75",
+            "role": "button",
+            "states": [
+              "disabled"
+            ]
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 30.0,
+              "width": 71.0,
+              "x": 1614.0,
+              "y": 808.0
+            },
+            "name": "Cancel",
+            "ref_id": "@s16zjsrrrb4tyd:e76",
+            "role": "button"
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 30.0,
+              "width": 110.0,
+              "x": 1693.0,
+              "y": 808.0
+            },
+            "name": "Save & Apply",
+            "ref_id": "@s16zjsrrrb4tyd:e77",
+            "role": "button"
+          }
+        ],
+        "role": "group"
+      }
+    ],
+    "role": "sheet"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Themes"
+  }
+}

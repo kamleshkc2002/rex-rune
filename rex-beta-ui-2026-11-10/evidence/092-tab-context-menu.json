@@ -1,0 +1,166 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 8,
+  "snapshot_id": "s3ewpm8ohkro21",
+  "tree": {
+    "bounds": {
+      "height": 152.0,
+      "width": 187.0,
+      "x": 706.0,
+      "y": 185.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 190.0
+        },
+        "name": "Rename Tab\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "renameMenuTab"
+        },
+        "ref_id": "@s3ewpm8ohkro21:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 214.0
+        },
+        "name": "Mute Tab",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "muteMenuTab:"
+        },
+        "ref_id": "@s3ewpm8ohkro21:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 238.0
+        },
+        "ref_id": "@s3ewpm8ohkro21:e3",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 249.0
+        },
+        "name": "Move Tab Left",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "moveMenuTabBackward"
+        },
+        "ref_id": "@s3ewpm8ohkro21:e4",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 273.0
+        },
+        "name": "Move Tab Right",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "moveMenuTabForward"
+        },
+        "ref_id": "@s3ewpm8ohkro21:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 297.0
+        },
+        "ref_id": "@s3ewpm8ohkro21:e6",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 308.0
+        },
+        "name": "Close Tab",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "closeMenuTab"
+        },
+        "ref_id": "@s3ewpm8ohkro21:e7",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 187.0,
+          "x": 706.0,
+          "y": 190.0
+        },
+        "ref_id": "@s3ewpm8ohkro21:e8",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "shuv@shuvbot:~",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

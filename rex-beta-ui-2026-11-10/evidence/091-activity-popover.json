@@ -1,0 +1,420 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 16,
+  "snapshot_id": "s3he62dk4odyw2",
+  "tree": {
+    "bounds": {
+      "height": 760.0,
+      "width": 1302.0,
+      "x": 368.0,
+      "y": 168.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 760.0,
+          "width": 1302.0,
+          "x": 368.0,
+          "y": 168.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 46.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 168.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click",
+                  "Toggle",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 242.0,
+                  "x": 584.0,
+                  "y": 175.0
+                },
+                "name": "shuv@shuvbot:~",
+                "ref_id": "@s3he62dk4odyw2:e1",
+                "role": "radiobutton",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 34.0,
+                  "width": 123.0,
+                  "x": 453.0,
+                  "y": 174.0
+                },
+                "name": "Change Session",
+                "ref_id": "@s3he62dk4odyw2:e2",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 30.0,
+                  "width": 36.0,
+                  "x": 1595.0,
+                  "y": 175.0
+                },
+                "name": "Command Palette",
+                "ref_id": "@s3he62dk4odyw2:e3",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1561.0,
+                  "y": 175.0
+                },
+                "name": "Activity",
+                "ref_id": "@s3he62dk4odyw2:e4",
+                "role": "button",
+                "states": [
+                  "pressed"
+                ],
+                "value": "On"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1629.0,
+                  "y": 175.0
+                },
+                "name": "New Tab",
+                "ref_id": "@s3he62dk4odyw2:e5",
+                "role": "button"
+              }
+            ],
+            "name": "Tabs",
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 714.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 214.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 706.0,
+                  "width": 1286.0,
+                  "x": 376.0,
+                  "y": 214.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 706.0,
+                      "width": 1286.0,
+                      "x": 376.0,
+                      "y": 214.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 706.0,
+                          "width": 1286.0,
+                          "x": 376.0,
+                          "y": 214.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 1147.0,
+                              "x": 382.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 132.0,
+                                  "x": 382.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move shuv@shuvbot:~ pane",
+                                "ref_id": "@s3he62dk4odyw2:e6",
+                                "role": "button"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 120.0,
+                                  "x": 388.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move shuv@shuvbot:~ pane",
+                                "role": "statictext",
+                                "value": "Move shuv@shuvbot:~ pane"
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 118.0,
+                              "x": 1537.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1537.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Right",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.2x1"
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e7",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1561.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Down",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.1x2"
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e8",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1585.0,
+                                  "y": 221.0
+                                },
+                                "name": "Float Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.on.rectangle"
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e9",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1609.0,
+                                  "y": 221.0
+                                },
+                                "name": "Zoom Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "arrow.up.left.and.arrow.down.right"
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e10",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1633.0,
+                                  "y": 221.0
+                                },
+                                "name": "Close Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "xmark"
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e11",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 670.0,
+                              "width": 1286.0,
+                              "x": 376.0,
+                              "y": 250.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Scroll"
+                                ],
+                                "bounds": {
+                                  "height": 670.0,
+                                  "width": 1286.0,
+                                  "x": 376.0,
+                                  "y": 250.0
+                                },
+                                "ref_id": "@s3he62dk4odyw2:e13",
+                                "role": "scrollarea"
+                              }
+                            ],
+                            "name": "Terminal",
+                            "ref_id": "@s3he62dk4odyw2:e12",
+                            "role": "textfield",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Last login: Tue Nov 10 23:46:47 on ttys000\nYou have mail.\n \uf179 \ue0b1 \uf015 ~                                                                                                                                             \u2714 \ue0b3 shuv@shuvbot \ue0b3 23:47:29 \uf017\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+                          }
+                        ],
+                        "name": "shuv@shuvbot:~",
+                        "role": "group"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "name": "Split layout",
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 383.0,
+          "y": 183.0
+        },
+        "name": "Close",
+        "ref_id": "@s3he62dk4odyw2:e14",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 429.0,
+          "y": 183.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 430.0,
+              "y": 184.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 430.0,
+                  "y": 184.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Full Screen",
+        "ref_id": "@s3he62dk4odyw2:e15",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 406.0,
+          "y": 183.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s3he62dk4odyw2:e16",
+        "role": "button"
+      }
+    ],
+    "name": "shuv@shuvbot:~ - lunar-basin",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "session-AppWindow-1"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Rex Beta"
+  }
+}

@@ -1,0 +1,303 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 13,
+  "snapshot_id": "s14r3ejrdrrdkb",
+  "tree": {
+    "bounds": {
+      "height": 24.0,
+      "width": 24.0,
+      "x": 1270.0,
+      "y": 3.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 24.0,
+          "x": 1270.0,
+          "y": 3.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 201.0,
+              "width": 288.0,
+              "x": 1258.0,
+              "y": 31.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 48.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 36.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 0.0,
+                      "width": 0.0,
+                      "x": 0.0,
+                      "y": 1080.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "unix:///Users/shu\u2026/rex/server.sock",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "copyEndpoint:"
+                        },
+                        "ref_id": "@s14r3ejrdrrdkb:e3",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "https://shuvbot-\u2026ail586a6d.ts.net",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "copyEndpoint:"
+                        },
+                        "ref_id": "@s14r3ejrdrrdkb:e4",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      }
+                    ],
+                    "role": "menu",
+                    "states": [
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "ref_id": "@s14r3ejrdrrdkb:e2",
+                "role": "menuitem",
+                "states": [
+                  "selected",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 84.0
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e5",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 95.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 38.0,
+                      "width": 288.0,
+                      "x": 1258.0,
+                      "y": 95.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click",
+                          "RightClick",
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 30.0,
+                          "width": 218.0,
+                          "x": 1272.0,
+                          "y": 99.0
+                        },
+                        "name": "Rex Beta, 0.1.0 (1932) \u00b7 Bleeding Edge, Rex Server, 0.1.0-preview.15",
+                        "ref_id": "@s14r3ejrdrrdkb:e7",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Rex Beta, 0.1.0 (1932) \u00b7 Bleeding Edge, Rex Server, 0.1.0-preview.15"
+                      },
+                      {
+                        "available_actions": [
+                          "Click",
+                          "RightClick",
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 15.0,
+                          "width": 12.0,
+                          "x": 1520.0,
+                          "y": 107.0
+                        },
+                        "name": "Copy Version Info",
+                        "ref_id": "@s14r3ejrdrrdkb:e8",
+                        "role": "button",
+                        "states": [
+                          "offscreen"
+                        ]
+                      }
+                    ],
+                    "role": "group",
+                    "states": [
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "name": "Rex Beta, 0.1.0 (1932) \u00b7 Bleeding Edge, Rex Server, 0.1.0-preview.15",
+                "ref_id": "@s14r3ejrdrrdkb:e6",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 133.0
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e9",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 144.0
+                },
+                "name": "Check for Updates\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "checkForUpdates"
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e10",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 168.0
+                },
+                "name": "Settings\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "presentSettingsWindow"
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e11",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 192.0
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e12",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 288.0,
+                  "x": 1258.0,
+                  "y": 203.0
+                },
+                "name": "Quit Rex Beta",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "quit"
+                },
+                "ref_id": "@s14r3ejrdrrdkb:e13",
+                "role": "menuitem"
+              }
+            ],
+            "role": "menu"
+          }
+        ],
+        "name": "Rex server running",
+        "ref_id": "@s14r3ejrdrrdkb:e1",
+        "role": "menuitem",
+        "states": [
+          "selected",
+          "offscreen"
+        ]
+      }
+    ],
+    "role": "menu",
+    "states": [
+      "offscreen"
+    ]
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Rex Beta"
+  }
+}

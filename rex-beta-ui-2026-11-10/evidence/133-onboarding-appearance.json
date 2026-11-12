@@ -1,0 +1,1186 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 53,
+  "snapshot_id": "slv0esxltk2yv",
+  "tree": {
+    "bounds": {
+      "height": 760.0,
+      "width": 1302.0,
+      "x": 368.0,
+      "y": 168.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 760.0,
+          "width": 1302.0,
+          "x": 368.0,
+          "y": 168.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 46.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 168.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click",
+                  "Toggle",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 242.0,
+                  "x": 587.0,
+                  "y": 175.0
+                },
+                "name": "Welcome, Kyle",
+                "ref_id": "@slv0esxltk2yv:e1",
+                "role": "radiobutton",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 34.0,
+                  "width": 126.0,
+                  "x": 453.0,
+                  "y": 174.0
+                },
+                "name": "Change Session",
+                "ref_id": "@slv0esxltk2yv:e2",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 30.0,
+                  "width": 36.0,
+                  "x": 1595.0,
+                  "y": 175.0
+                },
+                "name": "Command Palette",
+                "ref_id": "@slv0esxltk2yv:e3",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1561.0,
+                  "y": 175.0
+                },
+                "name": "Activity",
+                "ref_id": "@slv0esxltk2yv:e4",
+                "role": "button",
+                "value": "Off"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1629.0,
+                  "y": 175.0
+                },
+                "name": "New Tab",
+                "ref_id": "@slv0esxltk2yv:e5",
+                "role": "button"
+              }
+            ],
+            "name": "Tabs",
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 714.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 214.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 706.0,
+                  "width": 1286.0,
+                  "x": 376.0,
+                  "y": 214.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 706.0,
+                      "width": 1286.0,
+                      "x": 376.0,
+                      "y": 214.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 706.0,
+                          "width": 1286.0,
+                          "x": 376.0,
+                          "y": 214.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 1147.0,
+                              "x": 382.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 155.0,
+                                  "x": 382.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move Get Started with Rex pane",
+                                "ref_id": "@slv0esxltk2yv:e6",
+                                "role": "button"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 143.0,
+                                  "x": 388.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move Get Started with Rex pane",
+                                "role": "statictext",
+                                "value": "Move Get Started with Rex pane"
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 118.0,
+                              "x": 1537.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1537.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Right",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.2x1"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e7",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1561.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Down",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.1x2"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e8",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1585.0,
+                                  "y": 221.0
+                                },
+                                "name": "Float Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.on.rectangle"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e9",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1609.0,
+                                  "y": 221.0
+                                },
+                                "name": "Zoom Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "arrow.up.left.and.arrow.down.right"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e10",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1633.0,
+                                  "y": 221.0
+                                },
+                                "name": "Close Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "xmark"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e11",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 670.0,
+                              "width": 1286.0,
+                              "x": 376.0,
+                              "y": 250.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 415.0,
+                                  "x": 811.5,
+                                  "y": 337.3857631791807
+                                },
+                                "name": "Customize the look and feel of Rex",
+                                "role": "statictext",
+                                "value": "Customize the look and feel of Rex"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 19.0,
+                                  "width": 426.0,
+                                  "x": 806.0,
+                                  "y": 379.5880996241517
+                                },
+                                "name": "Choose a color scheme, style, preferred tab layout and theme.",
+                                "role": "statictext",
+                                "value": "Choose a color scheme, style, preferred tab layout and theme."
+                              },
+                              {
+                                "bounds": {
+                                  "height": 113.0,
+                                  "width": 246.5,
+                                  "x": 798.5,
+                                  "y": 428.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 15.0,
+                                      "width": 80.0,
+                                      "x": 798.5,
+                                      "y": 428.0
+                                    },
+                                    "name": "Color scheme",
+                                    "role": "heading"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 74.0,
+                                      "x": 799.0,
+                                      "y": 453.0
+                                    },
+                                    "name": "Auto",
+                                    "ref_id": "@slv0esxltk2yv:e13",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 74.0,
+                                      "x": 885.0,
+                                      "y": 453.0
+                                    },
+                                    "name": "Light",
+                                    "ref_id": "@slv0esxltk2yv:e14",
+                                    "role": "button",
+                                    "value": "Not selected"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 74.0,
+                                      "x": 971.0,
+                                      "y": 453.0
+                                    },
+                                    "name": "Dark",
+                                    "ref_id": "@slv0esxltk2yv:e15",
+                                    "role": "button",
+                                    "value": "Not selected"
+                                  }
+                                ],
+                                "name": "Color scheme",
+                                "role": "group"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 113.0,
+                                  "width": 160.5,
+                                  "x": 1079.5,
+                                  "y": 428.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 15.0,
+                                      "width": 84.0,
+                                      "x": 1079.5,
+                                      "y": 428.0
+                                    },
+                                    "name": "Interface style",
+                                    "role": "heading"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 74.0,
+                                      "x": 1080.0,
+                                      "y": 453.0
+                                    },
+                                    "name": "Classic",
+                                    "ref_id": "@slv0esxltk2yv:e16",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 74.0,
+                                      "x": 1166.0,
+                                      "y": 453.0
+                                    },
+                                    "name": "Glass",
+                                    "ref_id": "@slv0esxltk2yv:e17",
+                                    "role": "button",
+                                    "value": "Not selected"
+                                  }
+                                ],
+                                "name": "Interface style",
+                                "role": "group"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 113.0,
+                                  "width": 441.5,
+                                  "x": 798.5,
+                                  "y": 572.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 15.0,
+                                      "width": 82.0,
+                                      "x": 798.5,
+                                      "y": 572.0
+                                    },
+                                    "name": "Toolbar layout",
+                                    "role": "heading"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 139.0,
+                                      "x": 799.0,
+                                      "y": 597.0
+                                    },
+                                    "name": "Above",
+                                    "ref_id": "@slv0esxltk2yv:e18",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 139.0,
+                                      "x": 950.0,
+                                      "y": 597.0
+                                    },
+                                    "name": "Left Side",
+                                    "ref_id": "@slv0esxltk2yv:e19",
+                                    "role": "button",
+                                    "value": "Not selected"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 88.0,
+                                      "width": 139.0,
+                                      "x": 1101.0,
+                                      "y": 597.0
+                                    },
+                                    "name": "Right Side",
+                                    "ref_id": "@slv0esxltk2yv:e20",
+                                    "role": "button",
+                                    "value": "Not selected"
+                                  }
+                                ],
+                                "name": "Toolbar layout",
+                                "role": "group"
+                              },
+                              {
+                                "available_actions": [
+                                  "Scroll"
+                                ],
+                                "bounds": {
+                                  "height": 123.0,
+                                  "width": 479.0,
+                                  "x": 780.0,
+                                  "y": 711.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 113.0,
+                                      "width": 125.0,
+                                      "x": 799.0,
+                                      "y": 716.0
+                                    },
+                                    "children": [
+                                      {
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 82.0,
+                                          "x": 799.0,
+                                          "y": 716.0
+                                        },
+                                        "name": "Default theme",
+                                        "role": "heading"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 799.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Merino Dark theme",
+                                        "ref_id": "@slv0esxltk2yv:e22",
+                                        "role": "button",
+                                        "states": [
+                                          "selected"
+                                        ],
+                                        "value": "Selected"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 113.0,
+                                      "width": 3112.0,
+                                      "x": 936.0,
+                                      "y": 716.0
+                                    },
+                                    "children": [
+                                      {
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 89.0,
+                                          "x": 936.0,
+                                          "y": 716.0
+                                        },
+                                        "name": "Built-in themes",
+                                        "role": "heading"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 936.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Abyssal Trench theme",
+                                        "ref_id": "@slv0esxltk2yv:e23",
+                                        "role": "button",
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1056.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Basalt Shore theme",
+                                        "ref_id": "@slv0esxltk2yv:e24",
+                                        "role": "button",
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1176.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Cathode Amber theme",
+                                        "ref_id": "@slv0esxltk2yv:e25",
+                                        "role": "button",
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1296.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Charcoal Atelier theme",
+                                        "ref_id": "@slv0esxltk2yv:e26",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1416.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Cinder Peak theme",
+                                        "ref_id": "@slv0esxltk2yv:e27",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1536.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Cobalt Foundry theme",
+                                        "ref_id": "@slv0esxltk2yv:e28",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1656.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Ember Hollow theme",
+                                        "ref_id": "@slv0esxltk2yv:e29",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1776.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Heliotrope Haze theme",
+                                        "ref_id": "@slv0esxltk2yv:e30",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 1896.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Ink Meridian theme",
+                                        "ref_id": "@slv0esxltk2yv:e31",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2016.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Juniper Smoke theme",
+                                        "ref_id": "@slv0esxltk2yv:e32",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2136.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Midnight Tundra theme",
+                                        "ref_id": "@slv0esxltk2yv:e33",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2256.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Misty Forest theme",
+                                        "ref_id": "@slv0esxltk2yv:e34",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2376.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Moss Cathedral theme",
+                                        "ref_id": "@slv0esxltk2yv:e35",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2496.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Neon Arcade theme",
+                                        "ref_id": "@slv0esxltk2yv:e36",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2616.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Nocturne Rose theme",
+                                        "ref_id": "@slv0esxltk2yv:e37",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2736.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Oxblood Library theme",
+                                        "ref_id": "@slv0esxltk2yv:e38",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2856.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Petrol Lagoon theme",
+                                        "ref_id": "@slv0esxltk2yv:e39",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 2976.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Phosphor Archive theme",
+                                        "ref_id": "@slv0esxltk2yv:e40",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3096.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Polar Aurora theme",
+                                        "ref_id": "@slv0esxltk2yv:e41",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3216.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Roasted Umber theme",
+                                        "ref_id": "@slv0esxltk2yv:e42",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3336.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Saffron Nightfall theme",
+                                        "ref_id": "@slv0esxltk2yv:e43",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3456.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Silver Point Dark theme",
+                                        "ref_id": "@slv0esxltk2yv:e44",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3576.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Sonoran Dusk theme",
+                                        "ref_id": "@slv0esxltk2yv:e45",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3696.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Static Noir theme",
+                                        "ref_id": "@slv0esxltk2yv:e46",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3816.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Velvet Dusk theme",
+                                        "ref_id": "@slv0esxltk2yv:e47",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 88.0,
+                                          "width": 112.0,
+                                          "x": 3936.0,
+                                          "y": 741.0
+                                        },
+                                        "name": "Whitby Bay theme",
+                                        "ref_id": "@slv0esxltk2yv:e48",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Not selected"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  }
+                                ],
+                                "name": "Theme",
+                                "ref_id": "@slv0esxltk2yv:e21",
+                                "role": "scrollarea"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 30.0,
+                                  "x": 947.0,
+                                  "y": 866.0
+                                },
+                                "name": "Previous",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "arrow.left"
+                                },
+                                "ref_id": "@slv0esxltk2yv:e49",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 105.0,
+                                  "x": 987.0,
+                                  "y": 864.0
+                                },
+                                "name": "Continue",
+                                "ref_id": "@slv0esxltk2yv:e50",
+                                "role": "button"
+                              }
+                            ],
+                            "ref_id": "@slv0esxltk2yv:e12",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "name": "Get Started with Rex",
+                        "role": "group",
+                        "states": [
+                          "focused"
+                        ]
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "name": "Split layout",
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 383.0,
+          "y": 183.0
+        },
+        "name": "Close",
+        "ref_id": "@slv0esxltk2yv:e51",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 429.0,
+          "y": 183.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 430.0,
+              "y": 184.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 430.0,
+                  "y": 184.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Full Screen",
+        "ref_id": "@slv0esxltk2yv:e52",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 406.0,
+          "y": 183.0
+        },
+        "name": "Minimize",
+        "ref_id": "@slv0esxltk2yv:e53",
+        "role": "button"
+      }
+    ],
+    "name": "Welcome, Kyle - Onboarding",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "session-AppWindow-1"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Welcome, Kyle - Onboarding"
+  }
+}

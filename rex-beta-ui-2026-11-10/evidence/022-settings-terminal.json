@@ -1,0 +1,2446 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 87,
+  "snapshot_id": "s1gjpb8mcvi0yu",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s1gjpb8mcvi0yu:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s1gjpb8mcvi0yu:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e9",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e22",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e25",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s1gjpb8mcvi0yu:e39",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1gjpb8mcvi0yu:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s1gjpb8mcvi0yu:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s1gjpb8mcvi0yu:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 806.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 144.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 76.0,
+                          "x": 1349.0,
+                          "y": 164.0
+                        },
+                        "name": "Typography",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 169.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 190.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 80.0,
+                              "x": 1349.0,
+                              "y": 201.0
+                            },
+                            "name": "Terminal font",
+                            "role": "statictext",
+                            "value": "Terminal font"
+                          },
+                          {
+                            "bounds": {
+                              "height": 15.0,
+                              "width": 40.0,
+                              "x": 1760.0,
+                              "y": 201.5
+                            },
+                            "name": "Terminal font",
+                            "role": "statictext",
+                            "value": "Menlo"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 78.0,
+                              "x": 1812.0,
+                              "y": 197.0
+                            },
+                            "description": "Choose...",
+                            "name": "Terminal font",
+                            "ref_id": "@s1gjpb8mcvi0yu:e41",
+                            "role": "button"
+                          },
+                          {
+                            "bounds": {
+                              "height": 15.0,
+                              "width": 58.0,
+                              "x": 1349.0,
+                              "y": 239.0
+                            },
+                            "name": "Font style",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 47.0,
+                              "x": 1357.0,
+                              "y": 265.0
+                            },
+                            "name": "Font style",
+                            "ref_id": "@s1gjpb8mcvi0yu:e42",
+                            "role": "menubutton",
+                            "value": "Regular"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 11.0,
+                              "width": 8.0,
+                              "x": 1513.0,
+                              "y": 268.0
+                            },
+                            "name": "Font style",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "chevron.up.chevron.down"
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e43",
+                            "role": "menubutton",
+                            "value": "Regular"
+                          },
+                          {
+                            "bounds": {
+                              "height": 15.0,
+                              "width": 53.0,
+                              "x": 1554.0,
+                              "y": 239.0
+                            },
+                            "name": "Font size",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 32.0,
+                              "x": 1584.0,
+                              "y": 265.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 32.0,
+                                  "x": 1584.0,
+                                  "y": 265.0
+                                },
+                                "name": "Font size",
+                                "ref_id": "@s1gjpb8mcvi0yu:e45",
+                                "role": "textfield",
+                                "value": "12"
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e44",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "available_actions": [
+                              "SetValue",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 13.0,
+                              "x": 1621.0,
+                              "y": 265.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 8.0,
+                                  "width": 13.0,
+                                  "x": 1621.0,
+                                  "y": 265.0
+                                },
+                                "ref_id": "@s1gjpb8mcvi0yu:e47",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 8.0,
+                                  "width": 13.0,
+                                  "x": 1621.0,
+                                  "y": 273.0
+                                },
+                                "ref_id": "@s1gjpb8mcvi0yu:e48",
+                                "role": "button"
+                              }
+                            ],
+                            "name": "Font size",
+                            "ref_id": "@s1gjpb8mcvi0yu:e46",
+                            "role": "incrementor",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "0"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 13.0,
+                              "x": 1641.0,
+                              "y": 265.0
+                            },
+                            "name": "pt",
+                            "role": "statictext",
+                            "value": "pt"
+                          },
+                          {
+                            "bounds": {
+                              "height": 15.0,
+                              "width": 41.0,
+                              "x": 1679.0,
+                              "y": 239.0
+                            },
+                            "name": "Weight",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1705.0,
+                              "y": 265.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 36.0,
+                                  "x": 1705.0,
+                                  "y": 265.0
+                                },
+                                "name": "Font weight, fixed by the font",
+                                "ref_id": "@s1gjpb8mcvi0yu:e50",
+                                "role": "textfield",
+                                "states": [
+                                  "disabled",
+                                  "readonly"
+                                ],
+                                "value": "400"
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e49",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "bounds": {
+                              "height": 15.0,
+                              "width": 65.0,
+                              "x": 1785.0,
+                              "y": 239.0
+                            },
+                            "name": "Line height",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 28.0,
+                              "x": 1816.0,
+                              "y": 265.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 28.0,
+                                  "x": 1816.0,
+                                  "y": 265.0
+                                },
+                                "name": "Line height adjustment in percent",
+                                "ref_id": "@s1gjpb8mcvi0yu:e52",
+                                "role": "textfield",
+                                "value": "0"
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e51",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "available_actions": [
+                              "SetValue",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 13.0,
+                              "x": 1849.0,
+                              "y": 265.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 8.0,
+                                  "width": 13.0,
+                                  "x": 1849.0,
+                                  "y": 265.0
+                                },
+                                "ref_id": "@s1gjpb8mcvi0yu:e54",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 8.0,
+                                  "width": 13.0,
+                                  "x": 1849.0,
+                                  "y": 273.0
+                                },
+                                "ref_id": "@s1gjpb8mcvi0yu:e55",
+                                "role": "button"
+                              }
+                            ],
+                            "name": "Line height adjustment in percent",
+                            "ref_id": "@s1gjpb8mcvi0yu:e53",
+                            "role": "incrementor",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "0"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 12.0,
+                              "x": 1869.0,
+                              "y": 265.0
+                            },
+                            "name": "%",
+                            "role": "statictext",
+                            "value": "%"
+                          },
+                          {
+                            "available_actions": [
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 58.0,
+                              "width": 549.0,
+                              "x": 1345.0,
+                              "y": 295.0
+                            },
+                            "name": "Typography preview: regular, bold, and italic terminal text.",
+                            "role": "group"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 369.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 380.0
+                            },
+                            "name": "Advanced font settings",
+                            "ref_id": "@s1gjpb8mcvi0yu:e56",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 41.0,
+                          "x": 1349.0,
+                          "y": 437.0
+                        },
+                        "name": "Colors",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 137.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 463.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 130.0,
+                              "x": 1349.0,
+                              "y": 469.0
+                            },
+                            "name": "Improve text contrast",
+                            "role": "statictext",
+                            "value": "Improve text contrast"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 225.0,
+                              "x": 1349.0,
+                              "y": 489.0
+                            },
+                            "name": "Adjust unreadable text against its background.",
+                            "role": "statictext",
+                            "value": "Adjust unreadable text against its background."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 478.0
+                            },
+                            "description": "Improve text contrast",
+                            "name": "Improve text contrast",
+                            "ref_id": "@s1gjpb8mcvi0yu:e57",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 169.0,
+                              "x": 1349.0,
+                              "y": 515.0
+                            },
+                            "name": "Force theme palette for text",
+                            "role": "statictext",
+                            "value": "Force theme palette for text"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 208.0,
+                              "x": 1349.0,
+                              "y": 535.0
+                            },
+                            "name": "Map text colors to the nearest theme color.",
+                            "role": "statictext",
+                            "value": "Map text colors to the nearest theme color."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 524.0
+                            },
+                            "description": "Force theme palette for text",
+                            "name": "Force theme palette for text",
+                            "ref_id": "@s1gjpb8mcvi0yu:e58",
+                            "role": "switch",
+                            "value": "0"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 166.0,
+                              "x": 1349.0,
+                              "y": 561.0
+                            },
+                            "name": "Use Display P3 color space",
+                            "role": "statictext",
+                            "value": "Use Display P3 color space"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 286.0,
+                              "x": 1349.0,
+                              "y": 581.0
+                            },
+                            "name": "Read theme and program colors as wide-gamut Display P3.",
+                            "role": "statictext",
+                            "value": "Read theme and program colors as wide-gamut Display P3."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 570.0
+                            },
+                            "description": "Use Display P3 color space",
+                            "name": "Use Display P3 color space",
+                            "ref_id": "@s1gjpb8mcvi0yu:e59",
+                            "role": "switch",
+                            "value": "0"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 43.0,
+                          "x": 1349.0,
+                          "y": 630.0
+                        },
+                        "name": "Cursor",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 160.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 656.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 30.0,
+                              "width": 549.0,
+                              "x": 1345.0,
+                              "y": 662.0
+                            },
+                            "name": "Cursor preview: the selected cursor at a terminal prompt.",
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 74.0,
+                              "x": 1349.0,
+                              "y": 704.0
+                            },
+                            "name": "Cursor style",
+                            "role": "statictext",
+                            "value": "Cursor style"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 81.0,
+                              "x": 1809.0,
+                              "y": 700.0
+                            },
+                            "name": "Cursor style",
+                            "ref_id": "@s1gjpb8mcvi0yu:e60",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Block"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 71.0,
+                              "x": 1349.0,
+                              "y": 743.0
+                            },
+                            "name": "Blink speed",
+                            "role": "statictext",
+                            "value": "Blink speed"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 91.0,
+                              "x": 1799.0,
+                              "y": 739.0
+                            },
+                            "name": "Blink speed",
+                            "ref_id": "@s1gjpb8mcvi0yu:e61",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Normal"
+                          },
+                          {
+                            "bounds": {
+                              "height": 45.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 768.0
+                            },
+                            "name": "Blink interval",
+                            "role": "statictext",
+                            "states": [
+                              "disabled"
+                            ],
+                            "value": "Blink interval"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 67.0,
+                              "x": 1349.0,
+                              "y": 777.0
+                            },
+                            "name": "Force style",
+                            "role": "statictext",
+                            "value": "Force style"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 252.0,
+                              "x": 1349.0,
+                              "y": 797.0
+                            },
+                            "name": "Ignore application requests to change cursor shape.",
+                            "role": "statictext",
+                            "value": "Ignore application requests to change cursor shape."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 786.0
+                            },
+                            "description": "Force style",
+                            "name": "Force style",
+                            "ref_id": "@s1gjpb8mcvi0yu:e62",
+                            "role": "switch",
+                            "value": "0"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 61.0,
+                          "x": 1349.0,
+                          "y": 846.0
+                        },
+                        "name": "Keyboard",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 77.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 872.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 154.0,
+                              "x": 1349.0,
+                              "y": 883.0
+                            },
+                            "name": "Show key sequence hints",
+                            "role": "statictext",
+                            "value": "Show key sequence hints"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 883.0
+                            },
+                            "name": "Show key sequence hints",
+                            "ref_id": "@s1gjpb8mcvi0yu:e63",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 66.0,
+                              "x": 1349.0,
+                              "y": 922.0
+                            },
+                            "name": "Option key",
+                            "role": "statictext",
+                            "value": "Option key"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 237.0,
+                              "x": 1653.0,
+                              "y": 918.0
+                            },
+                            "name": "Option key",
+                            "ref_id": "@s1gjpb8mcvi0yu:e64",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Automatic (by keyboard layout)"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 516.0,
+                          "x": 1349.0,
+                          "y": 959.0
+                        },
+                        "name": "Automatic sends Alt on U.S. layouts and types special keys elsewhere. Applies to all terminals on this Mac, including remote hosts.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Automatic sends Alt on U.S. layouts and types special keys elsewhere. Applies to all terminals on this Mac, including remote hosts."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 56.0,
+                          "x": 1349.0,
+                          "y": 1015.0
+                        },
+                        "name": "Scrolling",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1041.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 102.0,
+                              "x": 1349.0,
+                              "y": 1052.0
+                            },
+                            "name": "Smooth scrolling",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Smooth scrolling"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1052.0
+                            },
+                            "name": "Smooth scrolling",
+                            "ref_id": "@s1gjpb8mcvi0yu:e65",
+                            "role": "switch",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "0"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 506.0,
+                          "x": 1349.0,
+                          "y": 1089.0
+                        },
+                        "name": "Move through terminal history smoothly with a trackpad or Magic Mouse. Programs that handle scrolling themselves, and scrolling while Find is open, still move by whole lines.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Move through terminal history smoothly with a trackpad or Magic Mouse. Programs that handle scrolling themselves, and scrolling while Find is open, still move by whole lines."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 54.0,
+                          "x": 1349.0,
+                          "y": 1145.0
+                        },
+                        "name": "Resizing",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 45.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1171.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 151.0,
+                              "x": 1349.0,
+                              "y": 1177.0
+                            },
+                            "name": "Smooth terminal resizing",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Smooth terminal resizing"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 369.0,
+                              "x": 1349.0,
+                              "y": 1197.0
+                            },
+                            "name": "Reflow text on the frame a pane changes size, without waiting for the server.",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Reflow text on the frame a pane changes size, without waiting for the server."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1186.0
+                            },
+                            "description": "Smooth terminal resizing",
+                            "name": "Smooth terminal resizing",
+                            "ref_id": "@s1gjpb8mcvi0yu:e66",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 60.0,
+                          "x": 1349.0,
+                          "y": 1246.0
+                        },
+                        "name": "Selection",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 231.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1272.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 30.0,
+                              "width": 549.0,
+                              "x": 1345.0,
+                              "y": 1278.0
+                            },
+                            "name": "Selection preview: highlighted terminal text.",
+                            "role": "group",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 109.0,
+                              "x": 1349.0,
+                              "y": 1320.0
+                            },
+                            "name": "Copy on selection",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Copy on selection"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1320.0
+                            },
+                            "name": "Copy on selection",
+                            "ref_id": "@s1gjpb8mcvi0yu:e67",
+                            "role": "switch",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "0"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 140.0,
+                              "x": 1349.0,
+                              "y": 1359.0
+                            },
+                            "name": "Play animation on copy",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Play animation on copy"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1359.0
+                            },
+                            "name": "Play animation on copy",
+                            "ref_id": "@s1gjpb8mcvi0yu:e68",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 71.0,
+                              "x": 1349.0,
+                              "y": 1398.0
+                            },
+                            "name": "Foreground",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Foreground"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 89.0,
+                              "x": 1801.0,
+                              "y": 1394.0
+                            },
+                            "name": "Foreground",
+                            "ref_id": "@s1gjpb8mcvi0yu:e69",
+                            "role": "combobox",
+                            "states": [
+                              "readonly",
+                              "offscreen"
+                            ],
+                            "value": "Theme"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 73.0,
+                              "x": 1349.0,
+                              "y": 1437.0
+                            },
+                            "name": "Background",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Background"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 89.0,
+                              "x": 1801.0,
+                              "y": 1433.0
+                            },
+                            "name": "Background",
+                            "ref_id": "@s1gjpb8mcvi0yu:e70",
+                            "role": "combobox",
+                            "states": [
+                              "readonly",
+                              "offscreen"
+                            ],
+                            "value": "Theme"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": 1476.0
+                            },
+                            "name": "Rounded corners",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Rounded corners"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1476.0
+                            },
+                            "name": "Rounded corners",
+                            "ref_id": "@s1gjpb8mcvi0yu:e71",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 34.0,
+                          "x": 1349.0,
+                          "y": 1533.0
+                        },
+                        "name": "Links",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1559.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 126.0,
+                              "x": 1349.0,
+                              "y": 1570.0
+                            },
+                            "name": "Links that open apps",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Links that open apps"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 100.0,
+                              "x": 1790.0,
+                              "y": 1566.0
+                            },
+                            "name": "Links that open apps",
+                            "ref_id": "@s1gjpb8mcvi0yu:e72",
+                            "role": "combobox",
+                            "states": [
+                              "readonly",
+                              "offscreen"
+                            ],
+                            "value": "Ask First"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 529.0,
+                          "x": 1349.0,
+                          "y": 1607.0
+                        },
+                        "name": "Web, mail, and file links open directly. Other links, such as ssh://, launch the app registered for them, and any program in a terminal can print one.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Web, mail, and file links open directly. Other links, such as ssh://, launch the app registered for them, and any program in a terminal can print one."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 154.0,
+                          "x": 1349.0,
+                          "y": 1664.0
+                        },
+                        "name": "Integrated Path Browser",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 18.0,
+                          "width": 32.0,
+                          "x": 1511.0,
+                          "y": 1663.0
+                        },
+                        "name": "\u2303\u2318I",
+                        "role": "unknown",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1691.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 157.0,
+                              "x": 1349.0,
+                              "y": 1702.0
+                            },
+                            "name": "Show recently used paths",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Show recently used paths"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1702.0
+                            },
+                            "name": "Show recently used paths",
+                            "ref_id": "@s1gjpb8mcvi0yu:e73",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 531.0,
+                          "x": 1349.0,
+                          "y": 1739.0
+                        },
+                        "name": "Insert Path types the path of a file or folder at the cursor. Recently used paths are shared by every session on the same host.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Insert Path types the path of a file or folder at the cursor. Recently used paths are shared by every session on the same host."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 36.0,
+                          "x": 1349.0,
+                          "y": 1795.0
+                        },
+                        "name": "Titles",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1821.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 136.0,
+                              "x": 1349.0,
+                              "y": 1832.0
+                            },
+                            "name": "Prefer generated titles",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Prefer generated titles"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1832.0
+                            },
+                            "name": "Prefer generated titles",
+                            "ref_id": "@s1gjpb8mcvi0yu:e74",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 499.0,
+                          "x": 1349.0,
+                          "y": 1869.0
+                        },
+                        "name": "Show the running program and its directory instead of titles that shells set. Titles that programs set for themselves, and names you give tabs, still appear.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Show the running program and its directory instead of titles that shells set. Titles that programs set for themselves, and names you give tabs, still appear."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 32.0,
+                          "x": 1349.0,
+                          "y": 1925.0
+                        },
+                        "name": "Shell",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 40.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1951.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 109.0,
+                              "x": 1349.0,
+                              "y": 1964.0
+                            },
+                            "name": "Startup command",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Startup command"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 386.0,
+                              "x": 1499.0,
+                              "y": 1964.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 386.0,
+                                  "x": 1499.0,
+                                  "y": 1964.0
+                                },
+                                "name": "Startup command",
+                                "ref_id": "@s1gjpb8mcvi0yu:e76",
+                                "role": "textfield",
+                                "states": [
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1gjpb8mcvi0yu:e75",
+                            "role": "scrollarea",
+                            "states": [
+                              "offscreen"
+                            ]
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 39.0,
+                          "width": 515.0,
+                          "x": 1349.0,
+                          "y": 2001.0
+                        },
+                        "name": "Executable and arguments. Use quotes to group arguments. Applies to new terminals on this Mac. Remote hosts use their own default shell. New tabs and splits use the source terminal\u2019s working directory when available. Otherwise, they use the server\u2019s default directory.",
+                        "role": "statictext",
+                        "states": [
+                          "offscreen"
+                        ],
+                        "value": "Executable and arguments. Use quotes to group arguments. Applies to new terminals on this Mac. Remote hosts use their own default shell. New tabs and splits use the source terminal\u2019s working directory when available. Otherwise, they use the server\u2019s default directory."
+                      },
+                      {
+                        "available_actions": [
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 792.5,
+                          "width": 19.0,
+                          "x": 1902.0,
+                          "y": 151.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetValue"
+                            ],
+                            "bounds": {
+                              "height": 340.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e78",
+                            "role": "handle",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e79",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e80",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 444.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 495.0
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e81",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s1gjpb8mcvi0yu:e82",
+                            "role": "button"
+                          }
+                        ],
+                        "ref_id": "@s1gjpb8mcvi0yu:e77",
+                        "role": "scrollbar",
+                        "states": [
+                          "hidden"
+                        ],
+                        "value": "0"
+                      }
+                    ],
+                    "ref_id": "@s1gjpb8mcvi0yu:e40",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s1gjpb8mcvi0yu:e83",
+                    "role": "button"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s1gjpb8mcvi0yu:e84",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 78.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 80.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Terminal",
+                "role": "statictext",
+                "value": "Terminal"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s1gjpb8mcvi0yu:e85",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 1169.0,
+                  "y": 119.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s1gjpb8mcvi0yu:e86",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s1gjpb8mcvi0yu:e87",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Terminal",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

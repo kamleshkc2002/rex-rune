@@ -1,0 +1,452 @@
+[
+  {
+    "file": "screenshots/00-workspace-terminal.png",
+    "thumbnail": "thumbnails/00-workspace-terminal.jpg",
+    "title": "00 workspace terminal",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:31:37.236753-08:00",
+    "sha256": "0e030610e038c190b9d3b50e5217b0ecf0da4beb671405d7e567275efc2867a9"
+  },
+  {
+    "file": "screenshots/01-settings-interface.png",
+    "thumbnail": "thumbnails/01-settings-interface.jpg",
+    "title": "01 settings interface",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:29:54.484514-08:00",
+    "sha256": "33627fa560292ec9a24302deb58b3efd19001535a067f47b8b118787051dc29b"
+  },
+  {
+    "file": "screenshots/02-settings-terminal.png",
+    "thumbnail": "thumbnails/02-settings-terminal.jpg",
+    "title": "02 settings terminal",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:11.323718-08:00",
+    "sha256": "1bdf6bff3a09262486e7ab289183c16e77ee2268ad9d0960043fb1a7440e467c"
+  },
+  {
+    "file": "screenshots/03-settings-notifications.png",
+    "thumbnail": "thumbnails/03-settings-notifications.jpg",
+    "title": "03 settings notifications",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:12.097728-08:00",
+    "sha256": "09829ff8f19a3fd377c6b2826492d5ff3176a37f3c596c25dd0a9667d29047c0"
+  },
+  {
+    "file": "screenshots/04-settings-integrations.png",
+    "thumbnail": "thumbnails/04-settings-integrations.jpg",
+    "title": "04 settings integrations",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:12.870737-08:00",
+    "sha256": "c2a4f7264f725f7bacb15af4c4b7261575ebf4f0b8d57fac6c1d41786b6f5841"
+  },
+  {
+    "file": "screenshots/05-settings-remote-hosts.png",
+    "thumbnail": "thumbnails/05-settings-remote-hosts.jpg",
+    "title": "05 settings remote hosts",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:13.666747-08:00",
+    "sha256": "93e37d1c34f5630d2a29655dcf7244e05e47bdde636ab8650bbda49acafaad7d"
+  },
+  {
+    "file": "screenshots/06-settings-shortcuts.png",
+    "thumbnail": "thumbnails/06-settings-shortcuts.jpg",
+    "title": "06 settings shortcuts",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:14.420756-08:00",
+    "sha256": "c5cd5ed35a6a830c393932a50c4aeacc1e7dac40288dd8213699ef5ab59b8f00"
+  },
+  {
+    "file": "screenshots/07-settings-updates.png",
+    "thumbnail": "thumbnails/07-settings-updates.jpg",
+    "title": "07 settings updates",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:15.169765-08:00",
+    "sha256": "e27aa6887fa5a5e4e41a2227e1dc2da0da326d72f232307d1d0363db034f957e"
+  },
+  {
+    "file": "screenshots/08-settings-about.png",
+    "thumbnail": "thumbnails/08-settings-about.jpg",
+    "title": "08 settings about",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:30:15.919774-08:00",
+    "sha256": "64af7315beadc41fdc796b2425e18d62e1db72df770f1928a798900f33fde8f2"
+  },
+  {
+    "file": "screenshots/09-interface-theme-picker.png",
+    "thumbnail": "thumbnails/09-interface-theme-picker.jpg",
+    "title": "09 interface theme picker",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:31:10.410566-08:00",
+    "sha256": "b96850d3bf319820334f13a90ab5d03a3c49fc23c509985dfce53f5f36342eff"
+  },
+  {
+    "file": "screenshots/10-font-family-and-fallbacks.png",
+    "thumbnail": "thumbnails/10-font-family-and-fallbacks.jpg",
+    "title": "10 font family and fallbacks",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:32:00.633145-08:00",
+    "sha256": "3fa88871adf56a1db5bcac029a96783f589855f02e3f1e822d9cd6e98e1e409d"
+  },
+  {
+    "file": "screenshots/11-terminal-theme-picker.png",
+    "thumbnail": "thumbnails/11-terminal-theme-picker.jpg",
+    "title": "11 terminal theme picker",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:35:05.071229-08:00",
+    "sha256": "5a719c85b53e5b3cf6ab684aa6852f82072cba76059ba7940b6b5d0830c008dc"
+  },
+  {
+    "file": "screenshots/12-default-shell.png",
+    "thumbnail": "thumbnails/12-default-shell.jpg",
+    "title": "12 default shell",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:32:04.296902-08:00",
+    "sha256": "d043bd28285236ce80f53cdeef85416272f312f78e0cf016032a27aa167b7e8b"
+  },
+  {
+    "file": "screenshots/13-theme-search.png",
+    "thumbnail": "thumbnails/13-theme-search.jpg",
+    "title": "13 theme search",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:35:50.109761-08:00",
+    "sha256": "b22151900097619ba472ce873f691deb204856aa55dd43b24062e7ea627849e5"
+  },
+  {
+    "file": "screenshots/14-settings-terminal-lower.png",
+    "thumbnail": "thumbnails/14-settings-terminal-lower.jpg",
+    "title": "14 settings terminal lower",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:36:16.074521-08:00",
+    "sha256": "990a0b9dea22cd0c2ae09614efaffd03ffd3c341dce70ddeca539820bb881d43"
+  },
+  {
+    "file": "screenshots/15-settings-integrations-lower.png",
+    "thumbnail": "thumbnails/15-settings-integrations-lower.jpg",
+    "title": "15 settings integrations lower",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:36:33.043268-08:00",
+    "sha256": "165719340ccba683d8ad715856ee5bfdf67207470c88b46272d60f173f321eba"
+  },
+  {
+    "file": "screenshots/16-agent-integration-preview.png",
+    "thumbnail": "thumbnails/16-agent-integration-preview.jpg",
+    "title": "16 agent integration preview",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:36:55.770889-08:00",
+    "sha256": "84ea47f25ce456a249e93bb6985f31f19bd6fc5fc1bfaa028209c63b5b7260a9"
+  },
+  {
+    "file": "screenshots/17-all-agents-setup-preview.png",
+    "thumbnail": "thumbnails/17-all-agents-setup-preview.jpg",
+    "title": "17 all agents setup preview",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:37:26.247894-08:00",
+    "sha256": "923024cfff5845a6b059c905c46e76b0598ee87f4592bb68d836268187eccf1c"
+  },
+  {
+    "file": "screenshots/18-client-label.png",
+    "thumbnail": "thumbnails/18-client-label.jpg",
+    "title": "18 client label",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:38:07.618380-08:00",
+    "sha256": "a6766ad7579ec7547e050a5b6e94f1555e933e8ac67e9e5bb1615124afd703bf"
+  },
+  {
+    "file": "screenshots/19-edit-host.png",
+    "thumbnail": "thumbnails/19-edit-host.jpg",
+    "title": "19 edit host",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:38:08.877394-08:00",
+    "sha256": "d1762ec0fbd2d3c5ca34f7c1cce4fa4607184658ce98934510cb1e5d9c86e22b"
+  },
+  {
+    "file": "screenshots/20-remove-host-confirmation.png",
+    "thumbnail": "thumbnails/20-remove-host-confirmation.jpg",
+    "title": "20 remove host confirmation",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:38:10.134409-08:00",
+    "sha256": "19ac1bade18a01c3c419d99cd5404dcd3d5441d52f6e7839e7c0f3de85d4d4d5"
+  },
+  {
+    "file": "screenshots/21-add-host-tailnet-discovery.png",
+    "thumbnail": "thumbnails/21-add-host-tailnet-discovery.jpg",
+    "title": "21 add host tailnet discovery",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:38:50.832886-08:00",
+    "sha256": "7aa0c223e52dd7e20aaec7edbf0cd8f5641d491a0d34ad0117dc319a3bddd442"
+  },
+  {
+    "file": "screenshots/22-add-host-manual-endpoint.png",
+    "thumbnail": "thumbnails/22-add-host-manual-endpoint.jpg",
+    "title": "22 add host manual endpoint",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:38:51.586895-08:00",
+    "sha256": "4b97d653722840de518df4e4abe09b98a581998e16fe2a30b98f69c7c10ff29b"
+  },
+  {
+    "file": "screenshots/23-add-host-ssh.png",
+    "thumbnail": "thumbnails/23-add-host-ssh.jpg",
+    "title": "23 add host ssh",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:39:20.373232-08:00",
+    "sha256": "cb660f740eaf673df30a663eed3cb163779ffe5780d9805c2373e636a9f3654f"
+  },
+  {
+    "file": "screenshots/24-discovered-server-listeners.png",
+    "thumbnail": "thumbnails/24-discovered-server-listeners.jpg",
+    "title": "24 discovered server listeners",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:39:21.655247-08:00",
+    "sha256": "dc63c3176015976e487bfaf4af56b66e36e3014af1ee5e7b15b2b180dd7ea75f"
+  },
+  {
+    "file": "screenshots/25-shortcuts-page-2.png",
+    "thumbnail": "thumbnails/25-shortcuts-page-2.jpg",
+    "title": "25 shortcuts page 2",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:39:43.934508-08:00",
+    "sha256": "1523ab25c8f6348f3d99d589a6459818a3f340f3db1e621ec1c50bcaeac2440c"
+  },
+  {
+    "file": "screenshots/26-shortcuts-page-3.png",
+    "thumbnail": "thumbnails/26-shortcuts-page-3.jpg",
+    "title": "26 shortcuts page 3",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:40:06.808933-08:00",
+    "sha256": "b29786c09f8ab10521e20181720ab33a4cafc2075f0ce32e5996b7a4b07eb245"
+  },
+  {
+    "file": "screenshots/27-shortcuts-page-4.png",
+    "thumbnail": "thumbnails/27-shortcuts-page-4.jpg",
+    "title": "27 shortcuts page 4",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:40:07.659785-08:00",
+    "sha256": "d5749b124117c0278135b96ceaba776770a446179fb11c6eaa0eb56009253f3d"
+  },
+  {
+    "file": "screenshots/28-shortcuts-page-5.png",
+    "thumbnail": "thumbnails/28-shortcuts-page-5.jpg",
+    "title": "28 shortcuts page 5",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:40:08.508795-08:00",
+    "sha256": "36fbb4a1c1f9aea9d0a1c425290e98c05a53c043ce92807d5dd2ca76d15c727a"
+  },
+  {
+    "file": "screenshots/29-shortcuts-page-6.png",
+    "thumbnail": "thumbnails/29-shortcuts-page-6.jpg",
+    "title": "29 shortcuts page 6",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:40:09.266804-08:00",
+    "sha256": "ad6bc8a2e58e6ea84a10fa265753d1470d012d8bf7b102c402ae8812121aa063"
+  },
+  {
+    "file": "screenshots/30-workspace-session-sidebar.png",
+    "thumbnail": "thumbnails/30-workspace-session-sidebar.jpg",
+    "title": "30 workspace session sidebar",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:40:28.127024-08:00",
+    "sha256": "908b9b02b2e53b2dc8d7298c657e0753053dbf8561ab125c2150e8c7110b5540"
+  },
+  {
+    "file": "screenshots/31-host-context-menu.png",
+    "thumbnail": "thumbnails/31-host-context-menu.jpg",
+    "title": "31 host context menu",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:41:02.187422-08:00",
+    "sha256": "604f8263dac1ffa289570693ee531034474d7380cd1585216babac9aa5b22802"
+  },
+  {
+    "file": "screenshots/32-session-context-menu.png",
+    "thumbnail": "thumbnails/32-session-context-menu.jpg",
+    "title": "32 session context menu",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:41:15.403576-08:00",
+    "sha256": "404a34523aafc31ce32b146adbe762f78f2600059ce3ed7ef555ee30c3eb3a50"
+  },
+  {
+    "file": "screenshots/33-rename-session.png",
+    "thumbnail": "thumbnails/33-rename-session.jpg",
+    "title": "33 rename session",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:43:17.918002-08:00",
+    "sha256": "ec5621a530847e2908347242bb00addbe6476e5fb0c45f66be5c574208436d0e"
+  },
+  {
+    "file": "screenshots/34-close-session-confirmation.png",
+    "thumbnail": "thumbnails/34-close-session-confirmation.jpg",
+    "title": "34 close session confirmation",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:43:37.269227-08:00",
+    "sha256": "4c915ebe9abdb6abdf4be8f05f29138508023214031df3b886482eb5dc7b6d82"
+  },
+  {
+    "file": "screenshots/35-tab-context-menu.png",
+    "thumbnail": "thumbnails/35-tab-context-menu.jpg",
+    "title": "35 tab context menu",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:43:49.349367-08:00",
+    "sha256": "f7af7f3517c2cbab10a0ef3c11a93a7572333c54fca3466fe37d87ef9b95d5b0"
+  },
+  {
+    "file": "screenshots/36-rename-tab.png",
+    "thumbnail": "thumbnails/36-rename-tab.jpg",
+    "title": "36 rename tab",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:04.342541-08:00",
+    "sha256": "43b998ca7da7c2a3a9094e6e237283e4624b3864fcaf84856fd51f86fbad6370"
+  },
+  {
+    "file": "screenshots/37-close-tab-confirmation.png",
+    "thumbnail": "thumbnails/37-close-tab-confirmation.jpg",
+    "title": "37 close tab confirmation",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:06.178563-08:00",
+    "sha256": "4a5bfd72e892c822a86dee9a2b01a302bfb394b1a21eabcd66034935afdc700a"
+  },
+  {
+    "file": "screenshots/38-pane-context-menu.png",
+    "thumbnail": "thumbnails/38-pane-context-menu.jpg",
+    "title": "38 pane context menu",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:07.505578-08:00",
+    "sha256": "91627afdeb5c56b6eba04e07b065d3f88b1144f86b39ac8a05ead3515c06e134"
+  },
+  {
+    "file": "screenshots/39-rename-pane.png",
+    "thumbnail": "thumbnails/39-rename-pane.jpg",
+    "title": "39 rename pane",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:26.852803-08:00",
+    "sha256": "5ce7e0287de7317cd9f41bfbbc28fd4d7e54f2623daf55b82c47e32c3a8688f8"
+  },
+  {
+    "file": "screenshots/40-close-pane-confirmation.png",
+    "thumbnail": "thumbnails/40-close-pane-confirmation.jpg",
+    "title": "40 close pane confirmation",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:28.699824-08:00",
+    "sha256": "d39f845fa05bd3e7f185ffcb3009857c46abeb3ac0e8e729264ae48afa71e958"
+  },
+  {
+    "file": "screenshots/41-command-palette.png",
+    "thumbnail": "thumbnails/41-command-palette.jpg",
+    "title": "41 command palette",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:30.024840-08:00",
+    "sha256": "5bba4ff7174da766755350947ddcc5507607b5127bd877f524ab076615d083cd"
+  },
+  {
+    "file": "screenshots/42-command-search.png",
+    "thumbnail": "thumbnails/42-command-search.jpg",
+    "title": "42 command search",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:46.810035-08:00",
+    "sha256": "a01155915d97667b51a350add9dc5534b889ceb6c605c2359845cc25403f48dc"
+  },
+  {
+    "file": "screenshots/43-session-switcher.png",
+    "thumbnail": "thumbnails/43-session-switcher.jpg",
+    "title": "43 session switcher",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:44:48.097049-08:00",
+    "sha256": "894dffd9b0bfffa77ac32c80b87e292c4e135f30e7edbce5f023c1814e0afe4b"
+  },
+  {
+    "file": "screenshots/44-session-switcher-search.png",
+    "thumbnail": "thumbnails/44-session-switcher-search.jpg",
+    "title": "44 session switcher search",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:45:49.402761-08:00",
+    "sha256": "4a8758f808588f63291199d2b722d5079d8c24e9184bc32d996fcf1e707a5170"
+  },
+  {
+    "file": "screenshots/45-new-session-host-chooser.png",
+    "thumbnail": "thumbnails/45-new-session-host-chooser.jpg",
+    "title": "45 new session host chooser",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:46:02.288932-08:00",
+    "sha256": "77c32397f8db1f2d167d9afb78f1ae52ec56fcd45493053d1edb96e3a97f14f1"
+  },
+  {
+    "file": "screenshots/46-terminal-search.png",
+    "thumbnail": "thumbnails/46-terminal-search.jpg",
+    "title": "46 terminal search",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:46:03.428956-08:00",
+    "sha256": "78321d3297f8f6c27f535078f748c4a35e102181130c7e26e0aea3ea60bbcfb5"
+  },
+  {
+    "file": "screenshots/47-terminal-search-results.png",
+    "thumbnail": "thumbnails/47-terminal-search-results.jpg",
+    "title": "47 terminal search results",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:46:19.076278-08:00",
+    "sha256": "767d9dfb238a30cea75c09a204d46ab18467f494a2d1becf4b34ab0fa960fc6d"
+  },
+  {
+    "file": "screenshots/48-terminal-search-no-matches.png",
+    "thumbnail": "thumbnails/48-terminal-search-no-matches.jpg",
+    "title": "48 terminal search no matches",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:47:02.286149-08:00",
+    "sha256": "410e946781437ff6032a2b908f16b32d98939a91aa52c8a20a6c3655f0316caa"
+  },
+  {
+    "file": "screenshots/49-session-inline-rename.png",
+    "thumbnail": "thumbnails/49-session-inline-rename.jpg",
+    "title": "49 session inline rename",
+    "width": 2560,
+    "height": 1410,
+    "captured_at": "2026-11-11T00:47:17.296446-08:00",
+    "sha256": "c2c0ac135a92bf7662cd60a50af6ec59830a770fe4d6fc9645f6116b90ebdf0f"
+  }
+]

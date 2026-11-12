@@ -1,0 +1,230 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 4,
+  "snapshot_id": "s1tx1a53p7y4n1",
+  "tree": {
+    "bounds": {
+      "height": 243.0,
+      "width": 280.0,
+      "x": 820.0,
+      "y": 389.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 243.0,
+          "width": 280.0,
+          "x": 820.0,
+          "y": 389.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 72.0,
+              "width": 72.0,
+              "x": 924.0,
+              "y": 421.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 72.0,
+                  "width": 72.0,
+                  "x": 924.0,
+                  "y": 421.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 72.0,
+                      "width": 70.0,
+                      "x": 925.0,
+                      "y": 421.0
+                    },
+                    "name": "Rexie",
+                    "role": "image"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "name": "Rexie",
+            "role": "image"
+          },
+          {
+            "bounds": {
+              "height": 17.0,
+              "width": 61.0,
+              "x": 929.5,
+              "y": 505.0
+            },
+            "name": "Rex Beta",
+            "role": "statictext",
+            "value": "Rex Beta"
+          },
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 110.0,
+              "x": 905.0,
+              "y": 528.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 110.0,
+                  "x": 905.0,
+                  "y": 528.0
+                },
+                "name": "Version 0.1.0 (1932)",
+                "role": "statictext",
+                "value": "Version 0.1.0 (1932)"
+              }
+            ],
+            "name": "Version 0.1.0 (1932)",
+            "role": "statictext",
+            "value": "Version 0.1.0 (1932)"
+          },
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 76.0,
+              "x": 922.0,
+              "y": 545.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 76.0,
+                  "x": 922.0,
+                  "y": 545.0
+                },
+                "name": "Bleeding Edge",
+                "role": "statictext",
+                "value": "Bleeding Edge"
+              }
+            ],
+            "name": "Bleeding Edge",
+            "role": "statictext",
+            "value": "Bleeding Edge"
+          },
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 150.0,
+              "x": 885.0,
+              "y": 562.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 150.0,
+                  "x": 885.0,
+                  "y": 562.0
+                },
+                "name": "Rex Server 0.1.0-preview.15",
+                "role": "statictext",
+                "value": "Rex Server 0.1.0-preview.15"
+              }
+            ],
+            "name": "Rex Server 0.1.0-preview.15",
+            "role": "statictext",
+            "value": "Rex Server 0.1.0-preview.15"
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 22.0,
+              "width": 134.0,
+              "x": 893.0,
+              "y": 590.0
+            },
+            "name": "Copy Version Info",
+            "ref_id": "@s1tx1a53p7y4n1:e1",
+            "role": "button"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 828.0,
+          "y": 397.0
+        },
+        "name": "Close",
+        "ref_id": "@s1tx1a53p7y4n1:e2",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 874.0,
+          "y": 397.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 875.0,
+              "y": 398.0
+            },
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s1tx1a53p7y4n1:e3",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 851.0,
+          "y": 397.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s1tx1a53p7y4n1:e4",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "About Rex Beta",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "about"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-665",
+    "title": "About Rex Beta"
+  }
+}

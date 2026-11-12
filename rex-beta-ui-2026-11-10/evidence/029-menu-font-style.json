@@ -1,0 +1,125 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 6,
+  "snapshot_id": "s2p8vze2hgbkyh",
+  "tree": {
+    "bounds": {
+      "height": 106.0,
+      "width": 176.0,
+      "x": 1344.0,
+      "y": 292.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 176.0,
+          "x": 1344.0,
+          "y": 297.0
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e1",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 176.0,
+          "x": 1344.0,
+          "y": 297.0
+        },
+        "name": "Regular",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 176.0,
+          "x": 1344.0,
+          "y": 321.0
+        },
+        "name": "Italic",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 176.0,
+          "x": 1344.0,
+          "y": 345.0
+        },
+        "name": "Bold",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 176.0,
+          "x": 1344.0,
+          "y": 369.0
+        },
+        "name": "Bold Italic",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 0.0,
+          "width": 0.0,
+          "x": 1344.0,
+          "y": 292.0
+        },
+        "ref_id": "@s2p8vze2hgbkyh:e6",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

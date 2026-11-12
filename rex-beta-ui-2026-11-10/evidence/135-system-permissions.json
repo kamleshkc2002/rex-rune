@@ -1,0 +1,581 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 18,
+  "snapshot_id": "s29fz8pp4mssnw",
+  "tree": {
+    "bounds": {
+      "height": 760.0,
+      "width": 1302.0,
+      "x": 368.0,
+      "y": 168.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 760.0,
+          "width": 1302.0,
+          "x": 368.0,
+          "y": 168.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 46.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 168.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click",
+                  "Toggle",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 242.0,
+                  "x": 587.0,
+                  "y": 175.0
+                },
+                "name": "Welcome, Kyle",
+                "ref_id": "@s29fz8pp4mssnw:e1",
+                "role": "radiobutton",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 34.0,
+                  "width": 126.0,
+                  "x": 453.0,
+                  "y": 174.0
+                },
+                "name": "Change Session",
+                "ref_id": "@s29fz8pp4mssnw:e2",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 30.0,
+                  "width": 36.0,
+                  "x": 1595.0,
+                  "y": 175.0
+                },
+                "name": "Command Palette",
+                "ref_id": "@s29fz8pp4mssnw:e3",
+                "role": "button"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1561.0,
+                  "y": 175.0
+                },
+                "name": "Activity",
+                "ref_id": "@s29fz8pp4mssnw:e4",
+                "role": "button",
+                "value": "Off"
+              },
+              {
+                "available_actions": [
+                  "Click",
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 32.0,
+                  "width": 36.0,
+                  "x": 1629.0,
+                  "y": 175.0
+                },
+                "name": "New Tab",
+                "ref_id": "@s29fz8pp4mssnw:e5",
+                "role": "button"
+              }
+            ],
+            "name": "Tabs",
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 714.0,
+              "width": 1302.0,
+              "x": 368.0,
+              "y": 214.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 706.0,
+                  "width": 1286.0,
+                  "x": 376.0,
+                  "y": 214.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 706.0,
+                      "width": 1286.0,
+                      "x": 376.0,
+                      "y": 214.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 706.0,
+                          "width": 1286.0,
+                          "x": 376.0,
+                          "y": 214.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 1147.0,
+                              "x": 382.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 155.0,
+                                  "x": 382.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move Get Started with Rex pane",
+                                "ref_id": "@s29fz8pp4mssnw:e6",
+                                "role": "button"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 143.0,
+                                  "x": 388.0,
+                                  "y": 224.0
+                                },
+                                "name": "Move Get Started with Rex pane",
+                                "role": "statictext",
+                                "value": "Move Get Started with Rex pane"
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 36.0,
+                              "width": 118.0,
+                              "x": 1537.0,
+                              "y": 214.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1537.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Right",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.2x1"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e7",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1561.0,
+                                  "y": 221.0
+                                },
+                                "name": "Split Down",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.split.1x2"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e8",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1585.0,
+                                  "y": 221.0
+                                },
+                                "name": "Float Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "rectangle.on.rectangle"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e9",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1609.0,
+                                  "y": 221.0
+                                },
+                                "name": "Zoom Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "arrow.up.left.and.arrow.down.right"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e10",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 22.0,
+                                  "width": 22.0,
+                                  "x": 1633.0,
+                                  "y": 221.0
+                                },
+                                "name": "Close Pane",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "xmark"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e11",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              }
+                            ],
+                            "role": "group"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 670.0,
+                              "width": 1286.0,
+                              "x": 376.0,
+                              "y": 250.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 325.0,
+                                  "x": 856.5,
+                                  "y": 431.5
+                                },
+                                "name": "Integrations & Permissions",
+                                "role": "statictext",
+                                "value": "Integrations & Permissions"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 19.0,
+                                  "width": 425.0,
+                                  "x": 806.5,
+                                  "y": 473.5
+                                },
+                                "name": "Install the Rex skill and grant permission to let agents use Rex.",
+                                "role": "statictext",
+                                "value": "Install the Rex skill and grant permission to let agents use Rex."
+                              },
+                              {
+                                "bounds": {
+                                  "height": 48.0,
+                                  "width": 48.0,
+                                  "x": 875.0,
+                                  "y": 535.0
+                                },
+                                "name": "OnboardingSkill",
+                                "role": "image"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 19.0,
+                                  "width": 107.0,
+                                  "x": 845.0,
+                                  "y": 590.5
+                                },
+                                "name": "Rex Agent Skill",
+                                "role": "statictext",
+                                "value": "Rex Agent Skill"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 13.0,
+                                  "width": 73.0,
+                                  "x": 862.0,
+                                  "y": 617.5
+                                },
+                                "name": "Recommended",
+                                "role": "statictext",
+                                "value": "Recommended"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 157.0,
+                                  "x": 820.0,
+                                  "y": 644.5
+                                },
+                                "name": "Install to give your agents the ability to fully drive Rex.",
+                                "role": "statictext",
+                                "value": "Install to give your agents the ability to fully drive Rex."
+                              },
+                              {
+                                "bounds": {
+                                  "height": 13.0,
+                                  "width": 13.0,
+                                  "x": 863.0,
+                                  "y": 704.0
+                                },
+                                "name": "Selected",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "checkmark.circle"
+                                },
+                                "role": "image",
+                                "states": [
+                                  "selected"
+                                ]
+                              },
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 52.0,
+                                  "x": 881.0,
+                                  "y": 702.5
+                                },
+                                "name": "Installed",
+                                "role": "statictext",
+                                "value": "Installed"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 48.0,
+                                  "width": 48.0,
+                                  "x": 1116.0,
+                                  "y": 535.0
+                                },
+                                "name": "OnboardingPermissions",
+                                "role": "image"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 19.0,
+                                  "width": 145.0,
+                                  "x": 1067.0,
+                                  "y": 590.5
+                                },
+                                "name": "System Permissions",
+                                "role": "statictext",
+                                "value": "System Permissions"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 13.0,
+                                  "width": 84.0,
+                                  "x": 1097.5,
+                                  "y": 617.5
+                                },
+                                "name": "None granted yet",
+                                "role": "statictext",
+                                "value": "None granted yet"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 166.0,
+                                  "x": 1056.5,
+                                  "y": 644.5
+                                },
+                                "name": "Grant system permissions for a seamless Rex experience.",
+                                "role": "statictext",
+                                "value": "Grant system permissions for a seamless Rex experience."
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 65.0,
+                                  "x": 1107.0,
+                                  "y": 699.0
+                                },
+                                "name": "Grant\u2026",
+                                "ref_id": "@s29fz8pp4mssnw:e13",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 30.0,
+                                  "x": 947.0,
+                                  "y": 769.0
+                                },
+                                "name": "Previous",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "arrow.left"
+                                },
+                                "ref_id": "@s29fz8pp4mssnw:e14",
+                                "role": "button"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 30.0,
+                                  "width": 105.0,
+                                  "x": 987.0,
+                                  "y": 769.0
+                                },
+                                "name": "Continue",
+                                "ref_id": "@s29fz8pp4mssnw:e15",
+                                "role": "button"
+                              }
+                            ],
+                            "ref_id": "@s29fz8pp4mssnw:e12",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "name": "Get Started with Rex",
+                        "role": "group"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "name": "Split layout",
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 383.0,
+          "y": 183.0
+        },
+        "name": "Close",
+        "ref_id": "@s29fz8pp4mssnw:e16",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 429.0,
+          "y": 183.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 430.0,
+              "y": 184.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 430.0,
+                  "y": 184.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Full Screen",
+        "ref_id": "@s29fz8pp4mssnw:e17",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 406.0,
+          "y": 183.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s29fz8pp4mssnw:e18",
+        "role": "button"
+      }
+    ],
+    "name": "Welcome, Kyle - Onboarding",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "session-AppWindow-1"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Rex Beta"
+  }
+}

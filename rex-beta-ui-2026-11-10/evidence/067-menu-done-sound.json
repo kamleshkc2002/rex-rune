@@ -1,0 +1,150 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 7,
+  "snapshot_id": "s27w07dnz63biw",
+  "tree": {
+    "bounds": {
+      "height": 178.0,
+      "width": 101.0,
+      "x": 1759.0,
+      "y": 313.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 318.0
+        },
+        "name": "Attention",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 342.0
+        },
+        "name": "Warning",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 366.0
+        },
+        "name": "Error",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 390.0
+        },
+        "name": "Success",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e4",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 414.0
+        },
+        "name": "Ready",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 438.0
+        },
+        "name": "Loading",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e6",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1759.0,
+          "y": 462.0
+        },
+        "name": "Tap",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s27w07dnz63biw:e7",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Done"
+  }
+}

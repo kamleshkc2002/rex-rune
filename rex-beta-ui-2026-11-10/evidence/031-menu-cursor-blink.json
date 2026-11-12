@@ -1,0 +1,146 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 7,
+  "snapshot_id": "s2ar1a3p9yl7fr",
+  "tree": {
+    "bounds": {
+      "height": 152.0,
+      "width": 92.0,
+      "x": 1786.0,
+      "y": 675.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 680.0
+        },
+        "name": "Off",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 704.0
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e2",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 715.0
+        },
+        "name": "Slow",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 739.0
+        },
+        "name": "Normal",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e4",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 763.0
+        },
+        "name": "Fast",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 787.0
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e6",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 92.0,
+          "x": 1786.0,
+          "y": 798.0
+        },
+        "name": "Custom",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2ar1a3p9yl7fr:e7",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

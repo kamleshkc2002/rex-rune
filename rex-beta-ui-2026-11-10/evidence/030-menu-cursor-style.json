@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "s1bkotptcady6j",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 104.0,
+      "x": 1796.0,
+      "y": 695.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1796.0,
+          "y": 700.0
+        },
+        "name": "Block",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bkotptcady6j:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1796.0,
+          "y": 724.0
+        },
+        "name": "Bar",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bkotptcady6j:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1796.0,
+          "y": 748.0
+        },
+        "name": "Underline",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bkotptcady6j:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

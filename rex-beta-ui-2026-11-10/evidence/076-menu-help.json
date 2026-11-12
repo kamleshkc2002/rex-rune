@@ -1,0 +1,174 @@
+{
+  "app": "Rex Beta",
+  "complete": false,
+  "nodes_observed": 8,
+  "ref_count": 6,
+  "snapshot_id": "s2fi9kdvjlycks",
+  "tree": {
+    "bounds": {
+      "height": 104.0,
+      "width": 360.0,
+      "x": 316.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 40.0,
+          "width": 360.0,
+          "x": 316.0,
+          "y": 31.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue",
+              "SetFocus",
+              "TypeText"
+            ],
+            "bounds": {
+              "height": 26.0,
+              "width": 342.0,
+              "x": 325.0,
+              "y": 40.0
+            },
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "_SC_SEARCH_FIELD"
+            },
+            "ref_id": "@s2fi9kdvjlycks:e2",
+            "role": "textfield",
+            "states": [
+              "focused",
+              "offscreen"
+            ],
+            "subtree_truncated": true
+          },
+          {
+            "available_actions": [
+              "Select",
+              "SetFocus"
+            ],
+            "bounds": {
+              "height": 12.0,
+              "width": 362.0,
+              "x": 315.0,
+              "y": 60.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 10.0,
+                  "width": 350.0,
+                  "x": 321.0,
+                  "y": 61.0
+                },
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "Title"
+                },
+                "role": "column",
+                "states": [
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "search result",
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "_SC_RESULTS_TABLE"
+            },
+            "ref_id": "@s2fi9kdvjlycks:e3",
+            "role": "table",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "searchFieldAction:"
+        },
+        "ref_id": "@s2fi9kdvjlycks:e1",
+        "role": "menuitem",
+        "states": [
+          "selected",
+          "offscreen"
+        ],
+        "subtree_truncated": true
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 360.0,
+          "x": 316.0,
+          "y": 71.0
+        },
+        "name": "Send Rex Beta Feedback to Apple",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_openFeedbackAssistant:"
+        },
+        "ref_id": "@s2fi9kdvjlycks:e4",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 360.0,
+          "x": 316.0,
+          "y": 95.0
+        },
+        "ref_id": "@s2fi9kdvjlycks:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 360.0,
+          "x": 316.0,
+          "y": 106.0
+        },
+        "name": "Rex Help",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2fi9kdvjlycks:e6",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      }
+    ],
+    "name": "Help",
+    "role": "menu",
+    "states": [
+      "offscreen"
+    ],
+    "subtree_truncated": true
+  },
+  "truncated": true,
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

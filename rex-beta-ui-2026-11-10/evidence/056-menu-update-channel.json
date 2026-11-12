@@ -1,0 +1,60 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 2,
+  "snapshot_id": "s893pi8a78aeb",
+  "tree": {
+    "bounds": {
+      "height": 58.0,
+      "width": 136.0,
+      "x": 1742.0,
+      "y": 272.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 136.0,
+          "x": 1742.0,
+          "y": 277.0
+        },
+        "name": "Preview",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s893pi8a78aeb:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 136.0,
+          "x": 1742.0,
+          "y": 301.0
+        },
+        "name": "Bleeding Edge",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s893pi8a78aeb:e2",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Developer"
+  }
+}

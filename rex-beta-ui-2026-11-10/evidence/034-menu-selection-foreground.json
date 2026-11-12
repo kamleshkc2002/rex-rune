@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "s24gmnv9gv4p59",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 145.0,
+      "x": 1769.0,
+      "y": 834.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 839.0
+        },
+        "name": "Theme",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s24gmnv9gv4p59:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 863.0
+        },
+        "name": "Cell Foreground",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s24gmnv9gv4p59:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 887.0
+        },
+        "name": "Cell Background",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s24gmnv9gv4p59:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

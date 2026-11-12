@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "s1x73yckwvxmnf",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 110.0,
+      "x": 1768.0,
+      "y": 212.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 110.0,
+          "x": 1768.0,
+          "y": 217.0
+        },
+        "name": "Off",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1x73yckwvxmnf:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 110.0,
+          "x": 1768.0,
+          "y": 241.0
+        },
+        "name": "Automatic",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1x73yckwvxmnf:e2",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 110.0,
+          "x": 1768.0,
+          "y": 265.0
+        },
+        "name": "Always",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1x73yckwvxmnf:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Panes"
+  }
+}

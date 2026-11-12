@@ -1,0 +1,150 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 7,
+  "snapshot_id": "s2txajby3s0ynt",
+  "tree": {
+    "bounds": {
+      "height": 178.0,
+      "width": 104.0,
+      "x": 1754.0,
+      "y": 385.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 390.0
+        },
+        "name": "Attention",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 414.0
+        },
+        "name": "Warning",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 438.0
+        },
+        "name": "Error",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 462.0
+        },
+        "name": "Success",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 486.0
+        },
+        "name": "Ready",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 510.0
+        },
+        "name": "Loading",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e6",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 104.0,
+          "x": 1754.0,
+          "y": 534.0
+        },
+        "name": "Tap",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2txajby3s0ynt:e7",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Blocked"
+  }
+}

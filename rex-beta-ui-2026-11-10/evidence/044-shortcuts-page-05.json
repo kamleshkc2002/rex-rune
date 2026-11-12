@@ -1,0 +1,3099 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 103,
+  "snapshot_id": "s2go1jmhc1etgi",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s2go1jmhc1etgi:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s2go1jmhc1etgi:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s2go1jmhc1etgi:e9",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s2go1jmhc1etgi:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s2go1jmhc1etgi:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s2go1jmhc1etgi:e22",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s2go1jmhc1etgi:e25",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s2go1jmhc1etgi:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s2go1jmhc1etgi:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s2go1jmhc1etgi:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s2go1jmhc1etgi:e39",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2go1jmhc1etgi:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2go1jmhc1etgi:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s2go1jmhc1etgi:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s2go1jmhc1etgi:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 523.0,
+                      "x": 1372.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 523.0,
+                          "x": 1372.0,
+                          "y": 170.0
+                        },
+                        "name": "Filter Shortcuts",
+                        "ref_id": "@s2go1jmhc1etgi:e41",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s2go1jmhc1etgi:e40",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 2383.0,
+                          "width": 541.0,
+                          "x": 1349.0,
+                          "y": -664.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 128.0,
+                              "x": 1349.0,
+                              "y": -652.0
+                            },
+                            "name": "Install Rex for Agents",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Install Rex for Agents"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -656.0
+                            },
+                            "name": "Record a shortcut for Install Rex for Agents",
+                            "ref_id": "@s2go1jmhc1etgi:e43",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 97.0,
+                              "x": 1349.0,
+                              "y": -613.0
+                            },
+                            "name": "Restart Server\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Restart Server\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -617.0
+                            },
+                            "name": "Record a shortcut for Restart Server\u2026",
+                            "ref_id": "@s2go1jmhc1etgi:e44",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 51.0,
+                              "x": 1349.0,
+                              "y": -556.0
+                            },
+                            "name": "Session",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 78.0,
+                              "x": 1349.0,
+                              "y": -519.0
+                            },
+                            "name": "New Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "New Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -523.0
+                            },
+                            "name": "Change the shortcut for New Session",
+                            "ref_id": "@s2go1jmhc1etgi:e45",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command N"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 108.0,
+                              "x": 1349.0,
+                              "y": -480.0
+                            },
+                            "name": "Change Session\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Change Session\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -484.0
+                            },
+                            "name": "Change the shortcut for Change Session\u2026",
+                            "ref_id": "@s2go1jmhc1etgi:e46",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command K"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 84.0,
+                              "x": 1349.0,
+                              "y": -441.0
+                            },
+                            "name": "Go to Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Go to Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": -445.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e47",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 79.0,
+                              "x": 1349.0,
+                              "y": -402.0
+                            },
+                            "name": "Next Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Next Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -406.0
+                            },
+                            "name": "Record a shortcut for Next Session",
+                            "ref_id": "@s2go1jmhc1etgi:e48",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 103.0,
+                              "x": 1349.0,
+                              "y": -363.0
+                            },
+                            "name": "Previous Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Previous Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -367.0
+                            },
+                            "name": "Record a shortcut for Previous Session",
+                            "ref_id": "@s2go1jmhc1etgi:e49",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 100.0,
+                              "x": 1349.0,
+                              "y": -324.0
+                            },
+                            "name": "Rename Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Rename Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -328.0
+                            },
+                            "name": "Record a shortcut for Rename Session",
+                            "ref_id": "@s2go1jmhc1etgi:e50",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 85.0,
+                              "x": 1349.0,
+                              "y": -285.0
+                            },
+                            "name": "Close Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -289.0
+                            },
+                            "name": "Record a shortcut for Close Session",
+                            "ref_id": "@s2go1jmhc1etgi:e51",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": -246.0
+                            },
+                            "name": "Refresh Sessions",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Refresh Sessions"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -250.0
+                            },
+                            "name": "Change the shortcut for Refresh Sessions",
+                            "ref_id": "@s2go1jmhc1etgi:e52",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command R"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": -207.0
+                            },
+                            "name": "Collapse Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Collapse Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -211.0
+                            },
+                            "name": "Record a shortcut for Collapse Session",
+                            "ref_id": "@s2go1jmhc1etgi:e53",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 96.0,
+                              "x": 1349.0,
+                              "y": -168.0
+                            },
+                            "name": "Expand Session",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Expand Session"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -172.0
+                            },
+                            "name": "Record a shortcut for Expand Session",
+                            "ref_id": "@s2go1jmhc1etgi:e54",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 148.0,
+                              "x": 1349.0,
+                              "y": -129.0
+                            },
+                            "name": "Collapse Other Sessions",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Collapse Other Sessions"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -133.0
+                            },
+                            "name": "Record a shortcut for Collapse Other Sessions",
+                            "ref_id": "@s2go1jmhc1etgi:e55",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 31.0,
+                              "x": 1349.0,
+                              "y": -72.0
+                            },
+                            "name": "Host",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 73.0,
+                              "x": 1349.0,
+                              "y": -35.0
+                            },
+                            "name": "Switch Host",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Switch Host"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": -39.0
+                            },
+                            "name": "Record a shortcut for Switch Host",
+                            "ref_id": "@s2go1jmhc1etgi:e56",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 117.0,
+                              "x": 1349.0,
+                              "y": 4.0
+                            },
+                            "name": "Add Remote Host\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Add Remote Host\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 0.0
+                            },
+                            "name": "Record a shortcut for Add Remote Host\u2026",
+                            "ref_id": "@s2go1jmhc1etgi:e57",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 43.0
+                            },
+                            "name": "Remove Host\u2026",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Remove Host\u2026"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 39.0
+                            },
+                            "name": "Record a shortcut for Remove Host\u2026",
+                            "ref_id": "@s2go1jmhc1etgi:e58",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 24.0,
+                              "x": 1349.0,
+                              "y": 100.0
+                            },
+                            "name": "Tab",
+                            "role": "heading",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 53.0,
+                              "x": 1349.0,
+                              "y": 137.0
+                            },
+                            "name": "New Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "New Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 133.0
+                            },
+                            "name": "Change the shortcut for New Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e59",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command T"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 60.0,
+                              "x": 1349.0,
+                              "y": 176.0
+                            },
+                            "name": "Close Tab",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Close Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 172.0
+                            },
+                            "name": "Change the shortcut for Close Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e60",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command W"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 105.0,
+                              "x": 1349.0,
+                              "y": 215.0
+                            },
+                            "name": "Close Other Tabs",
+                            "role": "statictext",
+                            "value": "Close Other Tabs"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 211.0
+                            },
+                            "name": "Record a shortcut for Close Other Tabs",
+                            "ref_id": "@s2go1jmhc1etgi:e61",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 75.0,
+                              "x": 1349.0,
+                              "y": 254.0
+                            },
+                            "name": "Rename Tab",
+                            "role": "statictext",
+                            "value": "Rename Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 250.0
+                            },
+                            "name": "Record a shortcut for Rename Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e62",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 293.0
+                            },
+                            "name": "Show Next Tab",
+                            "role": "statictext",
+                            "value": "Show Next Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 289.0
+                            },
+                            "name": "Change the shortcut for Show Next Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e63",
+                            "role": "button",
+                            "value": "Shift Command ]"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 317.0
+                            },
+                            "name": "Change the shortcut for Show Next Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e64",
+                            "role": "button",
+                            "value": "Control Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 115.0,
+                              "x": 1349.0,
+                              "y": 359.0
+                            },
+                            "name": "Show Previous Tab",
+                            "role": "statictext",
+                            "value": "Show Previous Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 355.0
+                            },
+                            "name": "Change the shortcut for Show Previous Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e65",
+                            "role": "button",
+                            "value": "Shift Command ["
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 383.0
+                            },
+                            "name": "Change the shortcut for Show Previous Tab",
+                            "ref_id": "@s2go1jmhc1etgi:e66",
+                            "role": "button",
+                            "value": "Control Shift Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 59.0,
+                              "x": 1349.0,
+                              "y": 421.0
+                            },
+                            "name": "Go to Tab",
+                            "role": "statictext",
+                            "value": "Go to Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 448.0
+                            },
+                            "name": "index: 1",
+                            "role": "statictext",
+                            "value": "index: 1"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 443.0
+                            },
+                            "name": "Command 1",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 478.0
+                            },
+                            "name": "index: 2",
+                            "role": "statictext",
+                            "value": "index: 2"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 473.0
+                            },
+                            "name": "Command 2",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 508.0
+                            },
+                            "name": "index: 3",
+                            "role": "statictext",
+                            "value": "index: 3"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 503.0
+                            },
+                            "name": "Command 3",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 538.0
+                            },
+                            "name": "index: 4",
+                            "role": "statictext",
+                            "value": "index: 4"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 533.0
+                            },
+                            "name": "Command 4",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 568.0
+                            },
+                            "name": "index: 5",
+                            "role": "statictext",
+                            "value": "index: 5"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 563.0
+                            },
+                            "name": "Command 5",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 598.0
+                            },
+                            "name": "index: 6",
+                            "role": "statictext",
+                            "value": "index: 6"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 593.0
+                            },
+                            "name": "Command 6",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 628.0
+                            },
+                            "name": "index: 7",
+                            "role": "statictext",
+                            "value": "index: 7"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 623.0
+                            },
+                            "name": "Command 7",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 55.0,
+                              "x": 1349.0,
+                              "y": 658.0
+                            },
+                            "name": "index: 8",
+                            "role": "statictext",
+                            "value": "index: 8"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 653.0
+                            },
+                            "name": "Command 8",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 62.0,
+                              "x": 1349.0,
+                              "y": 688.0
+                            },
+                            "name": "index: -1",
+                            "role": "statictext",
+                            "value": "index: -1"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 683.0
+                            },
+                            "name": "Command 9",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 59.0,
+                              "x": 1349.0,
+                              "y": 725.0
+                            },
+                            "name": "Move Tab",
+                            "role": "statictext",
+                            "value": "Move Tab"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 721.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e67",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 121.0,
+                              "x": 1349.0,
+                              "y": 764.0
+                            },
+                            "name": "Move Tab Backward",
+                            "role": "statictext",
+                            "value": "Move Tab Backward"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 760.0
+                            },
+                            "name": "Change the shortcut for Move Tab Backward",
+                            "ref_id": "@s2go1jmhc1etgi:e68",
+                            "role": "button",
+                            "value": "Control Shift Page Up"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 112.0,
+                              "x": 1349.0,
+                              "y": 803.0
+                            },
+                            "name": "Move Tab Forward",
+                            "role": "statictext",
+                            "value": "Move Tab Forward"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 799.0
+                            },
+                            "name": "Change the shortcut for Move Tab Forward",
+                            "ref_id": "@s2go1jmhc1etgi:e69",
+                            "role": "button",
+                            "value": "Control Shift Page Down"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 157.0,
+                              "x": 1349.0,
+                              "y": 842.0
+                            },
+                            "name": "Move Tab to New Window",
+                            "role": "statictext",
+                            "value": "Move Tab to New Window"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 838.0
+                            },
+                            "name": "Record a shortcut for Move Tab to New Window",
+                            "ref_id": "@s2go1jmhc1etgi:e70",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 32.0,
+                              "x": 1349.0,
+                              "y": 899.0
+                            },
+                            "name": "Pane",
+                            "role": "heading"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 61.0,
+                              "x": 1349.0,
+                              "y": 936.0
+                            },
+                            "name": "Split Pane",
+                            "role": "statictext",
+                            "value": "Split Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 932.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e71",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 88.0,
+                              "x": 1349.0,
+                              "y": 975.0
+                            },
+                            "name": "Split Pane Left",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Split Pane Left"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 971.0
+                            },
+                            "name": "Change the shortcut for Split Pane Left",
+                            "ref_id": "@s2go1jmhc1etgi:e72",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command Left Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 96.0,
+                              "x": 1349.0,
+                              "y": 1014.0
+                            },
+                            "name": "Split Pane Right",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Split Pane Right"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1010.0
+                            },
+                            "name": "Change the shortcut for Split Pane Right",
+                            "ref_id": "@s2go1jmhc1etgi:e73",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command Right Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1038.0
+                            },
+                            "name": "Change the shortcut for Split Pane Right",
+                            "ref_id": "@s2go1jmhc1etgi:e74",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command D"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 82.0,
+                              "x": 1349.0,
+                              "y": 1080.0
+                            },
+                            "name": "Split Pane Up",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Split Pane Up"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1076.0
+                            },
+                            "name": "Change the shortcut for Split Pane Up",
+                            "ref_id": "@s2go1jmhc1etgi:e75",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command Up Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 99.0,
+                              "x": 1349.0,
+                              "y": 1119.0
+                            },
+                            "name": "Split Pane Down",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Split Pane Down"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1115.0
+                            },
+                            "name": "Change the shortcut for Split Pane Down",
+                            "ref_id": "@s2go1jmhc1etgi:e76",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command Down Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1143.0
+                            },
+                            "name": "Change the shortcut for Split Pane Down",
+                            "ref_id": "@s2go1jmhc1etgi:e77",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Shift Command D"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 110.0,
+                              "x": 1349.0,
+                              "y": 1185.0
+                            },
+                            "name": "Split Pane Best Fit",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Split Pane Best Fit"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1181.0
+                            },
+                            "name": "Change the shortcut for Split Pane Best Fit",
+                            "ref_id": "@s2go1jmhc1etgi:e78",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command Return"
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 70.0,
+                              "x": 1349.0,
+                              "y": 1224.0
+                            },
+                            "name": "Focus Pane",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 1220.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e79",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 98.0,
+                              "x": 1349.0,
+                              "y": 1263.0
+                            },
+                            "name": "Focus Pane Left",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Pane Left"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1259.0
+                            },
+                            "name": "Change the shortcut for Focus Pane Left",
+                            "ref_id": "@s2go1jmhc1etgi:e80",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command Left Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 106.0,
+                              "x": 1349.0,
+                              "y": 1302.0
+                            },
+                            "name": "Focus Pane Right",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Pane Right"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1298.0
+                            },
+                            "name": "Change the shortcut for Focus Pane Right",
+                            "ref_id": "@s2go1jmhc1etgi:e81",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command Right Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 91.0,
+                              "x": 1349.0,
+                              "y": 1341.0
+                            },
+                            "name": "Focus Pane Up",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Pane Up"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1337.0
+                            },
+                            "name": "Change the shortcut for Focus Pane Up",
+                            "ref_id": "@s2go1jmhc1etgi:e82",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command Up Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 108.0,
+                              "x": 1349.0,
+                              "y": 1380.0
+                            },
+                            "name": "Focus Pane Down",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Pane Down"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1376.0
+                            },
+                            "name": "Change the shortcut for Focus Pane Down",
+                            "ref_id": "@s2go1jmhc1etgi:e83",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command Down Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 102.0,
+                              "x": 1349.0,
+                              "y": 1419.0
+                            },
+                            "name": "Focus Next Pane",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Next Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1415.0
+                            },
+                            "name": "Change the shortcut for Focus Next Pane",
+                            "ref_id": "@s2go1jmhc1etgi:e84",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command ]"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 126.0,
+                              "x": 1349.0,
+                              "y": 1458.0
+                            },
+                            "name": "Focus Previous Pane",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Focus Previous Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1454.0
+                            },
+                            "name": "Change the shortcut for Focus Previous Pane",
+                            "ref_id": "@s2go1jmhc1etgi:e85",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Command ["
+                          },
+                          {
+                            "available_actions": [
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 67.0,
+                              "x": 1349.0,
+                              "y": 1497.0
+                            },
+                            "name": "Move Pane",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 24.0,
+                              "x": 1866.0,
+                              "y": 1493.0
+                            },
+                            "name": "Why this shortcut can't be recorded",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "info.circle"
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e86",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 94.0,
+                              "x": 1349.0,
+                              "y": 1536.0
+                            },
+                            "name": "Move Pane Left",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Pane Left"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1532.0
+                            },
+                            "name": "Change the shortcut for Move Pane Left",
+                            "ref_id": "@s2go1jmhc1etgi:e87",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Shift Command Left Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 102.0,
+                              "x": 1349.0,
+                              "y": 1575.0
+                            },
+                            "name": "Move Pane Right",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Pane Right"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1571.0
+                            },
+                            "name": "Change the shortcut for Move Pane Right",
+                            "ref_id": "@s2go1jmhc1etgi:e88",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Shift Command Right Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 88.0,
+                              "x": 1349.0,
+                              "y": 1614.0
+                            },
+                            "name": "Move Pane Up",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Pane Up"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1610.0
+                            },
+                            "name": "Change the shortcut for Move Pane Up",
+                            "ref_id": "@s2go1jmhc1etgi:e89",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Shift Command Up Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 104.0,
+                              "x": 1349.0,
+                              "y": 1653.0
+                            },
+                            "name": "Move Pane Down",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Move Pane Down"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1649.0
+                            },
+                            "name": "Change the shortcut for Move Pane Down",
+                            "ref_id": "@s2go1jmhc1etgi:e90",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Shift Command Down Arrow"
+                          },
+                          {
+                            "available_actions": [
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 64.0,
+                              "x": 1349.0,
+                              "y": 1692.0
+                            },
+                            "name": "Float Pane",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Float Pane"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "ScrollTo"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 160.0,
+                              "x": 1730.0,
+                              "y": 1688.0
+                            },
+                            "name": "Change the shortcut for Float Pane",
+                            "ref_id": "@s2go1jmhc1etgi:e91",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Option Command Return"
+                          }
+                        ],
+                        "role": "unknown"
+                      },
+                      {
+                        "available_actions": [
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 740.5,
+                          "width": 19.0,
+                          "x": 1902.0,
+                          "y": 203.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetValue"
+                            ],
+                            "bounds": {
+                              "height": 109.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 456.0
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e93",
+                            "role": "handle",
+                            "value": "0.4000000059604645"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 204.0
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e94",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 204.0
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e95",
+                            "role": "button",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 374.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 565.0
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e96",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 249.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 207.0
+                            },
+                            "ref_id": "@s2go1jmhc1etgi:e97",
+                            "role": "button"
+                          }
+                        ],
+                        "ref_id": "@s2go1jmhc1etgi:e92",
+                        "role": "scrollbar",
+                        "value": "0.4000000059604645"
+                      }
+                    ],
+                    "ref_id": "@s2go1jmhc1etgi:e42",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s2go1jmhc1etgi:e98",
+                    "role": "button"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s2go1jmhc1etgi:e99",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 87.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 89.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Shortcuts",
+                "role": "statictext",
+                "value": "Shortcuts"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "SetFocus",
+              "Expand",
+              "Collapse"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 40.0,
+              "x": 1876.0,
+              "y": 100.0
+            },
+            "name": "Configuration",
+            "ref_id": "@s2go1jmhc1etgi:e100",
+            "role": "menubutton"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s2go1jmhc1etgi:e101",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 1169.0,
+                  "y": 119.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s2go1jmhc1etgi:e102",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s2go1jmhc1etgi:e103",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Shortcuts",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Shortcuts"
+  }
+}

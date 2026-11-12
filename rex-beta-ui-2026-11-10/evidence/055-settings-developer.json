@@ -1,0 +1,1668 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 65,
+  "snapshot_id": "s8h9xzflfl30p",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s8h9xzflfl30p:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s8h9xzflfl30p:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s8h9xzflfl30p:e9",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s8h9xzflfl30p:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s8h9xzflfl30p:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s8h9xzflfl30p:e22",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s8h9xzflfl30p:e25",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s8h9xzflfl30p:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s8h9xzflfl30p:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s8h9xzflfl30p:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s8h9xzflfl30p:e39",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s8h9xzflfl30p:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s8h9xzflfl30p:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s8h9xzflfl30p:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 806.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 144.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 65.0,
+                          "x": 1349.0,
+                          "y": 164.0
+                        },
+                        "name": "Developer",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 45.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 190.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 100.0,
+                              "x": 1349.0,
+                              "y": 196.0
+                            },
+                            "name": "Developer Mode",
+                            "role": "statictext",
+                            "value": "Developer Mode"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 258.0,
+                              "x": 1349.0,
+                              "y": 215.0
+                            },
+                            "name": "Expose settings for development and debugging.",
+                            "role": "statictext",
+                            "value": "Expose settings for development and debugging."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 205.0
+                            },
+                            "name": "Developer Mode",
+                            "ref_id": "@s8h9xzflfl30p:e41",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 77.0,
+                          "x": 1349.0,
+                          "y": 265.0
+                        },
+                        "name": "App Version",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 44.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 291.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 98.0,
+                              "x": 1349.0,
+                              "y": 297.0
+                            },
+                            "name": "Update Channel",
+                            "role": "statictext",
+                            "value": "Update Channel"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 280.0,
+                              "x": 1349.0,
+                              "y": 315.0
+                            },
+                            "name": "Every commit that passes CI. Expect some instability.",
+                            "role": "statictext",
+                            "value": "Every commit that passes CI. Expect some instability."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 135.0,
+                              "x": 1755.0,
+                              "y": 301.0
+                            },
+                            "name": "Update Channel",
+                            "ref_id": "@s8h9xzflfl30p:e42",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Bleeding Edge"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 97.0,
+                          "x": 1349.0,
+                          "y": 365.0
+                        },
+                        "name": "Rex Installation",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 83.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 391.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 52.0,
+                              "x": 1349.0,
+                              "y": 397.0
+                            },
+                            "name": "Location",
+                            "role": "statictext",
+                            "value": "Location"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 227.0,
+                              "x": 1349.0,
+                              "y": 415.0
+                            },
+                            "name": "Uses the Rex helper included with this app.",
+                            "role": "statictext",
+                            "value": "Uses the Rex helper included with this app."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 181.0,
+                              "x": 1709.0,
+                              "y": 401.0
+                            },
+                            "name": "Location",
+                            "ref_id": "@s8h9xzflfl30p:e43",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Included with Rex.app"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 116.0,
+                              "x": 1375.0,
+                              "y": 447.0
+                            },
+                            "name": "Included Rex ready",
+                            "role": "statictext",
+                            "value": "Included Rex ready"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 79.0,
+                              "x": 1811.0,
+                              "y": 447.0
+                            },
+                            "name": "Show Details",
+                            "ref_id": "@s8h9xzflfl30p:e44",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 59.0,
+                          "x": 1349.0,
+                          "y": 504.0
+                        },
+                        "name": "Local API",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 44.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 530.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 85.0,
+                              "x": 1349.0,
+                              "y": 536.0
+                            },
+                            "name": "Local API URL",
+                            "role": "statictext",
+                            "value": "Local API URL"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 344.0,
+                              "x": 1349.0,
+                              "y": 554.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 14.0,
+                                  "width": 344.0,
+                                  "x": 1349.0,
+                                  "y": 554.0
+                                },
+                                "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                "role": "statictext",
+                                "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                              }
+                            ],
+                            "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                            "role": "statictext",
+                            "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 37.0,
+                              "x": 1853.0,
+                              "y": 540.0
+                            },
+                            "name": "Copy local Rex endpoint",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "doc.on.doc"
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e45",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 118.0,
+                          "x": 1349.0,
+                          "y": 604.0
+                        },
+                        "name": "Web Client Origins",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 77.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 630.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 169.0,
+                              "x": 1349.0,
+                              "y": 641.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 169.0,
+                                  "x": 1349.0,
+                                  "y": 641.0
+                                },
+                                "name": "https://rex.superlogical.com",
+                                "role": "statictext",
+                                "value": "https://rex.superlogical.com"
+                              }
+                            ],
+                            "name": "https://rex.superlogical.com",
+                            "role": "statictext",
+                            "value": "https://rex.superlogical.com"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 38.0,
+                              "x": 1852.0,
+                              "y": 642.0
+                            },
+                            "name": "Default origin, always allowed",
+                            "role": "statictext",
+                            "value": "Default origin, always allowed"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 436.0,
+                              "x": 1354.0,
+                              "y": 680.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 436.0,
+                                  "x": 1354.0,
+                                  "y": 680.0
+                                },
+                                "name": "Allowed origin",
+                                "ref_id": "@s8h9xzflfl30p:e47",
+                                "role": "textfield"
+                              }
+                            ],
+                            "ref_id": "@s8h9xzflfl30p:e46",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 85.0,
+                              "x": 1805.0,
+                              "y": 676.0
+                            },
+                            "name": "Add Origin",
+                            "ref_id": "@s8h9xzflfl30p:e48",
+                            "role": "button",
+                            "states": [
+                              "disabled"
+                            ]
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 26.0,
+                          "width": 526.0,
+                          "x": 1349.0,
+                          "y": 717.0
+                        },
+                        "name": "Browser origins allowed to open Rex WebSocket streams. The hosted Rex client is always allowed. Wildcards match subdomains, e.g. https://*.vercel.app. Changes apply after Rex restarts.",
+                        "role": "statictext",
+                        "value": "Browser origins allowed to open Rex WebSocket streams. The hosted Rex client is always allowed. Wildcards match subdomains, e.g. https://*.vercel.app. Changes apply after Rex restarts."
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 83.0,
+                          "x": 1349.0,
+                          "y": 773.0
+                        },
+                        "name": "Experimental",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 317.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 799.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 234.0,
+                              "x": 1349.0,
+                              "y": 805.0
+                            },
+                            "name": "Download new updates when available",
+                            "role": "statictext",
+                            "states": [
+                              "disabled"
+                            ],
+                            "value": "Download new updates when available"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 345.0,
+                              "x": 1349.0,
+                              "y": 824.0
+                            },
+                            "name": "Downloads updates in the background and asks before restarting.",
+                            "role": "statictext",
+                            "states": [
+                              "disabled"
+                            ],
+                            "value": "Downloads updates in the background and asks before restarting."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 814.0
+                            },
+                            "name": "Download new updates when available",
+                            "ref_id": "@s8h9xzflfl30p:e49",
+                            "role": "switch",
+                            "states": [
+                              "disabled",
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 173.0,
+                              "x": 1349.0,
+                              "y": 851.0
+                            },
+                            "name": "Install updates automatically",
+                            "role": "statictext",
+                            "value": "Install updates automatically"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 408.0,
+                              "x": 1349.0,
+                              "y": 870.0
+                            },
+                            "name": "Relaunches into the new version while Rex is not visible. Sessions keep going.",
+                            "role": "statictext",
+                            "value": "Relaunches into the new version while Rex is not visible. Sessions keep going."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 860.0
+                            },
+                            "name": "Install updates automatically",
+                            "ref_id": "@s8h9xzflfl30p:e50",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 116.0,
+                              "x": 1349.0,
+                              "y": 897.0
+                            },
+                            "name": "Terminal anchoring",
+                            "role": "statictext",
+                            "value": "Terminal anchoring"
+                          },
+                          {
+                            "bounds": {
+                              "height": 28.0,
+                              "width": 421.0,
+                              "x": 1349.0,
+                              "y": 916.0
+                            },
+                            "name": "Pin terminal text to the top of each pane, or to the bottom so the last row meets the pane's bottom edge.",
+                            "role": "statictext",
+                            "value": "Pin terminal text to the top of each pane, or to the bottom so the last row meets the pane's bottom edge."
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 70.0,
+                              "x": 1820.0,
+                              "y": 909.0
+                            },
+                            "name": "Terminal anchoring",
+                            "ref_id": "@s8h9xzflfl30p:e51",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Top"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 118.0,
+                              "x": 1349.0,
+                              "y": 957.0
+                            },
+                            "name": "New quick switcher",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "New quick switcher"
+                          },
+                          {
+                            "bounds": {
+                              "height": 28.0,
+                              "width": 455.0,
+                              "x": 1349.0,
+                              "y": 976.0
+                            },
+                            "name": "Go to Anything, Go to Session, and View Activity open one list of every session, block, and reporting process, in place of the session switcher and the tab bar's popovers.",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Go to Anything, Go to Session, and View Activity open one list of every session, block, and reporting process, in place of the session switcher and the tab bar's popovers."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 973.0
+                            },
+                            "name": "New quick switcher",
+                            "ref_id": "@s8h9xzflfl30p:e52",
+                            "role": "switch",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "0"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 99.0,
+                              "x": 1349.0,
+                              "y": 1017.0
+                            },
+                            "name": "Quick Look links",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Quick Look links"
+                          },
+                          {
+                            "bounds": {
+                              "height": 28.0,
+                              "width": 442.0,
+                              "x": 1349.0,
+                              "y": 1036.0
+                            },
+                            "name": "The Quick Look shortcut, \u2318Y by default, previews the files and web links on screen. Shift-Command-click or the context menu previews one link.",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "The Quick Look shortcut, \u2318Y by default, previews the files and web links on screen. Shift-Command-click or the context menu previews one link."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1033.0
+                            },
+                            "name": "Quick Look links",
+                            "ref_id": "@s8h9xzflfl30p:e53",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 93.0,
+                              "x": 1349.0,
+                              "y": 1077.0
+                            },
+                            "name": "Cursor shaders",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Cursor shaders"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 455.0,
+                              "x": 1349.0,
+                              "y": 1096.0
+                            },
+                            "name": "Terminal cursors draw a Ghostty-style shader effect that follows focus between panes.",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Terminal cursors draw a Ghostty-style shader effect that follows focus between panes."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1086.0
+                            },
+                            "name": "Cursor shaders",
+                            "ref_id": "@s8h9xzflfl30p:e54",
+                            "role": "switch",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "0"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "available_actions": [
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 792.5,
+                          "width": 19.0,
+                          "x": 1902.0,
+                          "y": 151.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetValue"
+                            ],
+                            "bounds": {
+                              "height": 643.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e56",
+                            "role": "handle",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e57",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e58",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 140.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 799.0
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e59",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s8h9xzflfl30p:e60",
+                            "role": "button"
+                          }
+                        ],
+                        "ref_id": "@s8h9xzflfl30p:e55",
+                        "role": "scrollbar",
+                        "states": [
+                          "hidden"
+                        ],
+                        "value": "0"
+                      }
+                    ],
+                    "ref_id": "@s8h9xzflfl30p:e40",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s8h9xzflfl30p:e61",
+                    "role": "button"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s8h9xzflfl30p:e62",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 89.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 91.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Developer",
+                "role": "statictext",
+                "value": "Developer"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s8h9xzflfl30p:e63",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 1169.0,
+                  "y": 119.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s8h9xzflfl30p:e64",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s8h9xzflfl30p:e65",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Developer",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Developer"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 7,
+  "snapshot_id": "s1x97otcbrsniq",
+  "tree": {
+    "bounds": {
+      "height": 178.0,
+      "width": 138.0,
+      "x": 1608.0,
+      "y": 544.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 549.0
+        },
+        "name": "Globe",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "globe"
+        },
+        "ref_id": "@s1x97otcbrsniq:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 573.0
+        },
+        "name": "Server",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "server.rack"
+        },
+        "ref_id": "@s1x97otcbrsniq:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 597.0
+        },
+        "name": "Cloud",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "cloud"
+        },
+        "ref_id": "@s1x97otcbrsniq:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 621.0
+        },
+        "name": "MacBook",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "macbook"
+        },
+        "ref_id": "@s1x97otcbrsniq:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 645.0
+        },
+        "name": "Mac mini",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "macmini"
+        },
+        "ref_id": "@s1x97otcbrsniq:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 669.0
+        },
+        "name": "Mac Studio",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "macstudio"
+        },
+        "ref_id": "@s1x97otcbrsniq:e6",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 138.0,
+          "x": 1608.0,
+          "y": 693.0
+        },
+        "name": "Desktop",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "desktopcomputer"
+        },
+        "ref_id": "@s1x97otcbrsniq:e7",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Remote Hosts"
+  }
+}

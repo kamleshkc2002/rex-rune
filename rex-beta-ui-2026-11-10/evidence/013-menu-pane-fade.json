@@ -1,0 +1,96 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 4,
+  "snapshot_id": "s15d52ig2lss5c",
+  "tree": {
+    "bounds": {
+      "height": 106.0,
+      "width": 160.0,
+      "x": 1718.0,
+      "y": 354.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 160.0,
+          "x": 1718.0,
+          "y": 359.0
+        },
+        "name": "Off",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s15d52ig2lss5c:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 160.0,
+          "x": 1718.0,
+          "y": 383.0
+        },
+        "name": "Surface",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s15d52ig2lss5c:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 160.0,
+          "x": 1718.0,
+          "y": 407.0
+        },
+        "name": "Content",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s15d52ig2lss5c:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 160.0,
+          "x": 1718.0,
+          "y": 431.0
+        },
+        "name": "Surface & Content",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s15d52ig2lss5c:e4",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Panes"
+  }
+}

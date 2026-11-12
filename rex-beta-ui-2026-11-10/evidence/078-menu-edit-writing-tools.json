@@ -1,0 +1,815 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 38,
+  "snapshot_id": "scpe36ygiemzx",
+  "tree": {
+    "bounds": {
+      "height": 355.0,
+      "width": 215.0,
+      "x": 156.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 36.0
+        },
+        "name": "Undo",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "undo:"
+        },
+        "ref_id": "@scpe36ygiemzx:e1",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 60.0
+        },
+        "name": "Redo",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "redo:"
+        },
+        "ref_id": "@scpe36ygiemzx:e2",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 84.0
+        },
+        "ref_id": "@scpe36ygiemzx:e3",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 95.0
+        },
+        "name": "Cut",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "cut:"
+        },
+        "ref_id": "@scpe36ygiemzx:e4",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 119.0
+        },
+        "name": "Copy",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "copy:"
+        },
+        "ref_id": "@scpe36ygiemzx:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 143.0
+        },
+        "name": "Paste",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "paste:"
+        },
+        "ref_id": "@scpe36ygiemzx:e6",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 167.0
+        },
+        "name": "Delete",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "delete:"
+        },
+        "ref_id": "@scpe36ygiemzx:e7",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 191.0
+        },
+        "name": "Select All",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "selectAll:"
+        },
+        "ref_id": "@scpe36ygiemzx:e8",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 215.0
+        },
+        "name": "Insert Path\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@scpe36ygiemzx:e9",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 239.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Find\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@scpe36ygiemzx:e11",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@scpe36ygiemzx:e12",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Find Next",
+                "ref_id": "@scpe36ygiemzx:e13",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Find Previous",
+                "ref_id": "@scpe36ygiemzx:e14",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "Find",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "Find",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "ID(id: 26)"
+        },
+        "ref_id": "@scpe36ygiemzx:e10",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 263.0
+        },
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_NSMenuItemLegacyWritingToolsSeparatorIdentifier"
+        },
+        "ref_id": "@scpe36ygiemzx:e15",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 274.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 318.0,
+              "width": 148.0,
+              "x": 366.0,
+              "y": 269.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 274.0
+                },
+                "name": "Show Writing Tools",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e17",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 298.0
+                },
+                "ref_id": "@scpe36ygiemzx:e18",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 309.0
+                },
+                "name": "Proofread",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e19",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 333.0
+                },
+                "name": "Rewrite",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e20",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 357.0
+                },
+                "ref_id": "@scpe36ygiemzx:e21",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 368.0
+                },
+                "name": "Make Friendly",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e22",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 392.0
+                },
+                "name": "Make Professional",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e23",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 416.0
+                },
+                "name": "Make Concise",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e24",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 440.0
+                },
+                "ref_id": "@scpe36ygiemzx:e25",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 451.0
+                },
+                "name": "Summarize",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e26",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 475.0
+                },
+                "name": "Create Key Points",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e27",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 499.0
+                },
+                "name": "Make List",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e28",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 523.0
+                },
+                "name": "Make Table",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e29",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 547.0
+                },
+                "ref_id": "@scpe36ygiemzx:e30",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 148.0,
+                  "x": 366.0,
+                  "y": 558.0
+                },
+                "name": "Compose\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "showWritingTools:"
+                },
+                "ref_id": "@scpe36ygiemzx:e31",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              }
+            ],
+            "name": "Writing Tools",
+            "role": "menu"
+          }
+        ],
+        "name": "Writing Tools",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "__NSTextViewContextSubmenuIdentifierWritingTools"
+        },
+        "ref_id": "@scpe36ygiemzx:e16",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 298.0
+        },
+        "ref_id": "@scpe36ygiemzx:e32",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 309.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Contact\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromContactsCommand:"
+                },
+                "ref_id": "@scpe36ygiemzx:e34",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Passwords\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromPasswordsCommand:"
+                },
+                "ref_id": "@scpe36ygiemzx:e35",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Credit Card\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromCreditCardsCommand:"
+                },
+                "ref_id": "@scpe36ygiemzx:e36",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "AutoFill",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "AutoFill",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_NSMenuItemAutoFillIdentifier"
+        },
+        "ref_id": "@scpe36ygiemzx:e33",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 333.0
+        },
+        "name": "Start Dictation",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "startDictation:"
+        },
+        "ref_id": "@scpe36ygiemzx:e37",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 215.0,
+          "x": 156.0,
+          "y": 357.0
+        },
+        "name": "Emoji & Symbols",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "orderFrontCharacterPalette:"
+        },
+        "ref_id": "@scpe36ygiemzx:e38",
+        "role": "menuitem"
+      }
+    ],
+    "name": "Edit",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

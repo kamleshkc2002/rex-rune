@@ -1,0 +1,96 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 4,
+  "snapshot_id": "s1bguqugpghd34",
+  "tree": {
+    "bounds": {
+      "height": 106.0,
+      "width": 145.0,
+      "x": 1769.0,
+      "y": 386.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 391.0
+        },
+        "name": "Always",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bguqugpghd34:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 415.0
+        },
+        "name": "For active panes",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bguqugpghd34:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 439.0
+        },
+        "name": "For active tabs",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bguqugpghd34:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 145.0,
+          "x": 1769.0,
+          "y": 463.0
+        },
+        "name": "Never",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bguqugpghd34:e4",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Tabs"
+  }
+}

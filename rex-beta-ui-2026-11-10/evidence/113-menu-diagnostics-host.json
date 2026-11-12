@@ -1,0 +1,42 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 1,
+  "snapshot_id": "s16p0ihj84sxh6",
+  "tree": {
+    "bounds": {
+      "height": 34.0,
+      "width": 125.0,
+      "x": 1303.0,
+      "y": 293.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 125.0,
+          "x": 1303.0,
+          "y": 298.0
+        },
+        "name": "This Mac",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "desktopcomputer"
+        },
+        "ref_id": "@s16p0ihj84sxh6:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-919",
+    "title": "Rex API"
+  }
+}

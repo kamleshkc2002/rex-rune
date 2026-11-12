@@ -1,0 +1,1697 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 76,
+  "snapshot_id": "s2fnzqsimeuzp0",
+  "tree": {
+    "bounds": {
+      "height": 655.0,
+      "width": 1091.0,
+      "x": 480.0,
+      "y": 211.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 655.0,
+          "width": 1091.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 655.0,
+              "width": 1091.0,
+              "x": 480.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 144.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 603.0,
+                      "width": 144.0,
+                      "x": 480.0,
+                      "y": 263.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 144.0,
+                          "x": 480.0,
+                          "y": 263.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 263.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 264.0
+                                    },
+                                    "name": "Rex Binary",
+                                    "ref_id": "@s2fnzqsimeuzp0:e5",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e4",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e3",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 295.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 295.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 296.0
+                                    },
+                                    "name": "Rex Server",
+                                    "ref_id": "@s2fnzqsimeuzp0:e8",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e7",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e6",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 327.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 327.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 328.0
+                                    },
+                                    "name": "Rex API",
+                                    "ref_id": "@s2fnzqsimeuzp0:e11",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e10",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e9",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 359.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 359.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 360.0
+                                    },
+                                    "name": "RexSync",
+                                    "ref_id": "@s2fnzqsimeuzp0:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 391.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 391.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 392.0
+                                    },
+                                    "name": "Network",
+                                    "ref_id": "@s2fnzqsimeuzp0:e17",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 423.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 423.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 424.0
+                                    },
+                                    "name": "GPU",
+                                    "ref_id": "@s2fnzqsimeuzp0:e20",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e18",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 124.0,
+                              "x": 490.0,
+                              "y": 263.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Sidebar",
+                        "ref_id": "@s2fnzqsimeuzp0:e2",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s2fnzqsimeuzp0:e1",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 603.0,
+                  "width": 1.0,
+                  "x": 623.0,
+                  "y": 263.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "143"
+              },
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 1091.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 655.0,
+                      "width": 1091.0,
+                      "x": 480.0,
+                      "y": 211.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 655.0,
+                          "width": 1091.0,
+                          "x": 480.0,
+                          "y": 211.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 90.0,
+                              "x": 640.0,
+                              "y": 283.0
+                            },
+                            "name": "Record",
+                            "ref_id": "@s2fnzqsimeuzp0:e21",
+                            "role": "switch",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 32.079833984375,
+                              "width": 97.0,
+                              "x": 742.0,
+                              "y": 279.0
+                            },
+                            "name": "Record from Launch",
+                            "ref_id": "@s2fnzqsimeuzp0:e22",
+                            "role": "checkbox",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 25.0,
+                              "width": 79.0,
+                              "x": 851.0,
+                              "y": 283.0
+                            },
+                            "name": "Clear",
+                            "ref_id": "@s2fnzqsimeuzp0:e23",
+                            "role": "button"
+                          },
+                          {
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 225.0,
+                              "x": 940.0,
+                              "y": 283.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 940.0,
+                                  "y": 283.0
+                                },
+                                "name": "5s",
+                                "ref_id": "@s2fnzqsimeuzp0:e24",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 985.0,
+                                  "y": 283.0
+                                },
+                                "name": "15s",
+                                "ref_id": "@s2fnzqsimeuzp0:e25",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 1030.0,
+                                  "y": 283.0
+                                },
+                                "name": "1m",
+                                "ref_id": "@s2fnzqsimeuzp0:e26",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 1075.0,
+                                  "y": 283.0
+                                },
+                                "name": "5m",
+                                "ref_id": "@s2fnzqsimeuzp0:e27",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 1120.0,
+                                  "y": 283.0
+                                },
+                                "name": "All",
+                                "ref_id": "@s2fnzqsimeuzp0:e28",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Window",
+                            "role": "radiogroup"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 89.0,
+                              "x": 1174.0,
+                              "y": 283.0
+                            },
+                            "name": "Follow",
+                            "ref_id": "@s2fnzqsimeuzp0:e29",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "SetValue",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 180.0,
+                              "x": 1275.0,
+                              "y": 283.0
+                            },
+                            "name": "Filter methods and events",
+                            "ref_id": "@s2fnzqsimeuzp0:e30",
+                            "role": "textfield"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 68.0,
+                              "x": 1487.0,
+                              "y": 288.5399169921875
+                            },
+                            "name": "0.0s recorded",
+                            "role": "statictext",
+                            "value": "0.0s recorded"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 146.0,
+                              "x": 640.0,
+                              "y": 323.0
+                            },
+                            "name": "Open, 0 ctl \u00b7 0 data, 0 connections seen",
+                            "role": "statictext",
+                            "value": "Open, 0 ctl \u00b7 0 data, 0 connections seen"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 146.0,
+                              "x": 794.0,
+                              "y": 323.0
+                            },
+                            "name": "Control setup, \u2013, median establish + hello",
+                            "role": "statictext",
+                            "value": "Control setup, \u2013, median establish + hello"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 146.0,
+                              "x": 948.0,
+                              "y": 323.0
+                            },
+                            "name": "Request RTT, \u2013, p95 \u2013 \u00b7 0 waiting",
+                            "role": "statictext",
+                            "value": "Request RTT, \u2013, p95 \u2013 \u00b7 0 waiting"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 145.0,
+                              "x": 1102.0,
+                              "y": 323.0
+                            },
+                            "name": "First byte, \u2013, median from ticket request",
+                            "role": "statictext",
+                            "value": "First byte, \u2013, median from ticket request"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 146.0,
+                              "x": 1255.0,
+                              "y": 323.0
+                            },
+                            "name": "Snapshot ready, \u2013, median size \u2013",
+                            "role": "statictext",
+                            "value": "Snapshot ready, \u2013, median size \u2013"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 146.0,
+                              "x": 1409.0,
+                              "y": 323.0
+                            },
+                            "name": "Traffic, Zero KB, data in \u00b7 Zero KB control",
+                            "role": "statictext",
+                            "value": "Traffic, Zero KB, data in \u00b7 Zero KB control"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 44.0,
+                              "x": 640.0,
+                              "y": 404.0
+                            },
+                            "name": "Ticket",
+                            "ref_id": "@s2fnzqsimeuzp0:e31",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 58.0,
+                              "x": 694.0,
+                              "y": 404.0
+                            },
+                            "name": "Establish",
+                            "ref_id": "@s2fnzqsimeuzp0:e32",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 68.0,
+                              "x": 762.0,
+                              "y": 404.0
+                            },
+                            "name": "Handshake",
+                            "ref_id": "@s2fnzqsimeuzp0:e33",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 79.0,
+                              "x": 840.0,
+                              "y": 404.0
+                            },
+                            "name": "Awaiting data",
+                            "ref_id": "@s2fnzqsimeuzp0:e34",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 85.0,
+                              "x": 929.0,
+                              "y": 404.0
+                            },
+                            "name": "Receiving data",
+                            "ref_id": "@s2fnzqsimeuzp0:e35",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 54.0,
+                              "x": 1024.0,
+                              "y": 404.0
+                            },
+                            "name": "Request",
+                            "ref_id": "@s2fnzqsimeuzp0:e36",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 41.0,
+                              "x": 1088.0,
+                              "y": 404.0
+                            },
+                            "name": "Event",
+                            "ref_id": "@s2fnzqsimeuzp0:e37",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 60.0,
+                              "x": 1139.0,
+                              "y": 404.0
+                            },
+                            "name": "First byte",
+                            "ref_id": "@s2fnzqsimeuzp0:e38",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 60.0,
+                              "x": 1209.0,
+                              "y": 404.0
+                            },
+                            "name": "Snapshot",
+                            "ref_id": "@s2fnzqsimeuzp0:e39",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 35.0,
+                              "x": 1279.0,
+                              "y": 404.0
+                            },
+                            "name": "APC",
+                            "ref_id": "@s2fnzqsimeuzp0:e40",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 63.0,
+                              "x": 1324.0,
+                              "y": 404.0
+                            },
+                            "name": "App event",
+                            "ref_id": "@s2fnzqsimeuzp0:e41",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 46.0,
+                              "x": 1397.0,
+                              "y": 404.0
+                            },
+                            "name": "Failure",
+                            "ref_id": "@s2fnzqsimeuzp0:e42",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 205.0,
+                              "width": 915.0,
+                              "x": 640.0,
+                              "y": 429.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 82.0,
+                                  "width": 911.0,
+                                  "x": 644.0,
+                                  "y": 429.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 13.0,
+                                      "width": 62.0,
+                                      "x": 644.0,
+                                      "y": 453.5
+                                    },
+                                    "name": "App Events",
+                                    "role": "statictext",
+                                    "value": "App Events"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 13.0,
+                                      "width": 62.0,
+                                      "x": 644.0,
+                                      "y": 482.5
+                                    },
+                                    "name": "Throughput",
+                                    "role": "statictext",
+                                    "value": "Throughput"
+                                  }
+                                ],
+                                "name": "Network timeline",
+                                "role": "group"
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e43",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 606.0,
+                              "x": 640.0,
+                              "y": 646.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 640.0,
+                                  "y": 646.0
+                                },
+                                "name": "Requests",
+                                "ref_id": "@s2fnzqsimeuzp0:e44",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 741.0,
+                                  "y": 646.0
+                                },
+                                "name": "Events",
+                                "ref_id": "@s2fnzqsimeuzp0:e45",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 842.0,
+                                  "y": 646.0
+                                },
+                                "name": "Connections",
+                                "ref_id": "@s2fnzqsimeuzp0:e46",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 943.0,
+                                  "y": 646.0
+                                },
+                                "name": "Methods",
+                                "ref_id": "@s2fnzqsimeuzp0:e47",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 1044.0,
+                                  "y": 646.0
+                                },
+                                "name": "App Events",
+                                "ref_id": "@s2fnzqsimeuzp0:e48",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 1145.0,
+                                  "y": 646.0
+                                },
+                                "name": "APCs",
+                                "ref_id": "@s2fnzqsimeuzp0:e49",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Table",
+                            "role": "radiogroup"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 172.0,
+                              "width": 915.0,
+                              "x": 640.0,
+                              "y": 678.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Select",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 172.0,
+                                  "width": 915.0,
+                                  "x": 640.0,
+                                  "y": 678.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 85.0,
+                                      "x": 650.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "400CFBB5-D5FE-4743-9109-D536870C4A6B"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 117.0,
+                                      "x": 735.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "EEBFCA5A-9396-4729-B8D0-B3A434F693CF"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 82.0,
+                                      "x": 852.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "3E8216D3-D0AA-4301-91AE-A31D37FA3ED8"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 102.0,
+                                      "x": 934.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "B4C6B901-801B-495F-915F-E113CC8A53D5"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 72.0,
+                                      "x": 1036.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "3BCAD6EE-8E8E-4C5D-B824-B15C23CED5EC"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 72.0,
+                                      "x": 1108.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "ACEF495C-BAA4-4615-AFE6-B0DADEB40679"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 72.0,
+                                      "x": 1180.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "416DD3E4-7E73-439A-B3DA-90215393F321"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 72.0,
+                                      "x": 1252.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "B95EE9B2-C7F8-4A86-8681-0CAFEBCF26A3"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 82.0,
+                                      "x": 1324.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "53004B37-DD20-4074-A1B1-F251F61F80C4"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 92.0,
+                                      "x": 1406.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "CAACFFB7-B504-4F09-8FA8-00D07C46E49F"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 147.0,
+                                      "x": 1498.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "57C3A1CF-3877-4CF0-B17D-D7444319E12A"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 147.0,
+                                      "x": 1645.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "FE341FF5-8F9B-405A-8856-3E4520209254"
+                                    },
+                                    "role": "column",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 144.0,
+                                      "width": 114.0,
+                                      "x": 1792.0,
+                                      "y": 706.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "3029F86A-06ED-4BB7-930C-8FAA67BA4084"
+                                    },
+                                    "role": "column",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 28.0,
+                                      "width": 1276.0,
+                                      "x": 640.0,
+                                      "y": 678.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 85.0,
+                                          "x": 650.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Start",
+                                        "ref_id": "@s2fnzqsimeuzp0:e52",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 117.0,
+                                          "x": 735.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Connection",
+                                        "ref_id": "@s2fnzqsimeuzp0:e53",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 82.0,
+                                          "x": 852.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Ticket",
+                                        "ref_id": "@s2fnzqsimeuzp0:e54",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 102.0,
+                                          "x": 934.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Establish",
+                                        "ref_id": "@s2fnzqsimeuzp0:e55",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 72.0,
+                                          "x": 1036.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "DNS",
+                                        "ref_id": "@s2fnzqsimeuzp0:e56",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 72.0,
+                                          "x": 1108.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Connect",
+                                        "ref_id": "@s2fnzqsimeuzp0:e57",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 72.0,
+                                          "x": 1180.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "TLS",
+                                        "ref_id": "@s2fnzqsimeuzp0:e58",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 72.0,
+                                          "x": 1252.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Upgrade",
+                                        "ref_id": "@s2fnzqsimeuzp0:e59",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 82.0,
+                                          "x": 1324.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Hello",
+                                        "ref_id": "@s2fnzqsimeuzp0:e60",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 92.0,
+                                          "x": 1406.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "First byte",
+                                        "ref_id": "@s2fnzqsimeuzp0:e61",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 147.0,
+                                          "x": 1498.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "Snapshot",
+                                        "ref_id": "@s2fnzqsimeuzp0:e62",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 147.0,
+                                          "x": 1645.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "In / Out",
+                                        "ref_id": "@s2fnzqsimeuzp0:e63",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 114.0,
+                                          "x": 1792.0,
+                                          "y": 678.0
+                                        },
+                                        "name": "State",
+                                        "ref_id": "@s2fnzqsimeuzp0:e64",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      }
+                                    ],
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e51",
+                                "role": "outline"
+                              },
+                              {
+                                "available_actions": [
+                                  "SetValue"
+                                ],
+                                "bounds": {
+                                  "height": 19.0,
+                                  "width": 917.0,
+                                  "x": 639.0,
+                                  "y": 832.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "SetValue"
+                                    ],
+                                    "bounds": {
+                                      "height": 6.0,
+                                      "width": 651.0,
+                                      "x": 643.0,
+                                      "y": 841.0
+                                    },
+                                    "ref_id": "@s2fnzqsimeuzp0:e66",
+                                    "role": "handle",
+                                    "value": "0"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 0.0,
+                                      "x": 640.0,
+                                      "y": 833.0
+                                    },
+                                    "ref_id": "@s2fnzqsimeuzp0:e67",
+                                    "role": "button",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 0.0,
+                                      "x": 640.0,
+                                      "y": 833.0
+                                    },
+                                    "ref_id": "@s2fnzqsimeuzp0:e68",
+                                    "role": "button",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 6.0,
+                                      "width": 257.0,
+                                      "x": 1295.0,
+                                      "y": 841.0
+                                    },
+                                    "ref_id": "@s2fnzqsimeuzp0:e69",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 6.0,
+                                      "width": 0.0,
+                                      "x": 643.0,
+                                      "y": 841.0
+                                    },
+                                    "ref_id": "@s2fnzqsimeuzp0:e70",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s2fnzqsimeuzp0:e65",
+                                "role": "scrollbar",
+                                "states": [
+                                  "hidden"
+                                ],
+                                "value": "0"
+                              }
+                            ],
+                            "ref_id": "@s2fnzqsimeuzp0:e50",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 1.0,
+                          "x": 1570.0,
+                          "y": 263.0
+                        },
+                        "role": "splitter",
+                        "states": [
+                          "disabled"
+                        ],
+                        "value": "1090"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "diagnostics, SidebarNavigationSplitView"
+            },
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 1091.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 44.0,
+              "x": 572.0,
+              "y": 211.0
+            },
+            "name": "Hide Sidebar",
+            "ref_id": "@s2fnzqsimeuzp0:e71",
+            "role": "button"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 36.0,
+              "x": 1490.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 2.0,
+                  "width": 2.0,
+                  "x": 1507.0,
+                  "y": 236.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 41.0,
+              "x": 1526.0,
+              "y": 211.0
+            },
+            "name": "Show Inspector",
+            "ref_id": "@s2fnzqsimeuzp0:e72",
+            "role": "button"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 498.0,
+          "y": 229.0
+        },
+        "name": "Close",
+        "ref_id": "@s2fnzqsimeuzp0:e73",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 544.0,
+          "y": 229.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 545.0,
+              "y": 230.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 545.0,
+                  "y": 230.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s2fnzqsimeuzp0:e74",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 521.0,
+          "y": 229.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s2fnzqsimeuzp0:e75",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 854.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Network",
+        "ref_id": "@s2fnzqsimeuzp0:e76",
+        "role": "statictext",
+        "value": "Network"
+      },
+      {
+        "bounds": {
+          "height": 52.0,
+          "width": 854.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Diagnostics",
+        "role": "statictext",
+        "value": "Diagnostics"
+      }
+    ],
+    "name": "Network",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "diagnostics"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-919",
+    "title": "Network"
+  }
+}

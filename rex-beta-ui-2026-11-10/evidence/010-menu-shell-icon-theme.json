@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "s2b0pvargxk4wk",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 155.0,
+      "x": 1759.0,
+      "y": 425.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 155.0,
+          "x": 1759.0,
+          "y": 430.0
+        },
+        "name": "Default",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2b0pvargxk4wk:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 155.0,
+          "x": 1759.0,
+          "y": 454.0
+        },
+        "name": "Use theme",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2b0pvargxk4wk:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 155.0,
+          "x": 1759.0,
+          "y": 478.0
+        },
+        "name": "Use theme accent",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2b0pvargxk4wk:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Tabs"
+  }
+}

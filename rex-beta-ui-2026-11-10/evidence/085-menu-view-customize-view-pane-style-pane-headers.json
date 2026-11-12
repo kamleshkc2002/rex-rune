@@ -1,0 +1,1469 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 70,
+  "snapshot_id": "s14udiqk5524rt",
+  "tree": {
+    "bounds": {
+      "height": 401.0,
+      "width": 225.0,
+      "x": 199.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 36.0
+        },
+        "name": "Command Palette\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e1",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 60.0
+        },
+        "name": "Change Session\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e2",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 84.0
+        },
+        "name": "Refresh Sessions",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e3",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 108.0
+        },
+        "ref_id": "@s14udiqk5524rt:e4",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 119.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Split Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e6",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Split Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e7",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Split Up",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e8",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Split Down",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e9",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Split Best Fit",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e10",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@s14udiqk5524rt:e11",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Float Pane",
+                "ref_id": "@s14udiqk5524rt:e12",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "New Floating Pane",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e13",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Minimize Floating Window",
+                "ref_id": "@s14udiqk5524rt:e14",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Minimize Floating Windows",
+                "ref_id": "@s14udiqk5524rt:e15",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Zoom Pane",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e16",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@s14udiqk5524rt:e17",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e18",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e19",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Up",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e20",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Down",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e21",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Previous Pane",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e22",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Focus Next Pane",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e23",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@s14udiqk5524rt:e24",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Move Pane Left",
+                "ref_id": "@s14udiqk5524rt:e25",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Move Pane Right",
+                "ref_id": "@s14udiqk5524rt:e26",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Move Pane Up",
+                "ref_id": "@s14udiqk5524rt:e27",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Move Pane Down",
+                "ref_id": "@s14udiqk5524rt:e28",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "Pane",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "Pane",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "ID(id: 93)"
+        },
+        "ref_id": "@s14udiqk5524rt:e5",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 143.0
+        },
+        "ref_id": "@s14udiqk5524rt:e29",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 154.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 141.0,
+              "width": 166.0,
+              "x": 419.0,
+              "y": 149.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 154.0
+                },
+                "name": "Change Theme\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "menuAction:"
+                },
+                "ref_id": "@s14udiqk5524rt:e31",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 178.0
+                },
+                "ref_id": "@s14udiqk5524rt:e32",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 189.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 0.0,
+                      "width": 0.0,
+                      "x": 0.0,
+                      "y": 1080.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Auto",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e34",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "ref_id": "@s14udiqk5524rt:e35",
+                        "role": "menuitem",
+                        "states": [
+                          "disabled",
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Light",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e36",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Dark",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e37",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      }
+                    ],
+                    "name": "Color Scheme",
+                    "role": "menu",
+                    "states": [
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "name": "Color Scheme",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "ID(id: 94)"
+                },
+                "ref_id": "@s14udiqk5524rt:e33",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 213.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 0.0,
+                      "width": 0.0,
+                      "x": 0.0,
+                      "y": 1080.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Above",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e39",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Left Side",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e40",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Right Side",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e41",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "ref_id": "@s14udiqk5524rt:e42",
+                        "role": "menuitem",
+                        "states": [
+                          "disabled",
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Always Show",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e43",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Show on Hover",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e44",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Hidden",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e45",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      }
+                    ],
+                    "name": "Toolbar Layout",
+                    "role": "menu",
+                    "states": [
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "name": "Toolbar Layout",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "ID(id: 95)"
+                },
+                "ref_id": "@s14udiqk5524rt:e38",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 237.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 93.0,
+                      "width": 161.0,
+                      "x": 580.0,
+                      "y": 232.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 24.0,
+                          "width": 161.0,
+                          "x": 580.0,
+                          "y": 237.0
+                        },
+                        "name": "Comfortable",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e47",
+                        "role": "menuitem"
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 24.0,
+                          "width": 161.0,
+                          "x": 580.0,
+                          "y": 261.0
+                        },
+                        "name": "Compact",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e48",
+                        "role": "menuitem"
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 11.0,
+                          "width": 161.0,
+                          "x": 580.0,
+                          "y": 285.0
+                        },
+                        "ref_id": "@s14udiqk5524rt:e49",
+                        "role": "menuitem",
+                        "states": [
+                          "disabled"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 24.0,
+                          "width": 161.0,
+                          "x": 580.0,
+                          "y": 296.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 82.0,
+                              "width": 137.0,
+                              "x": 736.0,
+                              "y": 291.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 137.0,
+                                  "x": 736.0,
+                                  "y": 296.0
+                                },
+                                "name": "Always Show",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "menuAction:"
+                                },
+                                "ref_id": "@s14udiqk5524rt:e51",
+                                "role": "menuitem",
+                                "states": [
+                                  "selected"
+                                ]
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 137.0,
+                                  "x": 736.0,
+                                  "y": 320.0
+                                },
+                                "name": "Show on Hover",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "menuAction:"
+                                },
+                                "ref_id": "@s14udiqk5524rt:e52",
+                                "role": "menuitem"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 137.0,
+                                  "x": 736.0,
+                                  "y": 344.0
+                                },
+                                "name": "Hidden",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "menuAction:"
+                                },
+                                "ref_id": "@s14udiqk5524rt:e53",
+                                "role": "menuitem"
+                              }
+                            ],
+                            "name": "Pane Headers",
+                            "role": "menu"
+                          }
+                        ],
+                        "name": "Pane Headers",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "ID(id: 100)"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e50",
+                        "role": "menuitem",
+                        "states": [
+                          "selected"
+                        ]
+                      }
+                    ],
+                    "name": "Pane Style",
+                    "role": "menu"
+                  }
+                ],
+                "name": "Pane Style",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "ID(id: 99)"
+                },
+                "ref_id": "@s14udiqk5524rt:e46",
+                "role": "menuitem",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 166.0,
+                  "x": 419.0,
+                  "y": 261.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 0.0,
+                      "width": 0.0,
+                      "x": 0.0,
+                      "y": 1080.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Classic",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e55",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Glass",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e56",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "ref_id": "@s14udiqk5524rt:e57",
+                        "role": "menuitem",
+                        "states": [
+                          "disabled",
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "Click"
+                        ],
+                        "bounds": {
+                          "height": 0.0,
+                          "width": 0.0,
+                          "x": 0.0,
+                          "y": 1080.0
+                        },
+                        "name": "Tint with theme",
+                        "native_id": {
+                          "kind": "ax_identifier",
+                          "value": "menuAction:"
+                        },
+                        "ref_id": "@s14udiqk5524rt:e58",
+                        "role": "menuitem",
+                        "states": [
+                          "offscreen"
+                        ]
+                      }
+                    ],
+                    "name": "Interface Style",
+                    "role": "menu",
+                    "states": [
+                      "offscreen"
+                    ]
+                  }
+                ],
+                "name": "Interface Style",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "ID(id: 104)"
+                },
+                "ref_id": "@s14udiqk5524rt:e54",
+                "role": "menuitem"
+              }
+            ],
+            "name": "Customize View",
+            "role": "menu"
+          }
+        ],
+        "name": "Customize View",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "ID(id: 42)"
+        },
+        "ref_id": "@s14udiqk5524rt:e30",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 178.0
+        },
+        "ref_id": "@s14udiqk5524rt:e59",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 189.0
+        },
+        "name": "Reset Font Size",
+        "ref_id": "@s14udiqk5524rt:e60",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 213.0
+        },
+        "name": "Increase Font Size",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e61",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 237.0
+        },
+        "name": "Decrease Font Size",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e62",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 261.0
+        },
+        "ref_id": "@s14udiqk5524rt:e63",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 272.0
+        },
+        "name": "Toggle Sidebar",
+        "ref_id": "@s14udiqk5524rt:e64",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 296.0
+        },
+        "name": "Show Activity",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e65",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 320.0
+        },
+        "name": "Focus Tab Filter",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s14udiqk5524rt:e66",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 344.0
+        },
+        "ref_id": "@s14udiqk5524rt:e67",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 355.0
+        },
+        "name": "Reveal Toolbar",
+        "ref_id": "@s14udiqk5524rt:e68",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 379.0
+        },
+        "name": "Reveal Pane Header",
+        "ref_id": "@s14udiqk5524rt:e69",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 225.0,
+          "x": 199.0,
+          "y": 403.0
+        },
+        "name": "Enter Full Screen",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "toggleFullScreen:"
+        },
+        "ref_id": "@s14udiqk5524rt:e70",
+        "role": "menuitem"
+      }
+    ],
+    "name": "View",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

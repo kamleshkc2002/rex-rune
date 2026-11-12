@@ -1,0 +1,1559 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 58,
+  "snapshot_id": "s163z3fp6h2pc1",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s163z3fp6h2pc1:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s163z3fp6h2pc1:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s163z3fp6h2pc1:e9",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s163z3fp6h2pc1:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s163z3fp6h2pc1:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s163z3fp6h2pc1:e22",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s163z3fp6h2pc1:e25",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s163z3fp6h2pc1:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s163z3fp6h2pc1:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s163z3fp6h2pc1:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s163z3fp6h2pc1:e39",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s163z3fp6h2pc1:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s163z3fp6h2pc1:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s163z3fp6h2pc1:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 806.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 144.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 56.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 164.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 33.5,
+                              "width": 104.0,
+                              "x": 1393.0,
+                              "y": 175.5
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 68.0,
+                                  "x": 1393.0,
+                                  "y": 175.5
+                                },
+                                "name": "Rex Server",
+                                "role": "statictext",
+                                "value": "Rex Server"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 14.0,
+                                  "width": 86.0,
+                                  "x": 1393.0,
+                                  "y": 194.5
+                                },
+                                "name": "Running for 10m",
+                                "role": "statictext",
+                                "value": "Running for 10m"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 11.0,
+                                  "width": 11.0,
+                                  "x": 1485.0,
+                                  "y": 197.0
+                                },
+                                "name": "Server details",
+                                "native_id": {
+                                  "kind": "ax_identifier",
+                                  "value": "server-status-info"
+                                },
+                                "ref_id": "@s163z3fp6h2pc1:e41",
+                                "role": "button"
+                              },
+                              {
+                                "bounds": {
+                                  "height": 84.0,
+                                  "width": 241.0,
+                                  "x": 1370.0,
+                                  "y": 112.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 84.0,
+                                      "width": 241.0,
+                                      "x": 1370.0,
+                                      "y": 112.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "Scroll"
+                                        ],
+                                        "bounds": {
+                                          "height": 58.0,
+                                          "width": 215.0,
+                                          "x": 1383.0,
+                                          "y": 125.0
+                                        },
+                                        "children": [
+                                          {
+                                            "bounds": {
+                                              "height": 38.0,
+                                              "width": 185.0,
+                                              "x": 1398.0,
+                                              "y": 135.0
+                                            },
+                                            "children": [
+                                              {
+                                                "bounds": {
+                                                  "height": 15.0,
+                                                  "width": 85.0,
+                                                  "x": 1398.0,
+                                                  "y": 135.0
+                                                },
+                                                "children": [
+                                                  {
+                                                    "bounds": {
+                                                      "height": 15.0,
+                                                      "width": 85.0,
+                                                      "x": 1398.0,
+                                                      "y": 135.0
+                                                    },
+                                                    "name": "Server Version",
+                                                    "role": "statictext",
+                                                    "value": "Server Version"
+                                                  }
+                                                ],
+                                                "name": "Server Version",
+                                                "role": "statictext",
+                                                "value": "Server Version"
+                                              },
+                                              {
+                                                "bounds": {
+                                                  "height": 15.0,
+                                                  "width": 92.0,
+                                                  "x": 1491.0,
+                                                  "y": 135.0
+                                                },
+                                                "children": [
+                                                  {
+                                                    "bounds": {
+                                                      "height": 15.0,
+                                                      "width": 92.0,
+                                                      "x": 1491.0,
+                                                      "y": 135.0
+                                                    },
+                                                    "name": "0.1.0-preview.15",
+                                                    "role": "statictext",
+                                                    "value": "0.1.0-preview.15"
+                                                  }
+                                                ],
+                                                "name": "0.1.0-preview.15",
+                                                "role": "statictext",
+                                                "value": "0.1.0-preview.15"
+                                              },
+                                              {
+                                                "bounds": {
+                                                  "height": 15.0,
+                                                  "width": 67.0,
+                                                  "x": 1416.0,
+                                                  "y": 158.0
+                                                },
+                                                "children": [
+                                                  {
+                                                    "bounds": {
+                                                      "height": 15.0,
+                                                      "width": 67.0,
+                                                      "x": 1416.0,
+                                                      "y": 158.0
+                                                    },
+                                                    "name": "API Version",
+                                                    "role": "statictext",
+                                                    "value": "API Version"
+                                                  }
+                                                ],
+                                                "name": "API Version",
+                                                "role": "statictext",
+                                                "value": "API Version"
+                                              },
+                                              {
+                                                "bounds": {
+                                                  "height": 15.0,
+                                                  "width": 64.0,
+                                                  "x": 1491.0,
+                                                  "y": 158.0
+                                                },
+                                                "children": [
+                                                  {
+                                                    "bounds": {
+                                                      "height": 15.0,
+                                                      "width": 64.0,
+                                                      "x": 1491.0,
+                                                      "y": 158.0
+                                                    },
+                                                    "name": "Revision 13",
+                                                    "role": "statictext",
+                                                    "value": "Revision 13"
+                                                  }
+                                                ],
+                                                "name": "Revision 13",
+                                                "role": "statictext",
+                                                "value": "Revision 13"
+                                              }
+                                            ],
+                                            "native_id": {
+                                              "kind": "ax_identifier",
+                                              "value": "server-status-details-content"
+                                            },
+                                            "role": "group"
+                                          }
+                                        ],
+                                        "ref_id": "@s163z3fp6h2pc1:e42",
+                                        "role": "scrollarea"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  }
+                                ],
+                                "role": "popover"
+                              }
+                            ],
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "server-status-summary"
+                            },
+                            "role": "group"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 101.0,
+                              "x": 1789.0,
+                              "y": 180.0
+                            },
+                            "name": "Stop Server\u2026",
+                            "ref_id": "@s163z3fp6h2pc1:e43",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 45.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 230.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 100.0,
+                              "x": 1349.0,
+                              "y": 236.0
+                            },
+                            "name": "Remote Address",
+                            "role": "statictext",
+                            "value": "Remote Address"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 194.0,
+                              "x": 1349.0,
+                              "y": 255.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 14.0,
+                                  "width": 194.0,
+                                  "x": 1349.0,
+                                  "y": 255.0
+                                },
+                                "name": "https://shuvbot-rex.tail586a6d.ts.net",
+                                "role": "statictext",
+                                "value": "https://shuvbot-rex.tail586a6d.ts.net"
+                              }
+                            ],
+                            "name": "https://shuvbot-rex.tail586a6d.ts.net",
+                            "role": "statictext",
+                            "value": "https://shuvbot-rex.tail586a6d.ts.net"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 37.0,
+                              "x": 1777.0,
+                              "y": 241.0
+                            },
+                            "name": "Copy Remote Address",
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "doc.on.doc"
+                            },
+                            "ref_id": "@s163z3fp6h2pc1:e44",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 68.0,
+                              "x": 1822.0,
+                              "y": 241.0
+                            },
+                            "name": "Show pairing QR code",
+                            "ref_id": "@s163z3fp6h2pc1:e45",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 55.0,
+                          "x": 1349.0,
+                          "y": 305.0
+                        },
+                        "name": "Tailscale",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 272.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 331.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 33.5,
+                              "width": 161.0,
+                              "x": 1393.0,
+                              "y": 342.5
+                            },
+                            "name": "Signed in to Tailscale",
+                            "role": "unknown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 83.0,
+                              "x": 1807.0,
+                              "y": 347.0
+                            },
+                            "name": "Sign Out",
+                            "ref_id": "@s163z3fp6h2pc1:e46",
+                            "role": "button"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 120.0,
+                              "x": 1349.0,
+                              "y": 394.0
+                            },
+                            "name": "Serve over Tailscale",
+                            "role": "statictext",
+                            "value": "Serve over Tailscale"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 264.0,
+                              "x": 1349.0,
+                              "y": 413.0
+                            },
+                            "name": "Connect to your local Rex server over your Tailnet.",
+                            "role": "statictext",
+                            "value": "Connect to your local Rex server over your Tailnet."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 403.0
+                            },
+                            "name": "Serve over Tailscale",
+                            "ref_id": "@s163z3fp6h2pc1:e47",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 1.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 433.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 230.0,
+                              "x": 1349.0,
+                              "y": 440.0
+                            },
+                            "name": "Limit access to your Tailscale account",
+                            "role": "statictext",
+                            "value": "Limit access to your Tailscale account"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 302.0,
+                              "x": 1349.0,
+                              "y": 459.0
+                            },
+                            "name": "Rex will verify the caller is signed in as shuv1337@github.",
+                            "role": "statictext",
+                            "value": "Rex will verify the caller is signed in as shuv1337@github."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 449.0
+                            },
+                            "name": "Limit access to your Tailscale account",
+                            "ref_id": "@s163z3fp6h2pc1:e48",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "bounds": {
+                              "height": 1.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 479.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 29.0,
+                              "x": 1349.0,
+                              "y": 491.0
+                            },
+                            "name": "Tags",
+                            "role": "statictext",
+                            "value": "Tags"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 52.0,
+                              "x": 1838.0,
+                              "y": 491.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 1.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 518.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 88.0,
+                              "x": 1349.0,
+                              "y": 530.0
+                            },
+                            "name": "Control Server",
+                            "role": "statictext",
+                            "value": "Control Server"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 71.0,
+                              "x": 1819.0,
+                              "y": 530.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 1.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 557.0
+                            },
+                            "role": "unknown"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 123.0,
+                              "x": 1349.0,
+                              "y": 564.0
+                            },
+                            "name": "Preferred Hostname",
+                            "role": "statictext",
+                            "value": "Preferred Hostname"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 208.0,
+                              "x": 1349.0,
+                              "y": 583.0
+                            },
+                            "name": "Used to generate the Tailscale address.",
+                            "role": "statictext",
+                            "value": "Used to generate the Tailscale address."
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 308.0,
+                              "x": 1577.0,
+                              "y": 573.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 308.0,
+                                  "x": 1577.0,
+                                  "y": 573.0
+                                },
+                                "name": "Tailscale hostname",
+                                "ref_id": "@s163z3fp6h2pc1:e50",
+                                "role": "textfield",
+                                "value": "shuvbot-rex"
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e49",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 65.0,
+                          "x": 1349.0,
+                          "y": 633.0
+                        },
+                        "name": "Client Info",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 86.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 659.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 33.0,
+                              "x": 1349.0,
+                              "y": 672.0
+                            },
+                            "name": "Label",
+                            "role": "statictext",
+                            "value": "Label"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 458.0,
+                              "x": 1427.0,
+                              "y": 672.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "RightClick",
+                                  "SetValue",
+                                  "SetFocus",
+                                  "TypeText"
+                                ],
+                                "bounds": {
+                                  "height": 16.0,
+                                  "width": 458.0,
+                                  "x": 1427.0,
+                                  "y": 672.0
+                                },
+                                "name": "Client label",
+                                "ref_id": "@s163z3fp6h2pc1:e52",
+                                "role": "textfield"
+                              }
+                            ],
+                            "ref_id": "@s163z3fp6h2pc1:e51",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 95.0,
+                              "x": 1349.0,
+                              "y": 706.0
+                            },
+                            "name": "Remote Control",
+                            "role": "statictext",
+                            "value": "Remote Control"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 278.0,
+                              "x": 1349.0,
+                              "y": 725.0
+                            },
+                            "name": "Let Rex and other clients perform actions in this app.",
+                            "role": "statictext",
+                            "value": "Let Rex and other clients perform actions in this app."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 715.0
+                            },
+                            "name": "Remote Control",
+                            "ref_id": "@s163z3fp6h2pc1:e53",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group"
+                      }
+                    ],
+                    "ref_id": "@s163z3fp6h2pc1:e40",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s163z3fp6h2pc1:e54",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s163z3fp6h2pc1:e55",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 63.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 65.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Server",
+                "role": "statictext",
+                "value": "Server"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s163z3fp6h2pc1:e56",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s163z3fp6h2pc1:e57",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s163z3fp6h2pc1:e58",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Server",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Server"
+  }
+}

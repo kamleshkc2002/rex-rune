@@ -1,0 +1,143 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 6,
+  "snapshot_id": "shsg1p445tdyg",
+  "tree": {
+    "bounds": {
+      "height": 128.0,
+      "width": 205.0,
+      "x": 1709.0,
+      "y": 142.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 147.0
+        },
+        "name": "No GUI Overrides Yet",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_popUpItemAction:"
+        },
+        "ref_id": "@shsg1p445tdyg:e1",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 171.0
+        },
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_popUpItemAction:"
+        },
+        "ref_id": "@shsg1p445tdyg:e2",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 182.0
+        },
+        "name": "Copy Configuration File Path",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "copyConfigurationPath"
+        },
+        "ref_id": "@shsg1p445tdyg:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 206.0
+        },
+        "name": "Copy Shortcuts as Lua",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "copyAsLua"
+        },
+        "ref_id": "@shsg1p445tdyg:e4",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 230.0
+        },
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_popUpItemAction:"
+        },
+        "ref_id": "@shsg1p445tdyg:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 205.0,
+          "x": 1709.0,
+          "y": 241.0
+        },
+        "name": "Reset All\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "confirmReset"
+        },
+        "ref_id": "@shsg1p445tdyg:e6",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Configuration",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Shortcuts"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 5,
+  "snapshot_id": "s3a52rnn3iky4o",
+  "tree": {
+    "bounds": {
+      "height": 130.0,
+      "width": 238.0,
+      "x": 1640.0,
+      "y": 788.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 238.0,
+          "x": 1640.0,
+          "y": 793.0
+        },
+        "name": "Automatic (by keyboard layout)",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s3a52rnn3iky4o:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 238.0,
+          "x": 1640.0,
+          "y": 817.0
+        },
+        "name": "Composes characters",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s3a52rnn3iky4o:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 238.0,
+          "x": 1640.0,
+          "y": 841.0
+        },
+        "name": "Sends Alt",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s3a52rnn3iky4o:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 238.0,
+          "x": 1640.0,
+          "y": 865.0
+        },
+        "name": "Left sends Alt",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s3a52rnn3iky4o:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 238.0,
+          "x": 1640.0,
+          "y": 889.0
+        },
+        "name": "Right sends Alt",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s3a52rnn3iky4o:e5",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

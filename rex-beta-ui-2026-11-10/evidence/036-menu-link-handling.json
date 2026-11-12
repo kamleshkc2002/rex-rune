@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "s1bm3pntdvumbx",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 124.0,
+      "x": 1777.0,
+      "y": 895.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 124.0,
+          "x": 1777.0,
+          "y": 900.0
+        },
+        "name": "Ask First",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bm3pntdvumbx:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 124.0,
+          "x": 1777.0,
+          "y": 924.0
+        },
+        "name": "Always Open",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bm3pntdvumbx:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 124.0,
+          "x": 1777.0,
+          "y": 948.0
+        },
+        "name": "Never Open",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s1bm3pntdvumbx:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Terminal"
+  }
+}

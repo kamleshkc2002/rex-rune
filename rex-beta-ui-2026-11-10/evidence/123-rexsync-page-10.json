@@ -1,0 +1,3151 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 69,
+  "snapshot_id": "s20musxcjoz1sh",
+  "tree": {
+    "bounds": {
+      "height": 655.0,
+      "width": 1091.0,
+      "x": 480.0,
+      "y": 211.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 655.0,
+          "width": 1091.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 655.0,
+              "width": 1091.0,
+              "x": 480.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 144.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 603.0,
+                      "width": 144.0,
+                      "x": 480.0,
+                      "y": 263.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 144.0,
+                          "x": 480.0,
+                          "y": 263.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 263.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 264.0
+                                    },
+                                    "name": "Rex Binary",
+                                    "ref_id": "@s20musxcjoz1sh:e5",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e4",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e3",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 295.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 295.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 296.0
+                                    },
+                                    "name": "Rex Server",
+                                    "ref_id": "@s20musxcjoz1sh:e8",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e7",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e6",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 327.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 327.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 328.0
+                                    },
+                                    "name": "Rex API",
+                                    "ref_id": "@s20musxcjoz1sh:e11",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e10",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e9",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 359.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 359.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 360.0
+                                    },
+                                    "name": "RexSync",
+                                    "ref_id": "@s20musxcjoz1sh:e14",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 391.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 391.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 392.0
+                                    },
+                                    "name": "Network",
+                                    "ref_id": "@s20musxcjoz1sh:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 423.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 423.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 424.0
+                                    },
+                                    "name": "GPU",
+                                    "ref_id": "@s20musxcjoz1sh:e20",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e18",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 124.0,
+                              "x": 490.0,
+                              "y": 263.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Sidebar",
+                        "ref_id": "@s20musxcjoz1sh:e2",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s20musxcjoz1sh:e1",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 603.0,
+                  "width": 1.0,
+                  "x": 623.0,
+                  "y": 263.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "143"
+              },
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 1091.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 655.0,
+                      "width": 1091.0,
+                      "x": 480.0,
+                      "y": 211.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 655.0,
+                          "width": 1091.0,
+                          "x": 480.0,
+                          "y": 211.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 947.0,
+                              "x": 624.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 1454.0,
+                                  "width": 915.0,
+                                  "x": 640.0,
+                                  "y": -466.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 1454.0,
+                                      "width": 915.0,
+                                      "x": 640.0,
+                                      "y": -466.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 14.0,
+                                          "width": 344.0,
+                                          "x": 650.0,
+                                          "y": -466.0
+                                        },
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "heading",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 645.0,
+                                          "y": -432.5
+                                        },
+                                        "name": "ID",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 270.0,
+                                          "x": 1258.0,
+                                          "y": -432.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 270.0,
+                                              "x": 1258.0,
+                                              "y": -432.5
+                                            },
+                                            "name": "A4D68E7A-8A6E-4C39-9D9D-CFFEA559A42C",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "A4D68E7A-8A6E-4C39-9D9D-CFFEA559A42C"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "A4D68E7A-8A6E-4C39-9D9D-CFFEA559A42C"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -432.0
+                                        },
+                                        "description": "Copy id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e22",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 26.0,
+                                          "x": 645.0,
+                                          "y": -393.5
+                                        },
+                                        "name": "Kind",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Kind"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 51.0,
+                                          "x": 1477.0,
+                                          "y": -393.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 51.0,
+                                              "x": 1477.0,
+                                              "y": -393.5
+                                            },
+                                            "name": "transient",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "transient"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "transient"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -393.0
+                                        },
+                                        "description": "Copy kind",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e23",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 33.0,
+                                          "x": 645.0,
+                                          "y": -354.5
+                                        },
+                                        "name": "Name",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Name"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 371.0,
+                                          "x": 1157.0,
+                                          "y": -354.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 371.0,
+                                              "x": 1157.0,
+                                              "y": -354.5
+                                            },
+                                            "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -354.0
+                                        },
+                                        "description": "Copy name",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e24",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 25.0,
+                                          "x": 645.0,
+                                          "y": -315.5
+                                        },
+                                        "name": "Icon",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Icon"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 30.0,
+                                          "x": 1498.0,
+                                          "y": -315.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 30.0,
+                                              "x": 1498.0,
+                                              "y": -315.5
+                                            },
+                                            "name": "None",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "None"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "None"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -315.0
+                                        },
+                                        "description": "Copy icon",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e25",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 65.0,
+                                          "x": 645.0,
+                                          "y": -276.5
+                                        },
+                                        "name": "Connection",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Connection"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 32.0,
+                                          "x": 1496.0,
+                                          "y": -276.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 32.0,
+                                              "x": 1496.0,
+                                              "y": -276.5
+                                            },
+                                            "name": "ready",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "ready"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "ready"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -276.0
+                                        },
+                                        "description": "Copy connection",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e26",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 52.0,
+                                          "x": 645.0,
+                                          "y": -237.5
+                                        },
+                                        "name": "Resumes",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Resumes"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 1422.0,
+                                          "y": -237.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 106.0,
+                                              "x": 1422.0,
+                                              "y": -237.5
+                                            },
+                                            "name": "0 control, 0 blocks",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "0 control, 0 blocks"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "0 control, 0 blocks"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -237.0
+                                        },
+                                        "description": "Copy resumes",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e27",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 114.0,
+                                          "x": 645.0,
+                                          "y": -204.0
+                                        },
+                                        "name": "Last Resume Failure",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Last Resume Failure"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 385.0,
+                                          "x": 1143.0,
+                                          "y": -204.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 385.0,
+                                              "x": 1143.0,
+                                              "y": -204.0
+                                            },
+                                            "name": "control attempt 1: The Rex control connection closed: The operation couldn\u2019t be completed. (NIOCore.IOError error 1.)",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "control attempt 1: The Rex control connection closed: The operation couldn\u2019t be completed. (NIOCore.IOError error 1.)"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "control attempt 1: The Rex control connection closed: The operation couldn\u2019t be completed. (NIOCore.IOError error 1.)"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -196.0
+                                        },
+                                        "description": "Copy last resume failure",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e28",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 645.0,
+                                          "y": -155.5
+                                        },
+                                        "name": "Resolved Endpoint",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Resolved Endpoint"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 371.0,
+                                          "x": 1157.0,
+                                          "y": -155.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 371.0,
+                                              "x": 1157.0,
+                                              "y": -155.5
+                                            },
+                                            "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -155.0
+                                        },
+                                        "description": "Copy resolved endpoint",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e29",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 64.0,
+                                          "x": 645.0,
+                                          "y": -116.5
+                                        },
+                                        "name": "Instance ID",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Instance ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 249.0,
+                                          "x": 1279.0,
+                                          "y": -116.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 249.0,
+                                              "x": 1279.0,
+                                              "y": -116.5
+                                            },
+                                            "name": "2e3a66ea-d1ed-48fc-81b4-3b7a5543d8e8",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "2e3a66ea-d1ed-48fc-81b4-3b7a5543d8e8"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "2e3a66ea-d1ed-48fc-81b4-3b7a5543d8e8"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -116.0
+                                        },
+                                        "description": "Copy instance id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e30",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 114.0,
+                                          "x": 645.0,
+                                          "y": -77.5
+                                        },
+                                        "name": "Instance Generation",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Instance Generation"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 8.0,
+                                          "x": 1520.0,
+                                          "y": -77.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 8.0,
+                                              "x": 1520.0,
+                                              "y": -77.5
+                                            },
+                                            "name": "0",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "0"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "0"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -77.0
+                                        },
+                                        "description": "Copy instance generation",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e31",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 42.0,
+                                          "x": 645.0,
+                                          "y": -38.5
+                                        },
+                                        "name": "Host ID",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Host ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 368.0,
+                                          "x": 1160.0,
+                                          "y": -38.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 368.0,
+                                              "x": 1160.0,
+                                              "y": -38.5
+                                            },
+                                            "name": "HostID(rawValue: \"c0332abd-8b89-4270-aca2-d1a7a3745230\")",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "HostID(rawValue: \"c0332abd-8b89-4270-aca2-d1a7a3745230\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "HostID(rawValue: \"c0332abd-8b89-4270-aca2-d1a7a3745230\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": -38.0
+                                        },
+                                        "description": "Copy host id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e32",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 49.0,
+                                          "x": 645.0,
+                                          "y": 0.5
+                                        },
+                                        "name": "Client ID",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Client ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 394.0,
+                                          "x": 1134.0,
+                                          "y": 0.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 394.0,
+                                              "x": 1134.0,
+                                              "y": 0.5
+                                            },
+                                            "name": "ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\")",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 1.0
+                                        },
+                                        "description": "Copy client id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e33",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 49.0,
+                                          "x": 645.0,
+                                          "y": 39.5
+                                        },
+                                        "name": "Tailscale",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Tailscale"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 418.0,
+                                          "x": 1110.0,
+                                          "y": 39.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 418.0,
+                                              "x": 1110.0,
+                                              "y": 39.5
+                                            },
+                                            "name": "state=running dns=shuvbot-rex.tail586a6d.ts.net tailnet=shuv1337.github",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "state=running dns=shuvbot-rex.tail586a6d.ts.net tailnet=shuv1337.github"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "state=running dns=shuvbot-rex.tail586a6d.ts.net tailnet=shuv1337.github"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 40.0
+                                        },
+                                        "description": "Copy tailscale",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e34",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 65.0,
+                                          "x": 645.0,
+                                          "y": 78.5
+                                        },
+                                        "name": "Last Failure",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Last Failure"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 30.0,
+                                          "x": 1498.0,
+                                          "y": 78.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 30.0,
+                                              "x": 1498.0,
+                                              "y": 78.5
+                                            },
+                                            "name": "None",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "None"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "None"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 79.0
+                                        },
+                                        "description": "Copy last failure",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e35",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 60.0,
+                                          "x": 645.0,
+                                          "y": 112.0
+                                        },
+                                        "name": "Session ID",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Session ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 297.0,
+                                          "x": 1231.0,
+                                          "y": 112.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 297.0,
+                                              "x": 1231.0,
+                                              "y": 112.0
+                                            },
+                                            "name": "SessionID(rawValue: \"session:01a1c993-7fd0-78ed-b86f-78ede44c4365\")",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "SessionID(rawValue: \"session:01a1c993-7fd0-78ed-b86f-78ede44c4365\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "SessionID(rawValue: \"session:01a1c993-7fd0-78ed-b86f-78ede44c4365\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 120.0
+                                        },
+                                        "description": "Copy session id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e36",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 79.0,
+                                          "x": 645.0,
+                                          "y": 160.5
+                                        },
+                                        "name": "Session Label",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Session Label"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 64.0,
+                                          "x": 1464.0,
+                                          "y": 160.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 64.0,
+                                              "x": 1464.0,
+                                              "y": 160.5
+                                            },
+                                            "name": "lunar-basin",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "lunar-basin"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "lunar-basin"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 161.0
+                                        },
+                                        "description": "Copy session label",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e37",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 84.0,
+                                          "x": 645.0,
+                                          "y": 199.5
+                                        },
+                                        "name": "Session Status",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Session Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 20.0,
+                                          "x": 1508.0,
+                                          "y": 199.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 20.0,
+                                              "x": 1508.0,
+                                              "y": 199.5
+                                            },
+                                            "name": "live",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "live"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "live"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 200.0
+                                        },
+                                        "description": "Copy session status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e38",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 93.0,
+                                          "x": 645.0,
+                                          "y": 238.5
+                                        },
+                                        "name": "Structure Status",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Structure Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 42.0,
+                                          "x": 1486.0,
+                                          "y": 238.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 42.0,
+                                              "x": 1486.0,
+                                              "y": 238.5
+                                            },
+                                            "name": "current",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "current"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "current"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 239.0
+                                        },
+                                        "description": "Copy structure status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e39",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 54.0,
+                                          "x": 645.0,
+                                          "y": 277.5
+                                        },
+                                        "name": "Demands",
+                                        "role": "statictext",
+                                        "value": "Demands"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 206.0,
+                                          "x": 1322.0,
+                                          "y": 277.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 206.0,
+                                              "x": 1322.0,
+                                              "y": 277.5
+                                            },
+                                            "name": "6 structure, 6 attachment, 2 content",
+                                            "role": "statictext",
+                                            "value": "6 structure, 6 attachment, 2 content"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "6 structure, 6 attachment, 2 content"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 278.0
+                                        },
+                                        "description": "Copy demands",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e40",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 645.0,
+                                          "y": 311.0
+                                        },
+                                        "name": "Attachment Status",
+                                        "role": "statictext",
+                                        "value": "Attachment Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 401.0,
+                                          "x": 1127.0,
+                                          "y": 311.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 401.0,
+                                              "x": 1127.0,
+                                              "y": 311.0
+                                            },
+                                            "name": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))",
+                                            "role": "statictext",
+                                            "value": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 319.0
+                                        },
+                                        "description": "Copy attachment status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e41",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 83.0,
+                                          "x": 645.0,
+                                          "y": 359.5
+                                        },
+                                        "name": "Window Count",
+                                        "role": "statictext",
+                                        "value": "Window Count"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 6.0,
+                                          "x": 1522.0,
+                                          "y": 359.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 6.0,
+                                              "x": 1522.0,
+                                              "y": 359.5
+                                            },
+                                            "name": "1",
+                                            "role": "statictext",
+                                            "value": "1"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "1"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 360.0
+                                        },
+                                        "description": "Copy window count",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e42",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 645.0,
+                                          "y": 398.5
+                                        },
+                                        "name": "Presented Window",
+                                        "role": "statictext",
+                                        "value": "Presented Window"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 416.0,
+                                          "x": 1112.0,
+                                          "y": 398.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 416.0,
+                                              "x": 1112.0,
+                                              "y": 398.5
+                                            },
+                                            "name": "WindowID(rawValue: \"window:01a1c993-7fef-7e21-8f1f-a900ed0732bb\")",
+                                            "role": "statictext",
+                                            "value": "WindowID(rawValue: \"window:01a1c993-7fef-7e21-8f1f-a900ed0732bb\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "WindowID(rawValue: \"window:01a1c993-7fef-7e21-8f1f-a900ed0732bb\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 399.0
+                                        },
+                                        "description": "Copy presented window",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e43",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 131.0,
+                                          "x": 645.0,
+                                          "y": 437.5
+                                        },
+                                        "name": "Reporting Presentation",
+                                        "role": "statictext",
+                                        "value": "Reporting Presentation"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 263.0,
+                                          "x": 1265.0,
+                                          "y": 437.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 263.0,
+                                              "x": 1265.0,
+                                              "y": 437.5
+                                            },
+                                            "name": "7B8F77C7-12BA-4659-8F0A-32ED08CB3284",
+                                            "role": "statictext",
+                                            "value": "7B8F77C7-12BA-4659-8F0A-32ED08CB3284"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "7B8F77C7-12BA-4659-8F0A-32ED08CB3284"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 438.0
+                                        },
+                                        "description": "Copy reporting presentation",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e44",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 121.0,
+                                          "x": 645.0,
+                                          "y": 476.5
+                                        },
+                                        "name": "Reporting Generation",
+                                        "role": "statictext",
+                                        "value": "Reporting Generation"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 6.0,
+                                          "x": 1522.0,
+                                          "y": 476.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 6.0,
+                                              "x": 1522.0,
+                                              "y": 476.5
+                                            },
+                                            "name": "1",
+                                            "role": "statictext",
+                                            "value": "1"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "1"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 477.0
+                                        },
+                                        "description": "Copy reporting generation",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e45",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 309.0,
+                                          "x": 645.0,
+                                          "y": 515.5
+                                        },
+                                        "name": "Block block:01a1c993-7fd0-7af8-aca8-35abeb7960f4",
+                                        "role": "statictext",
+                                        "value": "Block block:01a1c993-7fd0-7af8-aca8-35abeb7960f4"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 29.0,
+                                          "x": 1499.0,
+                                          "y": 515.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 29.0,
+                                              "x": 1499.0,
+                                              "y": 515.5
+                                            },
+                                            "name": "open",
+                                            "role": "statictext",
+                                            "value": "open"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "open"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 516.0
+                                        },
+                                        "description": "Copy block block:01a1c993-7fd0-7af8-aca8-35abeb7960f4",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e46",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 60.0,
+                                          "x": 645.0,
+                                          "y": 549.0
+                                        },
+                                        "name": "Session ID",
+                                        "role": "statictext",
+                                        "value": "Session ID"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 333.0,
+                                          "x": 1195.0,
+                                          "y": 549.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 333.0,
+                                              "x": 1195.0,
+                                              "y": 549.0
+                                            },
+                                            "name": "SessionID(rawValue: \"session:01a1c993-f469-7042-bb22-aadd2dd2da1f\")",
+                                            "role": "statictext",
+                                            "value": "SessionID(rawValue: \"session:01a1c993-f469-7042-bb22-aadd2dd2da1f\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "SessionID(rawValue: \"session:01a1c993-f469-7042-bb22-aadd2dd2da1f\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 557.0
+                                        },
+                                        "description": "Copy session id",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e47",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 79.0,
+                                          "x": 645.0,
+                                          "y": 597.5
+                                        },
+                                        "name": "Session Label",
+                                        "role": "statictext",
+                                        "value": "Session Label"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 50.0,
+                                          "x": 1478.0,
+                                          "y": 597.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 50.0,
+                                              "x": 1478.0,
+                                              "y": 597.5
+                                            },
+                                            "name": "still-atoll",
+                                            "role": "statictext",
+                                            "value": "still-atoll"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "still-atoll"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 598.0
+                                        },
+                                        "description": "Copy session label",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e48",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 84.0,
+                                          "x": 645.0,
+                                          "y": 636.5
+                                        },
+                                        "name": "Session Status",
+                                        "role": "statictext",
+                                        "value": "Session Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 20.0,
+                                          "x": 1508.0,
+                                          "y": 636.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 20.0,
+                                              "x": 1508.0,
+                                              "y": 636.5
+                                            },
+                                            "name": "live",
+                                            "role": "statictext",
+                                            "value": "live"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "live"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 637.0
+                                        },
+                                        "description": "Copy session status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e49",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 93.0,
+                                          "x": 645.0,
+                                          "y": 675.5
+                                        },
+                                        "name": "Structure Status",
+                                        "role": "statictext",
+                                        "value": "Structure Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 42.0,
+                                          "x": 1486.0,
+                                          "y": 675.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 42.0,
+                                              "x": 1486.0,
+                                              "y": 675.5
+                                            },
+                                            "name": "current",
+                                            "role": "statictext",
+                                            "value": "current"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "current"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 676.0
+                                        },
+                                        "description": "Copy structure status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e50",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 54.0,
+                                          "x": 645.0,
+                                          "y": 714.5
+                                        },
+                                        "name": "Demands",
+                                        "role": "statictext",
+                                        "value": "Demands"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 207.0,
+                                          "x": 1321.0,
+                                          "y": 714.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 207.0,
+                                              "x": 1321.0,
+                                              "y": 714.5
+                                            },
+                                            "name": "3 structure, 4 attachment, 0 content",
+                                            "role": "statictext",
+                                            "value": "3 structure, 4 attachment, 0 content"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "3 structure, 4 attachment, 0 content"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 715.0
+                                        },
+                                        "description": "Copy demands",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e51",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 645.0,
+                                          "y": 748.0
+                                        },
+                                        "name": "Attachment Status",
+                                        "role": "statictext",
+                                        "value": "Attachment Status"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 401.0,
+                                          "x": 1127.0,
+                                          "y": 748.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 401.0,
+                                              "x": 1127.0,
+                                              "y": 748.0
+                                            },
+                                            "name": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))",
+                                            "role": "statictext",
+                                            "value": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "attached(RexAPI.ClientID(rawValue: \"client:01a1c98f-73c0-7192-b125-a22ccf68bb1f\"))"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 756.0
+                                        },
+                                        "description": "Copy attachment status",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e52",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 83.0,
+                                          "x": 645.0,
+                                          "y": 796.5
+                                        },
+                                        "name": "Window Count",
+                                        "role": "statictext",
+                                        "value": "Window Count"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 6.0,
+                                          "x": 1522.0,
+                                          "y": 796.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 6.0,
+                                              "x": 1522.0,
+                                              "y": 796.5
+                                            },
+                                            "name": "1",
+                                            "role": "statictext",
+                                            "value": "1"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "1"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 797.0
+                                        },
+                                        "description": "Copy window count",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e53",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 106.0,
+                                          "x": 645.0,
+                                          "y": 830.0
+                                        },
+                                        "name": "Presented Window",
+                                        "role": "statictext",
+                                        "value": "Presented Window"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 30.0,
+                                          "width": 334.0,
+                                          "x": 1194.0,
+                                          "y": 830.0
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 30.0,
+                                              "width": 334.0,
+                                              "x": 1194.0,
+                                              "y": 830.0
+                                            },
+                                            "name": "WindowID(rawValue: \"window:01a1c993-f488-7340-a053-bbd45fe71955\")",
+                                            "role": "statictext",
+                                            "value": "WindowID(rawValue: \"window:01a1c993-f488-7340-a053-bbd45fe71955\")"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "value": "WindowID(rawValue: \"window:01a1c993-f488-7340-a053-bbd45fe71955\")"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 838.0
+                                        },
+                                        "description": "Copy presented window",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e54",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 131.0,
+                                          "x": 645.0,
+                                          "y": 878.5
+                                        },
+                                        "name": "Reporting Presentation",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Reporting Presentation"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 30.0,
+                                          "x": 1498.0,
+                                          "y": 878.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 30.0,
+                                              "x": 1498.0,
+                                              "y": 878.5
+                                            },
+                                            "name": "None",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "None"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "None"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 879.0
+                                        },
+                                        "description": "Copy reporting presentation",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e55",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 121.0,
+                                          "x": 645.0,
+                                          "y": 917.5
+                                        },
+                                        "name": "Reporting Generation",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Reporting Generation"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 8.0,
+                                          "x": 1520.0,
+                                          "y": 917.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 8.0,
+                                              "x": 1520.0,
+                                              "y": 917.5
+                                            },
+                                            "name": "0",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "0"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "0"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 918.0
+                                        },
+                                        "description": "Copy reporting generation",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e56",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 308.0,
+                                          "x": 645.0,
+                                          "y": 956.5
+                                        },
+                                        "name": "Block block:01a1c993-f469-7255-a1ba-982ffc8a62aa",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "Block block:01a1c993-f469-7255-a1ba-982ffc8a62aa"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 25.0,
+                                          "x": 1503.0,
+                                          "y": 956.5
+                                        },
+                                        "children": [
+                                          {
+                                            "available_actions": [
+                                              "ScrollTo"
+                                            ],
+                                            "bounds": {
+                                              "height": 15.0,
+                                              "width": 25.0,
+                                              "x": 1503.0,
+                                              "y": 956.5
+                                            },
+                                            "name": "cold",
+                                            "role": "statictext",
+                                            "states": [
+                                              "offscreen"
+                                            ],
+                                            "value": "cold"
+                                          }
+                                        ],
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "role": "statictext",
+                                        "states": [
+                                          "offscreen"
+                                        ],
+                                        "value": "cold"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click",
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 15.0,
+                                          "width": 12.0,
+                                          "x": 1537.0,
+                                          "y": 957.0
+                                        },
+                                        "description": "Copy block block:01a1c993-f469-7255-a1ba-982ffc8a62aa",
+                                        "name": "unix:///Users/shuv/Library/Application%20Support/rex/server.sock",
+                                        "ref_id": "@s20musxcjoz1sh:e57",
+                                        "role": "button",
+                                        "states": [
+                                          "offscreen"
+                                        ]
+                                      }
+                                    ],
+                                    "role": "group"
+                                  }
+                                ],
+                                "role": "unknown"
+                              },
+                              {
+                                "available_actions": [
+                                  "SetValue"
+                                ],
+                                "bounds": {
+                                  "height": 597.5,
+                                  "width": 19.0,
+                                  "x": 1553.0,
+                                  "y": 262.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "SetValue"
+                                    ],
+                                    "bounds": {
+                                      "height": 189.0,
+                                      "width": 6.0,
+                                      "x": 1562.0,
+                                      "y": 626.0
+                                    },
+                                    "ref_id": "@s20musxcjoz1sh:e59",
+                                    "role": "handle",
+                                    "value": "0.9000000953674316"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 0.0,
+                                      "x": 1554.0,
+                                      "y": 263.0
+                                    },
+                                    "ref_id": "@s20musxcjoz1sh:e60",
+                                    "role": "button",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 0.0,
+                                      "x": 1554.0,
+                                      "y": 263.0
+                                    },
+                                    "ref_id": "@s20musxcjoz1sh:e61",
+                                    "role": "button",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 40.0,
+                                      "width": 6.0,
+                                      "x": 1562.0,
+                                      "y": 815.0
+                                    },
+                                    "ref_id": "@s20musxcjoz1sh:e62",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 360.0,
+                                      "width": 6.0,
+                                      "x": 1562.0,
+                                      "y": 266.0
+                                    },
+                                    "ref_id": "@s20musxcjoz1sh:e63",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s20musxcjoz1sh:e58",
+                                "role": "scrollbar",
+                                "value": "0.9000000953674316"
+                              }
+                            ],
+                            "ref_id": "@s20musxcjoz1sh:e21",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 1.0,
+                          "x": 1570.0,
+                          "y": 263.0
+                        },
+                        "role": "splitter",
+                        "states": [
+                          "disabled"
+                        ],
+                        "value": "1090"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "diagnostics, SidebarNavigationSplitView"
+            },
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 1091.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 44.0,
+              "x": 572.0,
+              "y": 211.0
+            },
+            "name": "Hide Sidebar",
+            "ref_id": "@s20musxcjoz1sh:e64",
+            "role": "button"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 36.0,
+              "x": 1490.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 2.0,
+                  "width": 2.0,
+                  "x": 1507.0,
+                  "y": 236.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 41.0,
+              "x": 1526.0,
+              "y": 211.0
+            },
+            "name": "Show Inspector",
+            "ref_id": "@s20musxcjoz1sh:e65",
+            "role": "button"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 498.0,
+          "y": 229.0
+        },
+        "name": "Close",
+        "ref_id": "@s20musxcjoz1sh:e66",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 544.0,
+          "y": 229.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 545.0,
+              "y": 230.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 545.0,
+                  "y": 230.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s20musxcjoz1sh:e67",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 521.0,
+          "y": 229.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s20musxcjoz1sh:e68",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 854.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "RexSync",
+        "ref_id": "@s20musxcjoz1sh:e69",
+        "role": "statictext",
+        "value": "RexSync"
+      },
+      {
+        "bounds": {
+          "height": 52.0,
+          "width": 854.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Diagnostics",
+        "role": "statictext",
+        "value": "Diagnostics"
+      }
+    ],
+    "name": "RexSync",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "diagnostics"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-919",
+    "title": "RexSync"
+  }
+}

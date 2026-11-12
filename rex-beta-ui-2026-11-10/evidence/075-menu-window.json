@@ -1,0 +1,1066 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 53,
+  "snapshot_id": "sv4wm4lr0bp54",
+  "tree": {
+    "bounds": {
+      "height": 532.0,
+      "width": 309.0,
+      "x": 248.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 36.0
+        },
+        "name": "Minimize",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performMiniaturize:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e1",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 60.0
+        },
+        "name": "Minimize All",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "miniaturizeAll:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e2",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 84.0
+        },
+        "name": "Zoom",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performZoom:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e3",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 84.0
+        },
+        "name": "Zoom All",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "zoomAll:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e4",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 108.0
+        },
+        "name": "Fill",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_zoomFill:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e5",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 132.0
+        },
+        "name": "Center",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_zoomCenter:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e6",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 156.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e7",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 167.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Halves",
+                "ref_id": "@sv4wm4lr0bp54:e9",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomLeft:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e10",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomRight:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e11",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Top",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomTop:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e12",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Bottom",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomBottom:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e13",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@sv4wm4lr0bp54:e14",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Quarters",
+                "ref_id": "@sv4wm4lr0bp54:e15",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Top Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomTopLeft:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e16",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Top Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomTopRight:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e17",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Bottom Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomBottomLeft:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e18",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Bottom Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomBottomRight:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e19",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@sv4wm4lr0bp54:e20",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Arrange",
+                "ref_id": "@sv4wm4lr0bp54:e21",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Left & Right",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomLeftAndRight:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e22",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Left & Quarters",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomLeftThreeUp:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e23",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Right & Left",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomRightAndLeft:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e24",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Right & Quarters",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomRightThreeUp:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e25",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Top & Bottom",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomTopAndBottom:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e26",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Top & Quarters",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomTopThreeUp:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e27",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Bottom & Top",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomBottomAndTop:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e28",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Bottom & Quarters",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomBottomThreeUp:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e29",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Quarters",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomQuarters:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e30",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "ref_id": "@sv4wm4lr0bp54:e31",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Return to Previous Size",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_zoomUntile:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e32",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "Move & Resize",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "Move & Resize",
+        "ref_id": "@sv4wm4lr0bp54:e8",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 191.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Left of Screen",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_tileLeft:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e34",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Right of Screen",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_tileRight:"
+                },
+                "ref_id": "@sv4wm4lr0bp54:e35",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "Full Screen Tile",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "Full Screen Tile",
+        "ref_id": "@sv4wm4lr0bp54:e33",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 215.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e36",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 226.0
+        },
+        "name": "Rex Beta Diagnostics",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e37",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 250.0
+        },
+        "name": "Copy Version Info",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e38",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 274.0
+        },
+        "name": "Copy Debug Info",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e39",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 298.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e40",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 309.0
+        },
+        "name": "Show Previous Tab",
+        "ref_id": "@sv4wm4lr0bp54:e41",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 333.0
+        },
+        "name": "Show Next Tab",
+        "ref_id": "@sv4wm4lr0bp54:e42",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 357.0
+        },
+        "name": "Move Tab Backward",
+        "ref_id": "@sv4wm4lr0bp54:e43",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 381.0
+        },
+        "name": "Move Tab Forward",
+        "ref_id": "@sv4wm4lr0bp54:e44",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 405.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e45",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 416.0
+        },
+        "name": "Previous Session",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e46",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 440.0
+        },
+        "name": "Next Session",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e47",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 464.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e48",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 475.0
+        },
+        "name": "Bring All to Front",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "arrangeInFront:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e49",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 475.0
+        },
+        "name": "Arrange in Front",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "alternateArrangeInFront:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e50",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 499.0
+        },
+        "name": "Remove Window from Set",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "_removeWindowFromStageManagerSet:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e51",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 523.0
+        },
+        "ref_id": "@sv4wm4lr0bp54:e52",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 309.0,
+          "x": 248.0,
+          "y": 534.0
+        },
+        "name": "shuv@shuvbot:~ - lunar-basin",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "makeKeyAndOrderFront:"
+        },
+        "ref_id": "@sv4wm4lr0bp54:e53",
+        "role": "menuitem"
+      }
+    ],
+    "name": "Window",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

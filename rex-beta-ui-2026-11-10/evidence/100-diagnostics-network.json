@@ -1,0 +1,1448 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 65,
+  "snapshot_id": "s3juosiivlv5cb",
+  "tree": {
+    "bounds": {
+      "height": 655.0,
+      "width": 960.0,
+      "x": 480.0,
+      "y": 211.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 655.0,
+          "width": 960.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 655.0,
+              "width": 960.0,
+              "x": 480.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 144.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 603.0,
+                      "width": 144.0,
+                      "x": 480.0,
+                      "y": 263.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 144.0,
+                          "x": 480.0,
+                          "y": 263.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 263.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 264.0
+                                    },
+                                    "name": "Rex Binary",
+                                    "ref_id": "@s3juosiivlv5cb:e5",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e4",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e3",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 295.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 295.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 296.0
+                                    },
+                                    "name": "Rex Server",
+                                    "ref_id": "@s3juosiivlv5cb:e8",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e7",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e6",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 327.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 327.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 328.0
+                                    },
+                                    "name": "Rex API",
+                                    "ref_id": "@s3juosiivlv5cb:e11",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e10",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e9",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 359.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 359.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 360.0
+                                    },
+                                    "name": "RexSync",
+                                    "ref_id": "@s3juosiivlv5cb:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 391.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 391.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 392.0
+                                    },
+                                    "name": "Network",
+                                    "ref_id": "@s3juosiivlv5cb:e17",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 423.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 423.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 424.0
+                                    },
+                                    "name": "GPU",
+                                    "ref_id": "@s3juosiivlv5cb:e20",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e18",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 124.0,
+                              "x": 490.0,
+                              "y": 263.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Sidebar",
+                        "ref_id": "@s3juosiivlv5cb:e2",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s3juosiivlv5cb:e1",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 603.0,
+                  "width": 1.0,
+                  "x": 623.0,
+                  "y": 263.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "143"
+              },
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 960.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 655.0,
+                      "width": 960.0,
+                      "x": 480.0,
+                      "y": 211.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 655.0,
+                          "width": 960.0,
+                          "x": 480.0,
+                          "y": 211.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 79.0,
+                              "x": 640.0,
+                              "y": 282.0
+                            },
+                            "name": "Record",
+                            "ref_id": "@s3juosiivlv5cb:e21",
+                            "role": "switch",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 48.29490661621094,
+                              "width": 67.66665649414062,
+                              "x": 731.0,
+                              "y": 270.0
+                            },
+                            "name": "Record from Launch",
+                            "ref_id": "@s3juosiivlv5cb:e22",
+                            "role": "checkbox",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 25.0,
+                              "width": 78.0,
+                              "x": 811.0,
+                              "y": 282.0
+                            },
+                            "name": "Clear",
+                            "ref_id": "@s3juosiivlv5cb:e23",
+                            "role": "button"
+                          },
+                          {
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 220.0,
+                              "x": 901.0,
+                              "y": 282.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 44.0,
+                                  "x": 901.0,
+                                  "y": 282.0
+                                },
+                                "name": "5s",
+                                "ref_id": "@s3juosiivlv5cb:e24",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 45.0,
+                                  "x": 945.0,
+                                  "y": 282.0
+                                },
+                                "name": "15s",
+                                "ref_id": "@s3juosiivlv5cb:e25",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 43.0,
+                                  "x": 990.0,
+                                  "y": 282.0
+                                },
+                                "name": "1m",
+                                "ref_id": "@s3juosiivlv5cb:e26",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 44.0,
+                                  "x": 1033.0,
+                                  "y": 282.0
+                                },
+                                "name": "5m",
+                                "ref_id": "@s3juosiivlv5cb:e27",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 44.0,
+                                  "x": 1077.0,
+                                  "y": 282.0
+                                },
+                                "name": "All",
+                                "ref_id": "@s3juosiivlv5cb:e28",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Window",
+                            "role": "radiogroup"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 79.0,
+                              "x": 1133.0,
+                              "y": 282.0
+                            },
+                            "name": "Follow",
+                            "ref_id": "@s3juosiivlv5cb:e29",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "RightClick",
+                              "SetValue",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 100.0,
+                              "x": 1224.0,
+                              "y": 282.0
+                            },
+                            "name": "Filter methods and events",
+                            "ref_id": "@s3juosiivlv5cb:e30",
+                            "role": "textfield"
+                          },
+                          {
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 68.0,
+                              "x": 1356.0,
+                              "y": 287.75498962402344
+                            },
+                            "name": "0.0s recorded",
+                            "role": "statictext",
+                            "value": "0.0s recorded"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 640.0,
+                              "y": 330.0
+                            },
+                            "name": "Open, 0 ctl \u00b7 0 data, 0 connections seen",
+                            "role": "statictext",
+                            "value": "Open, 0 ctl \u00b7 0 data, 0 connections seen"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 772.0,
+                              "y": 330.0
+                            },
+                            "name": "Control setup, \u2013, median establish + hello",
+                            "role": "statictext",
+                            "value": "Control setup, \u2013, median establish + hello"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 904.0,
+                              "y": 330.0
+                            },
+                            "name": "Request RTT, \u2013, p95 \u2013 \u00b7 0 waiting",
+                            "role": "statictext",
+                            "value": "Request RTT, \u2013, p95 \u2013 \u00b7 0 waiting"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 1036.0,
+                              "y": 330.0
+                            },
+                            "name": "First byte, \u2013, median from ticket request",
+                            "role": "statictext",
+                            "value": "First byte, \u2013, median from ticket request"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 1168.0,
+                              "y": 330.0
+                            },
+                            "name": "Snapshot ready, \u2013, median size \u2013",
+                            "role": "statictext",
+                            "value": "Snapshot ready, \u2013, median size \u2013"
+                          },
+                          {
+                            "bounds": {
+                              "height": 69.0,
+                              "width": 124.0,
+                              "x": 1300.0,
+                              "y": 330.0
+                            },
+                            "name": "Traffic, Zero KB, data in \u00b7 Zero KB control",
+                            "role": "statictext",
+                            "value": "Traffic, Zero KB, data in \u00b7 Zero KB control"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 44.0,
+                              "x": 640.0,
+                              "y": 418.0
+                            },
+                            "name": "Ticket",
+                            "ref_id": "@s3juosiivlv5cb:e31",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 58.0,
+                              "x": 694.0,
+                              "y": 418.0
+                            },
+                            "name": "Establish",
+                            "ref_id": "@s3juosiivlv5cb:e32",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 68.0,
+                              "x": 762.0,
+                              "y": 418.0
+                            },
+                            "name": "Handshake",
+                            "ref_id": "@s3juosiivlv5cb:e33",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 26.0,
+                              "width": 58.0,
+                              "x": 840.0,
+                              "y": 411.0
+                            },
+                            "name": "Awaiting data",
+                            "ref_id": "@s3juosiivlv5cb:e34",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 85.0,
+                              "x": 908.0,
+                              "y": 418.0
+                            },
+                            "name": "Receiving data",
+                            "ref_id": "@s3juosiivlv5cb:e35",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 54.0,
+                              "x": 1003.0,
+                              "y": 418.0
+                            },
+                            "name": "Request",
+                            "ref_id": "@s3juosiivlv5cb:e36",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 41.0,
+                              "x": 1067.0,
+                              "y": 418.0
+                            },
+                            "name": "Event",
+                            "ref_id": "@s3juosiivlv5cb:e37",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 60.0,
+                              "x": 1118.0,
+                              "y": 418.0
+                            },
+                            "name": "First byte",
+                            "ref_id": "@s3juosiivlv5cb:e38",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 60.0,
+                              "x": 1188.0,
+                              "y": 418.0
+                            },
+                            "name": "Snapshot",
+                            "ref_id": "@s3juosiivlv5cb:e39",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 35.0,
+                              "x": 1258.0,
+                              "y": 418.0
+                            },
+                            "name": "APC",
+                            "ref_id": "@s3juosiivlv5cb:e40",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 63.0,
+                              "x": 1303.0,
+                              "y": 418.0
+                            },
+                            "name": "App event",
+                            "ref_id": "@s3juosiivlv5cb:e41",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 13.0,
+                              "width": 46.0,
+                              "x": 1376.0,
+                              "y": 418.0
+                            },
+                            "name": "Failure",
+                            "ref_id": "@s3juosiivlv5cb:e42",
+                            "role": "button",
+                            "value": "Shown"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 199.0,
+                              "width": 784.0,
+                              "x": 640.0,
+                              "y": 449.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 82.0,
+                                  "width": 780.0,
+                                  "x": 644.0,
+                                  "y": 449.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 13.0,
+                                      "width": 62.0,
+                                      "x": 644.0,
+                                      "y": 473.5
+                                    },
+                                    "name": "App Events",
+                                    "role": "statictext",
+                                    "value": "App Events"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 13.0,
+                                      "width": 62.0,
+                                      "x": 644.0,
+                                      "y": 502.5
+                                    },
+                                    "name": "Throughput",
+                                    "role": "statictext",
+                                    "value": "Throughput"
+                                  }
+                                ],
+                                "name": "Network timeline",
+                                "role": "group"
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e43",
+                            "role": "scrollarea"
+                          },
+                          {
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 606.0,
+                              "x": 640.0,
+                              "y": 660.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 640.0,
+                                  "y": 660.0
+                                },
+                                "name": "Requests",
+                                "ref_id": "@s3juosiivlv5cb:e44",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 741.0,
+                                  "y": 660.0
+                                },
+                                "name": "Events",
+                                "ref_id": "@s3juosiivlv5cb:e45",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 842.0,
+                                  "y": 660.0
+                                },
+                                "name": "Connections",
+                                "ref_id": "@s3juosiivlv5cb:e46",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 943.0,
+                                  "y": 660.0
+                                },
+                                "name": "Methods",
+                                "ref_id": "@s3juosiivlv5cb:e47",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 1044.0,
+                                  "y": 660.0
+                                },
+                                "name": "App Events",
+                                "ref_id": "@s3juosiivlv5cb:e48",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 24.0,
+                                  "width": 101.0,
+                                  "x": 1145.0,
+                                  "y": 660.0
+                                },
+                                "name": "APCs",
+                                "ref_id": "@s3juosiivlv5cb:e49",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Table",
+                            "role": "radiogroup"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Toggle"
+                            ],
+                            "bounds": {
+                              "height": 16.079833984375,
+                              "width": 96.0,
+                              "x": 1254.0,
+                              "y": 664.0
+                            },
+                            "name": "Slowest first",
+                            "ref_id": "@s3juosiivlv5cb:e50",
+                            "role": "checkbox",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Scroll",
+                              "SetFocus"
+                            ],
+                            "bounds": {
+                              "height": 168.0,
+                              "width": 784.0,
+                              "x": 640.0,
+                              "y": 692.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Select",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 168.0,
+                                  "width": 784.0,
+                                  "x": 640.0,
+                                  "y": 692.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 85.0,
+                                      "x": 650.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "C9EDEEBF-B741-4BEA-880E-9215DBA6E694"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 127.0,
+                                      "x": 735.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "E8471570-E1D7-4A5A-9D09-03472BB7C129"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 97.0,
+                                      "x": 862.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "C631FD6F-FF8D-42B0-A611-FBC8F1FE2B19"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 127.0,
+                                      "x": 959.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "CF8365BD-AD32-4C8B-979B-C743E5CCDA35"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 137.0,
+                                      "x": 1086.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "185CA756-0710-4AFA-B641-F2362CBFFBA6"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 67.0,
+                                      "x": 1223.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "7FADC73D-B4A6-44B4-BD1D-6DCD89E03FB7"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 140.0,
+                                      "width": 124.0,
+                                      "x": 1290.0,
+                                      "y": 720.0
+                                    },
+                                    "native_id": {
+                                      "kind": "ax_identifier",
+                                      "value": "DBBA23AA-F56C-426B-9131-63E36467BE7F"
+                                    },
+                                    "role": "column"
+                                  },
+                                  {
+                                    "bounds": {
+                                      "height": 28.0,
+                                      "width": 784.0,
+                                      "x": 640.0,
+                                      "y": 692.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 85.0,
+                                          "x": 650.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Sent",
+                                        "ref_id": "@s3juosiivlv5cb:e53",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 127.0,
+                                          "x": 735.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Method",
+                                        "ref_id": "@s3juosiivlv5cb:e54",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 97.0,
+                                          "x": 862.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "RTT",
+                                        "ref_id": "@s3juosiivlv5cb:e55",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 127.0,
+                                          "x": 959.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Status",
+                                        "ref_id": "@s3juosiivlv5cb:e56",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 137.0,
+                                          "x": 1086.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Out / In",
+                                        "ref_id": "@s3juosiivlv5cb:e57",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 67.0,
+                                          "x": 1223.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Conn",
+                                        "ref_id": "@s3juosiivlv5cb:e58",
+                                        "role": "button"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "Click"
+                                        ],
+                                        "bounds": {
+                                          "height": 28.0,
+                                          "width": 124.0,
+                                          "x": 1290.0,
+                                          "y": 692.0
+                                        },
+                                        "name": "Preceding event",
+                                        "ref_id": "@s3juosiivlv5cb:e59",
+                                        "role": "button"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s3juosiivlv5cb:e52",
+                                "role": "outline"
+                              }
+                            ],
+                            "ref_id": "@s3juosiivlv5cb:e51",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 1.0,
+                          "x": 1439.0,
+                          "y": 263.0
+                        },
+                        "role": "splitter",
+                        "states": [
+                          "disabled"
+                        ],
+                        "value": "959"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "diagnostics, SidebarNavigationSplitView"
+            },
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 960.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 44.0,
+              "x": 572.0,
+              "y": 211.0
+            },
+            "name": "Hide Sidebar",
+            "ref_id": "@s3juosiivlv5cb:e60",
+            "role": "button"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 36.0,
+              "x": 1359.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 2.0,
+                  "width": 2.0,
+                  "x": 1376.0,
+                  "y": 236.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 41.0,
+              "x": 1395.0,
+              "y": 211.0
+            },
+            "name": "Show Inspector",
+            "ref_id": "@s3juosiivlv5cb:e61",
+            "role": "button"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 498.0,
+          "y": 229.0
+        },
+        "name": "Close",
+        "ref_id": "@s3juosiivlv5cb:e62",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 544.0,
+          "y": 229.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 545.0,
+              "y": 230.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 545.0,
+                  "y": 230.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s3juosiivlv5cb:e63",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 521.0,
+          "y": 229.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s3juosiivlv5cb:e64",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 723.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Network",
+        "ref_id": "@s3juosiivlv5cb:e65",
+        "role": "statictext",
+        "value": "Network"
+      },
+      {
+        "bounds": {
+          "height": 52.0,
+          "width": 723.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Diagnostics",
+        "role": "statictext",
+        "value": "Diagnostics"
+      }
+    ],
+    "name": "Network",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "diagnostics"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-919",
+    "title": "Network"
+  }
+}

@@ -1,0 +1,1767 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 75,
+  "snapshot_id": "s1c5f5nh8eyous",
+  "tree": {
+    "bounds": {
+      "height": 850.0,
+      "width": 816.0,
+      "x": 1104.0,
+      "y": 100.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 850.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 850.0,
+              "width": 816.0,
+              "x": 1104.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 215.0,
+                  "x": 1104.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 157.0,
+                      "x": 1147.0,
+                      "y": 170.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 157.0,
+                          "x": 1147.0,
+                          "y": 170.0
+                        },
+                        "name": "Search Settings",
+                        "ref_id": "@s1c5f5nh8eyous:e2",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s1c5f5nh8eyous:e1",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 746.0,
+                      "width": 215.0,
+                      "x": 1104.0,
+                      "y": 204.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 746.0,
+                          "width": 215.0,
+                          "x": 1104.0,
+                          "y": 204.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 204.0
+                                    },
+                                    "role": "group",
+                                    "states": [
+                                      "offscreen"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e6",
+                                "role": "cell",
+                                "states": [
+                                  "focused",
+                                  "offscreen"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e5",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded",
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 40.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 204.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 40.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 204.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 32.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 208.0
+                                    },
+                                    "name": "Server, Running",
+                                    "ref_id": "@s1c5f5nh8eyous:e9",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e8",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e7",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 257.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e11",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e10",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 257.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 257.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 261.0
+                                    },
+                                    "name": "Interface",
+                                    "ref_id": "@s1c5f5nh8eyous:e14",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ],
+                                    "value": "Selected"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 289.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 289.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 293.0
+                                    },
+                                    "name": "Themes",
+                                    "ref_id": "@s1c5f5nh8eyous:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 334.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e18",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 334.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 334.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 338.0
+                                    },
+                                    "name": "Terminal",
+                                    "ref_id": "@s1c5f5nh8eyous:e22",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e21",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e20",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 366.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 366.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 370.0
+                                    },
+                                    "name": "Shortcuts",
+                                    "ref_id": "@s1c5f5nh8eyous:e25",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e24",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e23",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 398.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 398.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 402.0
+                                    },
+                                    "name": "Integrations",
+                                    "ref_id": "@s1c5f5nh8eyous:e28",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e27",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e26",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 430.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 430.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 434.0
+                                    },
+                                    "name": "Notifications",
+                                    "ref_id": "@s1c5f5nh8eyous:e31",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e30",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e29",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 462.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 462.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 466.0
+                                    },
+                                    "name": "Remote Hosts",
+                                    "ref_id": "@s1c5f5nh8eyous:e34",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e33",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e32",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 0.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "bounds": {
+                                      "height": 0.0,
+                                      "width": 199.0,
+                                      "x": 1118.0,
+                                      "y": 507.0
+                                    },
+                                    "role": "group"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e36",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e35",
+                            "role": "treeitem",
+                            "states": [
+                              "expanded"
+                            ]
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 215.0,
+                              "x": 1104.0,
+                              "y": 507.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 195.0,
+                                  "x": 1114.0,
+                                  "y": 507.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 24.0,
+                                      "width": 187.0,
+                                      "x": 1118.0,
+                                      "y": 511.0
+                                    },
+                                    "name": "Developer",
+                                    "ref_id": "@s1c5f5nh8eyous:e39",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s1c5f5nh8eyous:e38",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s1c5f5nh8eyous:e37",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 746.0,
+                              "width": 195.0,
+                              "x": 1114.0,
+                              "y": 204.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Settings categories",
+                        "ref_id": "@s1c5f5nh8eyous:e4",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s1c5f5nh8eyous:e3",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 798.0,
+                  "width": 1.0,
+                  "x": 1318.0,
+                  "y": 152.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "214"
+              },
+              {
+                "bounds": {
+                  "height": 850.0,
+                  "width": 601.0,
+                  "x": 1319.0,
+                  "y": 100.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll"
+                    ],
+                    "bounds": {
+                      "height": 806.0,
+                      "width": 601.0,
+                      "x": 1319.0,
+                      "y": 144.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 77.0,
+                          "x": 1349.0,
+                          "y": 163.94444444444446
+                        },
+                        "name": "Appearance",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 176.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 190.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 117.05555725097656,
+                              "width": 300.0,
+                              "x": 1354.0,
+                              "y": 200.94444274902344
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 15.0,
+                                  "width": 80.0,
+                                  "x": 1354.0,
+                                  "y": 200.94444444444446
+                                },
+                                "name": "Color scheme",
+                                "role": "heading"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 92.0,
+                                  "width": 92.0,
+                                  "x": 1354.0,
+                                  "y": 226.0
+                                },
+                                "name": "Auto",
+                                "ref_id": "@s1c5f5nh8eyous:e41",
+                                "role": "button",
+                                "states": [
+                                  "selected"
+                                ],
+                                "value": "Selected"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 92.0,
+                                  "width": 92.0,
+                                  "x": 1458.0,
+                                  "y": 226.0
+                                },
+                                "name": "Light",
+                                "ref_id": "@s1c5f5nh8eyous:e42",
+                                "role": "button",
+                                "value": "Not selected"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 92.0,
+                                  "width": 92.0,
+                                  "x": 1562.0,
+                                  "y": 226.0
+                                },
+                                "name": "Dark",
+                                "ref_id": "@s1c5f5nh8eyous:e43",
+                                "role": "button",
+                                "value": "Not selected"
+                              }
+                            ],
+                            "name": "Color scheme",
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 117.05555725097656,
+                              "width": 196.0,
+                              "x": 1689.0,
+                              "y": 200.94444274902344
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 15.0,
+                                  "width": 84.0,
+                                  "x": 1689.0,
+                                  "y": 200.94444444444446
+                                },
+                                "name": "Interface style",
+                                "role": "heading"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 92.0,
+                                  "width": 92.0,
+                                  "x": 1689.0,
+                                  "y": 226.0
+                                },
+                                "name": "Classic",
+                                "ref_id": "@s1c5f5nh8eyous:e44",
+                                "role": "button",
+                                "states": [
+                                  "selected"
+                                ],
+                                "value": "Selected"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 92.0,
+                                  "width": 92.0,
+                                  "x": 1793.0,
+                                  "y": 226.0
+                                },
+                                "name": "Glass",
+                                "ref_id": "@s1c5f5nh8eyous:e45",
+                                "role": "button",
+                                "value": "Not selected"
+                              }
+                            ],
+                            "name": "Interface style",
+                            "role": "group"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 94.0,
+                              "x": 1349.0,
+                              "y": 338.5
+                            },
+                            "name": "Tint with theme",
+                            "role": "statictext",
+                            "value": "Tint with theme"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 339.0
+                            },
+                            "name": "Tint with theme",
+                            "ref_id": "@s1c5f5nh8eyous:e46",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 48.0,
+                          "x": 1349.0,
+                          "y": 395.5
+                        },
+                        "name": "Toolbar",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 122.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 422.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 86.0,
+                              "x": 1349.0,
+                              "y": 435.5
+                            },
+                            "name": "Toolbar layout",
+                            "role": "statictext",
+                            "value": "Toolbar layout"
+                          },
+                          {
+                            "bounds": {
+                              "height": 30.0,
+                              "width": 294.0,
+                              "x": 1597.0,
+                              "y": 429.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 84.0,
+                                  "x": 1599.0,
+                                  "y": 431.0
+                                },
+                                "name": "Above",
+                                "ref_id": "@s1c5f5nh8eyous:e47",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 100.0,
+                                  "x": 1683.0,
+                                  "y": 431.0
+                                },
+                                "name": "Left Side",
+                                "ref_id": "@s1c5f5nh8eyous:e48",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 108.0,
+                                  "x": 1783.0,
+                                  "y": 431.0
+                                },
+                                "name": "Right Side",
+                                "ref_id": "@s1c5f5nh8eyous:e49",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Toolbar layout",
+                            "role": "tablist"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 102.0,
+                              "x": 1349.0,
+                              "y": 477.5
+                            },
+                            "name": "Toolbar behavior",
+                            "role": "statictext",
+                            "value": "Toolbar behavior"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 125.0,
+                              "x": 1765.0,
+                              "y": 474.0
+                            },
+                            "name": "Toolbar behavior",
+                            "ref_id": "@s1c5f5nh8eyous:e50",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Always show"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 517.0
+                            },
+                            "name": "Customize tabs",
+                            "ref_id": "@s1c5f5nh8eyous:e51",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 39.0,
+                          "x": 1349.0,
+                          "y": 573.5
+                        },
+                        "name": "Panes",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 122.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 600.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 63.0,
+                              "x": 1349.0,
+                              "y": 613.5
+                            },
+                            "name": "Pane style",
+                            "role": "statictext",
+                            "value": "Pane style"
+                          },
+                          {
+                            "bounds": {
+                              "height": 30.0,
+                              "width": 224.0,
+                              "x": 1667.0,
+                              "y": 607.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 121.0,
+                                  "x": 1669.0,
+                                  "y": 609.0
+                                },
+                                "name": "Comfortable",
+                                "ref_id": "@s1c5f5nh8eyous:e52",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 101.0,
+                                  "x": 1790.0,
+                                  "y": 609.0
+                                },
+                                "name": "Compact",
+                                "ref_id": "@s1c5f5nh8eyous:e53",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Pane style",
+                            "role": "tablist"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 132.0,
+                              "x": 1349.0,
+                              "y": 655.5
+                            },
+                            "name": "Pane header behavior",
+                            "role": "statictext",
+                            "value": "Pane header behavior"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 125.0,
+                              "x": 1765.0,
+                              "y": 652.0
+                            },
+                            "name": "Pane header behavior",
+                            "ref_id": "@s1c5f5nh8eyous:e54",
+                            "role": "combobox",
+                            "states": [
+                              "readonly"
+                            ],
+                            "value": "Always show"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 541.0,
+                              "x": 1349.0,
+                              "y": 695.0
+                            },
+                            "name": "Customize panes",
+                            "ref_id": "@s1c5f5nh8eyous:e55",
+                            "role": "button"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 58.0,
+                          "x": 1349.0,
+                          "y": 751.5
+                        },
+                        "name": "Gestures",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 44.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 778.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 138.0,
+                              "x": 1349.0,
+                              "y": 783.5
+                            },
+                            "name": "Use trackpad gestures",
+                            "role": "statictext",
+                            "value": "Use trackpad gestures"
+                          },
+                          {
+                            "bounds": {
+                              "height": 14.0,
+                              "width": 281.0,
+                              "x": 1349.0,
+                              "y": 801.5
+                            },
+                            "name": "Pinch to zoom panes and swipe to toggle the sidebar.",
+                            "role": "statictext",
+                            "value": "Pinch to zoom panes and swipe to toggle the sidebar."
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 792.0
+                            },
+                            "name": "Use trackpad gestures",
+                            "ref_id": "@s1c5f5nh8eyous:e56",
+                            "role": "switch",
+                            "states": [
+                              "checked"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 64.0,
+                          "x": 1349.0,
+                          "y": 851.5
+                        },
+                        "name": "Animation",
+                        "role": "heading"
+                      },
+                      {
+                        "bounds": {
+                          "height": 44.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 878.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 93.0,
+                              "x": 1349.0,
+                              "y": 891.5
+                            },
+                            "name": "Animation style",
+                            "role": "statictext",
+                            "value": "Animation style"
+                          },
+                          {
+                            "bounds": {
+                              "height": 30.0,
+                              "width": 175.0,
+                              "x": 1716.0,
+                              "y": 885.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 66.0,
+                                  "x": 1718.0,
+                                  "y": 887.0
+                                },
+                                "name": "Snappy",
+                                "ref_id": "@s1c5f5nh8eyous:e57",
+                                "role": "radiobutton",
+                                "states": [
+                                  "checked"
+                                ],
+                                "value": "1"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 66.0,
+                                  "x": 1784.0,
+                                  "y": 887.0
+                                },
+                                "name": "Natural",
+                                "ref_id": "@s1c5f5nh8eyous:e58",
+                                "role": "radiobutton",
+                                "value": "0"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click",
+                                  "Toggle",
+                                  "SetFocus"
+                                ],
+                                "bounds": {
+                                  "height": 28.0,
+                                  "width": 41.0,
+                                  "x": 1850.0,
+                                  "y": 887.0
+                                },
+                                "name": "Off",
+                                "ref_id": "@s1c5f5nh8eyous:e59",
+                                "role": "radiobutton",
+                                "value": "0"
+                              }
+                            ],
+                            "name": "Animation style",
+                            "role": "tablist"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 56.0,
+                          "x": 1349.0,
+                          "y": 951.5
+                        },
+                        "name": "App Icon",
+                        "role": "heading",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 156.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 978.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 91.0,
+                              "width": 531.0,
+                              "x": 1354.0,
+                              "y": 993.0
+                            },
+                            "children": [
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 91.0,
+                                  "width": 254.0,
+                                  "x": 1354.0,
+                                  "y": 993.0
+                                },
+                                "name": "Default \u2014 Dynamic",
+                                "ref_id": "@s1c5f5nh8eyous:e60",
+                                "role": "button",
+                                "states": [
+                                  "selected",
+                                  "offscreen"
+                                ],
+                                "value": "Selected"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 91.0,
+                                  "width": 126.0,
+                                  "x": 1620.0,
+                                  "y": 993.0
+                                },
+                                "name": "Bright",
+                                "ref_id": "@s1c5f5nh8eyous:e61",
+                                "role": "button",
+                                "states": [
+                                  "offscreen"
+                                ],
+                                "value": "Not selected"
+                              },
+                              {
+                                "available_actions": [
+                                  "Click"
+                                ],
+                                "bounds": {
+                                  "height": 91.0,
+                                  "width": 127.0,
+                                  "x": 1758.0,
+                                  "y": 993.0
+                                },
+                                "name": "Twilight",
+                                "ref_id": "@s1c5f5nh8eyous:e62",
+                                "role": "button",
+                                "states": [
+                                  "offscreen"
+                                ],
+                                "value": "Not selected"
+                              }
+                            ],
+                            "name": "App icon",
+                            "role": "group",
+                            "states": [
+                              "offscreen"
+                            ]
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 89.0,
+                              "x": 1349.0,
+                              "y": 1107.0555555555557
+                            },
+                            "name": "Show app icon",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Show app icon"
+                          },
+                          {
+                            "available_actions": [
+                              "Click",
+                              "Expand",
+                              "Collapse"
+                            ],
+                            "bounds": {
+                              "height": 24.0,
+                              "width": 165.0,
+                              "x": 1725.0,
+                              "y": 1103.0
+                            },
+                            "name": "Show app icon",
+                            "ref_id": "@s1c5f5nh8eyous:e63",
+                            "role": "combobox",
+                            "states": [
+                              "readonly",
+                              "offscreen"
+                            ],
+                            "value": "Dock and menu bar"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "bounds": {
+                          "height": 38.0,
+                          "width": 561.0,
+                          "x": 1339.0,
+                          "y": 1144.0
+                        },
+                        "children": [
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 145.0,
+                              "x": 1349.0,
+                              "y": 1155.0555555555557
+                            },
+                            "name": "Show window on launch",
+                            "role": "statictext",
+                            "states": [
+                              "offscreen"
+                            ],
+                            "value": "Show window on launch"
+                          },
+                          {
+                            "bounds": {
+                              "height": 16.0,
+                              "width": 36.0,
+                              "x": 1854.0,
+                              "y": 1155.0
+                            },
+                            "name": "Show window on launch",
+                            "ref_id": "@s1c5f5nh8eyous:e64",
+                            "role": "switch",
+                            "states": [
+                              "checked",
+                              "offscreen"
+                            ],
+                            "value": "1"
+                          }
+                        ],
+                        "role": "group",
+                        "states": [
+                          "offscreen"
+                        ]
+                      },
+                      {
+                        "available_actions": [
+                          "SetValue"
+                        ],
+                        "bounds": {
+                          "height": 792.5,
+                          "width": 19.0,
+                          "x": 1902.0,
+                          "y": 151.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "SetValue"
+                            ],
+                            "bounds": {
+                              "height": 605.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s1c5f5nh8eyous:e66",
+                            "role": "handle",
+                            "value": "0"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s1c5f5nh8eyous:e67",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 0.0,
+                              "x": 1903.0,
+                              "y": 152.0
+                            },
+                            "ref_id": "@s1c5f5nh8eyous:e68",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 179.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 760.0
+                            },
+                            "ref_id": "@s1c5f5nh8eyous:e69",
+                            "role": "button"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 0.0,
+                              "width": 6.0,
+                              "x": 1911.0,
+                              "y": 155.0
+                            },
+                            "ref_id": "@s1c5f5nh8eyous:e70",
+                            "role": "button"
+                          }
+                        ],
+                        "ref_id": "@s1c5f5nh8eyous:e65",
+                        "role": "scrollbar",
+                        "states": [
+                          "hidden"
+                        ],
+                        "value": "0"
+                      }
+                    ],
+                    "ref_id": "@s1c5f5nh8eyous:e40",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 816.0,
+          "x": 1104.0,
+          "y": 100.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 82.0,
+              "x": 1323.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 38.0,
+                  "width": 76.0,
+                  "x": 1326.0,
+                  "y": 107.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Click",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1327.0,
+                      "y": 109.0
+                    },
+                    "name": "Back",
+                    "ref_id": "@s1c5f5nh8eyous:e71",
+                    "role": "button"
+                  },
+                  {
+                    "available_actions": [
+                      "Click"
+                    ],
+                    "bounds": {
+                      "height": 36.0,
+                      "width": 38.0,
+                      "x": 1365.0,
+                      "y": 109.0
+                    },
+                    "name": "Forward",
+                    "ref_id": "@s1c5f5nh8eyous:e72",
+                    "role": "button",
+                    "states": [
+                      "disabled"
+                    ]
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 81.0,
+              "x": 1405.0,
+              "y": 100.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 21.0,
+                  "width": 83.0,
+                  "x": 1404.0,
+                  "y": 115.0
+                },
+                "description": "Settings page",
+                "name": "Interface",
+                "role": "statictext",
+                "value": "Interface"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1122.0,
+          "y": 118.0
+        },
+        "name": "Close",
+        "ref_id": "@s1c5f5nh8eyous:e73",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1168.0,
+          "y": 118.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 1169.0,
+              "y": 119.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 1169.0,
+                  "y": 119.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s1c5f5nh8eyous:e74",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 1145.0,
+          "y": 118.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s1c5f5nh8eyous:e75",
+        "role": "button",
+        "states": [
+          "disabled"
+        ]
+      }
+    ],
+    "name": "Settings - Interface",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "com_apple_SwiftUI_Settings_window"
+    },
+    "role": "window"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Interface"
+  }
+}

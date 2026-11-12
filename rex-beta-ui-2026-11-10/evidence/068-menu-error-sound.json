@@ -1,0 +1,150 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 7,
+  "snapshot_id": "sarhnun9wnd5d",
+  "tree": {
+    "bounds": {
+      "height": 178.0,
+      "width": 101.0,
+      "x": 1780.0,
+      "y": 337.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 342.0
+        },
+        "name": "Attention",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e1",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 366.0
+        },
+        "name": "Warning",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 390.0
+        },
+        "name": "Error",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e3",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 414.0
+        },
+        "name": "Success",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 438.0
+        },
+        "name": "Ready",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 462.0
+        },
+        "name": "Loading",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e6",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 101.0,
+          "x": 1780.0,
+          "y": 486.0
+        },
+        "name": "Tap",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sarhnun9wnd5d:e7",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Error"
+  }
+}

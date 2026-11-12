@@ -1,0 +1,442 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 20,
+  "snapshot_id": "s2lzq5k3xv0eqv",
+  "tree": {
+    "bounds": {
+      "height": 246.0,
+      "width": 235.0,
+      "x": 38.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 36.0
+        },
+        "name": "About Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e1",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 60.0
+        },
+        "name": "Check for Updates...",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e2",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 84.0
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e3",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 95.0
+        },
+        "name": "Settings\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e4",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 119.0
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 130.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 0.0,
+              "width": 0.0,
+              "x": 0.0,
+              "y": 1080.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Activity Monitor",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e7",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Allocations & Leaks",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e8",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "File Activity",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e9",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "System Trace",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e10",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Lights 1%",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e11",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Lights 100%",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e12",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Turn Text Into Audio",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e13",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 0.0,
+                  "width": 0.0,
+                  "x": 0.0,
+                  "y": 1080.0
+                },
+                "name": "Services Settings\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_configureServicesMenu:"
+                },
+                "ref_id": "@s2lzq5k3xv0eqv:e14",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              }
+            ],
+            "name": "Services",
+            "role": "menu",
+            "states": [
+              "offscreen"
+            ]
+          }
+        ],
+        "name": "Services",
+        "ref_id": "@s2lzq5k3xv0eqv:e6",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 154.0
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e15",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 165.0
+        },
+        "name": "Hide Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "hide:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e16",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 189.0
+        },
+        "name": "Hide Others",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "hideOtherApplications:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e17",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 213.0
+        },
+        "name": "Show All",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "unhideAllApplications:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e18",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 237.0
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e19",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 248.0
+        },
+        "name": "Quit Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "terminate:"
+        },
+        "ref_id": "@s2lzq5k3xv0eqv:e20",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      }
+    ],
+    "name": "Rex Beta",
+    "role": "menu",
+    "states": [
+      "offscreen"
+    ]
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

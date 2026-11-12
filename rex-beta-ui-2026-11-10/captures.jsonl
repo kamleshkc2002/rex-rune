@@ -1,0 +1,145 @@
+{"file": "screenshots/002-menu-rex-beta.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-10T23:53:18.264402-08:00"}
+{"file": "screenshots/003-menu-rex-services.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-10T23:53:23.793372-08:00"}
+{"file": "screenshots/004-about-rex-beta.png", "surface": "window", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-10T23:53:24.822574-08:00"}
+{"file": "screenshots/004-about-rex-beta.png", "surface": "window", "window": {"id": "w-665", "title": "About Rex Beta"}, "captured_at": "2026-11-10T23:53:36.191667-08:00"}
+{"file": "screenshots/005-settings-overview.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Server"}, "captured_at": "2026-11-10T23:53:46.689852-08:00"}
+{"file": "screenshots/006-settings-server-details.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Server"}, "captured_at": "2026-11-10T23:54:02.708806-08:00"}
+{"file": "screenshots/007-settings-interface.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:54:04.084370-08:00"}
+{"file": "screenshots/007-settings-interface.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:54:18.871142-08:00"}
+{"file": "screenshots/008-settings-customize-tabs.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Tabs"}, "captured_at": "2026-11-10T23:54:20.099180-08:00"}
+{"file": "screenshots/009-menu-tab-icon-color.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Tabs"}, "captured_at": "2026-11-10T23:54:33.220796-08:00"}
+{"file": "screenshots/010-menu-shell-icon-theme.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Tabs"}, "captured_at": "2026-11-10T23:54:37.735167-08:00"}
+{"file": "screenshots/011-settings-customize-panes.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Panes"}, "captured_at": "2026-11-10T23:55:12.401950-08:00"}
+{"file": "screenshots/012-menu-pane-fill.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Panes"}, "captured_at": "2026-11-10T23:55:18.604171-08:00"}
+{"file": "screenshots/013-menu-pane-fade.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Panes"}, "captured_at": "2026-11-10T23:55:20.230571-08:00"}
+{"file": "screenshots/014-menu-toolbar-behavior.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:55:22.549920-08:00"}
+{"file": "screenshots/015-menu-pane-header-behavior.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:55:24.349749-08:00"}
+{"file": "screenshots/016-settings-interface-lower.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:55:26.086954-08:00"}
+{"file": "screenshots/017-menu-show-app-icon.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:55:27.064567-08:00"}
+{"file": "screenshots/016-settings-interface-lower.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Interface"}, "captured_at": "2026-11-10T23:55:33.002847-08:00"}
+{"file": "screenshots/018-settings-themes.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Themes"}, "captured_at": "2026-11-10T23:55:34.235827-08:00"}
+{"file": "screenshots/019-new-light-theme-editor.png", "surface": "sheet", "window": {"id": "w-669", "title": "Settings - Themes"}, "captured_at": "2026-11-10T23:55:50.331983-08:00"}
+{"file": "screenshots/020-theme-extended-palette.png", "surface": "sheet", "window": {"id": "w-669", "title": "Settings - Themes"}, "captured_at": "2026-11-10T23:55:51.369028-08:00"}
+{"file": "screenshots/021-new-dark-theme-editor.png", "surface": "sheet", "window": {"id": "w-669", "title": "Settings - Themes"}, "captured_at": "2026-11-10T23:55:54.171255-08:00"}
+{"file": "screenshots/022-settings-terminal.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:55:56.168289-08:00"}
+{"file": "screenshots/023-terminal-font-picker.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:56:05.384229-08:00"}
+{"file": "screenshots/024-terminal-font-picker-all.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:56:28.340569-08:00"}
+{"file": "screenshots/025-settings-advanced-font.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Advanced Font Settings"}, "captured_at": "2026-11-10T23:56:30.166315-08:00"}
+{"file": "screenshots/026-menu-character-spacing-unit.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Advanced Font Settings"}, "captured_at": "2026-11-10T23:56:35.806891-08:00"}
+{"file": "screenshots/027-menu-font-rendering.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Advanced Font Settings"}, "captured_at": "2026-11-10T23:56:37.398122-08:00"}
+{"file": "screenshots/028-fallback-font-picker.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Advanced Font Settings"}, "captured_at": "2026-11-10T23:56:39.222895-08:00"}
+{"file": "screenshots/029-menu-font-style.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:56:58.503371-08:00"}
+{"file": "screenshots/030-menu-cursor-style.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:11.934401-08:00"}
+{"file": "screenshots/031-menu-cursor-blink.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:13.652002-08:00"}
+{"file": "screenshots/032-menu-option-key.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:26.320249-08:00"}
+{"file": "screenshots/033-settings-terminal-middle.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:27.983283-08:00"}
+{"file": "screenshots/034-menu-selection-foreground.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:29.015694-08:00"}
+{"file": "screenshots/035-menu-selection-background.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:30.647842-08:00"}
+{"file": "screenshots/036-menu-link-handling.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:32.400266-08:00"}
+{"file": "screenshots/037-settings-terminal-lower.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Terminal"}, "captured_at": "2026-11-10T23:57:44.399949-08:00"}
+{"file": "screenshots/038-settings-shortcuts.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:57:45.635265-08:00"}
+{"file": "screenshots/039-menu-shortcuts-configuration.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:57:55.073628-08:00"}
+{"file": "screenshots/040-shortcut-recorder.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:35.684083-08:00"}
+{"file": "screenshots/041-shortcuts-page-02.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:42.186100-08:00"}
+{"file": "screenshots/042-shortcuts-page-03.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:52.185266-08:00"}
+{"file": "screenshots/043-shortcuts-page-04.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:53.519055-08:00"}
+{"file": "screenshots/044-shortcuts-page-05.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:54.883023-08:00"}
+{"file": "screenshots/045-shortcuts-page-06.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:56.183227-08:00"}
+{"file": "screenshots/046-shortcuts-page-07.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:57.421509-08:00"}
+{"file": "screenshots/047-shortcuts-page-08.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:58:58.737270-08:00"}
+{"file": "screenshots/048-shortcuts-page-09.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:59:00.067763-08:00"}
+{"file": "screenshots/049-shortcuts-page-10.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:59:01.401347-08:00"}
+{"file": "screenshots/050-shortcuts-page-11.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:59:02.953751-08:00"}
+{"file": "screenshots/051-shortcuts-page-12.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Shortcuts"}, "captured_at": "2026-11-10T23:59:04.184486-08:00"}
+{"file": "screenshots/052-settings-integrations.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Integrations"}, "captured_at": "2026-11-10T23:59:05.567847-08:00"}
+{"file": "screenshots/053-settings-notifications.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Notifications"}, "captured_at": "2026-11-10T23:59:10.934624-08:00"}
+{"file": "screenshots/054-settings-remote-hosts.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Remote Hosts"}, "captured_at": "2026-11-10T23:59:12.050092-08:00"}
+{"file": "screenshots/055-settings-developer.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:13.218519-08:00"}
+{"file": "screenshots/056-menu-update-channel.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:20.874847-08:00"}
+{"file": "screenshots/057-menu-rex-installation.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:22.546025-08:00"}
+{"file": "screenshots/058-menu-terminal-anchoring.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:24.217692-08:00"}
+{"file": "screenshots/059-settings-developer-lower.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:25.902282-08:00"}
+{"file": "screenshots/060-developer-installation-details.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Developer"}, "captured_at": "2026-11-10T23:59:27.202430-08:00"}
+{"file": "screenshots/061-add-remote-host.png", "surface": "sheet", "window": {"id": "w-669", "title": "Settings - Remote Hosts"}, "captured_at": "2026-11-10T23:59:46.618915-08:00"}
+{"file": "screenshots/062-menu-remote-host-icon.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Remote Hosts"}, "captured_at": "2026-11-10T23:59:47.355108-08:00"}
+{"file": "screenshots/063-notifications-working.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Working"}, "captured_at": "2026-11-10T23:59:50.223250-08:00"}
+{"file": "screenshots/064-notifications-blocked.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Blocked"}, "captured_at": "2026-11-10T23:59:57.565795-08:00"}
+{"file": "screenshots/065-notifications-error.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Error"}, "captured_at": "2026-11-10T23:59:59.250128-08:00"}
+{"file": "screenshots/066-notifications-done.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Done"}, "captured_at": "2026-11-11T00:00:00.966896-08:00"}
+{"file": "screenshots/067-menu-done-sound.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Done"}, "captured_at": "2026-11-11T00:00:19.907126-08:00"}
+{"file": "screenshots/068-menu-error-sound.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Error"}, "captured_at": "2026-11-11T00:00:22.636805-08:00"}
+{"file": "screenshots/069-menu-blocked-sound.png", "surface": "menu", "window": {"id": "w-669", "title": "Settings - Blocked"}, "captured_at": "2026-11-11T00:00:25.348589-08:00"}
+{"file": "screenshots/070-settings-notifications-lower.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Notifications"}, "captured_at": "2026-11-11T00:00:27.487828-08:00"}
+{"file": "screenshots/071-pair-device.png", "surface": "window", "window": {"id": "w-669", "title": "Settings - Server"}, "captured_at": "2026-11-11T00:00:29.518774-08:00"}
+{"file": "screenshots/072-menu-file.png", "surface": "menu", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:01:04.544965-08:00"}
+{"file": "screenshots/073-menu-edit.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:05.896066-08:00"}
+{"file": "screenshots/074-menu-view.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:07.177205-08:00"}
+{"file": "screenshots/075-menu-window.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:08.582093-08:00"}
+{"file": "screenshots/076-menu-help.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:10.006373-08:00"}
+{"file": "screenshots/077-menu-edit-find.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:24.229392-08:00"}
+{"file": "screenshots/078-menu-edit-writing-tools.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:26.343886-08:00"}
+{"file": "screenshots/079-menu-edit-autofill.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:28.488672-08:00"}
+{"file": "screenshots/080-menu-view-pane.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:30.688892-08:00"}
+{"file": "screenshots/081-menu-view-customize-view.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:32.832112-08:00"}
+{"file": "screenshots/082-menu-view-customize-view-color-scheme.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:35.306508-08:00"}
+{"file": "screenshots/083-menu-view-customize-view-toolbar-layout.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:38.270678-08:00"}
+{"file": "screenshots/084-menu-view-customize-view-pane-style.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:41.283836-08:00"}
+{"file": "screenshots/085-menu-view-customize-view-pane-style-pane-headers.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:44.629429-08:00"}
+{"file": "screenshots/086-menu-view-customize-view-interface-style.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:48.079236-08:00"}
+{"file": "screenshots/087-menu-window-move-and-resize.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:50.772765-08:00"}
+{"file": "screenshots/088-menu-window-full-screen-tile.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:01:52.881983-08:00"}
+{"file": "screenshots/089-session-switcher.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:02:10.117188-08:00"}
+{"file": "screenshots/090-command-palette.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:02:43.275594-08:00"}
+{"file": "screenshots/091-activity-popover.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:03:02.464694-08:00"}
+{"file": "screenshots/092-tab-context-menu.png", "surface": "menu", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:03:24.617857-08:00"}
+{"file": "screenshots/093-rename-tab.png", "surface": "window", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:03:25.491788-08:00"}
+{"file": "screenshots/093-rename-tab.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:03:30.937733-08:00"}
+{"file": "screenshots/094-terminal-context-menu.png", "surface": "menu", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:03:50.536941-08:00"}
+{"file": "screenshots/095-terminal-context-autofill.png", "surface": "menu", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:04:01.310367-08:00"}
+{"file": "screenshots/096-diagnostics-overview.png", "surface": "window", "window": {"id": "w-919", "title": "Rex Server"}, "captured_at": "2026-11-11T00:04:13.346805-08:00"}
+{"file": "screenshots/097-diagnostics-rex-binary.png", "surface": "window", "window": {"id": "w-919", "title": "Rex Binary"}, "captured_at": "2026-11-11T00:04:20.330592-08:00"}
+{"file": "screenshots/098-diagnostics-rex-api.png", "surface": "window", "window": {"id": "w-919", "title": "Rex API"}, "captured_at": "2026-11-11T00:04:21.588959-08:00"}
+{"file": "screenshots/099-diagnostics-rexsync.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:04:23.391045-08:00"}
+{"file": "screenshots/100-diagnostics-network.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:24.790872-08:00"}
+{"file": "screenshots/101-diagnostics-gpu.png", "surface": "window", "window": {"id": "w-919", "title": "GPU"}, "captured_at": "2026-11-11T00:04:25.922637-08:00"}
+{"file": "screenshots/102-diagnostics-inspector.png", "surface": "window", "window": {"id": "w-919", "title": "GPU"}, "captured_at": "2026-11-11T00:04:32.705297-08:00"}
+{"file": "screenshots/103-inspector-rex-binary.png", "surface": "window", "window": {"id": "w-919", "title": "Rex Binary"}, "captured_at": "2026-11-11T00:04:42.983289-08:00"}
+{"file": "screenshots/104-inspector-rex-server.png", "surface": "window", "window": {"id": "w-919", "title": "Rex Server"}, "captured_at": "2026-11-11T00:04:44.240271-08:00"}
+{"file": "screenshots/105-inspector-rex-api.png", "surface": "window", "window": {"id": "w-919", "title": "Rex API"}, "captured_at": "2026-11-11T00:04:45.471486-08:00"}
+{"file": "screenshots/106-inspector-rexsync.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:04:47.047644-08:00"}
+{"file": "screenshots/107-inspector-network.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:48.468812-08:00"}
+{"file": "screenshots/108-network-events.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:50.083768-08:00"}
+{"file": "screenshots/109-network-connections.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:51.172698-08:00"}
+{"file": "screenshots/110-network-methods.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:52.272364-08:00"}
+{"file": "screenshots/111-network-app-events.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:53.351342-08:00"}
+{"file": "screenshots/112-network-apcs.png", "surface": "window", "window": {"id": "w-919", "title": "Network"}, "captured_at": "2026-11-11T00:04:54.405295-08:00"}
+{"file": "screenshots/113-menu-diagnostics-host.png", "surface": "menu", "window": {"id": "w-919", "title": "Rex API"}, "captured_at": "2026-11-11T00:04:56.052658-08:00"}
+{"file": "screenshots/114-diagnostics-api-events.png", "surface": "window", "window": {"id": "w-919", "title": "Rex API"}, "captured_at": "2026-11-11T00:04:57.658042-08:00"}
+{"file": "screenshots/115-rexsync-page-02.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:19.665225-08:00"}
+{"file": "screenshots/116-rexsync-page-03.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:21.033150-08:00"}
+{"file": "screenshots/117-rexsync-page-04.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:22.430038-08:00"}
+{"file": "screenshots/118-rexsync-page-05.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:23.802067-08:00"}
+{"file": "screenshots/119-rexsync-page-06.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:25.184536-08:00"}
+{"file": "screenshots/120-rexsync-page-07.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:26.596816-08:00"}
+{"file": "screenshots/121-rexsync-page-08.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:27.933966-08:00"}
+{"file": "screenshots/122-rexsync-page-09.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:29.319648-08:00"}
+{"file": "screenshots/123-rexsync-page-10.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:30.701542-08:00"}
+{"file": "screenshots/124-rexsync-page-11.png", "surface": "window", "window": {"id": "w-919", "title": "RexSync"}, "captured_at": "2026-11-11T00:05:31.998706-08:00"}
+{"file": "screenshots/125-terminal-find.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:05:46.636531-08:00"}
+{"file": "screenshots/125-terminal-find.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:05:53.165419-08:00"}
+{"file": "screenshots/126-terminal-find-results.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:06:05.527897-08:00"}
+{"file": "screenshots/127-go-to-directory.png", "surface": "window", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:06:19.177673-08:00"}
+{"file": "screenshots/128-insert-path.png", "surface": "window", "window": {"id": "w-679", "title": "shuv@shuvbot:~ - lunar-basin"}, "captured_at": "2026-11-11T00:06:28.810942-08:00"}
+{"file": "screenshots/129-theme-switcher.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:06:31.178667-08:00"}
+{"file": "screenshots/130-update-status.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:06:39.288809-08:00"}
+{"file": "screenshots/130-status-bar-menu.png", "surface": "menu-bar-extras", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:07:39.319737-08:00"}
+{"file": "screenshots/131-status-bar-server-submenu.png", "surface": "menu-bar-extras", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:07:55.836227-08:00"}
+{"file": "screenshots/132-onboarding-session.png", "surface": "window", "window": {"id": "w-679", "title": "Welcome, Kyle - Onboarding"}, "captured_at": "2026-11-11T00:08:12.333847-08:00"}
+{"file": "screenshots/133-onboarding-appearance.png", "surface": "window", "window": {"id": "w-679", "title": "Welcome, Kyle - Onboarding"}, "captured_at": "2026-11-11T00:08:19.273501-08:00"}
+{"file": "screenshots/134-onboarding-permissions.png", "surface": "window", "window": {"id": "w-679", "title": "Welcome, Kyle - Onboarding"}, "captured_at": "2026-11-11T00:08:24.033168-08:00"}
+{"file": "screenshots/135-system-permissions.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:08:36.993867-08:00"}
+{"file": "screenshots/136-onboarding-migration.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:09:14.761460-08:00"}
+{"file": "screenshots/137-onboarding-finish.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:09:22.128342-08:00"}
+{"file": "screenshots/137-onboarding-finish.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:11:10.962363-08:00"}
+{"file": "screenshots/136-onboarding-migration.png", "surface": "window", "window": {"id": "w-679", "title": "Rex Beta"}, "captured_at": "2026-11-11T00:11:12.121780-08:00"}
+{"file": "screenshots/138-theme-extended-color-cube.png", "surface": "sheet", "window": {"id": "w-669", "title": "Settings - Themes"}, "captured_at": "2026-11-11T00:12:14.161739-08:00"}

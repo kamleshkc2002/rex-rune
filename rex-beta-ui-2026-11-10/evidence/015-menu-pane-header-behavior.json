@@ -1,0 +1,78 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 3,
+  "snapshot_id": "sgtdnz6g5030g",
+  "tree": {
+    "bounds": {
+      "height": 82.0,
+      "width": 135.0,
+      "x": 1752.0,
+      "y": 647.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 135.0,
+          "x": 1752.0,
+          "y": 652.0
+        },
+        "name": "Always show",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sgtdnz6g5030g:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 135.0,
+          "x": 1752.0,
+          "y": 676.0
+        },
+        "name": "Show on hover",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sgtdnz6g5030g:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 135.0,
+          "x": 1752.0,
+          "y": 700.0
+        },
+        "name": "Hidden",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@sgtdnz6g5030g:e3",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Interface"
+  }
+}

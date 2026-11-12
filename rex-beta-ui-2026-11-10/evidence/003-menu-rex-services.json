@@ -1,0 +1,499 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 25,
+  "snapshot_id": "s33ces7r1bdzdj",
+  "tree": {
+    "bounds": {
+      "height": 246.0,
+      "width": 235.0,
+      "x": 38.0,
+      "y": 31.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 36.0
+        },
+        "name": "About Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e1",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 60.0
+        },
+        "name": "Check for Updates...",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e2",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 84.0
+        },
+        "ref_id": "@s33ces7r1bdzdj:e3",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 95.0
+        },
+        "name": "Settings\u2026",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e4",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 119.0
+        },
+        "ref_id": "@s33ces7r1bdzdj:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 130.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 272.0,
+              "width": 175.0,
+              "x": 268.0,
+              "y": 125.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 130.0
+                },
+                "ref_id": "@s33ces7r1bdzdj:e7",
+                "role": "menuitem",
+                "states": [
+                  "disabled",
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 130.0
+                },
+                "name": "Development",
+                "ref_id": "@s33ces7r1bdzdj:e8",
+                "role": "menuitem",
+                "states": [
+                  "offscreen"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 154.0
+                },
+                "name": "Activity Monitor",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e9",
+                "role": "menuitem",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 178.0
+                },
+                "name": "Allocations & Leaks",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e10",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 202.0
+                },
+                "name": "File Activity",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e11",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 226.0
+                },
+                "name": "System Trace",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e12",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 250.0
+                },
+                "ref_id": "@s33ces7r1bdzdj:e13",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 261.0
+                },
+                "name": "Shortcuts",
+                "ref_id": "@s33ces7r1bdzdj:e14",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 285.0
+                },
+                "name": "Lights 1%",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e15",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 309.0
+                },
+                "name": "Lights 100%",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e16",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 333.0
+                },
+                "name": "Turn Text Into Audio",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_processRequest:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e17",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 11.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 357.0
+                },
+                "ref_id": "@s33ces7r1bdzdj:e18",
+                "role": "menuitem",
+                "states": [
+                  "disabled"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 175.0,
+                  "x": 268.0,
+                  "y": 368.0
+                },
+                "name": "Services Settings\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_configureServicesMenu:"
+                },
+                "ref_id": "@s33ces7r1bdzdj:e19",
+                "role": "menuitem"
+              }
+            ],
+            "name": "Services",
+            "role": "menu"
+          }
+        ],
+        "name": "Services",
+        "ref_id": "@s33ces7r1bdzdj:e6",
+        "role": "menuitem",
+        "states": [
+          "selected",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 154.0
+        },
+        "ref_id": "@s33ces7r1bdzdj:e20",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 165.0
+        },
+        "name": "Hide Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "hide:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e21",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 189.0
+        },
+        "name": "Hide Others",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "hideOtherApplications:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e22",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 213.0
+        },
+        "name": "Show All",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "unhideAllApplications:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e23",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 237.0
+        },
+        "ref_id": "@s33ces7r1bdzdj:e24",
+        "role": "menuitem",
+        "states": [
+          "disabled",
+          "offscreen"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 235.0,
+          "x": 38.0,
+          "y": 248.0
+        },
+        "name": "Quit Rex Beta",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "terminate:"
+        },
+        "ref_id": "@s33ces7r1bdzdj:e25",
+        "role": "menuitem",
+        "states": [
+          "offscreen"
+        ]
+      }
+    ],
+    "name": "Rex Beta",
+    "role": "menu",
+    "states": [
+      "offscreen"
+    ]
+  },
+  "window": {
+    "id": "w-679",
+    "title": "shuv@shuvbot:~ - lunar-basin"
+  }
+}

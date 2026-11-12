@@ -1,0 +1,257 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 8,
+  "snapshot_id": "s23v1butf8hg9s",
+  "tree": {
+    "bounds": {
+      "height": 348.0,
+      "width": 480.0,
+      "x": 1272.0,
+      "y": 351.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 348.0,
+          "width": 480.0,
+          "x": 1272.0,
+          "y": 351.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 21.0,
+              "width": 143.0,
+              "x": 1340.0,
+              "y": 363.5
+            },
+            "name": "Add Remote Host",
+            "role": "heading"
+          },
+          {
+            "bounds": {
+              "height": 16.0,
+              "width": 325.0,
+              "x": 1340.0,
+              "y": 386.5
+            },
+            "name": "Rex connects to the address and saves it on this Mac.",
+            "role": "statictext",
+            "value": "Rex connects to the address and saves it on this Mac."
+          },
+          {
+            "available_actions": [
+              "Scroll"
+            ],
+            "bounds": {
+              "height": 220.0,
+              "width": 480.0,
+              "x": 1272.0,
+              "y": 416.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 16.0,
+                  "width": 77.0,
+                  "x": 1302.0,
+                  "y": 436.0
+                },
+                "name": "Host Details",
+                "role": "heading"
+              },
+              {
+                "available_actions": [
+                  "SetFocus"
+                ],
+                "bounds": {
+                  "height": 118.0,
+                  "width": 440.0,
+                  "x": 1292.0,
+                  "y": 462.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 26.0,
+                      "x": 1302.0,
+                      "y": 475.0
+                    },
+                    "name": "URL",
+                    "role": "statictext",
+                    "value": "URL"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 338.0,
+                      "x": 1379.0,
+                      "y": 475.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 338.0,
+                          "x": 1379.0,
+                          "y": 475.0
+                        },
+                        "name": "Host URL",
+                        "ref_id": "@s23v1butf8hg9s:e3",
+                        "role": "textfield",
+                        "states": [
+                          "focused"
+                        ]
+                      }
+                    ],
+                    "ref_id": "@s23v1butf8hg9s:e2",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 36.0,
+                      "x": 1302.0,
+                      "y": 514.0
+                    },
+                    "name": "Name",
+                    "role": "statictext",
+                    "value": "Name"
+                  },
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 338.0,
+                      "x": 1379.0,
+                      "y": 514.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "RightClick",
+                          "SetValue",
+                          "SetFocus",
+                          "TypeText"
+                        ],
+                        "bounds": {
+                          "height": 16.0,
+                          "width": 338.0,
+                          "x": 1379.0,
+                          "y": 514.0
+                        },
+                        "name": "Host name",
+                        "ref_id": "@s23v1butf8hg9s:e5",
+                        "role": "textfield"
+                      }
+                    ],
+                    "ref_id": "@s23v1butf8hg9s:e4",
+                    "role": "scrollarea"
+                  },
+                  {
+                    "bounds": {
+                      "height": 16.0,
+                      "width": 26.0,
+                      "x": 1302.0,
+                      "y": 553.0
+                    },
+                    "name": "Icon",
+                    "role": "statictext",
+                    "value": "Icon"
+                  },
+                  {
+                    "available_actions": [
+                      "Click",
+                      "Expand",
+                      "Collapse"
+                    ],
+                    "bounds": {
+                      "height": 24.0,
+                      "width": 101.0,
+                      "x": 1621.0,
+                      "y": 549.0
+                    },
+                    "name": "Host icon",
+                    "native_id": {
+                      "kind": "ax_identifier",
+                      "value": "globe"
+                    },
+                    "ref_id": "@s23v1butf8hg9s:e6",
+                    "role": "combobox",
+                    "states": [
+                      "readonly"
+                    ],
+                    "value": "Globe"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 26.0,
+                  "width": 413.0,
+                  "x": 1302.0,
+                  "y": 590.0
+                },
+                "name": "Rex does not provide transport authentication. Use a trusted tunnel such as Tailscale or an SSH-forwarded socket.",
+                "role": "statictext",
+                "value": "Rex does not provide transport authentication. Use a trusted tunnel such as Tailscale or an SSH-forwarded socket."
+              }
+            ],
+            "ref_id": "@s23v1butf8hg9s:e1",
+            "role": "scrollarea"
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 30.0,
+              "width": 71.0,
+              "x": 1604.0,
+              "y": 653.0
+            },
+            "name": "Cancel",
+            "ref_id": "@s23v1butf8hg9s:e7",
+            "role": "button"
+          },
+          {
+            "available_actions": [
+              "Click"
+            ],
+            "bounds": {
+              "height": 30.0,
+              "width": 53.0,
+              "x": 1683.0,
+              "y": 653.0
+            },
+            "name": "Add",
+            "ref_id": "@s23v1butf8hg9s:e8",
+            "role": "button"
+          }
+        ],
+        "role": "group"
+      }
+    ],
+    "role": "sheet"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Remote Hosts"
+  }
+}

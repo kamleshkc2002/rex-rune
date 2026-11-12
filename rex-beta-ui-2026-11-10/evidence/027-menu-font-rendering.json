@@ -1,0 +1,128 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 6,
+  "snapshot_id": "s2la0obt0681xf",
+  "tree": {
+    "bounds": {
+      "height": 128.0,
+      "width": 103.0,
+      "x": 1801.0,
+      "y": 309.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 314.0
+        },
+        "name": "Both",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2la0obt0681xf:e1",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 338.0
+        },
+        "ref_id": "@s2la0obt0681xf:e2",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 349.0
+        },
+        "name": "Bold only",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2la0obt0681xf:e3",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 373.0
+        },
+        "name": "Italic only",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2la0obt0681xf:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 397.0
+        },
+        "ref_id": "@s2la0obt0681xf:e5",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 103.0,
+          "x": 1801.0,
+          "y": 408.0
+        },
+        "name": "Neither",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "menuAction:"
+        },
+        "ref_id": "@s2la0obt0681xf:e6",
+        "role": "menuitem"
+      }
+    ],
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-669",
+    "title": "Settings - Advanced Font Settings"
+  }
+}

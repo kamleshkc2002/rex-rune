@@ -1,0 +1,373 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 19,
+  "snapshot_id": "sqozu6srhc2pw",
+  "tree": {
+    "bounds": {
+      "height": 307.0,
+      "width": 132.0,
+      "x": 651.0,
+      "y": 354.0
+    },
+    "children": [
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 359.0
+        },
+        "name": "Copy",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "copy:"
+        },
+        "ref_id": "@sqozu6srhc2pw:e1",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 383.0
+        },
+        "name": "Paste",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "paste:"
+        },
+        "ref_id": "@sqozu6srhc2pw:e2",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 407.0
+        },
+        "ref_id": "@sqozu6srhc2pw:e3",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 418.0
+        },
+        "name": "Split Right",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e4",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 442.0
+        },
+        "name": "Split Left",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e5",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 466.0
+        },
+        "name": "Split Down",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e6",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 490.0
+        },
+        "name": "Split Up",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e7",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 514.0
+        },
+        "name": "Float Pane",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e8",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 538.0
+        },
+        "name": "Zoom Pane",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e9",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 562.0
+        },
+        "ref_id": "@sqozu6srhc2pw:e10",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 573.0
+        },
+        "name": "Close Pane",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e11",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 597.0
+        },
+        "name": "Reset Terminal",
+        "native_id": {
+          "kind": "ax_identifier",
+          "value": "performAction"
+        },
+        "ref_id": "@sqozu6srhc2pw:e12",
+        "role": "menuitem"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 11.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 621.0
+        },
+        "ref_id": "@sqozu6srhc2pw:e13",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 359.0
+        },
+        "ref_id": "@sqozu6srhc2pw:e14",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 359.0
+        },
+        "ref_id": "@sqozu6srhc2pw:e15",
+        "role": "menuitem",
+        "states": [
+          "disabled"
+        ]
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 24.0,
+          "width": 132.0,
+          "x": 651.0,
+          "y": 632.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 82.0,
+              "width": 132.0,
+              "x": 778.0,
+              "y": 627.0
+            },
+            "children": [
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 132.0,
+                  "x": 778.0,
+                  "y": 632.0
+                },
+                "name": "Contact\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromContactsCommand:"
+                },
+                "ref_id": "@sqozu6srhc2pw:e17",
+                "role": "menuitem",
+                "states": [
+                  "selected"
+                ]
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 132.0,
+                  "x": 778.0,
+                  "y": 656.0
+                },
+                "name": "Passwords\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromPasswordsCommand:"
+                },
+                "ref_id": "@sqozu6srhc2pw:e18",
+                "role": "menuitem"
+              },
+              {
+                "available_actions": [
+                  "Click"
+                ],
+                "bounds": {
+                  "height": 24.0,
+                  "width": 132.0,
+                  "x": 778.0,
+                  "y": 680.0
+                },
+                "name": "Credit Card\u2026",
+                "native_id": {
+                  "kind": "ax_identifier",
+                  "value": "_handleInsertFromCreditCardsCommand:"
+                },
+                "ref_id": "@sqozu6srhc2pw:e19",
+                "role": "menuitem"
+              }
+            ],
+            "name": "AutoFill",
+            "role": "menu"
+          }
+        ],
+        "name": "AutoFill",
+        "ref_id": "@sqozu6srhc2pw:e16",
+        "role": "menuitem",
+        "states": [
+          "selected"
+        ]
+      }
+    ],
+    "name": "Terminal",
+    "role": "menu"
+  },
+  "window": {
+    "id": "w-679",
+    "title": "Rex Beta"
+  }
+}

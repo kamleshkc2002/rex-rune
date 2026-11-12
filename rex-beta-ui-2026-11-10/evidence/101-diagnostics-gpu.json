@@ -1,0 +1,967 @@
+{
+  "app": "Rex Beta",
+  "complete": true,
+  "ref_count": 27,
+  "snapshot_id": "s3ro5znx29y8zz",
+  "tree": {
+    "bounds": {
+      "height": 655.0,
+      "width": 960.0,
+      "x": 480.0,
+      "y": 211.0
+    },
+    "children": [
+      {
+        "bounds": {
+          "height": 655.0,
+          "width": 960.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 655.0,
+              "width": 960.0,
+              "x": 480.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 144.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "available_actions": [
+                      "Scroll",
+                      "SetFocus"
+                    ],
+                    "bounds": {
+                      "height": 603.0,
+                      "width": 144.0,
+                      "x": 480.0,
+                      "y": 263.0
+                    },
+                    "children": [
+                      {
+                        "available_actions": [
+                          "Select",
+                          "SetFocus"
+                        ],
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 144.0,
+                          "x": 480.0,
+                          "y": 263.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 263.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 264.0
+                                    },
+                                    "name": "Rex Binary",
+                                    "ref_id": "@s3ro5znx29y8zz:e5",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e4",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e3",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 295.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 295.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 296.0
+                                    },
+                                    "name": "Rex Server",
+                                    "ref_id": "@s3ro5znx29y8zz:e8",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e7",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e6",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 327.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 327.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 328.0
+                                    },
+                                    "name": "Rex API",
+                                    "ref_id": "@s3ro5znx29y8zz:e11",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e10",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e9",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 359.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 359.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 360.0
+                                    },
+                                    "name": "RexSync",
+                                    "ref_id": "@s3ro5znx29y8zz:e14",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e13",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e12",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 391.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 391.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 392.0
+                                    },
+                                    "name": "Network",
+                                    "ref_id": "@s3ro5znx29y8zz:e17",
+                                    "role": "button"
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e16",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e15",
+                            "role": "treeitem"
+                          },
+                          {
+                            "available_actions": [
+                              "Click"
+                            ],
+                            "bounds": {
+                              "height": 32.0,
+                              "width": 144.0,
+                              "x": 480.0,
+                              "y": 423.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 32.0,
+                                  "width": 124.0,
+                                  "x": 490.0,
+                                  "y": 423.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "Click"
+                                    ],
+                                    "bounds": {
+                                      "height": 30.0,
+                                      "width": 112.0,
+                                      "x": 496.0,
+                                      "y": 424.0
+                                    },
+                                    "name": "GPU",
+                                    "ref_id": "@s3ro5znx29y8zz:e20",
+                                    "role": "button",
+                                    "states": [
+                                      "selected"
+                                    ]
+                                  }
+                                ],
+                                "ref_id": "@s3ro5znx29y8zz:e19",
+                                "role": "cell",
+                                "states": [
+                                  "focused"
+                                ]
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e18",
+                            "role": "treeitem"
+                          },
+                          {
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 124.0,
+                              "x": 490.0,
+                              "y": 263.0
+                            },
+                            "native_id": {
+                              "kind": "ax_identifier",
+                              "value": "ListColumn"
+                            },
+                            "role": "column"
+                          }
+                        ],
+                        "name": "Sidebar",
+                        "ref_id": "@s3ro5znx29y8zz:e2",
+                        "role": "outline"
+                      }
+                    ],
+                    "ref_id": "@s3ro5znx29y8zz:e1",
+                    "role": "scrollarea"
+                  }
+                ],
+                "role": "group"
+              },
+              {
+                "bounds": {
+                  "height": 603.0,
+                  "width": 1.0,
+                  "x": 623.0,
+                  "y": 263.0
+                },
+                "role": "splitter",
+                "states": [
+                  "disabled"
+                ],
+                "value": "143"
+              },
+              {
+                "bounds": {
+                  "height": 655.0,
+                  "width": 960.0,
+                  "x": 480.0,
+                  "y": 211.0
+                },
+                "children": [
+                  {
+                    "bounds": {
+                      "height": 655.0,
+                      "width": 960.0,
+                      "x": 480.0,
+                      "y": 211.0
+                    },
+                    "children": [
+                      {
+                        "bounds": {
+                          "height": 655.0,
+                          "width": 960.0,
+                          "x": 480.0,
+                          "y": 211.0
+                        },
+                        "children": [
+                          {
+                            "available_actions": [
+                              "Scroll"
+                            ],
+                            "bounds": {
+                              "height": 603.0,
+                              "width": 816.0,
+                              "x": 624.0,
+                              "y": 263.0
+                            },
+                            "children": [
+                              {
+                                "bounds": {
+                                  "height": 475.0,
+                                  "width": 784.0,
+                                  "x": 640.0,
+                                  "y": 279.0
+                                },
+                                "children": [
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 21.0,
+                                      "width": 36.0,
+                                      "x": 640.0,
+                                      "y": 279.0
+                                    },
+                                    "name": "GPU",
+                                    "role": "statictext",
+                                    "value": "GPU"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 115.0,
+                                      "width": 784.0,
+                                      "x": 640.0,
+                                      "y": 312.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 14.0,
+                                          "width": 34.0,
+                                          "x": 650.0,
+                                          "y": 312.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "heading"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 13.0,
+                                          "width": 22.0,
+                                          "x": 757.0,
+                                          "y": 338.5
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "Now"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 13.0,
+                                          "width": 27.0,
+                                          "x": 803.0,
+                                          "y": 338.5
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "Mean"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 13.0,
+                                          "width": 24.0,
+                                          "x": 854.0,
+                                          "y": 338.5
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "Peak"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 23.0,
+                                          "x": 645.0,
+                                          "y": 358.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "Rex"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 771.0,
+                                          "y": 358.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 822.0,
+                                          "y": 358.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 870.0,
+                                          "y": 358.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 88.0,
+                                          "x": 645.0,
+                                          "y": 380.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "WindowServer"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 771.0,
+                                          "y": 380.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 822.0,
+                                          "y": 380.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 870.0,
+                                          "y": 380.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 32.0,
+                                          "x": 645.0,
+                                          "y": 402.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "Total"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 771.0,
+                                          "y": 402.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 822.0,
+                                          "y": 402.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 8.0,
+                                          "x": 870.0,
+                                          "y": 402.0
+                                        },
+                                        "name": "Usage",
+                                        "role": "statictext",
+                                        "value": "\u2013"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 195.0,
+                                      "width": 784.0,
+                                      "x": 640.0,
+                                      "y": 439.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 14.0,
+                                          "width": 93.0,
+                                          "x": 650.0,
+                                          "y": 439.0
+                                        },
+                                        "name": "Last 120 Seconds",
+                                        "role": "heading"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 160.0,
+                                          "width": 774.0,
+                                          "x": 645.0,
+                                          "y": 465.0
+                                        },
+                                        "name": "Last 120 Seconds",
+                                        "role": "group"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 51.0,
+                                      "width": 784.0,
+                                      "x": 640.0,
+                                      "y": 646.0
+                                    },
+                                    "children": [
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 14.0,
+                                          "width": 87.0,
+                                          "x": 650.0,
+                                          "y": 646.0
+                                        },
+                                        "name": "Other Processes",
+                                        "role": "heading"
+                                      },
+                                      {
+                                        "available_actions": [
+                                          "ScrollTo"
+                                        ],
+                                        "bounds": {
+                                          "height": 16.0,
+                                          "width": 123.0,
+                                          "x": 645.0,
+                                          "y": 672.0
+                                        },
+                                        "name": "Other Processes",
+                                        "role": "statictext",
+                                        "value": "None using the GPU"
+                                      }
+                                    ],
+                                    "role": "group"
+                                  },
+                                  {
+                                    "available_actions": [
+                                      "ScrollTo"
+                                    ],
+                                    "bounds": {
+                                      "height": 45.0,
+                                      "width": 767.0,
+                                      "x": 640.0,
+                                      "y": 709.0
+                                    },
+                                    "name": "Shares are of one GPU's time over each one-second sample. WindowServer composites Rex's transparent terminals over the window's glass and blur, so terminal output that redraws often shows up there rather than under Rex. Other windows also add to WindowServer's share. Use script/gpu-usage.py to record the same counters from Terminal.",
+                                    "role": "statictext",
+                                    "value": "Shares are of one GPU's time over each one-second sample. WindowServer composites Rex's transparent terminals over the window's glass and blur, so terminal output that redraws often shows up there rather than under Rex. Other windows also add to WindowServer's share. Use script/gpu-usage.py to record the same counters from Terminal."
+                                  }
+                                ],
+                                "role": "unknown"
+                              }
+                            ],
+                            "ref_id": "@s3ro5znx29y8zz:e21",
+                            "role": "scrollarea"
+                          }
+                        ],
+                        "role": "group"
+                      },
+                      {
+                        "bounds": {
+                          "height": 603.0,
+                          "width": 1.0,
+                          "x": 1439.0,
+                          "y": 263.0
+                        },
+                        "role": "splitter",
+                        "states": [
+                          "disabled"
+                        ],
+                        "value": "959"
+                      }
+                    ],
+                    "role": "group"
+                  }
+                ],
+                "role": "group"
+              }
+            ],
+            "native_id": {
+              "kind": "ax_identifier",
+              "value": "diagnostics, SidebarNavigationSplitView"
+            },
+            "role": "group"
+          }
+        ],
+        "role": "group"
+      },
+      {
+        "available_actions": [
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 960.0,
+          "x": 480.0,
+          "y": 211.0
+        },
+        "children": [
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 44.0,
+              "x": 572.0,
+              "y": 211.0
+            },
+            "name": "Hide Sidebar",
+            "ref_id": "@s3ro5znx29y8zz:e22",
+            "role": "button"
+          },
+          {
+            "bounds": {
+              "height": 52.0,
+              "width": 36.0,
+              "x": 1359.0,
+              "y": 211.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 2.0,
+                  "width": 2.0,
+                  "x": 1376.0,
+                  "y": 236.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          },
+          {
+            "available_actions": [
+              "Click",
+              "RightClick",
+              "SetValue"
+            ],
+            "bounds": {
+              "height": 52.0,
+              "width": 41.0,
+              "x": 1395.0,
+              "y": 211.0
+            },
+            "name": "Show Inspector",
+            "ref_id": "@s3ro5znx29y8zz:e23",
+            "role": "button"
+          }
+        ],
+        "role": "toolbar"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 498.0,
+          "y": 229.0
+        },
+        "name": "Close",
+        "ref_id": "@s3ro5znx29y8zz:e24",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click",
+          "RightClick"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 544.0,
+          "y": 229.0
+        },
+        "children": [
+          {
+            "bounds": {
+              "height": 14.0,
+              "width": 14.0,
+              "x": 545.0,
+              "y": 230.0
+            },
+            "children": [
+              {
+                "bounds": {
+                  "height": 14.0,
+                  "width": 14.0,
+                  "x": 545.0,
+                  "y": 230.0
+                },
+                "role": "group"
+              }
+            ],
+            "role": "group"
+          }
+        ],
+        "name": "Zoom",
+        "ref_id": "@s3ro5znx29y8zz:e25",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 16.0,
+          "width": 16.0,
+          "x": 521.0,
+          "y": 229.0
+        },
+        "name": "Minimize",
+        "ref_id": "@s3ro5znx29y8zz:e26",
+        "role": "button"
+      },
+      {
+        "available_actions": [
+          "Click"
+        ],
+        "bounds": {
+          "height": 52.0,
+          "width": 723.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "GPU",
+        "ref_id": "@s3ro5znx29y8zz:e27",
+        "role": "statictext",
+        "value": "GPU"
+      },
+      {
+        "bounds": {
+          "height": 52.0,
+          "width": 723.0,
+          "x": 628.0,
+          "y": 211.0
+        },
+        "name": "Diagnostics",
+        "role": "statictext",
+        "value": "Diagnostics"
+      }
+    ],
+    "name": "GPU",
+    "native_id": {
+      "kind": "ax_identifier",
+      "value": "diagnostics"
+    },
+    "role": "window",
+    "states": [
+      "focused"
+    ]
+  },
+  "window": {
+    "id": "w-919",
+    "title": "GPU"
+  }
+}
