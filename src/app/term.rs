@@ -363,9 +363,16 @@ impl Term {
     }
 
     pub fn send(&mut self, command: Command) {
+        self.try_send(command);
+    }
+
+    /// The same send and notice, with acceptance feedback for local path history.
+    pub fn try_send(&mut self, command: Command) -> bool {
         if let Err(error) = self.connection.commands.try_send(command) {
             self.notice = Some(format!("Input not sent: {error}"));
+            return false;
         }
+        true
     }
 
     pub fn visible_rows(&self, cell: (f32, f32)) -> usize {

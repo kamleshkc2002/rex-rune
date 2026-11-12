@@ -405,6 +405,7 @@ impl Workspace {
         self.forget_host(state);
         let host = self.settings.hosts.remove(index);
         self.settings.sessions.remove(&host.endpoint);
+        self.settings.recent_paths.remove(&host.endpoint);
         // Menus and drags name hosts by position, which just shifted.
         self.panel = None;
         self.drag = None;
@@ -438,6 +439,8 @@ impl Workspace {
             host.remote_control = false;
             let old = std::mem::replace(&mut host.endpoint, endpoint);
             self.settings.sessions.remove(&old);
+            // An endpoint edit means another machine, not a history migration.
+            self.settings.recent_paths.remove(&old);
             let state = self.spawn_host(index, false);
             let old = std::mem::replace(&mut self.hosts[index], state);
             self.forget_host(old);
@@ -1939,7 +1942,7 @@ impl Workspace {
             .as_ref()
             .is_some_and(|p| matches!(p.kind, PanelKind::Directory(_)))
         {
-            self.list_directory();
+            self.directory_field_changed();
             return;
         }
         let first = self.entries().iter().position(|e| e.enabled).unwrap_or(0);

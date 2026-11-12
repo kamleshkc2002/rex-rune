@@ -98,7 +98,8 @@ fn the_page_is_headed_cards_in_order_with_a_preview_in_three_of_them() {
             "Keyboard",
             "Selection",
             "Default shell",
-            "Titles"
+            "Titles",
+            "Path browser"
         ]
     );
     // Each preview is the first row of its card: under its heading, inside the page, an
@@ -683,6 +684,11 @@ fn terminal_controls_are_indexed_and_reachable_at_minimum_size() {
             ("selection background", "Background", "selection-background"),
             ("rounded corners", "Rounded corners", "selection-rounded"),
             ("key sequence", "Show key sequence hints", "sequence-hints"),
+            (
+                "recently used paths",
+                "Show recently used paths",
+                "show-recent-paths",
+            ),
             (
                 "generated titles",
                 "Prefer generated titles",

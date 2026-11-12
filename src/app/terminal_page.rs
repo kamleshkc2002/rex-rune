@@ -481,9 +481,40 @@ pub fn terminal(s: &Workspace) -> El {
             ],
         ),
         super::titles::titles(s),
+        section(
+            "Path browser",
+            [
+                card([setting(
+                    "Show recently used paths",
+                    "",
+                    rune_kit::Switch::new(s.settings.terminal.show_recent_paths)
+                        .label("Show recently used paths")
+                        .hide_label()
+                        .on_toggle(|s: &mut Workspace| {
+                            s.set_show_recent_paths(!s.settings.terminal.show_recent_paths);
+                        })
+                        .build(kit())
+                        .key("show-recent-paths"),
+                )]),
+                footnote(
+                    "Insert path and Go to directory remember paths per host, on this computer. Turning this off forgets them.",
+                ),
+            ],
+        ),
     ])
 }
 impl Workspace {
+    pub fn set_show_recent_paths(&mut self, show: bool) {
+        self.settings.terminal.show_recent_paths = show;
+        if !show {
+            self.settings.recent_paths.clear();
+            // Normally Settings replaces the browser. Also forget already-built rows
+            // if this preference is changed while a browser is held open.
+            self.hide_recent_paths();
+        }
+        self.save();
+    }
+
     /// The cursor every terminal draws until its program asks for a shape of its own: saved,
     /// and told to each pane's worker, which shows it at once where no program has chosen.
     pub fn set_cursor_style(&mut self, style: CursorStyle) {

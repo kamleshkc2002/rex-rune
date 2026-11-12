@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Insert path on private Rex/Xvfb/HOME; never uses the user's server or clipboard.
+"""Insert path, Go to directory and recents on private Rex/Xvfb/HOME.
+Never uses the user's server or clipboard.
 
 Requires built REX_BIN, Rex with terminal.list_dir, Xvfb, openbox, xdotool,
 ImageMagick, Tesseract and Pillow. All artifacts and helper temp files are under
-~/.cache/agent-ws/rex-m31-insert-path/. Observer calls are not client wire counts.
+~/.cache/agent-ws/rex-m31-recents/. Observer calls are not client wire counts.
 """
 import importlib.util
 import json
@@ -16,8 +17,8 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = Path.home() / ".cache/agent-ws/rex-m31-insert-path"
-BINARY = os.environ.get("REX_BIN", str(BASE / "target/release/rex-linux"))
+BASE = Path.home() / ".cache/agent-ws/rex-m31-recents"
+BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="native-", dir=BASE))
 for tool in ("rex", "Xvfb", "openbox", "xdotool", "import", "magick", "tesseract"):
@@ -48,8 +49,12 @@ def wait(predicate, description, timeout=15):
 
 
 def capture(name):
-    desk.capture(window, name)
+    # Desktop.capture parks the pointer in the window's centre, selecting a browser row.
+    # Keep it outside the popup so a capture does not change the next keyboard choice.
+    desk.x("mousemove", "--window", window, 20, 26)
+    time.sleep(.3)
     original = work / "captures" / f"{name}.png"
+    subprocess.run(["import", "-window", window, str(original)], env=desk.env, check=True)
     ocr = work / "captures" / f"{name}-ocr.png"
     subprocess.run(["magick", str(original), "-resize", "300%", "-colorspace", "Gray", "-negate", str(ocr)], check=True)
     words = subprocess.check_output(["tesseract", str(ocr), "stdout"], text=True, stderr=subprocess.DEVNULL)
@@ -58,6 +63,7 @@ def capture(name):
 
 
 def browser():
+    desk.x("mousemove", "--window", window, 20, 26)
     desk.key("ctrl+shift+p")
     desk.type("Insert path")
     desk.key("Return")
@@ -116,7 +122,7 @@ try:
     paste(setup)
     enter()
     wait(counter.exists, "private bash prompt not ready")
-    config = work / "workspace.json"
+    config = work / "home" / "workspace.json"
     config.write_text(json.dumps({"font_family": "IBM Plex Mono", "pane_padding": 8,
                                  "hosts": [{"label": "Private paths", "endpoint": endpoint}],
                                  "sessions": {endpoint: sid}}))
@@ -169,6 +175,23 @@ try:
         records.append({"name": name, "expected_buffer": expected, "actual_buffer": actual,
                         "prompts_before": len(prompts), "prompts_after_explicit_enter": len(counter.read_bytes()),
                         "ls_exit_status": statuses.read_text().splitlines()[-1]})
+    # Reopen and use the first recent in two keys, with the same exact paste spelling.
+    history = json.loads(config.read_text())["recent_paths"][endpoint]
+    assert [r["path"] for r in history] == [str(tree / "Alice's"), str(tree / "a space")], history
+    assert all(not r["directory"] for r in history), history
+    desk.type("ls -d ")
+    prompts = counter.read_bytes()
+    browser()
+    assert "RECENT" in capture("recents-1024").upper(), "recent group not shown"
+    desk.key("Down", "Return")
+    desk.key("ctrl+g")
+    wait(line.exists, "recent readline buffer not recorded")
+    recent_buffer = line.read_text()
+    line.unlink()
+    assert recent_buffer == records[-1]["expected_buffer"], recent_buffer
+    assert counter.read_bytes() == prompts, "choosing a recent executed the line"
+    assert json.loads(config.read_text())["recent_paths"][endpoint] == history, "reuse duplicated history"
+    desk.key("ctrl+u")  # Discard the line without executing it.
     # Go to directory: `cd <quoted folder>` is typed and nothing runs until the script's Enter.
     prompts = counter.read_bytes()
     desk.key("ctrl+shift+p")
@@ -208,6 +231,8 @@ try:
     desk.x("windowsize", window, 640, 480)
     time.sleep(.5)
     browser()
+    assert "RECENT" in capture("recents-640").upper(), "recent group not shown at minimum size"
+    field("~/tree/")  # Editing hides recents and restores the ordinary listing.
     # `folder` appears only in the browser's rows, never in the terminal behind it.
     words = capture("browser-640")
     assert "a space" in words and "folder" in words, words
@@ -215,7 +240,42 @@ try:
     words = capture("missing-640")
     assert "doesn't exist" in words, words
     desk.key("Escape")
+    # Turn history off through the real searchable Settings control, not a file edit.
+    desk.x("windowsize", window, 1024, 700)
+    time.sleep(.5)
+    desk.key("ctrl+comma")
+    desk.x("mousemove", "--window", window, 200, 92)
+    desk.x("click", 1)
+    desk.type("Show recently used paths")
+    desk.key("Return")
+    time.sleep(2.8)
+    capture("recents-settings")
+    import csv
+    import io
+    tsv = subprocess.check_output(["tesseract", str(work / "captures/recents-settings-ocr.png"),
+                                   "stdout", "tsv"], text=True, stderr=subprocess.DEVNULL)
+    words = list(csv.DictReader(io.StringIO(tsv), delimiter="\t"))
+    labels = [w for w in words if w["text"].lower() == "recently" and int(w["left"]) > 900]
+    assert len(labels) == 1, labels
+    y = (int(labels[0]["top"]) + int(labels[0]["height"]) / 2) / 3
+    desk.x("mousemove", "--window", window, 870, round(y))
+    desk.x("click", 1)
+    wait(lambda: json.loads(config.read_text())["terminal"].get("show_recent_paths") is False,
+         "recent switch did not save")
+    saved = json.loads(config.read_text())
+    assert "recent_paths" not in saved, saved.get("recent_paths")
+    assert str(tree / "Alice's") not in config.read_text(), "disabled history still stored"
+    desk.key("Escape", "Escape")
+    browser()
+    assert "RECENT" not in capture("recents-disabled").upper(), "disabled history still shown"
+    field("~/tree/a space")
+    desk.key("Down", "Return")
+    assert "recent_paths" not in json.loads(config.read_text()), "disabled browser recorded history"
+    desk.key("ctrl+u")
     (work / "results.json").write_text(json.dumps({"records": records,
+        "recents": {"exact_buffer": recent_buffer, "saved_per_host": True,
+                    "reuse_deduplicated": True, "off_erased_history": True,
+                    "off_stopped_showing_and_recording": True},
         "go_to_directory": {"expected_buffer": go_expected, "actual_buffer": go_buffer,
                             "ran_only_after_script_enter": True, "pwd_after": where.read_text().strip()},
         "browse_preserved_size_owner_and_view": True,
@@ -224,6 +284,7 @@ try:
     print("PASS real list, hidden filter, Tab descent, Escape, missing folder; size/owner/view unchanged by browsing", flush=True)
     print("PASS exact space/apostrophe readline buffers; no Enter until script; explicit Enter resolved both paths", flush=True)
     print("PASS Go to directory typed cd with the quoted folder, ran nothing, and the script's Enter changed directory", flush=True)
+    print("PASS recent row exact paste, per-host persistence and dedup; Settings off erased history and stopped showing/recording", flush=True)
 finally:
     if desk:
         desk.close()

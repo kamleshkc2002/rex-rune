@@ -76,6 +76,9 @@ pub struct TerminalConfig {
     pub cursor_force: bool,
     /// Show the keys pressed so far of a multi-key shortcut in the toolbar.
     pub key_sequence_hints: bool,
+    /// Offer and remember paths used by the local path browser.
+    #[serde(skip_serializing_if = "is_true")]
+    pub show_recent_paths: bool,
     /// Text selected with the pointer goes to the clipboard when the button is released.
     pub copy_on_selection: bool,
     /// Text selected with the pointer also becomes the desktop's primary selection, and a
@@ -85,6 +88,10 @@ pub struct TerminalConfig {
     pub selection_background: SelectionColor,
     pub selection_rounded: bool,
 }
+fn is_true(value: &bool) -> bool {
+    *value
+}
+
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
@@ -92,6 +99,7 @@ impl Default for TerminalConfig {
             cursor_style: CursorStyle::default(),
             cursor_force: false,
             key_sequence_hints: true,
+            show_recent_paths: true,
             copy_on_selection: false,
             primary_selection: false,
             selection_foreground: SelectionColor::default(),
@@ -186,6 +194,7 @@ mod tests {
                     cursor_style: style,
                     cursor_force: true,
                     key_sequence_hints: false,
+                    show_recent_paths: false,
                     copy_on_selection: true,
                     primary_selection: true,
                     selection_foreground: color,

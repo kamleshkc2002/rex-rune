@@ -820,3 +820,468 @@ fn insert_path_draw_large() {
 fn insert_path_draw_minimum() {
     draw((640., 480.), "insert-path-640");
 }
+
+fn remember(ws: &mut Workspace, host: usize, path: &str, directory: bool) {
+    let endpoint = ws.settings.hosts[host].endpoint.clone();
+    ws.settings.remember_path(&endpoint, path.into(), directory);
+}
+fn browser_rows(ws: &Workspace) -> Vec<directory::PathRow> {
+    let PanelKind::Directory(b) = &ws.panel.as_ref().unwrap().kind else {
+        panic!()
+    };
+    b.rows.clone()
+}
+fn pasted(rx: &flume::Receiver<HostCommand>) -> String {
+    let sent: Vec<_> = rx.try_iter().collect();
+    assert_eq!(sent.len(), 1, "one ordinary paste, no key or other command");
+    match &sent[0] {
+        HostCommand::Terminal {
+            command: Command::Paste(text),
+            ..
+        } => text.clone(),
+        _ => panic!("expected paste"),
+    }
+}
+
+#[test]
+fn recents_record_accepted_pastes_and_repeat_the_exact_quoted_text() {
+    for is_go in [false, true] {
+        let (mut ws, rx) = fixture();
+        if is_go {
+            go(&mut ws);
+        } else {
+            open(&mut ws);
+        }
+        reply(&mut ws, &request(&rx), Ok(response()));
+        let index = if is_go { 1 } else { 2 };
+        let chosen = browser_rows(&ws)[index].clone();
+        ws.insert_path(index, &mut rune::Tx::default());
+        let expected = pasted(&rx);
+        let endpoint = ws.settings.hosts[0].endpoint.clone();
+        assert_eq!(ws.settings.recent_paths[&endpoint][0].path, chosen.path);
+        assert_eq!(
+            ws.settings.recent_paths[&endpoint][0].directory,
+            chosen.directory
+        );
+        assert_eq!(
+            Settings::load(&ws.settings_path).unwrap().recent_paths,
+            ws.settings.recent_paths
+        );
+        if is_go {
+            go(&mut ws);
+        } else {
+            open(&mut ws);
+        }
+        assert!(
+            ws.entries().is_empty(),
+            "wait for the ordinary first listing"
+        );
+        reply(&mut ws, &request(&rx), Ok(response()));
+        assert_eq!(ws.entries()[1].group, "Recent");
+        ws.insert_path(1, &mut rune::Tx::default());
+        assert_eq!(pasted(&rx), expected);
+        assert_eq!(ws.settings.recent_paths[&endpoint].len(), 1);
+        std::fs::remove_file(&ws.settings_path).unwrap();
+    }
+}
+
+#[test]
+fn recents_record_typed_known_folders_without_changing_the_typed_rows_behavior() {
+    let (mut ws, rx) = fixture();
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    edit(&mut ws, "~/folder");
+    reply(&mut ws, &request(&rx), Ok(response()));
+    assert!(
+        !browser_rows(&ws)[0].directory,
+        "typed-row Tab semantics stay unchanged"
+    );
+    ws.insert_path(0, &mut rune::Tx::default());
+    assert_eq!(pasted(&rx), "/home/dev/folder");
+    assert!(ws.settings.recent_paths[&ws.settings.hosts[0].endpoint][0].directory);
+    std::fs::remove_file(&ws.settings_path).unwrap();
+}
+
+#[test]
+fn recents_never_record_cancelled_refused_or_failed_sends() {
+    for failure in ["cancel", "paused", "gone", "host", "channel"] {
+        let (mut ws, rx) = fixture();
+        open(&mut ws);
+        reply(&mut ws, &request(&rx), Ok(response()));
+        match failure {
+            // Looking and leaving is not using a path.
+            "cancel" => {
+                let mut rt = runtime(ws);
+                press(&mut rt, Key::Down);
+                press(&mut rt, Key::Escape);
+                assert!(rt.state.panel.is_none());
+                assert!(rt.state.settings.recent_paths.is_empty());
+                assert!(rx.is_empty());
+                assert!(!rt.state.settings_path.exists());
+                continue;
+            }
+            "paused" => {
+                ws.terminals[&ws.term_key("block:b")]
+                    .connection
+                    .model
+                    .lock()
+                    .unwrap()
+                    .connected = false
+            }
+            "gone" => {
+                ws.hosts[0]
+                    .model
+                    .views
+                    .get_mut("s")
+                    .unwrap()
+                    .windows
+                    .remove(1);
+            }
+            "host" => ws.hosts[0].model.connected = false,
+            "channel" => {
+                drop(rx);
+                ws.insert_path(1, &mut rune::Tx::default());
+                assert!(ws.settings.recent_paths.is_empty());
+                continue;
+            }
+            _ => unreachable!(),
+        }
+        ws.insert_path(1, &mut rune::Tx::default());
+        assert!(ws.settings.recent_paths.is_empty(), "{failure}");
+        assert!(rx.is_empty());
+        assert!(!ws.settings_path.exists());
+    }
+}
+
+#[test]
+fn recents_are_shared_across_sessions_but_not_hosts_and_forget_removed_or_edited_hosts() {
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/home/dev/previous", true);
+    let mut other = ws.hosts[0].model.views["s"].clone();
+    other.session_id = Some("other".into());
+    ws.hosts[0].model.views.insert("other".into(), other);
+    ws.hosts[0].model.selected = Some("other".into());
+    open(&mut ws);
+    let r = request(&rx);
+    assert_eq!(r.session, "other");
+    reply(&mut ws, &r, Ok(response()));
+    assert_eq!(ws.entries()[1].label, "~/previous");
+    ws.close_panel(&mut rune::Tx::default());
+    let mut ws = workspace_hosts(2);
+    remember(&mut ws, 0, "/only-first", true);
+    remember(&mut ws, 1, "/only-second", false);
+    let first = ws.settings.hosts[0].endpoint.clone();
+    let second = ws.settings.hosts[1].endpoint.clone();
+    assert_eq!(ws.settings.recent_paths[&first][0].path, "/only-first");
+    assert_eq!(ws.settings.recent_paths[&second][0].path, "/only-second");
+    ws.edit_host(0, "Renamed".into(), first.clone(), None);
+    assert!(ws.settings.recent_paths.contains_key(&first));
+    ws.edit_host(
+        0,
+        "Different".into(),
+        "unix:///nonexistent/other-recent-test.sock".into(),
+        None,
+    );
+    assert!(!ws.settings.recent_paths.contains_key(&first));
+    assert!(
+        !ws.settings
+            .recent_paths
+            .contains_key(&ws.settings.hosts[0].endpoint)
+    );
+    ws.remove_host(1, &mut rune::Tx::default());
+    assert!(ws.settings.recent_paths.is_empty());
+    assert!(
+        Settings::load(&ws.settings_path)
+            .unwrap()
+            .recent_paths
+            .is_empty()
+    );
+    std::fs::remove_file(&ws.settings_path).unwrap();
+}
+
+#[test]
+fn recents_filter_files_and_hostile_disk_paths_without_any_extra_read() {
+    use rex_linux::settings::recent_paths::RecentPath;
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/home/dev/old folder", true);
+    remember(&mut ws, 0, "/home/dev/old file", false);
+    let endpoint = ws.settings.hosts[0].endpoint.clone();
+    for path in [
+        "relative".into(),
+        format!("/{}", "x".repeat(4096)),
+        "/bad\nname".into(),
+        "/bad\u{202e}name".into(),
+    ] {
+        ws.settings
+            .recent_paths
+            .get_mut(&endpoint)
+            .unwrap()
+            .push(RecentPath {
+                path,
+                directory: true,
+            });
+    }
+    // An edited on-disk list could belong to an absent/different host.
+    ws.settings.recent_paths.insert(
+        "ssh://elsewhere".into(),
+        vec![RecentPath {
+            path: "/not-here".into(),
+            directory: true,
+        }],
+    );
+    for is_go in [false, true] {
+        if is_go {
+            go(&mut ws);
+        } else {
+            open(&mut ws);
+        }
+        reply(&mut ws, &request(&rx), Ok(response()));
+        let recent: Vec<_> = ws
+            .entries()
+            .into_iter()
+            .filter(|e| e.group == "Recent")
+            .map(|e| e.label)
+            .collect();
+        assert_eq!(
+            recent,
+            if is_go {
+                vec!["~/old folder"]
+            } else {
+                vec!["~/old file", "~/old folder"]
+            }
+        );
+        assert!(rx.is_empty(), "recents never list or check existence");
+    }
+}
+
+#[test]
+fn recents_hide_on_edit_or_tab_and_absent_history_has_identical_rows() {
+    let _fonts = rune::text::with_families("Inter", "Inter");
+    let (mut ws, rx) = fixture();
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    let baseline = browser_rows(&ws);
+    assert_eq!(baseline, directory::rows(&response(), ""));
+    assert!(ws.entries().iter().all(|e| e.group.is_empty()));
+    remember(&mut ws, 0, "/home/dev/old folder", true);
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    assert_eq!(browser_rows(&ws).len(), baseline.len() + 1);
+    let mut rt = runtime(ws);
+    press(&mut rt, Key::Text("a".into()));
+    let r = request(&rx);
+    reply(&mut rt.state, &r, Ok(response()));
+    assert_eq!(browser_rows(&rt.state), directory::rows(&response(), "a"));
+    edit(&mut rt.state, "~/");
+    reply(&mut rt.state, &request(&rx), Ok(response()));
+    assert_eq!(
+        browser_rows(&rt.state),
+        baseline,
+        "restoring field does not restore recents"
+    );
+    assert!(rt.state.entries().iter().all(|e| e.group.is_empty()));
+    open(&mut rt.state);
+    reply(&mut rt.state, &request(&rx), Ok(response()));
+    rt.state.panel.as_mut().unwrap().selected = 1;
+    rt.state.descend_directory();
+    let r = request(&rx);
+    assert_eq!(r.args.path.as_deref(), Some("/home/dev/old folder/"));
+    let mut answer = response();
+    answer.path = "/home/dev/old folder".into();
+    reply(&mut rt.state, &r, Ok(answer.clone()));
+    assert_eq!(browser_rows(&rt.state), directory::rows(&answer, ""));
+}
+
+#[test]
+fn recents_leave_the_typed_row_selected_so_a_bare_enter_is_unchanged() {
+    let _fonts = rune::text::with_families("Inter", "Inter");
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/home/dev/old folder", true);
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    assert_eq!(ws.entries()[1].group, "Recent");
+    assert_eq!(ws.panel.as_ref().unwrap().selected, 0);
+    let mut rt = runtime(ws);
+    press(&mut rt, Key::Enter);
+    assert_eq!(
+        pasted(&rx),
+        "/home/dev",
+        "Enter at open inserts the typed path, as it does with no recents"
+    );
+    std::fs::remove_file(&rt.state.settings_path).unwrap();
+}
+
+#[test]
+fn go_does_not_remember_a_typed_name_that_was_never_listed() {
+    let (mut ws, rx) = fixture();
+    go(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    edit(&mut ws, "~/fol");
+    reply(&mut ws, &request(&rx), Ok(response()));
+    ws.insert_path(0, &mut rune::Tx::default());
+    assert_eq!(pasted(&rx), "cd /home/dev/fol", "typed as asked");
+    assert!(
+        ws.settings.recent_paths.is_empty(),
+        "an unlisted name is not known to be a folder"
+    );
+    // The listed folder itself, and a listed child, are.
+    go(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    ws.insert_path(0, &mut rune::Tx::default());
+    assert_eq!(pasted(&rx), "cd /home/dev");
+    let endpoint = ws.settings.hosts[0].endpoint.clone();
+    assert_eq!(
+        ws.settings.recent_paths[&endpoint]
+            .iter()
+            .map(|r| (r.path.as_str(), r.directory))
+            .collect::<Vec<_>>(),
+        [("/home/dev", true)]
+    );
+    std::fs::remove_file(&ws.settings_path).unwrap();
+}
+
+#[test]
+fn switching_recents_off_with_a_browser_open_removes_its_recent_rows() {
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/home/dev/old folder", true);
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    assert_eq!(ws.entries()[1].group, "Recent");
+    ws.set_show_recent_paths(false);
+    assert_eq!(browser_rows(&ws), directory::rows(&response(), ""));
+    assert!(ws.entries().iter().all(|e| e.group.is_empty()));
+    assert_eq!(ws.panel.as_ref().unwrap().selected, 0);
+    // The second row is the listing's again, not the forgotten path.
+    ws.insert_path(1, &mut rune::Tx::default());
+    assert_eq!(pasted(&rx), "'/home/dev/a b'");
+    assert!(ws.settings.recent_paths.is_empty());
+    std::fs::remove_file(&ws.settings_path).unwrap();
+}
+
+#[test]
+fn recents_stay_hidden_after_edits_before_the_first_reply() {
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/old", true);
+    open(&mut ws);
+    let first = request(&rx);
+    edit(&mut ws, "~/folder/");
+    edit(&mut ws, "");
+    reply(&mut ws, &first, Ok(response()));
+    assert_eq!(browser_rows(&ws), directory::rows(&response(), ""));
+    assert!(rx.is_empty());
+}
+
+fn open_recent_setting(rt: &mut Runtime<Workspace>) {
+    rt.update(|s, tx| {
+        s.perform(Intent::Settings, tx);
+    });
+    settle(rt);
+    rt.update(|s, tx| {
+        s.settings_nav.search.text = "Show recently used paths".into();
+        s.settings_search_changed();
+        let hit = s
+            .settings_nav
+            .hits()
+            .iter()
+            .position(|h| h.label == "Show recently used paths" && h.place == "Terminal")
+            .expect("actual Settings label indexed");
+        s.open_settings_hit(hit, tx);
+    });
+    settle(rt);
+}
+
+#[test]
+fn recents_setting_is_searchable_and_off_forgets_stops_showing_and_recording() {
+    let _fonts = rune::text::with_families("Inter", "Inter");
+    let (mut ws, rx) = fixture();
+    remember(&mut ws, 0, "/private-folder", true);
+    let mut rt = runtime(ws);
+    open_recent_setting(&mut rt);
+    click(&mut rt, "show-recent-paths");
+    assert!(!rt.state.settings.terminal.show_recent_paths);
+    assert!(rt.state.settings.recent_paths.is_empty());
+    let saved = Settings::load(&rt.state.settings_path).unwrap();
+    assert!(!saved.terminal.show_recent_paths && saved.recent_paths.is_empty());
+    assert!(
+        !std::fs::read_to_string(&rt.state.settings_path)
+            .unwrap()
+            .contains("/private-folder")
+    );
+    rt.state.close_panel(&mut rune::Tx::default());
+    open(&mut rt.state);
+    reply(&mut rt.state, &request(&rx), Ok(response()));
+    assert_eq!(browser_rows(&rt.state), directory::rows(&response(), ""));
+    rt.state.insert_path(1, &mut rune::Tx::default());
+    assert_eq!(pasted(&rx), "'/home/dev/a b'");
+    assert!(rt.state.settings.recent_paths.is_empty());
+    open_recent_setting(&mut rt);
+    click(&mut rt, "show-recent-paths");
+    assert!(rt.state.settings.terminal.show_recent_paths);
+    assert!(rt.state.settings.recent_paths.is_empty());
+    std::fs::remove_file(&rt.state.settings_path).unwrap();
+}
+
+fn draw_recents(size: (f32, f32), name: &str, settings: bool) {
+    let Some(mut camera) = Camera::new() else {
+        return;
+    };
+    let fonts = crate::app::fonts::load("IBM Plex Mono", &[]);
+    let _families = rune::text::with_families("Inter", "IBM Plex Mono");
+    let (mut ws, rx) = fixture();
+    ws.viewport = [size.0, size.1];
+    ws.settings.hosts[0].label = "Build machine".into();
+    remember(
+        &mut ws,
+        0,
+        "/home/dev/projects/a-long-folder-name/another-long-folder/release-notes-for-the-next-preview.md",
+        false,
+    );
+    remember(&mut ws, 0, "/home/dev/Alice's", false);
+    remember(&mut ws, 0, "/home/dev/projects/rex", true);
+    open(&mut ws);
+    reply(&mut ws, &request(&rx), Ok(response()));
+    let mut rt = Runtime::with_text(
+        ws,
+        view,
+        size,
+        Env::new(true, 1.),
+        rune::text::TextSystem::new(fonts.files, fonts.families),
+    );
+    rt.on_key = Some(crate::app::input::on_key);
+    settle(&mut rt);
+    if settings {
+        open_recent_setting(&mut rt);
+        let control = super::pane_verb_tests::rect(&rt, "show-recent-paths");
+        let scroll = super::pane_verb_tests::rect(&rt, "settings-scroll:terminal");
+        assert!(control[0] >= scroll[0] && control[0] + control[2] <= scroll[0] + scroll[2] + 0.5);
+        assert!(control[1] >= scroll[1] && control[1] + control[3] <= scroll[1] + scroll[3] + 0.5);
+    } else {
+        press(&mut rt, Key::Down);
+        assert_eq!(rt.state.entries()[1].group, "Recent");
+        let surface = super::pane_verb_tests::rect(&rt, "menu-surface");
+        assert!(
+            surface[0] >= 0.
+                && surface[1] >= 0.
+                && surface[0] + surface[2] <= size.0
+                && surface[1] + surface[3] <= size.1
+        );
+    }
+    camera.snap(&mut rt, name);
+}
+
+#[test]
+fn recent_paths_draw_large() {
+    draw_recents((1024., 700.), "recent-paths-1024", false);
+}
+#[test]
+fn recent_paths_draw_minimum() {
+    draw_recents((640., 480.), "recent-paths-640", false);
+}
+#[test]
+fn recent_paths_settings_draw_large() {
+    draw_recents((1024., 700.), "recent-paths-settings-1024", true);
+}
+#[test]
+fn recent_paths_settings_draw_minimum() {
+    draw_recents((640., 480.), "recent-paths-settings-640", true);
+}

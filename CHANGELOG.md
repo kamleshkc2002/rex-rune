@@ -10,6 +10,8 @@
 
 ### Added
 
+- **Recently used paths (partial M3.1):** Insert path and Go to directory offer the last ten paths used on each saved host, shared by its sessions on this computer. Settings → Terminal → Show recently used paths is on by default; turning it off forgets the lists. Choosing a recent still only pastes, never presses Enter or checks that the path exists. See [checks and limits](docs/parity-2026-11/M3.1-recent-paths.md).
+
 - **Activity toolbar chip (partial M3.2):** a chip in the toolbar opens Activity while known, unmuted tabs other than the one on screen need you (`3 need you`) or, with none waiting, have errors (`2 errors`). Working, Done and Bell keep the toolbar quiet, and so does the Activity in tabs switch. It never floats over the terminal, is not drawn below 720 pt of window width, waits for a key sequence or a download chip in windows under 1000 pt, never marks tabs seen and sends nothing to servers. Coverage now includes the per-connection status pass described above; an absent chip is not an all-clear while reading, after failed reads, or for missing events and suppressed activity. See [checks and limits](docs/parity-2026-11/M3.2-activity-chip.md).
 
 ### Fixed

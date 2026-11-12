@@ -31,9 +31,12 @@ pub struct Browser {
     pub truncated: bool,
     /// Go to directory rather than Insert path.
     pub go: bool,
+    /// Once edited, this opening stays a plain directory listing, even if text is restored.
+    edited: bool,
+    recent_count: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PathRow {
     pub label: String,
     pub path: String,
@@ -49,39 +52,10 @@ pub fn split_path(text: &str) -> (&str, &str) {
         .map_or(("", text), |at| (&text[..=at], &text[at + 1..]))
 }
 
-/// Linux's longest path, in bytes.
-const PATH_MAX: usize = 4096;
+// Shared with settings load so edited history uses exactly the browser's refusal rules.
+pub use rex_linux::settings::recent_paths::refused;
+use rex_linux::settings::recent_paths::{LIMIT, PATH_MAX, valid};
 const REFUSED: &str = "Paths with control or invisible formatting characters can't be inserted.";
-
-/// A character that is never pasted or listed: controls (which a terminal would act on),
-/// line and paragraph separators, and invisible formatting characters that could disguise
-/// a name, such as a right-to-left override (bidirectional controls, zero-width space,
-/// soft hyphen, word joiner, blank fillers, byte-order mark, tags). This is not a defence
-/// against look-alike letters. Zero-width joiner and non-joiner stay: scripts and emoji
-/// sequences need them.
-pub fn refused(c: char) -> bool {
-    c.is_control()
-        || matches!(
-            c,
-            '\u{00AD}'
-                | '\u{034F}'
-                | '\u{061C}'
-                | '\u{115F}'
-                | '\u{1160}'
-                | '\u{180E}'
-                | '\u{3164}'
-                | '\u{FFA0}'
-                | '\u{200B}'
-                | '\u{200E}'
-                | '\u{200F}'
-                | '\u{2028}'..='\u{202E}'
-                | '\u{2060}'..='\u{2064}'
-                | '\u{2066}'..='\u{206F}'
-                | '\u{FEFF}'
-                | '\u{FFF9}'..='\u{FFFB}'
-                | '\u{E0000}'..='\u{E007F}'
-        )
-}
 
 /// POSIX single quoting, never raw controls. Tilde is resolved by Rex before this call.
 pub fn quote(path: &str) -> Result<String, &'static str> {
@@ -186,6 +160,28 @@ impl Workspace {
         self.list_directory();
     }
 
+    pub fn hide_recent_paths(&mut self) {
+        if let Some(panel) = &mut self.panel
+            && let PanelKind::Directory(browser) = &mut panel.kind
+        {
+            if browser.recent_count > 0 && !browser.rows.is_empty() {
+                browser.rows.drain(1..=browser.recent_count);
+            }
+            browser.recent_count = 0;
+            panel.selected = 0;
+            panel.reveal = true;
+        }
+    }
+
+    pub fn directory_field_changed(&mut self) {
+        if let Some(panel) = &mut self.panel
+            && let PanelKind::Directory(browser) = &mut panel.kind
+        {
+            browser.edited = true;
+        }
+        self.list_directory();
+    }
+
     /// Every edit replaces the wanted path, never queues behind an outstanding read.
     pub fn list_directory(&mut self) {
         let Some(panel) = &mut self.panel else { return };
@@ -193,6 +189,7 @@ impl Workspace {
             return;
         };
         browser.rows.clear();
+        browser.recent_count = 0;
         browser.truncated = false;
         panel.error = None;
         panel.selected = 0;
@@ -264,6 +261,7 @@ impl Workspace {
         {
             browser.pending = None;
             browser.rows.clear();
+            browser.recent_count = 0;
             browser.truncated = false;
             panel.error = Some(Failure::Disconnected.message().into());
             return;
@@ -308,6 +306,30 @@ impl Workspace {
                         .rows
                         .retain(|row| std::mem::take(&mut typed) || row.directory);
                 }
+                if !browser.edited && self.settings.terminal.show_recent_paths {
+                    let endpoint = &self.settings.hosts[host].endpoint;
+                    let mut seen = std::collections::HashSet::new();
+                    let recent: Vec<_> = self
+                        .settings
+                        .recent_paths
+                        .get(endpoint)
+                        .into_iter()
+                        .flatten()
+                        .filter(|r| {
+                            valid(&r.path)
+                                && (!browser.go || r.directory)
+                                && seen.insert(r.path.clone())
+                        })
+                        .take(LIMIT)
+                        .map(|r| PathRow {
+                            label: display(&r.path, &reply.home),
+                            path: r.path.clone(),
+                            directory: r.directory,
+                        })
+                        .collect();
+                    browser.recent_count = recent.len();
+                    browser.rows.splice(1..1, recent);
+                }
                 panel.reveal = true;
                 browser.truncated = reply.truncated;
                 if text.is_empty() {
@@ -345,6 +367,14 @@ impl Workspace {
                 // The intent keeps the panel until paste captures its row; clicking does not
                 // open a follow-up, so it must not draw a menu chevron.
                 entry.followup = false;
+                if browser.recent_count > 0 && index > 0 {
+                    entry.group = if index <= browser.recent_count {
+                        "Recent"
+                    } else {
+                        "In this folder"
+                    }
+                    .into();
+                }
                 entry
             })
             .collect()
@@ -361,7 +391,7 @@ impl Workspace {
         let mut edit = TextEdit::new(format!("{}/", row.path.trim_end_matches('/')));
         edit.focused = true;
         panel.inputs[0] = edit;
-        self.list_directory();
+        self.directory_field_changed();
     }
 
     pub fn insert_path(&mut self, index: usize, tx: &mut Tx) {
@@ -382,7 +412,22 @@ impl Workspace {
                 return;
             }
         };
+        let row = row.clone();
+        // A folder is one the server listed, or the listed folder itself.
+        let directory = row.directory
+            || browser
+                .rows
+                .iter()
+                .skip(1 + browser.recent_count)
+                .any(|listed| listed.path == row.path && listed.directory);
+        // Go's typed row for a name that was never listed may not be a folder, or exist:
+        // it is typed as asked and not remembered as somewhere to go.
+        let remember = directory || !browser.go;
         self.close_panel(tx);
-        self.paste_text(&target, text);
+        if self.paste_text(&target, text) && remember && self.settings.terminal.show_recent_paths {
+            let endpoint = self.settings.hosts[target.host].endpoint.clone();
+            self.settings.remember_path(&endpoint, row.path, directory);
+            self.save();
+        }
     }
 }
