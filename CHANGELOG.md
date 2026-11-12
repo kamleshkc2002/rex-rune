@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.2 - 2026-11-11
+
+Searchable Shortcuts and a shortcut recorder, previous and next shell prompt navigation, Settings search and Back/Forward navigation, and opt-in generated pane and tab titles adapted from Matt Porter's work.
 
 ### Added
 
