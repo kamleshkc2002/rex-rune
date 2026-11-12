@@ -766,7 +766,7 @@ impl Workspace {
         let title = window_title(
             model
                 .window()
-                .map(|tab| super::activity::tab_name(model, tab))
+                .map(|tab| super::activity::tab_name(model, tab, self.generated_titles()))
                 .as_deref(),
             model.view().and_then(|v| v.label.as_deref()),
             &self.settings.hosts[self.active].label,
@@ -1477,11 +1477,7 @@ impl Workspace {
             block: block.into(),
             label: self.block_label(block),
             name: self.pane_name(block),
-            tab: model
-                .window()?
-                .label
-                .clone()
-                .unwrap_or_else(|| "Terminal".into()),
+            tab: super::activity::tab_name(model, model.window()?, self.generated_titles()),
         })
     }
 
@@ -1711,7 +1707,7 @@ impl Workspace {
             .find(|b| b.block_id.as_deref() == Some(id))
             .map_or_else(
                 || "Terminal".into(),
-                |b| super::activity::pane_name(model, b),
+                |b| super::activity::pane_name(model, b, self.generated_titles()),
             )
     }
 

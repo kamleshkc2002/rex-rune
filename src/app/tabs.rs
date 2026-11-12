@@ -85,7 +85,11 @@ impl Workspace {
             window: window.to_owned(),
             name: String::new(),
         };
-        target.name = tab_name(&self.hosts[host].model, self.tab_window(&target)?);
+        target.name = tab_name(
+            &self.hosts[host].model,
+            self.tab_window(&target)?,
+            self.generated_titles(),
+        );
         Some(target)
     }
 
@@ -398,7 +402,12 @@ impl Workspace {
         let host = self.settings.hosts[target.host].label.clone();
         match action {
             TabAction::Rename => {
-                let name = target.name.clone();
+                // The display title may be generated or program-owned. Saving an untouched
+                // form must not turn it into a permanent user label.
+                let name = self
+                    .tab_window(&target)
+                    .and_then(|w| w.label.clone())
+                    .unwrap_or_default();
                 self.open_panel(
                     PanelKind::Form(Form::RenameWindow(target.window.clone())),
                     "Rename tab",

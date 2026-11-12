@@ -222,6 +222,8 @@ pub struct Settings {
     /// client's last declaration per block across launches, so Follow server then resets
     /// eligible blocks to Rex's colours. Never cleared automatically.
     pub terminal_theme_declared: bool,
+    /// Prefer foreground program and directory over shell-set titles. Display only.
+    pub generated_titles: bool,
     /// Tabs muted from their menu, until unmuted or closed.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub muted_tabs: Vec<MutedTab>,
@@ -265,6 +267,7 @@ impl Default for Settings {
             terminal_theme: TerminalThemeChoice::default(),
             terminal_theme_chosen: false,
             terminal_theme_declared: false,
+            generated_titles: false,
             muted_tabs: Vec::new(),
             shortcut_file: shortcuts::Shortcuts::default(),
         }
@@ -536,6 +539,25 @@ mod tests {
         assert_eq!(json["notice_position"], "bottom_right");
         let back: Settings = serde_json::from_value(json).unwrap();
         assert_eq!(back.notice_position, NoticePosition::BottomRight);
+    }
+
+    #[test]
+    fn generated_titles_default_off_for_old_files_and_round_trip() {
+        let old: Settings =
+            serde_json::from_str(r#"{"font_size":17,"vertical_tabs":true}"#).unwrap();
+        assert!(!old.generated_titles);
+        assert_eq!(old.font_size, 17.);
+        assert!(old.vertical_tabs);
+        for generated_titles in [true, false] {
+            let settings = Settings {
+                generated_titles,
+                ..Settings::default()
+            };
+            let saved = serde_json::to_value(&settings).unwrap();
+            assert_eq!(saved["generated_titles"], generated_titles);
+            let back: Settings = serde_json::from_value(saved).unwrap();
+            assert_eq!(back.generated_titles, generated_titles);
+        }
     }
 
     #[test]

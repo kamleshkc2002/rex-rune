@@ -20,6 +20,7 @@ pub mod clipboard;
 pub mod downloads;
 mod prefetch;
 pub mod server_info;
+pub mod titles;
 
 /// The label new tabs get. A tab that still has it shows its program's terminal title.
 pub const DEFAULT_TAB_LABEL: &str = "Shell";
@@ -232,6 +233,8 @@ pub struct HostModel {
     pub foreground: HashMap<String, Vec<u64>>,
     /// Each terminal block's title, as a program last set it, and the pid that set it.
     pub titles: HashMap<String, (String, Option<u64>)>,
+    /// Each terminal's foreground directory, home and own shell, for display-only titles.
+    pub places: HashMap<String, titles::Place>,
     /// Each terminal block's OSC 9;4 progress, until its program removes it.
     pub progress: HashMap<String, TerminalProgress>,
     /// Program notifications not yet taken by the UI.
@@ -297,7 +300,8 @@ impl HostModel {
                     }
                 }
             }
-            BlockEvent::Process { name, pids } => {
+            BlockEvent::Process { name, pids, place } => {
+                self.set_place(&block, place);
                 // A progress report belongs to the program in the foreground; one that ends
                 // without clearing its report (a crash, a kill) must not leave it on the tab.
                 // Another run of the same program has the same name, so its pid counts too;
@@ -358,6 +362,7 @@ impl HostModel {
         self.programs.remove(block);
         self.foreground.remove(block);
         self.titles.remove(block);
+        self.places.remove(block);
         self.progress.remove(block);
     }
 
@@ -488,7 +493,7 @@ struct ControlState {
     bootstrap_seq: u64,
     list_seq: u64,
     view_seq: HashMap<String, u64>,
-    /// Blocks whose program status (and process, if not streamed) were asked for.
+    /// Blocks whose program status, title and initial process metadata were asked for.
     queried: HashSet<String>,
     /// Unattached sessions fetched once with session.view to place their block events.
     viewed: HashSet<String>,
@@ -1025,15 +1030,10 @@ fn view_blocks(view: &session::ViewResponse) -> impl Iterator<Item = String> + '
 }
 
 /// Ask once per block of the selected session what its programs last reported, its title,
-/// and which program runs in the blocks that aren't streamed (streams get process_changed
-/// anyway).
+/// and which program runs in it. Streamed blocks also need this one initial process read:
+/// older process_changed events omit home. Never poll or prefetch other sessions for titles.
 /// A failed query leaves the block without activity; it isn't retried.
-async fn query_activity(
-    control: &mut Client,
-    shared: &Shared,
-    state: &mut ControlState,
-    workers: &HashMap<String, PaneWorker>,
-) {
+async fn query_activity(control: &mut Client, shared: &Shared, state: &mut ControlState) {
     let (session, blocks) = {
         let m = shared.model.lock().expect("host model");
         if !m.connected {
@@ -1067,11 +1067,12 @@ async fn query_activity(
             let title = activity::parse_title(&reply);
             shared.update(|m| m.apply_block_event(&session, block.clone(), title));
         }
-        if workers.contains_key(&block) {
-            continue;
-        }
         let method = format!("{}.process", activity::TERMINAL);
-        if let Ok(reply) = request(control, &method, target).await {
+        // Best-effort metadata must not hold up attachment or input for the normal
+        // eight-second request timeout. Events continue to refresh it afterward.
+        if let Ok(Ok(reply)) =
+            tokio::time::timeout(Duration::from_secs(1), control.call_raw(&method, target)).await
+        {
             let process = activity::parse_process(&reply);
             shared.update(|m| m.apply_block_event(&session, block, process));
         }
@@ -1391,6 +1392,7 @@ async fn run_host(
                 m.programs.clear();
                 m.foreground.clear();
                 m.titles.clear();
+                m.places.clear();
                 m.progress.clear();
                 m.activity_epoch += 1;
             });
@@ -1454,7 +1456,7 @@ async fn run_host(
             }
             reconcile(&endpoint, shared, &sender, &mut workers);
             declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
-            query_activity(&mut control, shared, &mut state, &workers).await;
+            query_activity(&mut control, shared, &mut state).await;
             // Restore terminal sizes and state before a best-effort keymap can wait.
             if let Some(declaration) = &keymap { keymap::refresh(&mut control, shared, declaration).await; }
             server_reads.reset();
@@ -1477,7 +1479,7 @@ async fn run_host(
                         state.prune(&shared.model.lock().expect("host model"));
                         reconcile(&endpoint, shared, &sender, &mut workers);
                         declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
-                        query_activity(&mut control, shared, &mut state, &workers).await;
+                        query_activity(&mut control, shared, &mut state).await;
                         continue;
                     }
                     state.performs_since = None;
@@ -1516,7 +1518,7 @@ async fn run_host(
                         state.prune(&shared.model.lock().expect("host model"));
                         reconcile(&endpoint, shared, &sender, &mut workers);
                         declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
-                        query_activity(&mut control, shared, &mut state, &workers).await;
+                        query_activity(&mut control, shared, &mut state).await;
                     }
                     error = crate::ssh::closed(&mut tunnel) => return Err(error),
                     command = commands.recv_async() => {
@@ -1570,7 +1572,7 @@ async fn run_host(
                         state.prune(&shared.model.lock().expect("host model"));
                         reconcile(&endpoint, shared, &sender, &mut workers);
                         declare_themes(&mut control, shared, &mut state, &workers, theme.as_ref()).await;
-                        query_activity(&mut control, shared, &mut state, &workers).await;
+                        query_activity(&mut control, shared, &mut state).await;
                     }
                 }
             }

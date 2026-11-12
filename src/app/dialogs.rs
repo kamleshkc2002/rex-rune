@@ -151,9 +151,9 @@ fn form(s: &Workspace, form: &Form) -> El {
     if let Form::RenameWindow(_) = form {
         body = body.child(
             text(if named_tab {
-                "Use default title shows the title this tab's program sets again."
+                "Use default title restores the program's title or your preferred generated title."
             } else {
-                "This tab shows the title its program sets. A name saved here replaces it."
+                "This tab follows the program's title or your preferred generated title. A name saved here replaces it."
             })
             .font(ui(12.))
             .color(rgb(muted()))

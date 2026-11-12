@@ -378,6 +378,7 @@ fn terminal(s: &Workspace) -> El {
                 ),
             ],
         ),
+        super::titles::titles(s),
         section(
             "",
             [

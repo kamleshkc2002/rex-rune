@@ -67,27 +67,32 @@ pub fn default_title(window: &session::Window) -> bool {
 }
 
 /// What a tab is called: its chosen name, or for a default label, its focused program's
-/// terminal title when there is one.
-pub fn tab_name(model: &HostModel, window: &session::Window) -> String {
+/// terminal title (or generated program and directory, when preferred).
+pub fn tab_name(model: &HostModel, window: &session::Window, generated: bool) -> String {
     let label = window.label.as_deref().filter(|l| !l.is_empty());
     let title = default_title(window)
-        .then(|| focused_block(window).and_then(|b| model.title(b)))
+        .then(|| focused_block(window).and_then(|b| model.shown_title(b, generated)))
         .flatten();
-    title.or(label).unwrap_or("Terminal").to_owned()
+    title.as_deref().or(label).unwrap_or("Terminal").to_owned()
 }
 
 /// What a pane is called: its server label, or while that is still the default its terminal
 /// gets (its flavor's last word, such as `shell`), its program's terminal title. Display only:
 /// the server label is never changed.
-pub fn pane_name(model: &HostModel, block: &session::LayerBlock) -> String {
+pub fn pane_name(model: &HostModel, block: &session::LayerBlock, generated: bool) -> String {
     let label = block.label.as_deref().filter(|l| !l.is_empty());
     let default = block.creator_name.as_deref() == Some(TERMINAL_CREATOR)
         && label
             .is_none_or(|l| block.flavor.as_deref().and_then(|f| f.rsplit('.').next()) == Some(l));
     let title = default
-        .then(|| block.block_id.as_deref().and_then(|b| model.title(b)))
+        .then(|| {
+            block
+                .block_id
+                .as_deref()
+                .and_then(|b| model.shown_title(b, generated))
+        })
         .flatten();
-    title.or(label).unwrap_or("Terminal").to_owned()
+    title.as_deref().or(label).unwrap_or("Terminal").to_owned()
 }
 
 /// Fold a tab's records with Blocked > Error > Working > Done > Idle.
@@ -405,7 +410,10 @@ impl Workspace {
         let view = model.views.get(session);
         let tab = view
             .and_then(|v| v.windows.iter().find(|w| w.window_id.as_deref() == window))
-            .map_or_else(|| "Terminal".into(), |w| tab_name(model, w));
+            .map_or_else(
+                || "Terminal".into(),
+                |w| tab_name(model, w, self.generated_titles()),
+            );
         let session = model
             .sessions
             .iter()
@@ -521,7 +529,7 @@ mod tests {
         ] {
             let (mut model, window) = tab(id, Some(label));
             model.titles.insert("block".into(), (title.into(), None));
-            assert_eq!(tab_name(&model, &window), title);
+            assert_eq!(tab_name(&model, &window, false), title);
         }
     }
 
@@ -529,12 +537,12 @@ mod tests {
     fn explicit_window_names_keep_their_labels() {
         for label in ["Work", "Window 624e75b5", "Window notes", "Shell commands"] {
             let (model, window) = tab("window:01a1aa89-4009-757a-a7b9-1ce89dcd0a4c", Some(label));
-            assert_eq!(tab_name(&model, &window), label);
+            assert_eq!(tab_name(&model, &window, false), label);
         }
         let (model, mut window) = tab("short", Some("Window 9dcd0a4c"));
-        assert_eq!(tab_name(&model, &window), "Window 9dcd0a4c");
+        assert_eq!(tab_name(&model, &window, false), "Window 9dcd0a4c");
         window.window_id = None;
-        assert_eq!(tab_name(&model, &window), "Window 9dcd0a4c");
+        assert_eq!(tab_name(&model, &window, false), "Window 9dcd0a4c");
     }
 
     #[test]
@@ -544,12 +552,12 @@ mod tests {
             Some("Window 9dcd0a4c"),
         );
         model.titles.clear();
-        assert_eq!(tab_name(&model, &window), "Window 9dcd0a4c");
+        assert_eq!(tab_name(&model, &window, false), "Window 9dcd0a4c");
         model
             .titles
             .insert("block".into(), ("stale".into(), Some(42)));
         model.foreground.insert("block".into(), vec![99]);
-        assert_eq!(tab_name(&model, &window), "Window 9dcd0a4c");
+        assert_eq!(tab_name(&model, &window, false), "Window 9dcd0a4c");
     }
 
     fn pane(label: Option<&str>) -> (HostModel, session::LayerBlock) {
@@ -572,7 +580,60 @@ mod tests {
     fn default_pane_labels_show_the_current_terminal_title() {
         for label in [Some("shell"), None, Some("")] {
             let (model, block) = pane(label);
-            assert_eq!(pane_name(&model, &block), "Claude Code");
+            assert_eq!(pane_name(&model, &block, false), "Claude Code");
+        }
+    }
+
+    #[test]
+    fn untitled_panes_and_tabs_share_generated_names_but_user_labels_win() {
+        // Adapted from ohporter/e94fe1d's untitled pane test; use the M2.10 spelling
+        // and preference for both panes and tabs, not a separate pane-only fallback.
+        for generated in [false, true] {
+            for label in [Some("shell"), None, Some("")] {
+                let (mut model, block) = pane(label);
+                let (_, window) = tab("window", Some(DEFAULT_TAB_LABEL));
+                model.titles.clear();
+                model.programs.insert("block".into(), "vim".into());
+                model.places.insert(
+                    "block".into(),
+                    rex_linux::connection::titles::Place {
+                        cwd: Some("/home/u/rex".into()),
+                        home: Some("/home/u".into()),
+                        shell: Some(1),
+                    },
+                );
+                assert_eq!(
+                    pane_name(&model, &block, generated),
+                    if generated {
+                        "vim - ~/rex"
+                    } else {
+                        label.filter(|l| !l.is_empty()).unwrap_or("Terminal")
+                    }
+                );
+                assert_eq!(
+                    tab_name(&model, &window, generated),
+                    if generated {
+                        "vim - ~/rex"
+                    } else {
+                        DEFAULT_TAB_LABEL
+                    }
+                );
+
+                let mut named_block = block.clone();
+                named_block.label = Some("build".into());
+                let mut named_tab = window.clone();
+                named_tab.label = Some("work".into());
+                assert_eq!(pane_name(&model, &named_block, generated), "build");
+                assert_eq!(tab_name(&model, &named_tab, generated), "work");
+
+                // A program's own title remains authoritative on both surfaces.
+                model
+                    .titles
+                    .insert("block".into(), ("notes - VIM".into(), Some(7)));
+                model.foreground.insert("block".into(), vec![7, 1]);
+                assert_eq!(pane_name(&model, &block, generated), "notes - VIM");
+                assert_eq!(tab_name(&model, &window, generated), "notes - VIM");
+            }
         }
     }
 
@@ -580,7 +641,7 @@ mod tests {
     fn renamed_panes_keep_their_labels() {
         for label in ["build", "Shell", "server", "Claude"] {
             let (model, block) = pane(Some(label));
-            assert_eq!(pane_name(&model, &block), label);
+            assert_eq!(pane_name(&model, &block, false), label);
         }
     }
 
@@ -588,25 +649,25 @@ mod tests {
     fn pane_titles_go_stale_with_their_program() {
         let (mut model, block) = pane(Some("shell"));
         model.foreground.insert("block".into(), vec![1]);
-        assert_eq!(pane_name(&model, &block), "shell");
+        assert_eq!(pane_name(&model, &block, false), "shell");
         model.titles.clear();
         let (_, mut bare) = pane(None);
         bare.flavor = None;
-        assert_eq!(pane_name(&model, &bare), "Terminal");
+        assert_eq!(pane_name(&model, &bare, false), "Terminal");
     }
 
     #[test]
     fn only_terminal_blocks_take_titles() {
         let (model, mut block) = pane(Some("shell"));
         block.creator_name = Some("com.example.other".into());
-        assert_eq!(pane_name(&model, &block), "shell");
+        assert_eq!(pane_name(&model, &block, false), "shell");
     }
 
     #[test]
     fn shell_and_unlabelled_windows_keep_their_title_fallback() {
         for label in [Some(DEFAULT_TAB_LABEL), None, Some("")] {
             let (model, window) = tab("window", label);
-            assert_eq!(tab_name(&model, &window), "dotfiles");
+            assert_eq!(tab_name(&model, &window, false), "dotfiles");
         }
     }
 }

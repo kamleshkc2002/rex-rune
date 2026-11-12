@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Generated titles (M2.10):** Settings → Terminal → Prefer generated titles names default tabs and panes from the foreground program and directory (`vim - ~/rex`), while user names and program-set titles win. Off by default, including old settings files; toolbar, sidebar, pane menus and window titles agree. Adapted the untitled-pane naming and home-directory retention from [Matt Porter (@ohporter)'s `e94fe1d`](https://github.com/ohporter/rex-rune/commit/e94fe1da4725b80a412c27be6fd01a00c1ec1caa), using per-terminal metadata and the shared title resolver rather than a pane-only fallback.
+
 - **Previous / next prompt (M3.7, #44):** `Ctrl Shift Up/Down` and Commands navigate shell OSC 133 prompt groups in the local viewport, including restored scrollback. `client.prompt.previous/next` now work; `pane.prompt_previous/prompt_next` are aliases. The new default keys are consumed by Rex rather than sent to the terminal; remove or replace either binding in `shortcuts.json` to restore program input. Unmarked terminals do not move. Navigation never sends PTY input, claims ownership, changes server layout or animates; all spellings remain remote-denied. Verified on a disposable Rex API 13 server through snapshots, live output and reattachment.
 - **Searchable Shortcuts reference (M2.1):** filter Settings → Shortcuts by action, category or key chord; supported unbound actions read **Not set**, alternate bindings share one row, and bound aliases retain their names. Sources, mode-scoped conflicts, unsupported diagnostics and config paths remain visible. A literal `+` reads **Plus** in keycaps. Read-only: no recorder or new bindings.
 
