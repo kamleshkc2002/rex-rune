@@ -4,7 +4,7 @@
 Requires built REX_BIN, Rex API 13, Xvfb/openbox/xdotool/ImageMagick/Tesseract.
 No personal display, Rex server, notification daemon or bus is used. Notifications
 are off and the private bus has no activation directories. All artifacts stay in
-~/.cache/agent-ws/rex-m32-activity/. Children are stopped by PID.
+~/.cache/agent-ws/rex-m32-activity/ (or REX_ACTIVITY_OUT). Children are stopped by PID.
 """
 import importlib.util
 import json
@@ -19,7 +19,7 @@ import time
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = os.environ.get("REX_BIN", str(ROOT / "target/release/rex-linux"))
-BASE = Path.home() / ".cache/agent-ws/rex-m32-activity"
+BASE = Path(os.environ.get("REX_ACTIVITY_OUT", str(Path.home() / ".cache/agent-ws/rex-m32-activity")))
 BASE.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="native-", dir=BASE))
 for tool in ("rex", "dbus-daemon", "Xvfb", "openbox", "xdotool", "import", "magick", "tesseract"):
@@ -107,13 +107,20 @@ try:
         accept.api("block.event", session_id=sid, block_id=block, event={"type":"paste", "payload":{"text":f"/usr/bin/python3 {reporter} {work / name}"}})
         accept.api("block.event", session_id=sid, block_id=block, event={"type":"key", "payload":{"key":"enter", "action":"press", "mods":""}})
     wait(lambda: all((work / f"{name}.ready").exists() for name in tabs), "reporters did not start")
+    # A cold report in the never-opened session must be labeled as reported, not
+    # presented as an observed state-transition time.
+    report("OtherTask", "blocked", 1)
+    other_sid, other_tab = tabs["OtherTask"]
+    wait(lambda: any(r.get("state") == "blocked" for r in accept.api(
+        "com.superlogical.terminal.program_status", session_id=other_sid,
+        block_id=other_tab["focused_block_id"]).get("records", [])), "cold report missing")
     sid, tab = tabs["Front"]
     accept.api("session.focus_window", session_id=sid, window_id=tab["window_id"])
     config = work / "workspace.json"
     config.write_text(json.dumps({"font_family":"IBM Plex Mono", "hosts":[{"label":"Private", "endpoint":endpoint}], "sessions":{endpoint:sid}, "notifications":{"system_notifications":False}}))
     desk = accept.Desktop()
     app, window = desk.launch(sid, config, size="1024x700", log=(work / "client.log").open("w"))
-    for name, state in [("Approval","blocked"),("Compile","working"),("Finished","working"),("Failure","error"),("OtherTask","blocked")]:
+    for name, state in [("Approval","blocked"),("Compile","working"),("Finished","working"),("Failure","error")]:
         report(name, state, 1)
     time.sleep(1.5)
     report("Finished", "done", 2)
@@ -146,6 +153,10 @@ try:
     words = capture("populated")
     for word in ("NEEDS YOU", "ERROR", "DONE", "WORKING", "Approval", "Compile", "Finished", "OtherTask", "Elsewhere"):
         assert word.lower() in words.lower(), (word, words)
+    # Every live report is less than a minute old. This asserts rendered time, not
+    # just server timestamps: OCR of the actual private native popup must find it.
+    assert words.lower().split().count("now") >= 4, words
+    assert "reported now" in words.lower(), words
     offsets = [words.lower().index(word) for word in ("needs you", "error", "done", "working")]
     assert offsets == sorted(offsets), words
     desk.key("Escape")
@@ -169,9 +180,9 @@ try:
     desk.key("Escape")
     (work / "result.json").write_text(json.dumps({"passed":True, "two_sessions":True, "live_osc7501":True,
         "groups":["Needs you","Error","Done","Working"], "unchanged_view_size_owner":True,
-        "cross_session_navigation":True, "sidebar_session_word":True, "done_cleared_only_after_navigation":True,
+        "cross_session_navigation":True, "sidebar_session_word":True, "elapsed_now_rendered":True, "read_back_reported_now_rendered":True, "done_cleared_only_after_navigation":True,
         "not_exercised":["cross-host native navigation", "Wayland", "notification service"]}, indent=2))
-    print("PASS private OSC activity, four groups, filter, cross-session navigation, Done latch, unchanged view/size/owner", flush=True)
+    print("PASS private OSC activity, four groups with elapsed now, filter, cross-session navigation, Done latch, unchanged view/size/owner", flush=True)
 finally:
     if desk:
         desk.close()

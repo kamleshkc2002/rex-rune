@@ -300,7 +300,25 @@ pub fn list_row(
                     } else {
                         0.
                     })),
-                None if r.keys.is_empty() => text(r.detail.to_owned()).font(ui(11.)).color(detail),
+                None if r.keys.is_empty() => {
+                    let state = text(r.detail.to_owned()).font(ui(11.)).color(detail);
+                    if let Some(time) = r.activity.and_then(|a| a.elapsed.as_ref()) {
+                        col().items_end().child(state).child(
+                            text(time.text.clone())
+                                .font(ui(11.))
+                                // As the place line under the title does on the selection.
+                                .color(if r.selected {
+                                    rgb(ink()).alpha(0.75)
+                                } else {
+                                    rgb(muted())
+                                })
+                                .label(time.label.clone())
+                                .help(time.label.clone()),
+                        )
+                    } else {
+                        state
+                    }
+                }
                 // An unavailable row's keys recede with its label.
                 None => {
                     keycaps(r.keys, r.selected)

@@ -4,6 +4,9 @@
 //! `program_status`, `process` and `title` methods.
 use super::titles::Place;
 use serde_json::Value;
+use std::time::{Instant, SystemTime};
+
+pub mod time;
 
 pub const TERMINAL: &str = "com.superlogical.terminal";
 
@@ -74,10 +77,16 @@ pub struct StatusRecord {
     /// Reported while this client was listening, not read back by a query: only live
     /// changes are news worth a notification.
     pub live: bool,
+    /// Presentation-only age; never used by notification or completion policy.
+    pub age: Option<time::Age>,
 }
 
 impl StatusRecord {
     pub fn parse(value: &Value) -> Self {
+        Self::parse_at(value, Instant::now(), SystemTime::now())
+    }
+
+    pub fn parse_at(value: &Value, now: Instant, wall: SystemTime) -> Self {
         let text = |key: &str| {
             value[key]
                 .as_str()
@@ -100,6 +109,28 @@ impl StatusRecord {
                 .filter(|p| *p <= 100)
                 .map(|p| p as u8),
             live: false,
+            age: value["updated_at"]
+                .as_str()
+                .and_then(|s| time::Age::read_back(s, now, wall)),
+        }
+    }
+
+    /// The client's own clock starts only where it watched the state begin: a live report
+    /// that changes the state of a record it already held, or a first report for a pane
+    /// whose status it had already `read` on this connection and found without this
+    /// record. A live repeat keeps the earlier start, updating only words and progress. A
+    /// first report for a pane not yet read says nothing about when its state began (the
+    /// program may have been in it for hours before this client connected, or before the
+    /// status pass reached the pane), so it keeps the report's own time, qualified as a
+    /// report.
+    pub fn observe_at(&mut self, previous: Option<&Self>, read: bool, now: Instant) {
+        if self.live {
+            self.age = match previous {
+                Some(p) if p.state != self.state => Some(time::Age::live(now)),
+                Some(p) => p.age.or(self.age),
+                None if read => Some(time::Age::live(now)),
+                None => self.age,
+            };
         }
     }
 }

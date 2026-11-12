@@ -71,15 +71,14 @@ pub(super) fn record(
     // Removed live while this read was out: the reply is older than the removal.
     records.retain(|(id, _)| !removed.contains(id));
     // Most panes report nothing: don't wake the app to tell it so.
-    if records.is_empty()
-        && !shared
-            .model
-            .lock()
-            .expect("host model")
-            .activity
-            .contains_key(block)
     {
-        return;
+        let mut model = shared.model.lock().expect("host model");
+        if records.is_empty() && !model.activity.contains_key(block) {
+            // The pane had reported nothing, and that is now known: its first report
+            // will be a state this client watched begin.
+            model.status_read.insert(block.into());
+            return;
+        }
     }
     shared.update(|m| {
         if !m
@@ -89,6 +88,9 @@ pub(super) fn record(
         {
             return;
         }
+        // Only now, with the reply about to be kept: a reply that is thrown away must
+        // not count as having read the pane.
+        m.status_read.insert(block.into());
         // Same snapshot semantics as the selected-session query. These are old reports,
         // not live news: no notification or unseen-Done receipt is invented here.
         let records = merge(m.activity.remove(block), records);

@@ -275,6 +275,7 @@ impl Workspace {
     /// Compare each tab of host `index` with its last state: latch unseen Done, clear what
     /// the user now sees, and notify about live changes in tabs they can't see.
     pub fn track_activity(&mut self, index: usize) {
+        self.track_activity_times_at(index, std::time::Instant::now());
         let id = self.hosts[index].id;
         let epoch = self.hosts[index].model.activity_epoch;
         if self.activity_epochs.insert(id, epoch) != Some(epoch) {

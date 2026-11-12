@@ -6,8 +6,12 @@ use super::{
     theme::{accent, danger, muted, warning},
     workspace::Workspace,
 };
-use rex_linux::connection::activity::ProgramState;
+use rex_linux::connection::{
+    HostModel,
+    activity::{ProgramState, time::Age},
+};
 use rune::{Icon, Tx};
+use std::time::{Duration, Instant};
 
 pub const ACTION: &str = "client.activity";
 pub const COVERAGE: &str = "Reading activity…";
@@ -17,9 +21,164 @@ pub struct Presentation {
     pub icon: &'static Icon,
     pub place: String,
     pub tone: u32,
+    pub elapsed: Option<Elapsed>,
+}
+
+pub struct TabTime {
+    epoch: u64,
+    state: ProgramState,
+    age: Option<Age>,
+}
+
+pub struct Elapsed {
+    pub text: String,
+    pub label: String,
+}
+
+pub(super) fn elapsed(age: Age, state: ProgramState, now: Instant) -> Elapsed {
+    let seconds = age.elapsed(now).as_secs();
+    let (short, long) = if seconds < 60 {
+        ("now".into(), "less than a minute".into())
+    } else {
+        let (n, unit, suffix) = if seconds < 3600 {
+            (seconds / 60, "minute", "m")
+        } else if seconds < 86400 {
+            (seconds / 3600, "hour", "h")
+        } else {
+            (seconds / 86400, "day", "d")
+        };
+        (
+            format!("{n}{suffix}"),
+            format!("{n} {unit}{}", if n == 1 { "" } else { "s" }),
+        )
+    };
+    let state = match state {
+        ProgramState::Blocked => "waiting",
+        ProgramState::Error => "in error",
+        ProgramState::Working => "working",
+        ProgramState::Done => "done",
+        ProgramState::Idle => "idle",
+    };
+    if age.reported {
+        Elapsed {
+            text: format!("reported {short}"),
+            label: format!("Known {state} from a report {long} ago; state may have begun earlier"),
+        }
+    } else {
+        Elapsed {
+            text: short,
+            label: format!("Observed {state} for {long}"),
+        }
+    }
+}
+
+/// Oldest known current record in the winning group, or none when any record in that
+/// group has no known age: an exact-looking time from one pane must not stand for a tab
+/// whose other pane has been in the state for an unknown, perhaps longer, time. A
+/// completion latch without a matching Done record has no timestamp. Never let a progress
+/// change choose a new age.
+fn tab_age(
+    model: &HostModel,
+    session: &str,
+    id: &str,
+    state: ProgramState,
+    now: Instant,
+) -> Option<Age> {
+    let window = model
+        .views
+        .get(session)?
+        .windows
+        .iter()
+        .find(|w| w.window_id.as_deref() == Some(id))?;
+    window
+        .layers
+        .iter()
+        .flat_map(|l| &l.blocks)
+        .filter_map(|b| model.activity.get(b.block_id.as_deref()?))
+        .flat_map(|r| r.values())
+        .filter(|r| r.state == state)
+        .map(|r| r.age)
+        .collect::<Option<Vec<_>>>()?
+        .into_iter()
+        .max_by_key(|a| a.elapsed(now))
 }
 
 impl Workspace {
+    /// Follow the folded tab state even while the popup is closed. Otherwise an old
+    /// Working pane re-exposed by a blocked sibling finishing would look as though the
+    /// tab had been in Working throughout. This cache has no notification policy.
+    pub(super) fn track_activity_times_at(&mut self, index: usize, now: Instant) {
+        let host = &self.hosts[index];
+        let id = host.id;
+        let model = &host.model;
+        let mut next = Vec::new();
+        if model.connected {
+            for (session, view) in &model.views {
+                for window in &view.windows {
+                    let Some(window_id) = window.window_id.as_deref() else {
+                        continue;
+                    };
+                    let state = tab_activity(model, window).state;
+                    let candidate = tab_age(model, session, window_id, state, now);
+                    let key = (id, window_id.to_owned());
+                    let previous = self
+                        .activity_times
+                        .get(&key)
+                        .filter(|t| t.epoch == model.activity_epoch);
+                    let age = match previous {
+                        // The tab's own clock, unless its records say something younger:
+                        // model wakes coalesce, so a tab can leave a state and return to
+                        // it between two of them, and the records then know better. With
+                        // no known record age there is nothing to show.
+                        Some(p) if p.state == state => match (p.age, candidate) {
+                            (Some(kept), Some(record)) => {
+                                Some(if record.elapsed(now) < kept.elapsed(now) {
+                                    record
+                                } else {
+                                    kept
+                                })
+                            }
+                            (_, record) => record,
+                        },
+                        Some(_) => candidate.map(|a| if a.reported { a } else { Age::live(now) }),
+                        None => candidate,
+                    };
+                    next.push((
+                        key,
+                        TabTime {
+                            epoch: model.activity_epoch,
+                            state,
+                            age,
+                        },
+                    ));
+                }
+            }
+        }
+        self.activity_times
+            .retain(|(h, _), _| *h != id && self.hosts.iter().any(|host| host.id == *h));
+        self.activity_times.extend(next);
+    }
+
+    /// Returns a redraw and its next wake delay. No activity tracking, selection reveal,
+    /// host command or scroll command belongs on this path.
+    pub(super) fn refresh_activity_at(&mut self, now: Instant) -> (bool, Option<Duration>) {
+        let Some(panel) = self
+            .panel
+            .as_mut()
+            .filter(|p| matches!(p.kind, PanelKind::Activity))
+        else {
+            return (false, None);
+        };
+        let deadline = panel
+            .activity_refresh
+            .get_or_insert(now + Duration::from_secs(60));
+        let changed = now >= *deadline;
+        if changed {
+            *deadline = now + Duration::from_secs(60);
+        }
+        (changed, Some(deadline.saturating_duration_since(now)))
+    }
+
     pub fn show_activity(&mut self) {
         self.open_panel(
             PanelKind::Activity,
@@ -96,6 +255,10 @@ impl Workspace {
     }
 
     pub fn activity_entries(&self, lower: &str) -> Vec<Entry> {
+        self.activity_entries_at(lower, Instant::now())
+    }
+
+    pub(super) fn activity_entries_at(&self, lower: &str, now: Instant) -> Vec<Entry> {
         let mut entries = Vec::new();
         for (index, session, id, activity) in self.activity_tabs() {
             let (rank, group, word, tone) = match activity.state {
@@ -127,6 +290,23 @@ impl Workspace {
                 icon: program_icon(activity.program.as_deref()),
                 place,
                 tone,
+                elapsed: {
+                    let state = if rank == 2 {
+                        ProgramState::Done
+                    } else {
+                        activity.state
+                    };
+                    self.activity_times
+                        .get(&(self.hosts[index].id, id.to_owned()))
+                        .filter(|t| {
+                            t.epoch == self.hosts[index].model.activity_epoch && t.state == state
+                        })
+                        .map(|t| t.age)
+                        .unwrap_or_else(|| {
+                            tab_age(&self.hosts[index].model, session, id, state, now)
+                        })
+                        .map(|age| elapsed(age, state, now))
+                },
             });
             entries.push((rank, entry));
         }

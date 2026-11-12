@@ -185,11 +185,18 @@ pub(crate) fn view(s: &Workspace, cx: &mut Cx<Workspace>) -> El {
 
 fn poll(s: &mut Workspace, _: f64, tx: &mut Tx) -> bool {
     let now = std::time::Instant::now();
+    let (activity_changed, next_activity) = s.refresh_activity_at(now);
+    if let Some(delay) = next_activity {
+        tx.wake_after(delay);
+    }
     let remote_changed = s.poll_remote_navigation(now);
     let updates_changed = s.poll_updates(now, tx);
     let settings_changed = s.poll_settings(now, tx);
-    let mut changed =
-        s.poll_navigation(now, tx) || remote_changed || updates_changed || settings_changed;
+    let mut changed = s.poll_navigation(now, tx)
+        || remote_changed
+        || updates_changed
+        || settings_changed
+        || activity_changed;
     if let Some(panel) = &mut s.panel
         && std::mem::take(&mut panel.reveal)
     {

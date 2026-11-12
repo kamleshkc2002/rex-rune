@@ -256,6 +256,9 @@ pub struct HostModel {
     /// Bumped whenever `activity` is dropped wholesale (on reconnect), so the UI starts its
     /// before-and-after comparison over instead of reading the gap as programs finishing.
     pub activity_epoch: u64,
+    /// Panes whose program status was read on this connection: a first report from one of
+    /// these is a state this client watched begin. Presentation only.
+    pub status_read: HashSet<String>,
     /// Initial activity coverage on this connection, not a read receipt.
     pub activity_reading: bool,
     pub activity_incomplete: bool,
@@ -300,8 +303,11 @@ impl HostModel {
 
     pub fn apply_block_event(&mut self, session: &str, block: String, event: BlockEvent) {
         match event {
-            BlockEvent::StatusChanged { id, record } => {
-                self.activity.entry(block).or_default().insert(id, record);
+            BlockEvent::StatusChanged { id, mut record } => {
+                let read = self.status_read.contains(&block);
+                let records = self.activity.entry(block).or_default();
+                record.observe_at(records.get(&id), read, std::time::Instant::now());
+                records.insert(id, record);
             }
             BlockEvent::StatusRemoved { ids } => {
                 if let Some(records) = self.activity.get_mut(&block) {
@@ -1424,6 +1430,7 @@ async fn run_host(
                 m.background_views.clear();
                 // Reports made while disconnected were missed; the per-connection pass refills them.
                 m.activity.clear();
+                m.status_read.clear();
                 m.programs.clear();
                 m.foreground.clear();
                 m.titles.clear();

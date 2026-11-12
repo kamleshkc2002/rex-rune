@@ -385,6 +385,8 @@ pub struct Panel {
     pub selected: usize,
     /// Scroll the keyboard selection into view on the next commit.
     pub reveal: bool,
+    /// Activity-only local redraw deadline, discarded with the popup.
+    pub activity_refresh: Option<std::time::Instant>,
     pub error: Option<String>,
     pub target: Option<PaneTarget>,
     pub session: Option<SessionTarget>,
@@ -418,6 +420,7 @@ impl Panel {
                 .collect(),
             selected: 0,
             reveal: false,
+            activity_refresh: None,
             error: None,
             target: None,
             session: None,

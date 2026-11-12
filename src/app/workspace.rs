@@ -124,6 +124,7 @@ pub struct Workspace {
     pub settings_nav: super::settings_nav::Nav,
     /// Each tab's folded activity state when last synced.
     pub tab_states: TabStates,
+    pub activity_times: HashMap<(HostId, String), super::activity_list::TabTime>,
     /// Tabs whose programs finished while the user wasn't looking; they show "Done".
     pub unseen_done: HashSet<(HostId, String)>,
     /// Tabs whose programs rang the bell while the user wasn't looking; they show "Bell".
@@ -276,6 +277,7 @@ impl Workspace {
             settings_section: SettingsSection::default(),
             settings_nav: Default::default(),
             tab_states: HashMap::new(),
+            activity_times: HashMap::new(),
             unseen_done: HashSet::new(),
             unseen_bells: HashSet::new(),
             activity_epochs: HashMap::new(),

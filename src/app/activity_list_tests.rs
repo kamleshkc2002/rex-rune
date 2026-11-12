@@ -3,7 +3,7 @@ use super::pane_verb_tests::{Camera, framed_terminal};
 use super::*;
 use crate::app::{
     actions,
-    activity_list::{ACTION, COVERAGE},
+    activity_list::{self, ACTION, COVERAGE},
     notify::NoteTarget,
 };
 use rex_linux::connection::activity::{BlockedKind, ProgramState, StatusRecord};
@@ -582,6 +582,30 @@ fn draw(case: &str) {
     // Four groups fit together in the minimum viewport with one representative each.
     ws.hosts[1].model.connected = false;
     ws.hosts[0].model.activity.remove("build");
+    if case == "elapsed" {
+        let now = std::time::Instant::now();
+        for (id, seconds, reported) in [
+            ("front", 7200, false),
+            ("blocked", 240, false),
+            ("error", 3 * 86400, true),
+            ("done", 10, false),
+        ] {
+            ws.hosts[0]
+                .model
+                .activity
+                .get_mut(id)
+                .unwrap()
+                .get_mut("")
+                .unwrap()
+                .age = Some(rex_linux::connection::activity::time::Age {
+                observed: now,
+                initial: std::time::Duration::from_secs(seconds),
+                reported,
+            });
+        }
+        ws.hosts[0].model.views.get_mut("s").unwrap().windows[1].label =
+            Some("An agent waiting for approval on a very long implementation title".into());
+    }
     ws.show_activity();
     if case == "filtered" {
         edit(&mut ws, "blocked");
@@ -617,4 +641,332 @@ fn activity_filtered_draw() {
 #[test]
 fn activity_empty_draw() {
     draw("empty");
+}
+
+#[test]
+fn activity_elapsed_draw() {
+    draw("elapsed");
+}
+
+#[test]
+fn elapsed_boundaries_and_accessible_words_use_injected_now() {
+    use rex_linux::connection::activity::time::Age;
+    use std::time::{Duration, Instant};
+    let start = Instant::now();
+    for (seconds, text, words) in [
+        (59, "now", "less than a minute"),
+        (60, "1m", "1 minute"),
+        (59 * 60, "59m", "59 minutes"),
+        (60 * 60, "1h", "1 hour"),
+        (23 * 3600, "23h", "23 hours"),
+        (24 * 3600, "1d", "1 day"),
+        (1234 * 86400, "1234d", "1234 days"),
+    ] {
+        let now = start + Duration::from_secs(seconds);
+        let elapsed = activity_list::elapsed(Age::live(start), ProgramState::Blocked, now);
+        assert_eq!(elapsed.text, text);
+        assert_eq!(elapsed.label, format!("Observed waiting for {words}"));
+        let reported = activity_list::elapsed(
+            Age {
+                reported: true,
+                ..Age::live(start)
+            },
+            ProgramState::Working,
+            now,
+        );
+        assert_eq!(reported.text, format!("reported {text}"));
+        assert!(reported.label.contains("state may have begun earlier"));
+    }
+}
+
+#[test]
+fn folded_state_clock_survives_progress_and_restarts_after_a_higher_state() {
+    use rex_linux::connection::activity::time::Age;
+    use std::time::{Duration, Instant};
+    let (mut ws, _rx) = fixture();
+    let start = Instant::now();
+    let later = start + Duration::from_secs(7200);
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .get_mut("")
+        .unwrap()
+        .age = Some(Age::live(start));
+    ws.track_activity_times_at(0, start);
+    let time = |ws: &Workspace, now| {
+        ws.activity_entries_at("front", now)
+            .remove(0)
+            .activity
+            .unwrap()
+            .elapsed
+            .unwrap()
+            .text
+    };
+    assert_eq!(time(&ws, later), "2h");
+    let blocked = StatusRecord {
+        state: ProgramState::Blocked,
+        live: true,
+        age: Some(Age::live(later)),
+        ..Default::default()
+    };
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .insert("other".into(), blocked);
+    ws.track_activity_times_at(0, later);
+    assert_eq!(time(&ws, later), "now");
+    let end = later + Duration::from_secs(240);
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .remove("other");
+    ws.track_activity_times_at(0, end);
+    assert_eq!(
+        time(&ws, end),
+        "now",
+        "returning to Working is not two hours of Working group"
+    );
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .get_mut("")
+        .unwrap()
+        .progress = Some(99);
+    ws.track_activity_times_at(0, end + Duration::from_secs(240));
+    assert_eq!(time(&ws, end + Duration::from_secs(240)), "4m");
+    ws.hosts[0].model.activity_epoch += 1;
+    ws.hosts[0]
+        .model
+        .activity
+        .get_mut("front")
+        .unwrap()
+        .get_mut("")
+        .unwrap()
+        .age = None;
+    ws.track_activity_times_at(0, end);
+    assert!(
+        ws.activity_entries_at("front", end)[0]
+            .activity
+            .as_ref()
+            .unwrap()
+            .elapsed
+            .is_none()
+    );
+}
+
+#[test]
+fn minute_refresh_is_popup_local_and_preserves_scroll_selection_and_receipts() {
+    use std::time::{Duration, Instant};
+    let _families = rune::text::with_families("Inter", "Inter");
+    let (mut ws, rx) = fixture();
+    let (sender, terminal) = flume::unbounded();
+    framed_terminal(&mut ws, "front", &sender, b"$ ");
+    let note = target(&ws, 1, "s", "done");
+    ws.notified_tabs.insert(note);
+    let start = Instant::now();
+    assert_eq!(ws.refresh_activity_at(start), (false, None));
+    ws.show_activity();
+    let mut rt = runtime_at(ws, (640., 480.));
+    settle(&mut rt);
+    rt.update(|s, _| {
+        s.panel.as_mut().unwrap().activity_refresh = None;
+        assert_eq!(
+            s.refresh_activity_at(start),
+            (false, Some(Duration::from_secs(60)))
+        );
+        assert_eq!(
+            s.refresh_activity_at(start + Duration::from_secs(59)),
+            (false, Some(Duration::from_secs(1)))
+        );
+    });
+    // A genuine nonzero scroll, not just an assertion that zero stayed zero.
+    let scroll = super::pane_verb_tests::rect(&rt, "results-scroll");
+    rt.wheel(scroll[0] + 20., scroll[1] + 20., -180.);
+    settle(&mut rt);
+    let before = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("entry:0"))
+        .unwrap()
+        .scrolled;
+    assert_ne!(before[1], 0.);
+    let selected = rt.state.activity_selection();
+    let done = rt.state.unseen_done.clone();
+    let bells = rt.state.unseen_bells.clone();
+    let notes = rt.state.notified_tabs.clone();
+    for r in &rx {
+        r.drain();
+    }
+    terminal.drain();
+    rt.update(|s, _| {
+        assert_eq!(
+            s.refresh_activity_at(start + Duration::from_secs(60)),
+            (true, Some(Duration::from_secs(60)))
+        );
+        assert!(!s.panel.as_ref().unwrap().reveal);
+    });
+    settle(&mut rt);
+    assert_eq!(
+        rt.elements()
+            .into_iter()
+            .find(|e| e.key.as_deref() == Some("entry:0"))
+            .unwrap()
+            .scrolled,
+        before
+    );
+    assert_eq!(rt.state.activity_selection(), selected);
+    assert_eq!(rt.state.unseen_done, done);
+    assert_eq!(rt.state.unseen_bells, bells);
+    assert_eq!(rt.state.notified_tabs, notes);
+    assert!(rx.iter().all(|r| r.is_empty()) && terminal.is_empty());
+    rt.state.panel = None;
+    assert_eq!(
+        rt.state
+            .refresh_activity_at(start + Duration::from_secs(120)),
+        (false, None)
+    );
+    rt.state
+        .open_panel(PanelKind::Picker(false), "Commands", &[("", "Filter", "")]);
+    assert_eq!(
+        rt.state
+            .refresh_activity_at(start + Duration::from_secs(180)),
+        (false, None)
+    );
+}
+
+#[test]
+fn unknown_time_and_latch_without_done_record_have_no_time_element() {
+    let _families = rune::text::with_families("Inter", "Inter");
+    let (mut ws, _rx) = fixture();
+    ws.hosts[0].model.activity.remove("done");
+    ws.show_activity();
+    assert!(
+        ws.activity_entries_at("", std::time::Instant::now())
+            .iter()
+            .all(|e| e.activity.as_ref().unwrap().elapsed.is_none())
+    );
+    let mut rt = runtime(ws);
+    settle(&mut rt);
+    assert!(!rt.elements().iter().any(|e| {
+        e.text
+            .as_ref()
+            .is_some_and(|t| t == "now" || t.starts_with("reported "))
+    }));
+}
+
+#[test]
+fn a_tab_that_left_a_state_and_returned_between_wakes_shows_the_records_younger_time() {
+    use rex_linux::connection::activity::time::Age;
+    use std::time::{Duration, Instant};
+    let (mut ws, _rx) = fixture();
+    let start = Instant::now();
+    let record = |ws: &mut Workspace, age| {
+        ws.hosts[0]
+            .model
+            .activity
+            .get_mut("blocked")
+            .unwrap()
+            .get_mut("")
+            .unwrap()
+            .age = age;
+    };
+    let time = |ws: &Workspace, now| {
+        ws.activity_entries_at("blocked", now)
+            .remove(0)
+            .activity
+            .unwrap()
+            .elapsed
+            .map(|e| e.text)
+    };
+    record(&mut ws, Some(Age::live(start)));
+    ws.track_activity_times_at(0, start);
+    let later = start + Duration::from_secs(40 * 60);
+    ws.track_activity_times_at(0, later);
+    assert_eq!(time(&ws, later).as_deref(), Some("40m"));
+    // Model wakes coalesce: the agent was answered, worked, and asked again before the
+    // app looked. The tab's state is unchanged, but the record's clock restarted.
+    record(&mut ws, Some(Age::live(later)));
+    ws.track_activity_times_at(0, later);
+    assert_eq!(
+        time(&ws, later).as_deref(),
+        Some("now"),
+        "a question asked seconds ago is not forty minutes old"
+    );
+    // And a record whose age is unknown leaves nothing to show, however old the tab's
+    // own clock is.
+    record(&mut ws, None);
+    ws.track_activity_times_at(0, later);
+    assert_eq!(time(&ws, later), None);
+}
+
+#[test]
+fn one_pane_with_an_unknown_age_keeps_its_tab_from_showing_a_siblings_time() {
+    use rex_linux::connection::activity::time::Age;
+    use std::time::{Duration, Instant};
+    let (mut ws, _rx) = fixture();
+    let start = Instant::now();
+    let now = start + Duration::from_secs(600);
+    let records = ws.hosts[0].model.activity.get_mut("front").unwrap();
+    records.get_mut("").unwrap().age = Some(Age::live(start));
+    ws.track_activity_times_at(0, now);
+    let time = |ws: &Workspace| {
+        ws.activity_entries_at("front", now)
+            .remove(0)
+            .activity
+            .unwrap()
+            .elapsed
+            .map(|e| e.text)
+    };
+    assert_eq!(time(&ws).as_deref(), Some("10m"));
+    // A second Working report in the same tab, with no usable time: it may be older.
+    ws.hosts[0].model.activity.get_mut("front").unwrap().insert(
+        "other".into(),
+        StatusRecord {
+            state: ProgramState::Working,
+            live: true,
+            age: None,
+            ..Default::default()
+        },
+    );
+    ws.track_activity_times_at(0, now);
+    assert_eq!(time(&ws), None);
+}
+
+#[test]
+fn the_app_poll_drives_the_refresh_only_while_the_list_is_open() {
+    use std::time::{Duration, Instant};
+    let (mut ws, rx) = fixture();
+    let mut tx = rune::Tx::default();
+    // The poll's own result folds in other timers, so the deadline is what is checked.
+    // Closed: nothing is armed, and another panel is not this one.
+    crate::app::poll(&mut ws, 0., &mut tx);
+    assert!(ws.panel.is_none());
+    ws.picker(false);
+    crate::app::poll(&mut ws, 0., &mut tx);
+    assert_eq!(ws.panel.as_ref().unwrap().activity_refresh, None);
+    // Open: the poll arms the deadline about a minute out.
+    ws.show_activity();
+    crate::app::poll(&mut ws, 0., &mut tx);
+    let armed = ws.panel.as_ref().unwrap().activity_refresh.expect("armed");
+    assert!(armed > Instant::now() + Duration::from_secs(50));
+    // Not due: the deadline stays where it is.
+    crate::app::poll(&mut ws, 0., &mut tx);
+    assert_eq!(ws.panel.as_ref().unwrap().activity_refresh, Some(armed));
+    // Due: the poll takes it and arms the next one.
+    let due = Instant::now() - Duration::from_secs(1);
+    ws.panel.as_mut().unwrap().activity_refresh = Some(due);
+    assert!(
+        crate::app::poll(&mut ws, 0., &mut tx),
+        "a redraw is asked for"
+    );
+    assert!(ws.panel.as_ref().unwrap().activity_refresh.unwrap() > Instant::now());
+    assert!(rx.iter().all(|rx| rx.is_empty()), "a redraw sends nothing");
 }
