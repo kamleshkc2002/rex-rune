@@ -25,6 +25,7 @@ mod keys;
 mod navigation;
 mod notify;
 mod server_page;
+mod sounds;
 pub use notify::notify_restart_failure;
 mod pane_header;
 mod pane_moves;
@@ -307,10 +308,13 @@ pub fn run(
     let terminal = fonts.terminal;
     let restart = std::sync::Arc::new(std::sync::Mutex::new(None));
     let restart_request = restart.clone();
+    let sounds = sounds::Sounds::default();
+    let sound_shutdown = sounds.shutdown();
     let mut app = app
         .init(move || {
             let mut workspace = Workspace::new(options, settings, path, handle, terminal);
             workspace.restart = restart_request;
+            workspace.sounds = sounds;
             match recovery_notice {
                 Some(StartupNotice::Error(notice)) => workspace.notify(notice),
                 Some(StartupNotice::Info(notice)) => workspace.inform(notice),
@@ -331,6 +335,7 @@ pub fn run(
         app = app.on_frame_encoded(move |f| frames.record(f));
     }
     app.run();
+    sound_shutdown.finish();
     // The window is gone and the workspace with it: every host connection has been told to shut
     // down. Give the host threads a moment to drop their transfers, so a download in flight
     // deletes its partial file before the process ends (the next launch sweeps whatever a host

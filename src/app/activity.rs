@@ -355,7 +355,20 @@ impl Workspace {
             ProgramState::Idle => false,
         };
         // A muted tab stays quiet whatever its programs do.
-        if !config.system_notifications || !wanted || self.tab_muted(index, &window) {
+        if !wanted || self.tab_muted(index, &window) {
+            return;
+        }
+        let desktop = config.system_notifications;
+        // The same news, visibility, mute and event-kind decision feeds both channels, so
+        // a sound is heard for exactly what a notification would be posted for. That
+        // includes the usual way a program finishes: its status record is removed, which
+        // leaves the tab with no record at all (and so nothing marked live).
+        if config.play_sounds
+            && let Some(sound) = super::sounds::Sound::for_state(state)
+        {
+            self.sound_request(super::sounds::Request::Event(sound));
+        }
+        if !desktop {
             return;
         }
         let word = match state {

@@ -210,8 +210,16 @@ fn typing_sound_lists_notifications_and_enter_opens_it() {
     let mut rt = settings(1, (1440., 1000.));
     click(&mut rt, "settings-search");
     type_text(&mut rt, "sound");
-    assert_eq!(hits(&rt), [("Notifications".to_owned(), String::new())]);
+    assert_eq!(
+        hits(&rt),
+        [
+            ("Play sounds".to_owned(), "Notifications".to_owned()),
+            ("Notifications".to_owned(), String::new()),
+        ]
+    );
     assert!(has(&rt, "settings-hit:0"));
+    // The new exact setting hit comes first; still verify opening the page hit.
+    press(&mut rt, Key::Down);
     press(&mut rt, Key::Enter);
     settle(&mut rt);
     assert_eq!(rt.state.settings_page(), SettingsSection::Notifications);
@@ -420,6 +428,10 @@ fn back_and_forward_restore_scroll_and_a_new_visit_discards_forward() {
     settle(&mut rt);
     let page = rect(&rt, "settings-scroll:notifications");
     rt.wheel(page[0] + page[2] / 2., page[1] + page[3] / 2., -110.);
+    settle(&mut rt);
+    assert!(rt.state.settings_nav.offset().get() > 20.);
+    // Keep the pointer-navigation target visible as rows are added above Programs.
+    rt.update(|_, tx| tx.scroll_center("notify-messages"));
     settle(&mut rt);
     let scrolled = rt.state.settings_nav.offset().get();
     assert!(scrolled > 20., "{scrolled}");

@@ -78,6 +78,9 @@ pub enum PaneHeader {
 pub struct NotificationsConfig {
     pub show_in_tabs: bool,
     pub system_notifications: bool,
+    /// Independent local sound channel; updates must never start making noise.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub play_sounds: bool,
     /// Notify when a background tab's programs move into each state.
     pub working: bool,
     pub blocked: bool,
@@ -91,6 +94,7 @@ impl Default for NotificationsConfig {
         Self {
             show_in_tabs: true,
             system_notifications: true,
+            play_sounds: false,
             working: false,
             blocked: true,
             error: true,

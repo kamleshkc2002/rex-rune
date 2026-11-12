@@ -131,6 +131,8 @@ pub struct Workspace {
     pub unseen_bells: HashSet<(HostId, String)>,
     pub activity_epochs: HashMap<HostId, u64>,
     pub notifier: Option<Notifier>,
+    pub sounds: super::sounds::Sounds,
+    pub sound_health: super::sounds::Health,
     /// Notifications headless tests would have sent.
     pub outbox: Vec<Note>,
     pub notification_health: super::notify::Health,
@@ -282,6 +284,8 @@ impl Workspace {
             unseen_bells: HashSet::new(),
             activity_epochs: HashMap::new(),
             notifier: None,
+            sounds: Default::default(),
+            sound_health: Default::default(),
             outbox: Vec::new(),
             notification_health: Default::default(),
             notified_tabs: Default::default(),
@@ -1418,6 +1422,7 @@ impl Workspace {
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);
                 if self.settings_section == SettingsSection::Notifications {
                     self.notification_command(super::notify::Command::Check);
+                    self.sound_request(super::sounds::Request::Check);
                 }
             }
             Intent::Updates => self.open_updates_settings(),
@@ -1858,6 +1863,7 @@ impl Workspace {
         self.recorder = None;
         if section == SettingsSection::Notifications {
             self.notification_command(super::notify::Command::Check);
+            self.sound_request(super::sounds::Request::Check);
         }
         if section == SettingsSection::Shortcuts {
             self.reload_shortcuts();

@@ -14,6 +14,8 @@
 
 ### Added
 
+- **Activity sounds (partial M3.4):** optional sounds for unseen, unmuted tabs that need you, fail or finish, off by default and independent of desktop notifications. Bursts choose one most-pressing sound. Settings → Notifications offers Play and quiet playback health; uses installed freedesktop sound players, with no bundled audio. See [checks and limits](docs/parity-2026-11/M3.4-sounds.md).
+
 - **Session activity in the switcher (partial M3.2):** the Switch session list shows the same word a sidebar session row does for a session whose tabs are out of sight (a needs-you word, Error, Bell or Paused, an unseen Done), so it can be read with the sidebar closed. The session on screen, muted tabs and the Activity in tabs switch keep it quiet; the word stays beside Rename and Close on the highlighted row. Nothing is sent to a server and nothing is marked seen. A host that is not connected no longer shows a word on its sidebar or switcher rows, matching the Activity list and chip. The identity chip itself is unchanged: the toolbar activity chip already counts what needs you. See [checks and limits](docs/parity-2026-11/M3.2-session-words.md).
 
 - **Recently used paths (partial M3.1):** Insert path and Go to directory offer the last ten paths used on each saved host, shared by its sessions on this computer. Settings → Terminal → Show recently used paths is on by default; turning it off forgets the lists. Choosing a recent still only pastes, never presses Enter or checks that the path exists. See [checks and limits](docs/parity-2026-11/M3.1-recent-paths.md).

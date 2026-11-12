@@ -336,6 +336,9 @@ fn notify_switch(key: &str, label: &str, on: bool, disabled: bool, field: Field)
         .on_toggle(move |s: &mut Workspace| {
             let value = field(&mut s.settings.notifications);
             *value = !*value;
+            if !s.settings.notifications.play_sounds {
+                s.sound_request(super::sounds::Request::Cancel);
+            }
             s.save();
         })
         .build(kit())
@@ -409,13 +412,35 @@ fn notifications(s: &Workspace) -> El {
                         |n| &mut n.system_notifications,
                     ),
                 ),
+                setting(
+                    "Play sounds",
+                    s.sound_health.text(),
+                    row()
+                        .gap(8.)
+                        .center_y()
+                        .child(button("sound-test", "Play", Pill::Neutral, |s, _| {
+                            s.sound_request(super::sounds::Request::Test);
+                        }))
+                        .child(notify_switch(
+                            "notify-sounds",
+                            "Play sounds",
+                            n.play_sounds,
+                            false,
+                            |n| &mut n.play_sounds,
+                        )),
+                ),
             ])],
         ),
         section(
             "Notify when a program",
             [card(states.into_iter().map(
                 |(key, label, detail, on, field)| {
-                    setting(label, detail, notify_switch(key, label, on, off, field))
+                    let disabled = off && (key == "notify-working" || !n.play_sounds);
+                    setting(
+                        label,
+                        detail,
+                        notify_switch(key, label, on, disabled, field),
+                    )
                 },
             ))],
         ),
