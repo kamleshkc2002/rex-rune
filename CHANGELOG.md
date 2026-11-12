@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- **Header fading (partial M2.7):** two default-off Interface → Panes switches fade header names and available buttons on inactive panes or in inactive windows. Activity, progress, exceptions and terminal content stay unchanged; no server/layout/ownership change from preferences. Focus follows mouse remains deferred. See [checks and limits](docs/parity-2026-11/M2.7-header-fading.md).
+
 ## 0.7.3 - 2026-11-11
 
 Toolbar visibility, terminal display and selection controls, font picker and metrics, and pane padding and active-pane outline preferences.

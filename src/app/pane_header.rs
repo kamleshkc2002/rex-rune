@@ -39,6 +39,21 @@ pub const UNAVAILABLE: f32 = 0.35;
 /// Below this width a header keeps Zoom and Close only; the pane menu has the splits.
 const ROOMY: f32 = 200.;
 
+/// Gentle extra fading, not the disabled-button cue. Hover restores enabled icons.
+pub const FADE: f32 = 0.85;
+
+/// Only the name and ordinary enabled icons use this; never a header/container opacity.
+pub fn header_opacity(s: &Workspace, block: &str) -> f32 {
+    let i = &s.settings.interface;
+    if (i.fade_inactive_pane_headers && s.focused_block().as_deref() != Some(block))
+        || (i.fade_pane_headers_in_inactive_window && !s.window_focused)
+    {
+        FADE
+    } else {
+        1.
+    }
+}
+
 /// Headers brought out without a setting change. Never saved.
 #[derive(Default)]
 pub struct Reveal {
@@ -137,11 +152,11 @@ fn button(
     icon: &'static Icon,
     label: &str,
     help: String,
-    lit: bool,
+    tone: (rune::Color, f32),
     destructive: bool,
     action: Option<(String, PaneAction)>,
 ) -> El {
-    let rest = rgb(muted()).alpha(if lit { 1. } else { 0.7 });
+    let (rest, fade) = tone;
     let b = row()
         .key(key)
         .role("button")
@@ -170,11 +185,13 @@ fn button(
             }
             tx.blur();
         })
-        .child(glyph(icon, ICON, rest).group_color(rgb(ink())))
+        .child(glyph(icon, ICON, rest.alpha(rest.a * fade)).group_color(rgb(ink())))
 }
 
 /// The buttons at a header's trailing end. `lit` is the focused pane's header.
 pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: bool) -> El {
+    let rest = rgb(muted()).alpha(if lit { 1. } else { 0.7 });
+    let fade = header_opacity(s, block);
     let hint = |label: &str, action: &str, args: Value| {
         let keys = s.shortcut_detail(action, &args);
         if keys.is_empty() {
@@ -192,7 +209,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
                 &SPLIT_RIGHT,
                 "Split right",
                 hint("Split right", "pane.split", json!({"direction": "right"})),
-                lit,
+                (rest, fade),
                 false,
                 on(PaneAction::Split(SplitWay::Right)),
             ))
@@ -201,7 +218,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
                 &SPLIT_DOWN,
                 "Split down",
                 hint("Split down", "pane.split", json!({"direction": "down"})),
-                lit,
+                (rest, fade),
                 false,
                 on(PaneAction::Split(SplitWay::Down)),
             ));
@@ -212,7 +229,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
             &RESTORE,
             "Restore pane",
             hint("Restore pane", "pane.zoom", Value::Null),
-            lit,
+            (rest, fade),
             false,
             on(PaneAction::Zoom),
         )
@@ -223,7 +240,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
             &ZOOM,
             "Zoom pane",
             "Zoom pane · this tab has one pane".into(),
-            lit,
+            (rest, fade),
             false,
             None,
         )
@@ -233,7 +250,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
             &ZOOM,
             "Zoom pane",
             hint("Zoom pane", "pane.zoom", Value::Null),
-            lit,
+            (rest, fade),
             false,
             on(PaneAction::Zoom),
         )
@@ -243,7 +260,7 @@ pub fn actions(s: &Workspace, window: &Window, block: &str, width: f32, lit: boo
         &CLOSE,
         "Close pane",
         hint("Close pane…", "pane.close", Value::Null),
-        lit,
+        (rest, fade),
         true,
         on(PaneAction::Close),
     ))

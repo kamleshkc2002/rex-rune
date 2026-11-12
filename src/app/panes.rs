@@ -107,6 +107,7 @@ fn header(
     let menu_id = block.to_owned();
     let h = row()
         .key(format!("pane-header:{block}"))
+        .hover_group()
         .w_full()
         .h(CARD_HEADER)
         .pl(14.)
@@ -129,8 +130,13 @@ fn header(
         })
         .child(
             text(label.clone())
+                .key(format!("pane-name:{block}"))
                 .font(medium(11.5))
-                .color(rgb(if focused { ink() } else { muted() }))
+                .color(
+                    rgb(if focused { ink() } else { muted() })
+                        .alpha(pane_header::header_opacity(s, block)),
+                )
+                .group_color(rgb(if focused { ink() } else { muted() }))
                 .truncate()
                 .help_when_truncated(label)
                 .shrink(),

@@ -14,6 +14,8 @@ mod downloads_tests;
 mod find_tests;
 #[path = "font_settings_tests.rs"]
 mod font_settings_tests;
+#[path = "header_fading_tests.rs"]
+mod header_fading_tests;
 #[path = "menu_tests.rs"]
 mod menu_tests;
 #[path = "navigation_tests.rs"]

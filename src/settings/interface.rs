@@ -23,6 +23,9 @@ pub struct InterfaceConfig {
     /// None follows density: Comfortable cards are outlined, Compact panes are not.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_active_pane: Option<bool>,
+    /// Local header name and enabled-button fading only; never terminal content.
+    pub fade_inactive_pane_headers: bool,
+    pub fade_pane_headers_in_inactive_window: bool,
 }
 
 impl InterfaceConfig {
@@ -139,6 +142,41 @@ mod tests {
             back.step_padding(false, -1.);
             back.step_padding(true, 1.);
             assert_eq!(back.padding(), (0., 32.));
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn header_fading_defaults_serde_and_save_load() {
+        for value in [
+            json!({}),
+            json!({"interface": {}}),
+            json!({
+                "pane_padding": 12, "interface": {"highlight_active_pane": true}
+            }),
+        ] {
+            let settings: Settings = serde_json::from_value(value).unwrap();
+            assert!(!settings.interface.fade_inactive_pane_headers);
+            assert!(!settings.interface.fade_pane_headers_in_inactive_window);
+        }
+        let path =
+            std::env::temp_dir().join(format!("rex-header-fade-{}.json", std::process::id()));
+        for pane in [false, true] {
+            for window in [false, true] {
+                let mut settings = Settings::default();
+                settings.interface.fade_inactive_pane_headers = pane;
+                settings.interface.fade_pane_headers_in_inactive_window = window;
+                let encoded = serde_json::to_value(&settings).unwrap();
+                assert_eq!(encoded["interface"]["fade_inactive_pane_headers"], pane);
+                assert_eq!(
+                    encoded["interface"]["fade_pane_headers_in_inactive_window"],
+                    window
+                );
+                let back: Settings = serde_json::from_value(encoded).unwrap();
+                assert_eq!(back.interface, settings.interface);
+                settings.save(&path).unwrap();
+                assert_eq!(Settings::load(&path).unwrap().interface, settings.interface);
+            }
         }
         std::fs::remove_file(path).unwrap();
     }

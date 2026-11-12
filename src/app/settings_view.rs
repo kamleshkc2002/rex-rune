@@ -13,7 +13,8 @@ use super::{
     workspace::Workspace,
 };
 use rex_linux::settings::{
-    NoticePosition, NotificationsConfig, PaneDensity, PaneHeader, interface::ToolbarBehavior,
+    NoticePosition, NotificationsConfig, PaneDensity, PaneHeader,
+    interface::{InterfaceConfig, ToolbarBehavior},
 };
 use rune::{El, KeyEvent, PointerButton, ScrollPos, ScrollSpec, Tx, col, el, row, text};
 use rune_kit::Switch;
@@ -34,6 +35,24 @@ const TOOLBARS: [ToolbarBehavior; 3] = [
     ToolbarBehavior::OnHover,
     ToolbarBehavior::Hidden,
 ];
+
+fn header_fade_switch(
+    key: &str,
+    label: &str,
+    on: bool,
+    field: fn(&mut InterfaceConfig) -> &mut bool,
+) -> El {
+    Switch::new(on)
+        .label(label.to_owned())
+        .hide_label()
+        .on_toggle(move |s: &mut Workspace| {
+            let value = field(&mut s.settings.interface);
+            *value = !*value;
+            s.save();
+        })
+        .build(kit())
+        .key(key.to_owned())
+}
 
 fn interface(s: &Workspace) -> El {
     let k = kit();
@@ -102,68 +121,93 @@ fn interface(s: &Workspace) -> El {
         ),
         section(
             "Panes",
-            [card([
-                setting(
-                    "Pane density",
-                    "Compact joins panes edge to edge, with no gaps.",
-                    segmented(
-                        "pane-density",
-                        &[
-                            Segment::new("Compact").icon(&PANES_JOINED),
-                            Segment::new("Comfortable").icon(&PANES_APART),
-                        ],
-                        Some(usize::from(
-                            s.settings.pane_density == PaneDensity::Comfortable,
-                        )),
+            [
+                card([
+                    setting(
+                        "Pane density",
+                        "Compact joins panes edge to edge, with no gaps.",
+                        segmented(
+                            "pane-density",
+                            &[
+                                Segment::new("Compact").icon(&PANES_JOINED),
+                                Segment::new("Comfortable").icon(&PANES_APART),
+                            ],
+                            Some(usize::from(
+                                s.settings.pane_density == PaneDensity::Comfortable,
+                            )),
+                            |s, i, tx| {
+                                s.settings.pane_density = if i == 0 {
+                                    PaneDensity::Compact
+                                } else {
+                                    PaneDensity::Comfortable
+                                };
+                                s.save();
+                                tx.instant();
+                            },
+                        ),
+                    ),
+                    select_row(
+                        "pane-header",
+                        "Pane headers",
+                        "Auto shows them on split panes in Comfortable density.",
+                        &["Auto", "Always", "On hover", "Hidden"],
+                        PANE_HEADERS
+                            .iter()
+                            .position(|h| *h == s.settings.pane_header)
+                            .unwrap_or_default(),
                         |s, i, tx| {
-                            s.settings.pane_density = if i == 0 {
-                                PaneDensity::Compact
-                            } else {
-                                PaneDensity::Comfortable
+                            s.settings.pane_header = PANE_HEADERS[i.min(PANE_HEADERS.len() - 1)];
+                            // A header that was brought out by hand goes back with the old choice.
+                            s.header_reveal = Default::default();
+                            s.save();
+                            tx.instant();
+                        },
+                    ),
+                    select_row(
+                        "active-pane-outline",
+                        "Active pane outline",
+                        "Auto follows density. A single edge-to-edge pane has no outline.",
+                        &["Auto", "On", "Off"],
+                        match s.settings.interface.highlight_active_pane {
+                            None => 0,
+                            Some(true) => 1,
+                            Some(false) => 2,
+                        },
+                        |s, i, tx| {
+                            s.settings.interface.highlight_active_pane = match i {
+                                1 => Some(true),
+                                2 => Some(false),
+                                _ => None,
                             };
                             s.save();
                             tx.instant();
                         },
                     ),
+                    setting(
+                        "Fade inactive pane headers",
+                        "For panes without the keyboard.",
+                        header_fade_switch(
+                            "fade-inactive-headers",
+                            "Fade inactive pane headers",
+                            s.settings.interface.fade_inactive_pane_headers,
+                            |i| &mut i.fade_inactive_pane_headers,
+                        ),
+                    ),
+                    setting(
+                        "Fade headers in inactive windows",
+                        "While this window is not focused.",
+                        header_fade_switch(
+                            "fade-headers-inactive-window",
+                            "Fade headers in inactive windows",
+                            s.settings.interface.fade_pane_headers_in_inactive_window,
+                            |i| &mut i.fade_pane_headers_in_inactive_window,
+                        ),
+                    ),
+                ]),
+                footnote(
+                    "Only visible header names and available buttons fade. Activity, progress, exceptions and terminal content stay unchanged.",
                 ),
-                select_row(
-                    "pane-header",
-                    "Pane headers",
-                    "Auto shows them on split panes in Comfortable density.",
-                    &["Auto", "Always", "On hover", "Hidden"],
-                    PANE_HEADERS
-                        .iter()
-                        .position(|h| *h == s.settings.pane_header)
-                        .unwrap_or_default(),
-                    |s, i, tx| {
-                        s.settings.pane_header = PANE_HEADERS[i.min(PANE_HEADERS.len() - 1)];
-                        // A header that was brought out by hand goes back with the old choice.
-                        s.header_reveal = Default::default();
-                        s.save();
-                        tx.instant();
-                    },
-                ),
-                select_row(
-                    "active-pane-outline",
-                    "Active pane outline",
-                    "Auto follows density. A single edge-to-edge pane has no outline.",
-                    &["Auto", "On", "Off"],
-                    match s.settings.interface.highlight_active_pane {
-                        None => 0,
-                        Some(true) => 1,
-                        Some(false) => 2,
-                    },
-                    |s, i, tx| {
-                        s.settings.interface.highlight_active_pane = match i {
-                            1 => Some(true),
-                            2 => Some(false),
-                            _ => None,
-                        };
-                        s.save();
-                        tx.instant();
-                    },
-                ),
-            ])],
+            ],
         ),
         section(
             "Sidebar and tabs",

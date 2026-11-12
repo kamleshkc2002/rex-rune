@@ -398,6 +398,9 @@ fn disclosure_rows_and_segments_work_from_the_keyboard() {
         "segmented controls share both edges: {density:?} {tabs:?}"
     );
     assert!(!rt.state.settings.vertical_tabs);
+    // Panes includes two fading switches; the following group may now be below the fold.
+    rt.update(|_, tx| tx.scroll_center("tab-position"));
+    settle(&mut rt);
     let sidebar = rt
         .elements()
         .into_iter()
