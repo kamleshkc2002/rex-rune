@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.7.4 - 2026-11-11
+
+One-click updates for eligible installer users, optional header fading, toolbar tab fill, and configurable tab icons with a preview.
+
 ### Added
 
 - **Tab icons (partial M2.8):** **Show tab icons** in Interface → Sidebar and tabs saves a 0–5 count with a small live preview. The default preserves the existing single monochrome icon; additional icons use distinct cached pane programs, focused first, in toolbar and sidebar tabs. **Use colour for tab icons** adds Always / Active pane / Active tab / Never (default Never), tinting only the existing glyphs with an inert active/inactive preview. Shell-theme styling remains deferred. See [count checks](docs/parity-2026-11/M2.8-tab-icons.md) and [colour checks and limits](docs/parity-2026-11/M2.8-tab-icon-colours.md).
