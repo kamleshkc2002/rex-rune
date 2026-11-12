@@ -117,20 +117,25 @@ fn merge(
     records
 }
 
+/// Background reads in flight at once, layout reads included (at most one of those).
+/// More than one shortens the pass on a slow link, where each read waits a round trip;
+/// starts stay paced, and the host loop's other work still comes first.
+pub(super) const IN_FLIGHT: usize = 3;
+
 #[derive(Default)]
 pub(super) struct Reader {
-    read: Option<Read>,
+    reads: Vec<Read>,
 }
 
 struct Read {
     session: String,
     block: String,
     reply: oneshot::Receiver<String>,
-    deadline: Instant,
+    deadline: std::pin::Pin<Box<tokio::time::Sleep>>,
 }
 impl Reader {
-    pub fn in_flight(&self) -> bool {
-        self.read.is_some()
+    pub fn in_flight(&self) -> usize {
+        self.reads.len()
     }
 
     pub async fn start(
@@ -146,32 +151,43 @@ impl Reader {
                 json!({"session_id":session,"block_id":block,"args":{}}),
             )
             .await?;
-        self.read = Some(Read {
+        self.reads.push(Read {
             session,
             block,
             reply,
-            deadline: Instant::now() + Duration::from_secs(8),
+            deadline: Box::pin(tokio::time::sleep_until(tokio::time::Instant::from_std(
+                Instant::now() + Duration::from_secs(8),
+            ))),
         });
         Ok(())
     }
 
-    /// Cancel-safe bounded wait; the control socket continues receiving in the host loop.
+    /// The first read to answer or to run out of time. Cancel-safe: a read is taken out
+    /// only in the poll that returns it. The control socket keeps receiving in the host
+    /// loop meanwhile.
     pub async fn finished(&mut self) -> (String, String, Option<Value>) {
-        let Some(read) = &mut self.read else {
+        use std::{future::Future, pin::Pin, task::Poll};
+        if self.reads.is_empty() {
             return std::future::pending().await;
-        };
-        let text = tokio::time::timeout_at(
-            tokio::time::Instant::from_std(read.deadline),
-            &mut read.reply,
-        )
-        .await
-        .ok()
-        .and_then(Result::ok);
+        }
+        let (index, text) = std::future::poll_fn(|cx| {
+            for (index, read) in self.reads.iter_mut().enumerate() {
+                // The reply first: one that arrived is not lost to its deadline.
+                if let Poll::Ready(reply) = Pin::new(&mut read.reply).poll(cx) {
+                    return Poll::Ready((index, reply.ok()));
+                }
+                if read.deadline.as_mut().poll(cx).is_ready() {
+                    return Poll::Ready((index, None));
+                }
+            }
+            Poll::Pending
+        })
+        .await;
+        let read = self.reads.remove(index);
         let payload = text
             .and_then(|text| serde_json::from_str::<Value>(&text).ok())
             .filter(|v| v["error"].is_null() && v["payload"].is_object())
             .map(|mut v| v["payload"].take());
-        let read = self.read.take().expect("status in flight");
         (read.session, read.block, payload)
     }
 }
@@ -232,15 +248,60 @@ mod tests {
     async fn a_silent_read_expires_and_a_late_reply_has_no_receiver() {
         let (sender, reply) = oneshot::channel();
         let mut reader = Reader {
-            read: Some(Read {
+            reads: vec![Read {
                 session: "s".into(),
                 block: "b".into(),
                 reply,
-                deadline: Instant::now(),
-            }),
+                deadline: Box::pin(tokio::time::sleep_until(tokio::time::Instant::now())),
+            }],
         };
         assert_eq!(reader.finished().await, ("s".into(), "b".into(), None));
-        assert!(!reader.in_flight());
+        assert_eq!(reader.in_flight(), 0);
         assert!(sender.send("late".into()).is_err());
+    }
+
+    #[tokio::test]
+    async fn reads_finish_in_the_order_they_answer_and_each_once() {
+        let far = || {
+            Box::pin(tokio::time::sleep_until(
+                tokio::time::Instant::now() + Duration::from_secs(60),
+            ))
+        };
+        let mut senders = Vec::new();
+        let mut reader = Reader::default();
+        for block in ["a", "b", "c"] {
+            let (sender, reply) = oneshot::channel();
+            senders.push(sender);
+            reader.reads.push(Read {
+                session: "s".into(),
+                block: block.into(),
+                reply,
+                deadline: far(),
+            });
+        }
+        // Nothing answered: waiting is cancel-safe and takes nothing out.
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), reader.finished())
+                .await
+                .is_err()
+        );
+        assert_eq!(reader.in_flight(), 3);
+        let answer = |block: &str| {
+            json!({"type":"response","id":"x","payload":{"records":[{"id":block,"state":"blocked"}]}})
+                .to_string()
+        };
+        // The last one sent answers first, then the first; the middle one never does.
+        let c = senders.pop().unwrap();
+        c.send(answer("c")).unwrap();
+        let (_, block, reply) = reader.finished().await;
+        assert_eq!(block, "c");
+        assert_eq!(reply.unwrap()["records"][0]["id"], "c");
+        senders.remove(0).send(answer("a")).unwrap();
+        assert_eq!(reader.finished().await.1, "a");
+        assert_eq!(reader.in_flight(), 1);
+        drop(senders);
+        // Its sender gone (the connection's transport dropped it): a failed read.
+        assert_eq!(reader.finished().await, ("s".into(), "b".into(), None));
+        assert_eq!(reader.in_flight(), 0);
     }
 }

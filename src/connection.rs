@@ -511,11 +511,10 @@ struct ControlState {
     queried: HashSet<String>,
     status_queried: HashSet<String>,
     status_failed: HashSet<String>,
-    /// The block whose background status read is out, and the record ids removed live
-    /// meanwhile: a detached reply is handled after events that arrived behind it, so
-    /// the read must not bring those records back.
-    status_reading: Option<String>,
-    status_removed: HashSet<String>,
+    /// The blocks whose background status reads are out, each with the record ids removed
+    /// live meanwhile: a detached reply is handled after events that arrived behind it,
+    /// so the read must not bring those records back.
+    status_reading: HashMap<String, HashSet<String>>,
     /// Sessions whose initial background session.view was attempted (including failures).
     viewed: HashSet<String>,
     /// Unplaced sessions a live report arrived for: their layout is read next, ahead of
@@ -1337,9 +1336,9 @@ async fn handle_event(
                 return Ok(());
             };
             if let BlockEvent::StatusRemoved { ids } = &change
-                && state.status_reading.as_deref() == Some(block.as_str())
+                && let Some(removed) = state.status_reading.get_mut(&block)
             {
-                state.status_removed.extend(ids.iter().cloned());
+                removed.extend(ids.iter().cloned());
             }
             let unplaced = {
                 let m = shared.model.lock().expect("host model");
@@ -1531,13 +1530,19 @@ async fn run_host(
                     state.performs_since = None;
                 }
                 let next = status_sweep::next(shared, &state);
-                status_sweep::coverage(shared, &state, next.is_some() || sweep.in_flight() || prefetch.in_flight());
-                let due = if sweep.in_flight() || prefetch.in_flight() {
-                    None
-                } else if next.is_some() {
-                    Some(Instant::now())
-                } else {
-                    prefetch.due(&shared.model.lock().expect("host model"), Instant::now())
+                let out = sweep.in_flight() + usize::from(prefetch.in_flight());
+                status_sweep::coverage(shared, &state, next.is_some() || out > 0);
+                // A few reads at once, at most one of them a layout; starts stay paced.
+                let room = out < status_sweep::IN_FLIGHT;
+                let due = match &next {
+                    Some(status_sweep::Work::Status(..)) => room.then(Instant::now),
+                    Some(status_sweep::Work::View(_)) => {
+                        (room && !prefetch.in_flight()).then(Instant::now)
+                    }
+                    None if room => {
+                        prefetch.due(&shared.model.lock().expect("host model"), Instant::now())
+                    }
+                    None => None,
                 };
                 tokio::select! {
                     _ = expiry.tick() => {
@@ -1549,8 +1554,7 @@ async fn run_host(
                         match next {
                             Some(status_sweep::Work::Status(session, block)) => {
                                 state.status_queried.insert(block.clone());
-                                state.status_reading = Some(block.clone());
-                                state.status_removed.clear();
+                                state.status_reading.insert(block.clone(), HashSet::new());
                                 sweep.start(&mut control, session, block).await?;
                             }
                             work => {
@@ -1592,9 +1596,8 @@ async fn run_host(
                             }
                         }
                     }
-                    (session, block, reply) = sweep.finished(), if sweep.in_flight() => {
-                        state.status_reading = None;
-                        let removed = std::mem::take(&mut state.status_removed);
+                    (session, block, reply) = sweep.finished(), if sweep.in_flight() > 0 => {
+                        let removed = state.status_reading.remove(&block).unwrap_or_default();
                         status_sweep::record(shared, &mut state, &session, &block, reply, &removed);
                     }
                     reply = server_reads.finished(), if server_reads.in_flight() => server_info::record(shared, reply),

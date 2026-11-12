@@ -122,12 +122,44 @@ async fn sweep_refusals_are_not_retried_and_slow_status_does_not_block_commands(
         .await;
         let slow = status(&mut ws, OTHER, "slow").await;
         sent.send(()).unwrap();
-        answer_request(&mut ws).await;
+        // The slow read stays out. Meanwhile an ordinary request and its refresh are
+        // answered, and the pass goes on to the next pane and the next session without
+        // waiting for it. Those arrive in whatever order their timing gives.
+        let (mut refused, mut third, mut answered) = (None, None, 0);
+        while refused.is_none() || third.is_none() || answered < 2 {
+            let request = next(&mut ws).await;
+            let detached = request["id"].as_str().unwrap().starts_with("detached:");
+            match request["method"].as_str().unwrap() {
+                "session.focus_window" => {
+                    reply(&mut ws, &request, 3, json!({})).await;
+                    answered += 1;
+                }
+                "session.view" if !detached => {
+                    assert_eq!(request["payload"]["session_id"], SESSION);
+                    reply(
+                        &mut ws,
+                        &request,
+                        3,
+                        json!({"session_id":SESSION,"revision":2}),
+                    )
+                    .await;
+                    answered += 1;
+                }
+                "session.view" => {
+                    assert_eq!(request["payload"]["session_id"], THIRD);
+                    assert!(third.replace(request).is_none(), "one layout read");
+                }
+                method => {
+                    assert_eq!(method, format!("{}.program_status", activity::TERMINAL));
+                    assert_eq!(request["payload"]["block_id"], "refused");
+                    assert!(refused.replace(request).is_none(), "one status read");
+                }
+            }
+        }
         reply(&mut ws, &slow, 4, json!({"records":[]})).await;
-        let refused = status(&mut ws, OTHER, "refused").await;
-        send(&mut ws, json!({"type":"response","id":refused["id"],"error":{"code":"not_supported","message":"no","status":400}})).await;
-        let refused = prefetched(&mut ws, THIRD).await;
-        send(&mut ws, json!({"type":"response","id":refused["id"],"error":{"code":"not_supported","message":"no","status":400}})).await;
+        for request in [refused.unwrap(), third.unwrap()] {
+            send(&mut ws, json!({"type":"response","id":request["id"],"error":{"code":"not_supported","message":"no","status":400}})).await;
+        }
         sent.send(()).unwrap();
         // A later ordinary command does not restart either failed sweep read.
         answer_request(&mut ws).await;
@@ -312,6 +344,77 @@ async fn a_live_report_for_an_unreached_session_reads_its_layout_next_and_stays_
         // Both layouts are held for activity only: neither session was opened.
         assert!(m.background_views.contains(OTHER) && m.background_views.contains(THIRD));
         assert!(!m.background_views.contains(SESSION));
+    }
+    drop(host);
+    server.await.unwrap();
+}
+
+#[tokio::test]
+async fn three_reads_are_out_at_once_never_four_and_a_removal_goes_to_its_own_pane() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let mut ws = accept(&listener, "rex.control.v1").await;
+        welcome(&mut ws, 13).await;
+        let request = recv(&mut ws).await;
+        reply(&mut ws, &request, 1, boot_with(&[OTHER])).await;
+        let request = prefetched(&mut ws, OTHER).await;
+        reply(
+            &mut ws,
+            &request,
+            2,
+            terminal_view(OTHER, &["a", "b", "c", "d"]),
+        )
+        .await;
+        // Three panes are asked about without any answer; the fourth waits for room.
+        let a = status(&mut ws, OTHER, "a").await;
+        let b = status(&mut ws, OTHER, "b").await;
+        let c = status(&mut ws, OTHER, "c").await;
+        assert!(
+            tokio::time::timeout(Duration::from_millis(250), recv(&mut ws))
+                .await
+                .is_err(),
+            "a fourth read went out with three unanswered"
+        );
+        // One pane's record is removed while all three reads are out. The answers then
+        // come back out of order, after the removal.
+        send(
+            &mut ws,
+            block_event(3, OTHER, "b", "program_status_removed", json!({"ids":[""]})),
+        )
+        .await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let blocked = json!({"records":[{"id":"","state":"blocked"}]});
+        for (request, seq) in [(&c, 4), (&b, 5)] {
+            reply(&mut ws, request, seq, blocked.clone()).await;
+        }
+        // Room again: the fourth pane is read while the first is still out.
+        let d = status(&mut ws, OTHER, "d").await;
+        reply(&mut ws, &d, 6, json!({"records":[]})).await;
+        reply(&mut ws, &a, 7, blocked).await;
+        assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
+    });
+    let host = HostConnection::spawn(endpoint, None, None, None, false, None);
+    until(&host, |m| {
+        m.views.contains_key(OTHER) && !m.activity_reading
+    })
+    .await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    {
+        let m = host.model.lock().unwrap();
+        for block in ["a", "c"] {
+            assert_eq!(
+                m.activity[block][""].state,
+                activity::ProgramState::Blocked,
+                "{block}"
+            );
+        }
+        assert!(
+            !m.activity.contains_key("b"),
+            "the removal belongs to b alone"
+        );
+        assert!(!m.activity.contains_key("d"));
+        assert!(!m.activity_incomplete);
     }
     drop(host);
     server.await.unwrap();
