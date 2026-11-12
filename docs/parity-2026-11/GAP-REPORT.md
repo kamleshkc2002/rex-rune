@@ -1257,7 +1257,7 @@ The first milestone. Everything is client-side, uses API calls the vendored SDK 
 
 **M2.9 Theme thumbnails and a library page (M).** Scope: `theme_swatch` (112 x 88, `Aa`, `~/` chip, cursor pill, eight dots), a Themes section with Default, Built-in, Custom and Ghostty groups as a searchable wrapped grid (not a 600-item strip), selection ring, a four-dot strip in switcher rows. Files: new `themes_view.rs`, `terminal_theme.rs`, `settings_view.rs`. Depends on: M2.4. Acceptance: each card shows Aa, chip, pill and eight dots; scrolling 600 themes stays smooth. Closes: d2 TH01 (partly), TH05, TH06, d5 d5-68.
 
-**M2.10 Generated titles (M).** Scope: `generated_titles` setting; tab and pane title from program plus directory (`terminal.process`, `pwd`) when the shell title is the default; names the user gave and program-set titles still win. Files: `connection/activity.rs:232`, `toolbar.rs`, `panes.rs`, `settings.rs`. Acceptance: a tab running `vim` in `~/rex` reads `vim - ~/rex`; a renamed tab keeps its name. Closes: d3 T80.
+**M2.10 Generated titles (M).** Scope: `generated_titles` setting; tab and pane title from program plus directory (`terminal.process`, `pwd`) when the shell title is the default; names the user gave and program-set titles still win. Files: `connection/activity.rs:232`, `toolbar.rs`, `panes.rs`, `settings.rs`. Acceptance: a tab running `vim` in `~/rex` reads `vim - ~/rex`; a renamed tab keeps its name. Closes: d3 T80. **Implemented, unreleased:** standalone title resolver and Terminal-page switch, default off for existing settings; [behavior, fork adaptation and verification](generated-titles.md).
 
 ### M3. New surfaces on existing server API (L, no blocker)
 

@@ -138,6 +138,12 @@ Lily's scrolling branch is wholly reachable from her master, so shared commits a
 | kitten-lily | [`e989e84`](https://github.com/kitten-lily/rex-rune/commit/e989e8431066c1c4e8d3c59b8f642cac1b6fba16) | Sync upstream master | **skip** — Merge/sync bookkeeping; evaluate its constituent commits below rather than importing fork history or reverting upstream. |
 | nivox | [`8037d78`](https://github.com/nivox/rex-rune/commit/8037d7859944f8588cfb87f9aaebea497f48043b) | add configurable shortcuts | **skip** — Already adapted into Phase 6 (#7): Rex client.keymap layers, registry, sequences, local overrides and legacy import. Replacing it would regress host bindings/API 12 behavior. |
 
+## Later focused harvest: generated titles (M2.10)
+
+Reviewed [ohporter/rex-rune `e94fe1da4725b80a412c27be6fd01a00c1ec1caa`](https://github.com/ohporter/rex-rune/commit/e94fe1da4725b80a412c27be6fd01a00c1ec1caa) from `linux-enhancements` on the `00c07aa` baseline. **Adapt**, not cherry-pick: retain its untitled-pane program/directory fallback, home retention across process events, and renamed-pane protection, under the M2.10 preference and shared pane/tab resolver preserved in `cc8bdad`. Credit the source commit's author, **Matt Porter <mporter@konsulko.com>**, in the commit trailer and CHANGELOG.
+
+Concrete differences: M2.10 requires `vim - ~/rex`, not `Vim ~/rex`, and the same name on tabs and panes. Keep the foreground process name rather than the fork's marketing-name/status-app mapping. Keep home per terminal (the API defines it per terminal's inherited environment), not once per host; the fork's host-wide cache cannot represent two terminals with different HOME values. Read process metadata once per selected-session block with a one-second bound; do not repeatedly probe while home is missing. The fork's dependency on `block_program` and its pane-only behavior are not imported. No icon/header/tray, font or settings-navigation work is included. [Verification and remaining limits](parity-2026-11/generated-titles.md).
+
 ## Delivery and verification
 
 Two independent branches from the baseline, not a stacked fork merge:

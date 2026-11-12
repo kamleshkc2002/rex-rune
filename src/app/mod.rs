@@ -37,6 +37,7 @@ mod stats;
 mod tabs;
 mod term;
 mod theme;
+mod titles;
 mod toolbar;
 mod updates;
 mod upload;

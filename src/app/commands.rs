@@ -980,7 +980,9 @@ impl Workspace {
         let model = self.model();
         let subject = match group {
             Group::Session => self.session_on_screen().map(|s| s.label),
-            Group::Tab => model.window().map(|w| super::activity::tab_name(model, w)),
+            Group::Tab => model
+                .window()
+                .map(|w| super::activity::tab_name(model, w, self.generated_titles())),
             Group::Pane => self
                 .panel
                 .as_ref()

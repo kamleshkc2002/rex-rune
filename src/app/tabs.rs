@@ -85,7 +85,11 @@ impl Workspace {
             window: window.to_owned(),
             name: String::new(),
         };
-        target.name = tab_name(&self.hosts[host].model, self.tab_window(&target)?);
+        target.name = tab_name(
+            &self.hosts[host].model,
+            self.tab_window(&target)?,
+            self.generated_titles(),
+        );
         Some(target)
     }
 

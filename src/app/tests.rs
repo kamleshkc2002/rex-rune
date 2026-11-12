@@ -32,6 +32,8 @@ mod settings_tests;
 mod shortcuts_page_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
+#[path = "titles_tests.rs"]
+mod titles_tests;
 #[path = "wiring_tests.rs"]
 mod wiring_tests;
 #[path = "workspace_fixes_tests.rs"]

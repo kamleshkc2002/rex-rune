@@ -728,7 +728,11 @@ impl Workspace {
                 })
                 .filter_map(|w| {
                     let id = w.window_id.clone()?;
-                    let title = super::activity::tab_name(&self.hosts[target.host].model, w);
+                    let title = super::activity::tab_name(
+                        &self.hosts[target.host].model,
+                        w,
+                        self.generated_titles(),
+                    );
                     title
                         .to_lowercase()
                         .contains(&lower)
@@ -905,7 +909,7 @@ impl Workspace {
                         view.label.as_deref().unwrap_or("Session")
                     );
                     let mut e = Entry::new(
-                        super::activity::tab_name(model, tab),
+                        super::activity::tab_name(model, tab, self.generated_titles()),
                         "Tab",
                         format!("Tabs · {place}"),
                         Intent::Tab(id.clone()),
