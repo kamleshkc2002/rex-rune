@@ -42,6 +42,8 @@ mod remote_session_tests;
 mod remote_tests;
 #[path = "server_page_tests.rs"]
 mod server_page_tests;
+#[path = "session_word_tests.rs"]
+mod session_word_tests;
 #[path = "settings_nav_tests.rs"]
 mod settings_nav_tests;
 #[path = "settings_tests.rs"]

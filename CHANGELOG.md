@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Session activity in the sidebar (partial M3.2):** a sidebar session row whose tabs are out of sight now shows the most pressing word one of them would: a needs-you word, Error, Bell or Paused, or an unseen Done. The session on screen and sessions with their tabs listed under them are unchanged; muted tabs and the Activity in tabs switch keep it quiet. See [checks and limits](docs/parity-2026-11/M3.2-session-words.md).
+
 - **Activity list (partial M3.2):** Show activity… in Commands groups known Needs you, Error, unseen Done and Working tabs across connected hosts and sessions, with filtering and navigation to a tab. Muted tabs stay quiet; browsing marks nothing seen and sends nothing to servers. The list explains its incomplete coverage. The action is unbound and configurable in Shortcuts. See [checks and limits](docs/parity-2026-11/M3.2-activity-list.md).
 
 - **Go to directory… (partial M3.1):** Commands → Go to directory… browses the folders on the focused terminal's machine and types `cd` with the chosen folder, shell-quoted, at the prompt. It does not press Enter: the client cannot see what the prompt already holds, so running the line stays with you. Same captured pane, errors and refusals as Insert path; local-only and unbound by default. Recent paths remain deferred. See [checks and limits](docs/parity-2026-11/M3.1-go-to-directory.md).

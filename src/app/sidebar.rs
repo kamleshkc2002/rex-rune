@@ -159,7 +159,6 @@ fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
         .continuous_corners()
         .cursor(Cursor::Pointer)
         .preserve_focus_on_press(true)
-        .help_when_truncated(format!("{} · {label}", s.settings.hosts[index].label))
         .on_press_tx(move |s: &mut Workspace, tx: &mut Tx| {
             s.select(index, target.clone(), tx);
             tx.blur();
@@ -207,9 +206,27 @@ fn session_row(s: &Workspace, index: usize, id: &str, label: &str) -> El {
                     muted()
                 }))
                 .truncate()
+                // On the name itself: a tooltip shows only for the text that was cut, and
+                // a word beside the name leaves it less room.
+                .help_when_truncated(format!("{} · {label}", s.settings.hosts[index].label))
                 .grow(1.)
                 .shrink(),
         );
+    // A session on screen speaks through its tabs, and so does one whose tabs are listed
+    // under it; any other says the most pressing thing one of its tabs would.
+    if !selected
+        && !s.settings.vertical_tabs
+        && let Some((word, tone, tab)) = s.session_word(index, id)
+    {
+        e = e.child(
+            text(word.to_string())
+                .key(format!("session-word:{index}:{id}"))
+                .label(format!("{word}: {tab}"))
+                .help(tab)
+                .font(medium(10.5))
+                .color(rgb(tone)),
+        );
+    }
     if let Some(count) = count {
         e = e.child(
             text(count.to_string())

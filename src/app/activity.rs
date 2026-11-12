@@ -514,6 +514,43 @@ impl Workspace {
         self.unseen_on(self.active, window)
     }
 
+    /// The word that speaks for a session whose tabs are out of sight: the most pressing of
+    /// its tabs' own words (needs you, then error, then a bell or pause, then an unseen
+    /// Done), with the tab it comes from. Tabs that show no word say nothing here either:
+    /// muted ones, and all of them when activity in tabs is switched off.
+    pub fn session_word(
+        &self,
+        host: usize,
+        session: &str,
+    ) -> Option<(Cow<'static, str>, u32, String)> {
+        let model = &self.hosts[host].model;
+        let generated = self.generated_titles();
+        model
+            .views
+            .get(session)?
+            .windows
+            .iter()
+            .filter_map(|window| {
+                let id = window.window_id.as_deref()?;
+                if !self.tab_activity_shown(host, id) {
+                    return None;
+                }
+                let activity = tab_activity(model, window);
+                let (word, tone) =
+                    tab_word(&activity, self.unseen_on(host, id), self.bell_on(host, id))?;
+                let rank = match activity.state {
+                    ProgramState::Blocked => 0,
+                    _ if tone == danger() => 1,
+                    _ if tone == warning() => 2,
+                    _ => 3,
+                };
+                Some((rank, word, tone, tab_name(model, window, generated)))
+            })
+            // The first tab of the most pressing rank, in the server's tab order.
+            .min_by_key(|(rank, ..)| *rank)
+            .map(|(_, word, tone, tab)| (word, tone, tab))
+    }
+
     pub fn unseen_on(&self, host: usize, window: &str) -> bool {
         self.unseen_done
             .contains(&(self.hosts[host].id, window.to_owned()))

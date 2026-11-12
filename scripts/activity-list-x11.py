@@ -123,6 +123,23 @@ try:
         return {"views": [accept.api("session.view", session_id=s) for s in sessions],
                 "sizes": {name: accept.api("com.superlogical.terminal.size", session_id=s, block_id=t["focused_block_id"]) for name, (s,t) in tabs.items()}}
 
+    # The sidebar: the session out of sight says what its tab needs; the one on screen does not.
+    desk.key("ctrl+shift+b")
+    time.sleep(.6)
+    desk.capture(window, "sidebar")
+    side = work / "captures" / "sidebar-ocr.png"
+    subprocess.run(["magick", str(work / "captures" / "sidebar.png"), "-crop", "236x400+10+140", "-resize", "300%", "-colorspace", "Gray", "-negate", str(side)], check=True)
+    rows = subprocess.check_output(["tesseract", str(side), "stdout"], text=True, stderr=subprocess.DEVNULL)
+    (work / "captures" / "sidebar.txt").write_text(rows)
+    lines = [line for line in rows.splitlines() if line.strip()]
+    elsewhere = next((line for line in lines if "Elsewhere" in line), "")
+    primary = next((line for line in lines if "Primary" in line), "")
+    assert "Needs input" in elsewhere, rows
+    assert primary and "Needs" not in primary and "Error" not in primary, rows
+    # Showing the sidebar narrows the panes this client owns, as it always has, so the
+    # unchanged-server comparison below starts once it is hidden again.
+    desk.key("ctrl+shift+b")
+    time.sleep(1.2)
     before = snapshot()
     (work / "before.json").write_text(json.dumps(before, indent=2))
     show()
@@ -152,7 +169,7 @@ try:
     desk.key("Escape")
     (work / "result.json").write_text(json.dumps({"passed":True, "two_sessions":True, "live_osc7501":True,
         "groups":["Needs you","Error","Done","Working"], "unchanged_view_size_owner":True,
-        "cross_session_navigation":True, "done_cleared_only_after_navigation":True,
+        "cross_session_navigation":True, "sidebar_session_word":True, "done_cleared_only_after_navigation":True,
         "not_exercised":["cross-host native navigation", "Wayland", "notification service"]}, indent=2))
     print("PASS private OSC activity, four groups, filter, cross-session navigation, Done latch, unchanged view/size/owner", flush=True)
 finally:
