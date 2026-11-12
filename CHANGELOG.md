@@ -5,6 +5,7 @@
 ### Added
 
 - **Previous / next prompt (M3.7, #44):** `Ctrl Shift Up/Down` and Commands navigate shell OSC 133 prompt groups in the local viewport, including restored scrollback. `client.prompt.previous/next` now work; `pane.prompt_previous/prompt_next` are aliases. The new default keys are consumed by Rex rather than sent to the terminal; remove or replace either binding in `shortcuts.json` to restore program input. Unmarked terminals do not move. Navigation never sends PTY input, claims ownership, changes server layout or animates; all spellings remain remote-denied. Verified on a disposable Rex API 13 server through snapshots, live output and reattachment.
+- **Searchable Shortcuts reference (M2.1):** filter Settings → Shortcuts by action, category or key chord; supported unbound actions read **Not set**, alternate bindings share one row, and bound aliases retain their names. Sources, mode-scoped conflicts, unsupported diagnostics and config paths remain visible. A literal `+` reads **Plus** in keycaps. Read-only: no recorder or new bindings.
 
 ## 0.7.1 - 2026-11-11
 
@@ -12,7 +13,6 @@ Expanded Rex action compatibility for shared keybindings, a single installer sum
 
 ### Added
 
-- **Searchable Shortcuts reference (M2.1):** filter Settings → Shortcuts by action, category or key chord; supported unbound actions read **Not set**, alternate bindings share one row, and bound aliases retain their names. Sources, mode-scoped conflicts, unsupported diagnostics and config paths remain visible. A literal `+` reads **Plus** in keycaps. Read-only: no recorder or new bindings.
 - **Shared Rex keybinding compatibility (#44):** config reload and config-path copy, directional pane aliases, server-owned pane resize/move/balance, close other panes, moving to an existing tab, host actions, page scrolling and host-defined key modes. Settings → Shortcuts also lists unbound actions and marks aliases. All new actions are local-only; the remote allowed set is unchanged. Prompt navigation and moving a pane to a new tab are recognized with explicit unsupported diagnostics, not implemented yet; #44 remains open.
 - **Rex icon in desktop notifications:** embeds the 128 px icon as the freedesktop `image-data` hint, so notifications show it without an installed icon file. Harvested from [Matt Porter (@ohporter)](https://github.com/ohporter/rex-rune/commit/f73baf449b84a52a44eee2ee741cfb23ef34fb1d).
 - **Remember window size:** reopen at the last non-maximized size, saved once resizing settles for one second; `--window-size` still overrides it and the 640×480 minimum still applies. Adapted from [Matt Porter (@ohporter)](https://github.com/ohporter/rex-rune/commit/97d7e3195585ca1b17031054484a33a5956e3533) onto the current Settings.
