@@ -4,11 +4,13 @@
 
 ### Changed
 
+- **Activity coverage:** after each connection, read every session's program status once, selected session first and the rest paced in the background. Already-waiting tabs in unopened sessions now feed the Activity list, sidebar word and toolbar chip without notifications or read receipts. The list names reads in progress, failed reads and disconnected hosts. No polling or cap; see [measurements and limits](docs/parity-2026-11/M3.2-status-sweep.md).
+
 - **Activity list:** the filter also matches a row's state (`error`, `needs`, `working`); opening the list from the toolbar chip starts on the first tab that is not the one in front; and while a saved host is not connected the list's one line says so, so an empty list beside a host that is down does not read as all clear.
 
 ### Added
 
-- **Activity toolbar chip (partial M3.2):** a chip in the toolbar opens Activity while known, unmuted tabs other than the one on screen need you (`3 need you`) or, with none waiting, have errors (`2 errors`). Working, Done and Bell keep the toolbar quiet, and so does the Activity in tabs switch. It never floats over the terminal, is not drawn below 720 pt of window width, waits for a key sequence or a download chip in windows under 1000 pt, never marks tabs seen and sends nothing to servers. Sessions not opened since connecting may be missing, so an absent chip is not a guarantee. See [checks and limits](docs/parity-2026-11/M3.2-activity-chip.md).
+- **Activity toolbar chip (partial M3.2):** a chip in the toolbar opens Activity while known, unmuted tabs other than the one on screen need you (`3 need you`) or, with none waiting, have errors (`2 errors`). Working, Done and Bell keep the toolbar quiet, and so does the Activity in tabs switch. It never floats over the terminal, is not drawn below 720 pt of window width, waits for a key sequence or a download chip in windows under 1000 pt, never marks tabs seen and sends nothing to servers. Coverage now includes the per-connection status pass described above; an absent chip is not an all-clear while reading, after failed reads, or for missing events and suppressed activity. See [checks and limits](docs/parity-2026-11/M3.2-activity-chip.md).
 
 ## 0.7.5 - 2026-11-12
 

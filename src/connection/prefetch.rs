@@ -43,17 +43,10 @@ struct Response {
 }
 
 impl Prefetch {
-    /// Replace the eligible sessions. Work for sessions that left is dropped, including a
-    /// request in flight, whose late response is then ignored.
+    /// Replace sidebar eligibility. An in-flight read also serves the activity sweep,
+    /// so collapsing the sidebar does not discard it.
     pub fn set_eligible(&mut self, sessions: HashSet<String>) {
         self.failures.retain(|id, _| sessions.contains(id));
-        if self
-            .in_flight
-            .as_ref()
-            .is_some_and(|f| !sessions.contains(&f.session))
-        {
-            self.in_flight = None;
-        }
         self.eligible = sessions;
     }
 
@@ -139,7 +132,9 @@ impl Prefetch {
             .and_then(|r| Some((r.seq, r.payload?)));
         if view.is_some() {
             self.failures.remove(session);
-        } else if self.eligible.contains(session) {
+        } else {
+            // A sweep can fail before the UI's eligibility command arrives. Keep its
+            // backoff too, so a later sidebar request does not immediately repeat it.
             let count = self.failures.get(session).map_or(0, |&(n, _)| n);
             let delay = BACKOFF[count.min(BACKOFF.len() - 1)];
             self.failures

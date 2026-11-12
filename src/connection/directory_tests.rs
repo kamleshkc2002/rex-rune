@@ -182,6 +182,8 @@ async fn a_slow_listing_does_not_hold_up_other_requests_on_the_host() {
             json!({"type":"response","id":slow["id"],"payload":{"path":"/mnt/slow","home":"/home/dev","status":"ok","entries":[{"name":"late","file":true}],"truncated":false}}),
         )
         .await;
+        let background = prefetched(&mut ws, OTHER).await;
+        reply(&mut ws, &background, 4, view_of(OTHER)).await;
         assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
     });
     let host = HostConnection::spawn(endpoint, None, None, None, false, None);
@@ -192,7 +194,9 @@ async fn a_slow_listing_does_not_hold_up_other_requests_on_the_host() {
         .unwrap();
     host.commands.send(HostCommand::RefreshSessions).unwrap();
     until(&host, |m| {
-        m.sessions.len() == 2 && m.views.get(SESSION).is_some_and(|v| v.revision == 2)
+        m.sessions.len() == 2
+            && m.views.get(SESSION).is_some_and(|v| v.revision == 2)
+            && m.views.contains_key(OTHER)
     })
     .await;
     let reply = answer(&host, 1).await;

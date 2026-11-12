@@ -13,6 +13,8 @@ mod navigation_tests;
 mod perform_tests;
 #[path = "server_info_tests.rs"]
 mod server_info_tests;
+#[path = "status_sweep_tests.rs"]
+mod status_sweep_tests;
 #[path = "verb_tests.rs"]
 mod verb_tests;
 use futures_util::{SinkExt, StreamExt};
@@ -768,6 +770,9 @@ async fn activity_follows_every_session_and_queries_the_selected_one() {
             json!({"home":"/home/u", "foreground":{"name":"node","argv0":"codex","cwd":"/home/u/rex"}}),
         )
         .await;
+        // The background sweep attempts the unplaced layout before later events.
+        let view = prefetched(&mut ws, OTHER).await;
+        send(&mut ws, json!({"type":"response","id":view["id"],"error":{"code":"conflict","message":"no","status":409}})).await;
         // attach_all replaces the scope, so after session_created it must still ask for all.
         send(&mut ws, json!({"type":"event","seq":5,"payload":{"type":"session_created","payload":{"session_id":OTHER}}})).await;
         let list = recv(&mut ws).await;
@@ -789,10 +794,6 @@ async fn activity_follows_every_session_and_queries_the_selected_one() {
                 "payload":{"id":"","record":{"state":"working"}}}}}}})
         };
         send(&mut ws, report(7)).await;
-        let view = recv(&mut ws).await;
-        assert_eq!(view["method"], "session.view");
-        assert_eq!(view["payload"]["session_id"], OTHER);
-        send(&mut ws, json!({"type":"response","id":view["id"],"error":{"code":"conflict","message":"no","status":409}})).await;
         send(&mut ws, report(8)).await;
         // No second session.view: the next message is the client closing.
         assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
@@ -879,7 +880,7 @@ async fn destroying_a_session_forgets_it_without_an_error() {
 }
 
 #[tokio::test]
-async fn refreshing_sessions_reads_the_list_and_the_selected_layout_and_nothing_else() {
+async fn refreshing_sessions_reads_the_list_and_selected_layout_then_sweeps_new_sessions() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}", listener.local_addr().unwrap());
     let server = tokio::spawn(async move {
@@ -907,6 +908,8 @@ async fn refreshing_sessions_reads_the_list_and_the_selected_layout_and_nothing_
             json!({"session_id":SESSION,"label":"renamed","revision":2}),
         )
         .await;
+        let background = prefetched(&mut ws, OTHER).await;
+        reply(&mut ws, &background, 4, view_of(OTHER)).await;
         // Neither an attach nor a create follows: the next thing is the client leaving.
         assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
     });
@@ -914,7 +917,9 @@ async fn refreshing_sessions_reads_the_list_and_the_selected_layout_and_nothing_
     connected(&host).await;
     host.commands.send(HostCommand::RefreshSessions).unwrap();
     until(&host, |m| {
-        m.sessions.len() == 2 && m.views.get(SESSION).is_some_and(|v| v.revision == 2)
+        m.sessions.len() == 2
+            && m.views.get(SESSION).is_some_and(|v| v.revision == 2)
+            && m.views.contains_key(OTHER)
     })
     .await;
     {
@@ -1197,7 +1202,7 @@ async fn a_slow_prefetch_neither_delays_control_requests_nor_overlaps_another() 
 }
 
 #[tokio::test]
-async fn leaving_eligibility_cancels_queued_and_in_flight_fetches() {
+async fn leaving_sidebar_eligibility_keeps_the_activity_sweep() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}", listener.local_addr().unwrap());
     let (sent, mut started) = tokio::sync::mpsc::unbounded_channel();
@@ -1208,11 +1213,12 @@ async fn leaving_eligibility_cancels_queued_and_in_flight_fetches() {
         reply(&mut ws, &boot, 1, boot_with(&[OTHER, THIRD])).await;
         let late = prefetched(&mut ws, OTHER).await;
         sent.send(()).unwrap();
-        // The request is handled after the empty set, so this response is stale.
+        // Collapsing the sidebar must not discard the sweep\'s read.
         answer_request(&mut ws).await;
         reply(&mut ws, &late, 4, view_of(OTHER)).await;
+        let view = prefetched(&mut ws, THIRD).await;
+        reply(&mut ws, &view, 5, view_of(THIRD)).await;
         sent.send(()).unwrap();
-        // No fetch for THIRD: the next message is the client closing.
         assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
     });
     let host = HostConnection::spawn(endpoint, None, None, None, false, None);
@@ -1222,8 +1228,8 @@ async fn leaving_eligibility_cancels_queued_and_in_flight_fetches() {
     prefetch(&host, &[]);
     focus_window(&host);
     started.recv().await.unwrap();
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    assert!(!host.model.lock().unwrap().views.contains_key(OTHER));
+    until(&host, |m| m.views.contains_key(THIRD)).await;
+    assert!(host.model.lock().unwrap().views.contains_key(OTHER));
     drop(host);
     server.await.unwrap();
 }

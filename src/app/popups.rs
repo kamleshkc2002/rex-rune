@@ -612,14 +612,14 @@ pub fn list_popup(s: &Workspace, viewport: [f32; 2]) -> El {
                 ),
         );
     }
-    if activity {
+    let coverage = s.activity_coverage();
+    if activity && !coverage.is_empty() {
         surface = surface.child(
-            row().h(28.).px(10.).center_y().child(
-                text(s.activity_coverage())
-                    .font(ui(11.))
-                    .color(rgb(muted()))
-                    .truncate(),
-            ),
+            row()
+                .h(28.)
+                .px(10.)
+                .center_y()
+                .child(text(coverage).font(ui(11.)).color(rgb(muted())).truncate()),
         );
     }
     let mut results = el().w_full().min_h(0.).child(scroller);

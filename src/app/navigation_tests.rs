@@ -258,6 +258,70 @@ fn unknown_sessions_are_one_stop_then_their_loaded_windows_are_traversed() {
 }
 
 #[test]
+fn a_session_read_only_for_activity_is_one_stop_until_it_is_opened_or_listed() {
+    // The background status pass reads every session's layout. Knowing it is not having
+    // opened it: Ctrl Tab must not step into its tabs, which would change that session's
+    // active tab on the server.
+    let (mut ws, rx) = tabbed_workspace("split");
+    let mut view = ws.hosts[0].model.views["s"].clone();
+    view.session_id = Some("background".into());
+    view.active_window_id = Some("single".into());
+    let model = &mut ws.hosts[0].model;
+    model.sessions.push(session("background"));
+    model.views.insert("background".into(), view);
+    model.background_views.insert("background".into());
+    let mut rt = runtime(ws);
+    cycle(&mut rt, false);
+    let p = rt.state.navigation.pending.as_ref().unwrap().visit.clone();
+    assert_eq!((p.session.as_str(), p.window), ("background", None));
+    rt.update(|s, tx| {
+        s.poll_navigation(Instant::now() + Duration::from_secs(1), tx);
+    });
+    // One correlated navigation to the session, naming no tab: nothing asks the server
+    // to change which of its tabs is active.
+    let sent: Vec<_> = rx.try_iter().collect();
+    assert!(sent.iter().any(
+        |c| matches!(c, HostCommand::Navigate { session, window: None, .. } if session == "background")
+    ));
+    assert!(!sent.iter().any(|c| matches!(
+        c,
+        HostCommand::Navigate {
+            window: Some(_),
+            ..
+        }
+    )));
+    // Opened (the connection drops it from the set when it is selected), its tabs are stops.
+    rt.update(|s, _| {
+        s.hosts[0].model.background_views.remove("background");
+        acknowledge(s);
+    });
+    cycle(&mut rt, false);
+    let p = rt.state.navigation.pending.as_ref().unwrap().visit.clone();
+    assert_eq!(p.session, "background");
+    assert!(p.window.is_some(), "the opened session's next tab");
+    std::fs::remove_file(&rt.state.settings_path).ok();
+
+    // With tabs listed in the sidebar its tabs are listed, so they are stops as before.
+    let (mut ws, _rx) = tabbed_workspace("split");
+    let mut view = ws.hosts[0].model.views["s"].clone();
+    view.session_id = Some("background".into());
+    let model = &mut ws.hosts[0].model;
+    model.sessions.push(session("background"));
+    model.views.insert("background".into(), view);
+    model.background_views.insert("background".into());
+    ws.settings.vertical_tabs = true;
+    if !ws.sidebar.is_open() {
+        ws.sidebar.toggle();
+    }
+    let mut rt = runtime(ws);
+    cycle(&mut rt, false);
+    let p = rt.state.navigation.pending.as_ref().unwrap().visit.clone();
+    assert_eq!(p.session, "background");
+    assert!(p.window.is_some(), "listed tabs are stops");
+    std::fs::remove_file(&rt.state.settings_path).ok();
+}
+
+#[test]
 fn a_missing_current_tab_starts_at_the_correct_end_in_both_directions() {
     for (shift, expected) in [(false, "single"), (true, "split")] {
         let (mut ws, rx) = tabbed_workspace("single");

@@ -17,6 +17,7 @@ pub(super) fn fixture() -> (Workspace, Vec<flume::Receiver<HostCommand>>) {
     for h in 0..2 {
         let m = &mut ws.hosts[h].model;
         m.connected = true;
+        m.activity_reading = true;
         m.sessions = vec![session("s"), session("other"), session("unknown")];
         m.selected = Some("s".into());
         for (sid, ids) in [
@@ -62,6 +63,118 @@ pub(super) fn fixture() -> (Workspace, Vec<flume::Receiver<HostCommand>>) {
     }
     (ws, receivers)
 }
+#[test]
+fn swept_status_is_visible_but_is_not_news_or_a_done_latch() {
+    for (state, word, chip) in [
+        (
+            ProgramState::Blocked,
+            Some("Needs input"),
+            Some("1 needs you"),
+        ),
+        (ProgramState::Error, Some("Error"), Some("1 error")),
+        (ProgramState::Done, None, None),
+    ] {
+        let (mut ws, rx) = fixture();
+        ws.hosts[1].model.connected = false;
+        ws.settings.notifications.system_notifications = true;
+        ws.unseen_done.clear();
+        ws.unseen_bells.clear();
+        ws.hosts[0].model.activity.clear();
+        ws.track_activity(0);
+        let records = rex_linux::connection::activity::parse_status(&json!({"records":[{
+            "id":"", "state":match state {
+                ProgramState::Blocked => "blocked", ProgramState::Error => "error", _ => "done"
+            }
+        }]}));
+        assert!(records.iter().all(|(_, r)| !r.live));
+        ws.hosts[0]
+            .model
+            .activity
+            .insert("build".into(), records.into_iter().collect());
+        ws.track_activity(0);
+        assert_eq!(
+            ws.session_word(0, "other")
+                .map(|(w, _, _)| w.into_owned())
+                .as_deref(),
+            word
+        );
+        assert_eq!(ws.activity_chip().map(|c| c.label()).as_deref(), chip);
+        ws.show_activity();
+        assert_eq!(ws.entries().len(), usize::from(word.is_some()));
+        if let Some(word) = word {
+            assert_eq!(ws.entries()[0].label, "build");
+            assert!(ws.entries()[0].detail.contains(word));
+        }
+        assert!(ws.outbox.is_empty(), "queried state never notifies");
+        assert!(ws.unseen_done.is_empty(), "queried Done is not unseen Done");
+        assert_eq!(ws.hosts[0].model.selected.as_deref(), Some("s"));
+        assert!(rx.iter().all(|r| r.is_empty()));
+    }
+}
+
+#[test]
+fn coverage_only_names_current_gaps_and_disconnected_hosts() {
+    let (mut ws, _) = fixture();
+    assert_eq!(ws.activity_coverage(), COVERAGE);
+    for host in &mut ws.hosts {
+        host.model.activity_reading = false;
+    }
+    assert_eq!(ws.activity_coverage(), "");
+    ws.hosts[0].model.activity_incomplete = true;
+    assert_eq!(
+        ws.activity_coverage(),
+        crate::app::activity_list::INCOMPLETE
+    );
+    ws.hosts[1].model.connected = false;
+    assert_eq!(
+        ws.activity_coverage(),
+        "1 host is not connected. Some activity could not be read."
+    );
+    ws.hosts[0].model.activity_reading = true;
+    assert_eq!(
+        ws.activity_coverage(),
+        "1 host is not connected. Reading activity…"
+    );
+    ws.hosts[0].model.connected = false;
+    assert_eq!(ws.activity_coverage(), "2 hosts are not connected.");
+}
+
+#[test]
+fn rendered_coverage_has_no_empty_row_after_a_clean_pass() {
+    let _families = rune::text::with_families("Inter", "Inter");
+    let (mut ws, _) = fixture();
+    ws.show_activity();
+    let mut rt = runtime(ws);
+    for (reading, incomplete, expected) in [
+        (true, false, Some(COVERAGE)),
+        (false, true, Some(crate::app::activity_list::INCOMPLETE)),
+        (false, false, None),
+    ] {
+        rt.update(|s, _| {
+            for host in &mut s.hosts {
+                host.model.activity_reading = reading;
+                host.model.activity_incomplete = incomplete;
+            }
+        });
+        settle(&mut rt);
+        let lines: Vec<_> = rt
+            .elements()
+            .iter()
+            .filter_map(|e| e.text.as_deref())
+            .filter(|t| *t == COVERAGE || *t == crate::app::activity_list::INCOMPLETE)
+            .map(str::to_owned)
+            .collect();
+        assert_eq!(
+            lines,
+            expected.into_iter().map(str::to_owned).collect::<Vec<_>>()
+        );
+        assert!(
+            !rt.state.entries().is_empty(),
+            "the caveat does not replace activity"
+        );
+    }
+}
+
 fn settle(rt: &mut Runtime<Workspace>) {
     for _ in 0..60 {
         rt.frame(1. / 60.);
@@ -161,13 +274,10 @@ fn the_filter_matches_the_state_and_the_coverage_line_names_unconnected_hosts() 
     ws.hosts[1].model.connected = false;
     assert_eq!(
         ws.activity_coverage(),
-        "1 host is not connected. Tabs in unopened sessions may be missing."
+        "1 host is not connected. Reading activity…"
     );
     ws.hosts[0].model.connected = false;
-    assert_eq!(
-        ws.activity_coverage(),
-        "2 hosts are not connected. Tabs in unopened sessions may be missing."
-    );
+    assert_eq!(ws.activity_coverage(), "2 hosts are not connected.");
     // With every host down nothing is listed, and the line says why.
     assert!(ws.entries().is_empty());
 }

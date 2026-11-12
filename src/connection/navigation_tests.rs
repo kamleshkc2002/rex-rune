@@ -30,6 +30,8 @@ async fn navigation_correlates_success_and_failure_without_extra_attaches() {
             .unwrap()
             .push(json!({"session_id":"other","label":"other"}));
         reply(&mut ws, &request, 1, boot).await;
+        let background = prefetched(&mut ws, "other").await;
+        reply(&mut ws, &background, 1, view_of("other")).await;
         // Same-session navigation focuses on the server without reattaching.
         let focus = recv(&mut ws).await;
         assert_eq!(focus["method"], "session.focus_window");
@@ -71,7 +73,7 @@ async fn navigation_correlates_success_and_failure_without_extra_attaches() {
         assert!(matches!(ws.next().await, Some(Ok(Message::Close(_)))));
     });
     let host = HostConnection::spawn(endpoint, None, None, None, false, None);
-    connected(&host).await;
+    until(&host, |m| m.views.contains_key("other")).await;
     host.model.lock().unwrap().notice = Some("Upload failed".into());
     for (id, session, window, expected) in [
         (1, SESSION, Some("w"), true),

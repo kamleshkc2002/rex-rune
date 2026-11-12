@@ -10,7 +10,8 @@ use rex_linux::connection::activity::ProgramState;
 use rune::{Icon, Tx};
 
 pub const ACTION: &str = "client.activity";
-pub const COVERAGE: &str = "Tabs in sessions not opened since connecting may be missing.";
+pub const COVERAGE: &str = "Reading activity…";
+pub const INCOMPLETE: &str = "Some activity could not be read.";
 
 pub struct Presentation {
     pub icon: &'static Icon,
@@ -49,11 +50,19 @@ impl Workspace {
     /// still connecting or reconnecting) is named first, so an empty list beside a host that
     /// is down does not read as all clear.
     pub fn activity_coverage(&self) -> String {
+        let mut parts = Vec::new();
         match self.hosts.iter().filter(|h| !h.model.connected).count() {
-            0 => COVERAGE.into(),
-            1 => "1 host is not connected. Tabs in unopened sessions may be missing.".into(),
-            n => format!("{n} hosts are not connected. Tabs in unopened sessions may be missing."),
+            0 => {}
+            1 => parts.push("1 host is not connected.".into()),
+            n => parts.push(format!("{n} hosts are not connected.")),
         }
+        let connected = || self.hosts.iter().filter(|h| h.model.connected);
+        if connected().any(|h| h.model.activity_reading) {
+            parts.push(COVERAGE.into());
+        } else if connected().any(|h| h.model.activity_incomplete) {
+            parts.push(INCOMPLETE.into());
+        }
+        parts.join(" ")
     }
 
     /// The list and its toolbar entry point share this cached, connected, unmuted inventory.

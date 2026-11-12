@@ -404,9 +404,25 @@ impl Workspace {
                 v
             });
         let mut tabs = Vec::new();
-        for host in self.hosts.iter().filter(|h| h.model.connected) {
+        let listing = self.sidebar_tabs();
+        for (index, host) in self
+            .hosts
+            .iter()
+            .enumerate()
+            .filter(|(_, h)| h.model.connected)
+        {
+            // A layout read in the background for activity is not a session the person
+            // opened: it stays one stop unless its tabs are listed in the sidebar, so
+            // stepping never changes the active tab of a session they have not been in.
+            let listed = listing && !self.settings.hosts[index].collapsed;
             for session in &host.model.sessions {
-                if let Some(view) = host.model.views.get(&session.session_id) {
+                let stepped = listed || !host.model.background_views.contains(&session.session_id);
+                if let Some(view) = host
+                    .model
+                    .views
+                    .get(&session.session_id)
+                    .filter(|_| stepped)
+                {
                     tabs.extend(view.windows.iter().filter_map(|window| {
                         Some(Visit {
                             host: host.id,
@@ -415,7 +431,7 @@ impl Workspace {
                         })
                     }));
                 } else {
-                    // Unknown sessions are one stop; landing there loads the view.
+                    // Unopened sessions are one stop; landing there loads or shows the view.
                     tabs.push(Visit {
                         host: host.id,
                         session: session.session_id.clone(),
