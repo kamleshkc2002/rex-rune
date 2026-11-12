@@ -1,5 +1,5 @@
 //! Settings → Updates and the non-blocking in-app update notice.
-//! Checks signed release metadata over HTTPS without self-updating or downloading binaries.
+//! Checks signed metadata; verified install.sh installs can update in a background worker.
 use super::{
     panel::{Intent, PanelKind, SettingsSection},
     settings_kit::{self, button, card, page, row_frame, setting, unavailable, value, words},
@@ -9,17 +9,38 @@ use super::{
 };
 use rex_linux::update::{
     AvailableUpdate, CHECK_INTERVAL_SECS, CheckConfig, CheckOutcome, InstallChannel, STARTUP_DELAY,
-    UpdateState, check_for_updates, now_epoch_secs,
+    UpdateState, check_for_updates,
+    installer::{self, Progress},
+    now_epoch_secs,
 };
 use rune::{Cursor, El, Tx, col, el, row, text};
 use rune_kit::Switch;
-use std::time::{Duration, Instant};
+use std::{
+    path::PathBuf,
+    time::{Duration, Instant},
+};
+
+#[derive(Default)]
+pub enum Installation {
+    #[default]
+    Idle,
+    Working(String),
+    Ready(PathBuf),
+    Failed(String),
+}
+
+impl Installation {
+    fn busy(&self) -> bool {
+        matches!(self, Self::Working(_) | Self::Ready(_))
+    }
+}
 
 pub struct Updates {
     pub channel: InstallChannel,
     pub state: UpdateState,
     pub config: CheckConfig,
     pub checking: bool,
+    pub installation: Installation,
     pub last_error: Option<String>,
     pub next_check: Option<Instant>,
     pub env_opt_out: bool,
@@ -47,6 +68,7 @@ impl Default for Updates {
                 last_error: None,
                 next_check: None,
                 env_opt_out: false,
+                installation: Installation::Idle,
             }
         }
         #[cfg(not(test))]
@@ -63,6 +85,7 @@ impl Default for Updates {
                 last_error: None,
                 next_check: None,
                 env_opt_out,
+                installation: Installation::Idle,
             }
         }
     }
@@ -131,10 +154,12 @@ pub fn section(s: &Workspace) -> El {
     } else if !u.channel.checks_by_default() {
         "Source builds never check on their own; use Check now."
     } else {
-        "Reads signed release metadata once a day. Never downloads or installs."
+        "Reads signed release metadata once a day. Installation is a separate choice."
     };
 
-    let status_detail = if u.checking {
+    let status_detail = if matches!(u.installation, Installation::Ready(_)) {
+        "Update installed. Restart to finish.".to_owned()
+    } else if u.checking {
         "Checking signed release metadata…".to_owned()
     } else if let Some(err) = &u.last_error {
         format!("Check failed: {err}")
@@ -155,7 +180,13 @@ pub fn section(s: &Workspace) -> El {
         "Not checked yet.".into()
     };
 
-    let check_button = if u.checking {
+    let check_button = if u.installation.busy() {
+        unavailable(
+            "updates-check-now",
+            "Check now",
+            "Restart after the update to check again",
+        )
+    } else if u.checking {
         unavailable("updates-checking", "Checking…", "")
     } else {
         button("updates-check-now", "Check now", Pill::Neutral, |s, _| {
@@ -167,7 +198,7 @@ pub fn section(s: &Workspace) -> El {
         "",
         [card([
             setting(
-                "Installed version",
+                "Running version",
                 &channel_label,
                 value(current.clone()).key("updates-current-version"),
             ),
@@ -188,14 +219,59 @@ pub fn section(s: &Workspace) -> El {
         ])],
     )];
 
+    let install_detail = match &u.installation {
+        Installation::Idle => None,
+        Installation::Working(detail) => Some(detail.clone()),
+        Installation::Ready(_) => {
+            Some("Update installed. Restart Rex to use it; server sessions keep running.".into())
+        }
+        Installation::Failed(error) => Some(format!(
+            "Update failed: {error}. You can retry or use Copy command."
+        )),
+    };
+    if let Some(detail) = install_detail {
+        let action = if matches!(u.installation, Installation::Ready(_)) {
+            button(
+                "updates-restart",
+                "Restart to finish",
+                Pill::Primary,
+                |s, tx| s.restart_after_update(tx),
+            )
+        } else {
+            value(if matches!(u.installation, Installation::Working(_)) {
+                "Updating…"
+            } else {
+                "Not installed"
+            })
+        };
+        sections.push(settings_kit::section(
+            "Installation",
+            [card([
+                setting("App update", &detail, action).key("updates-install-status")
+            ])],
+        ));
+    }
+
     if let Some(avail) = u.available() {
         let guidance = u.channel.guidance(&avail.version);
         let notes_url = avail.notes_url.clone();
         let version_for_dismiss = avail.version.clone();
-        let mut actions = row().gap(8.).center_y().child(button(
+        let can_install = u.channel == InstallChannel::Tarball && avail.unsupported_floor.is_none();
+        let mut actions = col().gap(8.);
+        if can_install && !u.installation.busy() && !u.checking {
+            actions = actions.child(button(
+                "updates-install-now",
+                "Update now",
+                Pill::Primary,
+                |s, _| {
+                    s.install_update_now();
+                },
+            ));
+        }
+        actions = actions.child(button(
             "updates-whats-new",
             "What's new",
-            Pill::Primary,
+            Pill::Neutral,
             move |s, _| s.open_link(notes_url.clone()),
         ));
         if !avail.dismissed {
@@ -249,6 +325,19 @@ pub fn section(s: &Workspace) -> El {
         sections.push(settings_kit::section("Available update", [card(rows)]));
     }
 
+    if u.channel == InstallChannel::Tarball {
+        sections.push(settings_kit::section("", [card([setting(
+            "Install updates automatically",
+            "Install verified updates after a check and offer restart. Never restarts for you. Requires automatic checks.",
+            Switch::new(s.settings.updates.install_automatically)
+                .label("Install updates automatically").hide_label()
+                .disabled(!switch_on)
+                .on_toggle(|s: &mut Workspace| {
+                    s.settings.updates.install_automatically = !s.settings.updates.install_automatically;
+                    s.save();
+                }).build(k).key("updates-install-auto-switch"),
+        )])]));
+    }
     page(sections)
 }
 
@@ -353,6 +442,70 @@ pub fn toast_card(s: &Workspace) -> Option<El> {
 }
 
 impl Workspace {
+    // Settings-only actions: intentionally absent from Commands and remote client.perform.
+    // Installing and re-exec must remain local, deliberate actions (or explicit saved opt-in).
+    pub fn install_update_now(&mut self) {
+        if self.updates.channel != InstallChannel::Tarball
+            || self.updates.installation.busy()
+            || self.updates.checking
+        {
+            return;
+        }
+        let Some(available) = self
+            .updates
+            .available()
+            .filter(|u| u.unsupported_floor.is_none())
+        else {
+            return;
+        };
+        self.updates.installation =
+            Installation::Working("Verifying install receipt and signed release…".into());
+        let config = self.updates.config.clone();
+        let handle = self.handle.clone();
+        let spawn = std::thread::Builder::new()
+            .name("rex-install-update".into())
+            .spawn(move || {
+                let result = installer::install(&config, &available.version, |progress| {
+                    let detail = match progress {
+                        Progress::Verifying => "Verifying signed release…".into(),
+                        Progress::Downloading { received, total } => {
+                            format!("Downloading update… {}%", received * 100 / total)
+                        }
+                        Progress::Extracting => "Verifying and extracting update…".into(),
+                        Progress::Installing => "Installing update…".into(),
+                    };
+                    handle
+                        .update(move |s, _| s.updates.installation = Installation::Working(detail));
+                });
+                handle.update(move |s, _| {
+                    s.updates.installation = match result {
+                        Ok(binary) => {
+                            s.inform(
+                                "Update installed. Settings → Updates offers Restart to finish.",
+                            );
+                            Installation::Ready(binary)
+                        }
+                        Err(error) => Installation::Failed(format!("{error:#}")),
+                    };
+                });
+            });
+        if let Err(error) = spawn {
+            self.updates.installation =
+                Installation::Failed(format!("could not start update worker: {error}"));
+        }
+    }
+
+    fn restart_after_update(&mut self, tx: &mut Tx) {
+        let Installation::Ready(binary) = &self.updates.installation else {
+            return;
+        };
+        let binary = binary.clone();
+        self.save();
+        *self.restart.lock().unwrap() = Some(binary);
+        // Let Rune drop the workspace and the main thread wait for transfer cleanup.
+        tx.close_window();
+    }
+
     pub fn init_updates(&mut self) {
         self.updates
             .schedule(self.settings.updates.check, Instant::now());
@@ -365,9 +518,10 @@ impl Workspace {
     }
 
     pub fn dismiss_update_version(&mut self, version: &str) {
-        self.updates.state.dismissed_version = Some(version.to_owned());
-        self.updates.state.announced_version = Some(version.to_owned());
-        let _ = self.updates.state.save(&self.updates.config.state_path);
+        match UpdateState::dismiss(&self.updates.config.state_path, version) {
+            Ok(state) => self.updates.state = state,
+            Err(error) => self.notify(format!("Could not save update dismissal: {error:#}")),
+        }
     }
 
     pub fn open_updates_settings(&mut self) {
@@ -409,7 +563,7 @@ impl Workspace {
     }
 
     fn spawn_update_check(&mut self, manual: bool) {
-        if self.updates.checking {
+        if self.updates.checking || self.updates.installation.busy() {
             return;
         }
         self.updates.checking = true;
@@ -438,24 +592,23 @@ impl Workspace {
         match result {
             Ok((outcome, mut state)) => {
                 self.updates.last_error = None;
-                if state.dismissed_version.is_none()
-                    && let Some(dismissed) = &self.updates.state.dismissed_version
-                {
-                    state.dismissed_version = Some(dismissed.clone());
-                }
                 match &outcome {
                     CheckOutcome::UpdateAvailable { version, .. }
                     | CheckOutcome::UnsupportedFloor {
                         latest: version, ..
                     } => {
-                        if manual && state.dismissed_version.as_deref() == Some(version.as_str()) {
-                            // An explicit Check now resurfaces a previously dismissed notice.
-                            state.dismissed_version = None;
+                        match UpdateState::announce(
+                            &self.updates.config.state_path,
+                            version,
+                            manual,
+                        ) {
+                            Ok(latest) => state = latest,
+                            Err(error) => {
+                                if manual {
+                                    self.notify(format!("Could not save update notice: {error:#}"));
+                                }
+                            }
                         }
-                        if state.announced_version.as_deref() != Some(version.as_str()) {
-                            state.announced_version = Some(version.clone());
-                        }
-                        let _ = state.save(&self.updates.config.state_path);
                     }
                     CheckOutcome::UpToDate { version } => {
                         if manual {
@@ -465,6 +618,12 @@ impl Workspace {
                 }
                 self.updates.state = state;
                 self.updates.schedule(self.settings.updates.check, now);
+                if self.settings.updates.install_automatically
+                    && self.updates.auto_check_enabled(self.settings.updates.check)
+                    && matches!(self.updates.installation, Installation::Idle)
+                {
+                    self.install_update_now();
+                }
             }
             Err(error) => {
                 // Background checks fail silently: no toast, no modal, no crash.

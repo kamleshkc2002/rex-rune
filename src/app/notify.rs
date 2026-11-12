@@ -76,6 +76,42 @@ impl Notifier {
     }
 }
 
+/// The window and its notification worker are already gone after a failed re-exec.
+/// Send one critical, persistent notification before exiting (also for desktop launches).
+pub fn notify_restart_failure(message: &str) -> anyhow::Result<()> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    runtime.block_on(async {
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            let conn = Connection::session().await?;
+            let proxy = Proxy::new(&conn, DEST, PATH, DEST).await?;
+            let hints = HashMap::from([
+                ("desktop-entry", Variant::from("dev.shuv.rex-linux")),
+                ("urgency", Variant::from(2u8)),
+            ]);
+            let _: u32 = proxy
+                .call(
+                    "Notify",
+                    &(
+                        "Rex",
+                        0u32,
+                        "dev.shuv.rex-linux",
+                        "Rex restart failed",
+                        message,
+                        Vec::<String>::new(),
+                        hints,
+                        0i32,
+                    ),
+                )
+                .await?;
+            Ok::<_, zbus::Error>(())
+        })
+        .await??;
+        Ok(())
+    })
+}
+
 async fn run(notes: flume::Receiver<Note>, handle: AppHandle<Workspace>) -> zbus::Result<()> {
     let conn = Connection::session().await?;
     let proxy = Proxy::new(&conn, DEST, PATH, DEST).await?;

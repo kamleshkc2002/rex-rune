@@ -143,6 +143,7 @@ pub struct Workspace {
     /// The Ghostty themes the theme picker lists, read when it opens.
     pub themes: Vec<ThemeInfo>,
     pub updates: super::updates::Updates,
+    pub restart: std::sync::Arc<std::sync::Mutex<Option<PathBuf>>>,
     /// What this launch's downloads have told the person, and what finished rows may offer.
     pub downloads: super::downloads::Downloads,
 }
@@ -282,6 +283,7 @@ impl Workspace {
             theme_dirs,
             themes: Vec::new(),
             updates: Default::default(),
+            restart: Default::default(),
             downloads: Default::default(),
         };
         this.init_updates();

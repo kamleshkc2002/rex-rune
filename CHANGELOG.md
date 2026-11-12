@@ -9,6 +9,7 @@
 - **Tab fill (partial M2.8):** default-off **Tabs fill available space** in Interface → Sidebar and tabs shares spare toolbar track width without changing sidebar rows, terminal geometry or ownership. Existing scroll arrows, tab menus, live chips and native drag space remain. See [checks and limits](docs/parity-2026-11/M2.8-tab-fill.md).
 
 - **Header fading (partial M2.7):** two default-off Interface → Panes switches fade header names and available buttons on inactive panes or in inactive windows. Activity, progress, exceptions and terminal content stay unchanged; no server/layout/ownership change from preferences. Focus follows mouse remains deferred. See [checks and limits](docs/parity-2026-11/M2.7-header-fading.md).
+- **One-click installer updates:** Settings → Updates offers **Update now** for verified, user-writable install.sh installations under `~/.local`, with download progress, errors and **Restart to finish**. Signed manifest hashes and exact sizes are checked before transactional replacement of the client, launcher, icons and receipt; failures restore the previous files. **Copy command** remains available. Optional **Install updates automatically** is off by default and never restarts the app for you. Package-managed and source builds keep their existing guidance.
 
 ## 0.7.3 - 2026-11-11
 

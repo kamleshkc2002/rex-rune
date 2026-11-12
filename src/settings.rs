@@ -104,10 +104,14 @@ impl Default for NotificationsConfig {
 #[serde(default)]
 pub struct UpdatesConfig {
     pub check: bool,
+    pub install_automatically: bool,
 }
 impl Default for UpdatesConfig {
     fn default() -> Self {
-        Self { check: true }
+        Self {
+            check: true,
+            install_automatically: false,
+        }
     }
 }
 
@@ -700,9 +704,24 @@ mod tests {
     fn updates_check_defaults_to_true_and_round_trips() {
         let old: Settings = serde_json::from_str("{}").unwrap();
         assert!(old.updates.check);
+        assert!(!old.updates.install_automatically);
+        let old: UpdatesConfig = serde_json::from_str(r#"{"check":true}"#).unwrap();
+        assert!(!old.install_automatically);
+        for automatic in [false, true] {
+            let config = UpdatesConfig {
+                install_automatically: automatic,
+                ..UpdatesConfig::default()
+            };
+            let back: UpdatesConfig =
+                serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+            assert_eq!(back.install_automatically, automatic);
+        }
         for check in [false, true] {
             let settings = Settings {
-                updates: UpdatesConfig { check },
+                updates: UpdatesConfig {
+                    check,
+                    ..UpdatesConfig::default()
+                },
                 ..Settings::default()
             };
             let json = serde_json::to_value(&settings).unwrap();

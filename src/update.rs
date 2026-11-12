@@ -1,5 +1,7 @@
 //! Low-cost, privacy-respecting release metadata check, Minisign verification, install-channel
-//! detection, and persistent update state. Never downloads binaries or modifies the installation.
+//! detection, and persistent update state. Metadata checks never download binaries.
+//! `installer` explicitly updates verified, user-writable install.sh installations.
+pub mod installer;
 use anyhow::{Context, Result, bail, ensure};
 use base64::Engine as _;
 use ring::signature::{ED25519, UnparsedPublicKey};
@@ -444,11 +446,10 @@ pub struct ChannelGuidance {
     pub command: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct InstallReceipt {
     schema: u32,
     path: String,
-    #[allow(dead_code)]
     version: String,
     sha256: String,
 }
@@ -526,6 +527,14 @@ impl InstallChannel {
     }
 
     /// Channel-specific update instructions for `version`.
+    fn cli_guidance(&self, version: &str) -> String {
+        if matches!(self, Self::Tarball) {
+            format!("Installed with install.sh. To update, run `{INSTALL_SCRIPT_COMMAND}`.")
+        } else {
+            self.guidance(version).detail
+        }
+    }
+
     pub fn guidance(&self, version: &str) -> ChannelGuidance {
         let version = &crate::format_version(version);
         let deb_arch = match std::env::consts::ARCH {
@@ -568,9 +577,9 @@ impl InstallChannel {
             }
             Self::Tarball => ChannelGuidance {
                 summary: format!(
-                    "Rex Linux {version} is available. Re-run the verified install.sh command to upgrade."
+                    "Rex Linux {version} is available. Open Settings → Updates to install it."
                 ),
-                detail: "Installed in ~/.local/bin with install.sh. Run the verified installer command in a terminal to upgrade.".into(),
+                detail: "Installed with install.sh. Update now verifies and replaces the client, launcher and icons; restart when ready. Copy command is the terminal fallback.".into(),
                 command: Some(INSTALL_SCRIPT_COMMAND.into()),
             },
             Self::Deb { custom_hint } => {
@@ -618,7 +627,7 @@ impl InstallChannel {
                 summary: format!(
                     "Rex Linux {version} is available on GitHub Releases."
                 ),
-                detail: "Standalone binary without a package marker or install receipt. Download the latest release from GitHub Releases.".into(),
+                detail: "No package marker or verified install receipt matches this binary. Self-update is unavailable; repair the install with install.sh or download the latest release from GitHub Releases.".into(),
                 command: None,
             },
         }
@@ -771,6 +780,32 @@ impl UpdateState {
         Ok(())
     }
 
+    /// Change only notice preferences against the latest persisted state. A stale
+    /// workspace must never overwrite verified release metadata or its high-water mark.
+    pub fn dismiss(path: &Path, version: &str) -> Result<Self> {
+        Self::modify_notices(path, |state| {
+            state.dismissed_version = Some(version.to_owned());
+            state.announced_version = Some(version.to_owned());
+        })
+    }
+
+    pub fn announce(path: &Path, version: &str, manual: bool) -> Result<Self> {
+        Self::modify_notices(path, |state| {
+            if manual && state.dismissed_version.as_deref() == Some(version) {
+                state.dismissed_version = None;
+            }
+            state.announced_version = Some(version.to_owned());
+        })
+    }
+
+    fn modify_notices(path: &Path, modify: impl FnOnce(&mut Self)) -> Result<Self> {
+        let _lock = lock_update_state(path)?;
+        let mut state = Self::load(path);
+        modify(&mut state);
+        state.save(path)?;
+        Ok(state)
+    }
+
     /// Whether a background check is due at `now_epoch_secs`.
     pub fn is_due(&self, now_epoch_secs: u64) -> bool {
         match self.last_checked {
@@ -877,13 +912,9 @@ pub fn now_epoch_secs() -> u64 {
 
 /// Perform a verified release metadata check and update the persistent state file under an advisory lock.
 pub fn check_for_updates(config: &CheckConfig, force: bool) -> Result<(CheckOutcome, UpdateState)> {
-    let lock_path = config.state_path.with_extension("lock");
-    if let Some(parent) = lock_path.parent().filter(|p| !p.as_os_str().is_empty()) {
-        let _ = fs::create_dir_all(parent);
-    }
-    let _lock = FileLock::try_acquire(&lock_path);
+    let lock = lock_update_state(&config.state_path)?;
 
-    let mut state = UpdateState::load(&config.state_path);
+    let state = UpdateState::load(&config.state_path);
     let now = now_epoch_secs();
     if !force && !state.is_due(now) {
         if let Some(avail) = state.available_update(&config.current_version) {
@@ -914,6 +945,24 @@ pub fn check_for_updates(config: &CheckConfig, force: bool) -> Result<(CheckOutc
         ));
     }
 
+    drop(lock);
+    let manifest = fetch_verified_manifest(config)?;
+
+    // Network requests can take tens of seconds. Merge into the state written by
+    // other checks, installers or notice actions while this fetch was in flight.
+    let _lock = lock_update_state(&config.state_path)?;
+    let mut state = UpdateState::load(&config.state_path);
+    let outcome = apply_verified_manifest(
+        &mut state,
+        &config.current_version,
+        &manifest,
+        now_epoch_secs(),
+    )?;
+    state.save(&config.state_path)?;
+    Ok((outcome, state))
+}
+
+fn fetch_verified_manifest(config: &CheckConfig) -> Result<ReleaseManifest> {
     let manifest_bytes = fetch_bytes(
         &config.manifest_url,
         MAX_MANIFEST_BYTES,
@@ -926,12 +975,7 @@ pub fn check_for_updates(config: &CheckConfig, force: bool) -> Result<(CheckOutc
     )?;
     let sig_text = std::str::from_utf8(&sig_bytes).context("signature is not valid UTF-8")?;
     let key_refs: Vec<&str> = config.public_keys.iter().map(String::as_str).collect();
-    let manifest = verify_and_parse_manifest(&manifest_bytes, sig_text, &key_refs)?;
-
-    apply_verified_manifest(&mut state, &config.current_version, &manifest, now).map(|outcome| {
-        let _ = state.save(&config.state_path);
-        (outcome, state)
-    })
+    verify_and_parse_manifest(&manifest_bytes, sig_text, &key_refs)
 }
 
 /// Apply a verified manifest to `state`, enforcing anti-rollback (`highest_verified`) and `update_from`.
@@ -1039,7 +1083,29 @@ struct FileLock {
     file: File,
 }
 
+fn lock_update_state(path: &Path) -> Result<FileLock> {
+    let lock_path = path.with_extension("lock");
+    if let Some(parent) = lock_path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        fs::create_dir_all(parent)?;
+    }
+    FileLock::acquire_timeout(&lock_path, Duration::from_secs(2))
+        .context("update state is busy or not writable; try again shortly")
+}
+
 impl FileLock {
+    fn acquire_timeout(path: &Path, timeout: Duration) -> Option<Self> {
+        let deadline = std::time::Instant::now() + timeout;
+        loop {
+            if let Some(lock) = Self::try_acquire(path) {
+                return Some(lock);
+            }
+            if std::time::Instant::now() >= deadline {
+                return None;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+
     fn try_acquire(path: &Path) -> Option<Self> {
         let file = OpenOptions::new()
             .create(true)
@@ -1093,12 +1159,12 @@ pub fn run_cli_check(config: &CheckConfig) -> i32 {
             },
             _,
         )) => {
-            let guidance = channel.guidance(&version);
+            let guidance = channel.cli_guidance(&version);
             println!(
                 "Rex Linux {version} is available (installed: {}, channel: {}). {} Release notes: {notes_url}",
                 config.current_version,
                 channel.id(),
-                guidance.detail
+                guidance
             );
             10
         }
@@ -1130,9 +1196,124 @@ mod tests {
     use std::io::Write;
     use std::net::TcpListener;
 
+    #[test]
+    fn update_state_lock_is_required_and_cli_guidance_has_no_ui_buttons() {
+        let temp = tempfile::tempdir().unwrap();
+        let config = CheckConfig {
+            state_path: temp.path().join("update.json"),
+            ..CheckConfig::default()
+        };
+        let original = UpdateState {
+            highest_verified: Some("99.0.0".into()),
+            ..UpdateState::default()
+        };
+        original.save(&config.state_path).unwrap();
+        let lock = lock_update_state(&config.state_path).unwrap();
+        assert!(lock_update_state(&config.state_path).is_err());
+        assert!(check_for_updates(&config, true).is_err());
+        assert_eq!(UpdateState::load(&config.state_path), original);
+        drop(lock);
+        assert!(lock_update_state(&config.state_path).is_ok());
+        let guidance = InstallChannel::Tarball.cli_guidance("99.0.0");
+        assert!(guidance.contains(INSTALL_SCRIPT_COMMAND));
+        assert!(!guidance.contains("Update now") && !guidance.contains("Copy command"));
+    }
+
+    #[test]
+    fn notice_saves_preserve_newer_verified_state_and_other_notice_fields() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("state.json");
+        let original = UpdateState {
+            highest_verified: Some("99.0.0".into()),
+            latest_version: Some("99.0.0".into()),
+            last_checked: Some(123),
+            dismissed_version: Some("99.0.0".into()),
+            ..UpdateState::default()
+        };
+        original.save(&path).unwrap();
+        let announced = UpdateState::announce(&path, "0.8.0", true).unwrap();
+        assert_eq!(announced.highest_verified, original.highest_verified);
+        assert_eq!(announced.latest_version, original.latest_version);
+        assert_eq!(announced.dismissed_version, original.dismissed_version);
+        let dismissed = UpdateState::dismiss(&path, "0.8.0").unwrap();
+        assert_eq!(dismissed.highest_verified, original.highest_verified);
+        assert_eq!(dismissed.last_checked, original.last_checked);
+        assert_eq!(dismissed.dismissed_version.as_deref(), Some("0.8.0"));
+        let resurfaced = UpdateState::announce(&path, "0.8.0", true).unwrap();
+        assert_eq!(resurfaced.dismissed_version, None);
+        assert_eq!(resurfaced.highest_verified, original.highest_verified);
+        assert_eq!(UpdateState::load(&path), resurfaced);
+    }
+
+    #[test]
+    fn network_check_releases_state_lock_and_merges_concurrent_writes() {
+        for highest in ["0.8.0", "0.9.0"] {
+            let temp = tempfile::tempdir().unwrap();
+            let path = temp.path().join("state.json");
+            let (key_id, pair, key) = test_keypair();
+            let bytes = sample_manifest_json("0.8.0", "0.7.0");
+            let signature =
+                sign_minisig(&key_id, &pair, &bytes, "rex-linux v0.8.0 latest.json", true);
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            let base = format!("http://{}", listener.local_addr().unwrap());
+            let state_path = path.clone();
+            let server = std::thread::spawn(move || {
+                for body in [bytes, signature.into_bytes()] {
+                    let (mut stream, _) = listener.accept().unwrap();
+                    let mut request = [0; 4096];
+                    assert!(stream.read(&mut request).unwrap() > 0);
+                    // A real fetch is now waiting for this response. Installers
+                    // and UI preference saves must be able to acquire the lock.
+                    let lock = lock_update_state(&state_path).unwrap();
+                    UpdateState {
+                        highest_verified: Some(highest.into()),
+                        dismissed_version: Some("0.8.0".into()),
+                        announced_version: Some("0.8.0".into()),
+                        ..UpdateState::default()
+                    }
+                    .save(&state_path)
+                    .unwrap();
+                    drop(lock);
+                    write!(
+                        stream,
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    )
+                    .unwrap();
+                    stream.write_all(&body).unwrap();
+                }
+            });
+            let config = CheckConfig {
+                current_version: "0.7.3".into(),
+                manifest_url: format!("{base}/latest.json"),
+                signature_url: format!("{base}/latest.json.minisig"),
+                public_keys: vec![key],
+                state_path: path.clone(),
+                allow_loopback_http: true,
+            };
+            let result = check_for_updates(&config, true);
+            server.join().unwrap();
+            if highest == "0.8.0" {
+                let (_, state) = result.unwrap();
+                assert_eq!(state.latest_version.as_deref(), Some("0.8.0"));
+            } else {
+                assert!(
+                    result
+                        .unwrap_err()
+                        .to_string()
+                        .contains("refusing rollback")
+                );
+            }
+            let state = UpdateState::load(&path);
+            assert_eq!(state.highest_verified.as_deref(), Some(highest));
+            assert_eq!(state.dismissed_version.as_deref(), Some("0.8.0"));
+            assert_eq!(state.announced_version.as_deref(), Some("0.8.0"));
+        }
+    }
+
     // Deterministic test keypair generated exclusively for unit tests.
     // Secret seed: [7u8; 32], Key ID: 0102030405060708
-    fn test_keypair() -> ([u8; 8], ring::signature::Ed25519KeyPair, String) {
+    pub(super) fn test_keypair() -> ([u8; 8], ring::signature::Ed25519KeyPair, String) {
         use ring::signature::KeyPair as _;
         let seed = [7u8; 32];
         let pair = ring::signature::Ed25519KeyPair::from_seed_unchecked(&seed).unwrap();
@@ -1146,7 +1327,7 @@ mod tests {
         (key_id, pair, pub_text)
     }
 
-    fn sign_minisig(
+    pub(super) fn sign_minisig(
         key_id: &[u8; 8],
         pair: &ring::signature::Ed25519KeyPair,
         message: &[u8],
@@ -1174,7 +1355,7 @@ mod tests {
         )
     }
 
-    fn sample_manifest_json(version: &str, update_from: &str) -> Vec<u8> {
+    pub(super) fn sample_manifest_json(version: &str, update_from: &str) -> Vec<u8> {
         let sha = "a".repeat(64);
         serde_json::to_vec_pretty(&serde_json::json!({
             "schema": 1,

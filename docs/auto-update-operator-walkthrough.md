@@ -378,7 +378,7 @@ sudo apt update && sudo apt install rex-linux
   | --- | --- |
   | pacman package | `sudo pacman -Syu`, with Copy |
   | `.deb` | The `apt` command with Copy (after PR U5); before that, a link to the `.deb` |
-  | Tarball or install script | The install command with Copy; **Update to X.Y.Z**, then **Restart now** and **Roll back** (after PR U6) |
+  | Tarball or install script | **Update now**, then **Restart to finish**; **Copy command** remains the fallback |
   | Nix | `nix flake update rex-rune` or `nix profile upgrade rex-linux` |
   | Source build | "Built from source. Update with git." |
   | Anything else | A link to the release |
@@ -391,7 +391,7 @@ The shipped app has no way to point at another address or key, on purpose. Test 
 
 1. **[Agent]** Take the packages and `test-release-metadata` from the manual workflow run (section 2, steps 3 and 4). They are the staged release: real packages, with metadata signed by a throwaway key whose public half is in the artifact.
 2. **[Agent]** Serve that directory on loopback and run the update probe (`src/bin/update_probe.rs`, after PR U4), which calls the same library code with the test key and address. Check that it reports the staged version and the right action for each channel.
-3. **[Agent]** (after PR U6) Run `python3 scripts/update-e2e.py`. It installs a real tarball into a temporary home, updates it to a stub "99.0.0" from a local server, and checks the replacement, the kept previous binary, the receipt, rollback, and every refusal in the approved plan.
+3. **[Agent]** Run `cargo test --locked --no-default-features update::installer`. The signed loopback fixture installs a stub `99.0.0` package into a temporary prefix through the real verification, extraction, desktop-file-utils and transaction code. Separate tests cover tampering, downgrade/floor refusals, hostile tar entries and rollback at every replacement. See [self-update validation](self-updates.md). There is no shipped test-key or alternate-download override.
 4. **[Agent]** After publishing, on a machine still on the previous version, run `rex-linux --check-update`. It must print the channel, the installed version, the new version and the action.
 
 ### Pulling a bad release
@@ -413,7 +413,7 @@ Roll forward. Nobody is ever moved down a version automatically.
 3. **What each channel does now:**
    - The notice and the install script see the good version as latest. Installs already on the bad one are offered nothing and are not downgraded. The script says how to go back by hand (`--version`).
    - pacman and APT stop offering the bad version. Someone who has it can go back with `sudo pacman -U https://pkg.shuv.dev/arch/$(uname -m)/rex-linux-bin-<good>-1-$(uname -m).pkg.tar.zst` or `sudo apt install rex-linux=<good>`.
-   - A tarball install with the self-updater can use **Roll back** or `rex-linux --rollback` (after PR U6).
+   - The tarball self-updater never downgrades. It automatically rolls back failed installation transactions, not completed releases. To deliberately return to an older release, run the verified install script with `--version X.Y.Z`; no **Roll back** button or `--rollback` CLI is shipped.
 4. **[Agent] Prepare the fixed patch release** through section 2. **[User]** approves it. Publishing it marks it latest again.
 
 ## 8. Nix

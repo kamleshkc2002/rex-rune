@@ -21,6 +21,7 @@ mod keycaps;
 mod keys;
 mod navigation;
 mod notify;
+pub use notify::notify_restart_failure;
 mod pane_header;
 mod pane_moves;
 mod pane_verbs;
@@ -254,7 +255,15 @@ pub(crate) fn placeholder() -> Workspace {
     unreachable!("App::init builds the workspace")
 }
 
-pub fn run(mut options: Options) -> anyhow::Result<()> {
+pub enum StartupNotice {
+    Error(String),
+    Info(String),
+}
+
+pub fn run(
+    mut options: Options,
+    recovery_notice: Option<StartupNotice>,
+) -> anyhow::Result<Option<std::path::PathBuf>> {
     let (settings, path) = match &options.config {
         Some(path) => (Settings::load(path)?, path.clone()),
         None => Settings::load_default()?,
@@ -285,8 +294,19 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
     });
     let handle = app.handle();
     let terminal = fonts.terminal;
+    let restart = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let restart_request = restart.clone();
     let mut app = app
-        .init(move || Workspace::new(options, settings, path, handle, terminal))
+        .init(move || {
+            let mut workspace = Workspace::new(options, settings, path, handle, terminal);
+            workspace.restart = restart_request;
+            match recovery_notice {
+                Some(StartupNotice::Error(notice)) => workspace.notify(notice),
+                Some(StartupNotice::Info(notice)) => workspace.inform(notice),
+                None => {}
+            }
+            workspace
+        })
         .args(rune_args)
         .window_options(rune::WindowOptions {
             borderless: true,
@@ -305,7 +325,7 @@ pub fn run(mut options: Options) -> anyhow::Result<()> {
     // deletes its partial file before the process ends (the next launch sweeps whatever a host
     // stuck connecting leaves behind).
     wait_for_hosts_at_exit();
-    Ok(())
+    Ok(restart.lock().unwrap().take())
 }
 
 /// The longest the app waits for its host threads once the window is closed.

@@ -119,8 +119,9 @@ server. Packages carry a `share/rex-linux/channel` marker.
 Tarball installation writes the schema-1 path/version/SHA-256 receipt described
 in the walkthrough; source installation and uninstall invalidate it. The client
 reads these markers and receipts to show channel-specific upgrade guidance in
-the in-app update notice and `Settings → Updates` without self-updating or
-downloading binaries.
+the in-app update notice and `Settings → Updates`. Verified install.sh installs
+under `~/.local` can use **Update now**; all other channels retain package-manager
+or manual guidance. See [self-update behavior and validation](self-updates.md).
 
 ## Local checks and packaging
 
