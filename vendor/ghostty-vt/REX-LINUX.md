@@ -11,6 +11,13 @@ placement resolution to Ghostty, rather than implementing Kitty positioning
 again in Rex. Unknown image protocols are skipped. The linked Ghostty source,
 sys crate, ABI and version are unchanged.
 
+`ScrollViewport::DeltaPrompt` exposes the pinned C API's existing
+`GHOSTTY_SCROLL_VIEWPORT_DELTA_PROMPT` operation. Ghostty owns prompt grouping,
+continuations and viewport clamping; no new ABI, protocol or mark index is added.
+Remove this wrapper addition when upstream provides it. Client tests in
+`tests/prompt_navigation.rs` and the disposable `scripts/prompt-acceptance.py`
+exercise the operation on both locally fed and Rex-restored terminals.
+
 Additional fixes required by the same image pipeline:
 
 - `Decoder::next_record` consumes history pages and image records without

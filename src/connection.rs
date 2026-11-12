@@ -122,6 +122,8 @@ pub enum Command {
     Search(String),
     /// Select the next older search match (`true`) or the next newer one.
     SearchStep(bool),
+    /// Move this client viewport to the previous (true) or next OSC 133 prompt.
+    PromptStep(bool),
     TakeControl,
     Reconnect,
     /// `terminal.reset`: the terminal back to its starting state, screen and scrollback
@@ -678,6 +680,7 @@ enum DataCommand {
     Scroll(isize),
     Search(String),
     SearchStep(bool),
+    PromptStep(bool),
     Bottom,
     Reconnect,
     Stop,
@@ -1655,13 +1658,14 @@ fn reject_navigation(shared: &Shared, id: u64) {
     });
 }
 
-/// A search runs on the pane's own terminal, so it needs no server: it reaches the pane's worker
-/// even while the host reconnects, or closing a search then would leave its highlights behind.
+/// Search and prompt navigation run on the pane's own terminal, so they need no server.
+/// They reach the pane's worker even while the host reconnects.
 /// False for any other command.
 fn forward_search(workers: &HashMap<String, PaneWorker>, block: &str, command: &Command) -> bool {
     let command = match command {
         Command::Search(needle) => DataCommand::Search(needle.clone()),
         Command::SearchStep(older) => DataCommand::SearchStep(*older),
+        Command::PromptStep(older) => DataCommand::PromptStep(*older),
         _ => return false,
     };
     if let Some(worker) = workers.get(block) {
@@ -1933,6 +1937,9 @@ async fn handle_command(
                 Command::SearchStep(older) => {
                     let _ = worker.commands.send(DataCommand::SearchStep(older));
                 }
+                Command::PromptStep(older) => {
+                    let _ = worker.commands.send(DataCommand::PromptStep(older));
+                }
                 Command::Reconnect => {
                     let _ = worker.commands.send(DataCommand::Reconnect);
                 }
@@ -2099,6 +2106,7 @@ async fn run_data(
     let mut stream: Option<TerminalStream> = None;
     let mut selection = None;
     let mut search = crate::terminal::search::Controller::default();
+    let mut prompt_anchor = false;
     let mut visible = true;
     let mut renderer = match Renderer::new() {
         Ok(r) => r,
@@ -2122,6 +2130,7 @@ async fn run_data(
                 let (next, fresh) = open_data(&endpoint, &session, &block, &host).await?;
                 selection = Some(crate::terminal::selection::Controller::new()?);
                 search.forget_terminal();
+                prompt_anchor = false;
                 stream = Some(TerminalStream::new(fresh.nonce)); welcome = Some(fresh);
                 shared.update(|m|m.restore_generation+=1);
                 renderer = Renderer::new()?; socket = Some(next);
@@ -2142,12 +2151,21 @@ async fn run_data(
                     command = commands.recv_async() => match command {
                         Ok(DataCommand::Selection(input)) => if input.generation == shared.model.lock().expect("terminal model").restore_generation && let Some(terminal) = &stream.terminal { selection.apply(terminal, input)?; dirty = true; },
                         Ok(DataCommand::Visible(value)) => { if value && !visible { dirty = true; } else if !value && let Some(terminal) = &stream.terminal { selection.stop(terminal)?; } visible = value; }
-                        Ok(DataCommand::Scroll(delta)) => if let Some(terminal) = &mut stream.terminal { terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Delta(delta)); selection.after_scroll(terminal)?; dirty = true; },
-                        Ok(DataCommand::Bottom) => if let Some(terminal) = &mut stream.terminal { terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Bottom); dirty = true; },
+                        Ok(DataCommand::Scroll(delta)) => if let Some(terminal) = &mut stream.terminal { prompt_anchor = false; terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Delta(delta)); selection.after_scroll(terminal)?; dirty = true; },
+                        Ok(DataCommand::PromptStep(older)) => if let Some(terminal) = &mut stream.terminal {
+                            let before = terminal.scrollbar()?.offset;
+                            terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::DeltaPrompt(if older { -1 } else { 1 }));
+                            if terminal.scrollbar()?.offset != before {
+                                prompt_anchor = !terminal.is_viewport_active()?;
+                            }
+                            selection.after_scroll(terminal)?;
+                            dirty = true;
+                        },
+                        Ok(DataCommand::Bottom) => if let Some(terminal) = &mut stream.terminal { prompt_anchor = false; terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Bottom); dirty = true; },
                         // A search that fails is dropped with a notice; the terminal's stream is not its to end.
-                        Ok(DataCommand::Search(needle)) => { if let Err(error) = search.set_needle(stream.terminal.as_ref(), needle) { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); } dirty = true; },
+                        Ok(DataCommand::Search(needle)) => { prompt_anchor = false; if let Err(error) = search.set_needle(stream.terminal.as_ref(), needle) { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); } dirty = true; },
                         // Ghostty scrolls the selected match into view.
-                        Ok(DataCommand::SearchStep(older)) => if let Some(terminal) = &stream.terminal { if let Err(error) = search.step(terminal, older) { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); } selection.after_scroll(terminal)?; dirty = true; },
+                        Ok(DataCommand::SearchStep(older)) => if let Some(terminal) = &stream.terminal { prompt_anchor = false; if let Err(error) = search.step(terminal, older) { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); } selection.after_scroll(terminal)?; dirty = true; },
                         Ok(DataCommand::Reconnect) => { shared.status("Reconnecting terminal…", false); return Ok(false); }
                         Ok(DataCommand::Stop) | Err(_) => return Ok(true),
                     },
@@ -2161,6 +2179,8 @@ async fn run_data(
                                 Err(error) => { search = Default::default(); shared.update(|m| m.notice = Some(format!("Search failed: {error:#}"))); false }
                             };
                             let mut frame = renderer.frame(terminal)?;
+                            if terminal.is_viewport_active()? { prompt_anchor = false; }
+                            frame.prompt_anchor = prompt_anchor;
                             frame.selection_revision = selection.revision;
                             frame.search = match search.results(terminal) {
                                 Ok(results) => results,

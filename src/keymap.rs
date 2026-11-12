@@ -386,6 +386,8 @@ pub fn defaults() -> KeymapDefault {
         ("ctrl+shift+c", "pane.copy"),
         ("ctrl+shift+v", "pane.paste"),
         ("ctrl+shift+f", "client.search"),
+        ("ctrl+shift+up", "client.prompt.previous"),
+        ("ctrl+shift+down", "client.prompt.next"),
         ("ctrl+shift+r", "pane.reconnect"),
         // Of an action's bindings the last is the one Commands and menus show: the main
         // block's key, not the numpad's.
@@ -800,7 +802,7 @@ mod tests {
         let layer = defaults();
         assert_eq!(layer.name, "linux");
         assert!(layer.removals.is_empty());
-        assert_eq!(layer.bindings.len(), 35);
+        assert_eq!(layer.bindings.len(), 37);
         // The terminal font size actions have no default: Ctrl Alt + / - / 0 belong to the
         // program in the terminal until the user binds them.
         assert!(
@@ -817,6 +819,8 @@ mod tests {
             ("ctrl+tab", "client.tab.next_global"),
             ("ctrl+shift+tab", "client.tab.previous_global"),
             ("ctrl+shift+f", "client.search"),
+            ("ctrl+shift+up", "client.prompt.previous"),
+            ("ctrl+shift+down", "client.prompt.next"),
             ("ctrl++", "client.zoom.in"),
             ("ctrl+[Numpad0]", "client.zoom.reset"),
             ("ctrl+0", "client.zoom.reset"),

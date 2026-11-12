@@ -1788,6 +1788,8 @@ async fn searching_needs_no_server_while_the_host_reconnects() {
     tokio::time::sleep(Duration::from_millis(200)).await;
     send(Command::Search("needle".into()));
     send(Command::SearchStep(true));
+    send(Command::PromptStep(true));
+    send(Command::PromptStep(false));
     send(Command::Search(String::new()));
     tokio::time::sleep(Duration::from_millis(200)).await;
     assert_eq!(notice(), None, "a search is this client's own");
@@ -1821,6 +1823,8 @@ async fn a_worker_gets_its_search_whatever_the_control_connection_is_doing() {
         &Command::Search("needle".into())
     ));
     assert!(forward_search(&workers, "b", &Command::SearchStep(false)));
+    assert!(forward_search(&workers, "b", &Command::PromptStep(true)));
+    assert!(forward_search(&workers, "b", &Command::PromptStep(false)));
     assert!(
         forward_search(&workers, "gone", &Command::SearchStep(false)),
         "a closed pane's search goes nowhere, and needs no notice"
@@ -1833,6 +1837,14 @@ async fn a_worker_gets_its_search_whatever_the_control_connection_is_doing() {
     assert!(matches!(
         received.try_recv(),
         Ok(DataCommand::SearchStep(false))
+    ));
+    assert!(matches!(
+        received.try_recv(),
+        Ok(DataCommand::PromptStep(true))
+    ));
+    assert!(matches!(
+        received.try_recv(),
+        Ok(DataCommand::PromptStep(false))
     ));
     assert!(received.try_recv().is_err());
 }

@@ -75,6 +75,8 @@ fn every_added_name_is_remote_denied_including_aliases_of_allowed_actions() {
         "client.config.copy_path",
         "client.prompt.previous",
         "client.prompt.next",
+        "pane.prompt_previous",
+        "pane.prompt_next",
         "pane.resize",
         "pane.balance",
         "pane.rename",
@@ -332,25 +334,20 @@ fn reload_reads_local_overrides_and_requests_the_active_hosts_lua_reload_without
 
 #[test]
 fn unsupported_actions_are_explicit_in_problems_and_dispatch_without_side_effects() {
-    for name in [
-        "client.prompt.previous",
-        "client.prompt.next",
-        "pane.move_to_new_tab",
-    ] {
-        let overrides = Overrides::parse(&json!([{"keys":"ctrl+alt+q","action":name}]));
-        let map = actions::resolve(&overrides);
-        assert_eq!(map.diagnostics.len(), 1);
-        assert!(
-            map.diagnostics[0]
-                .message
-                .contains("recognized but not supported")
-        );
-        assert!(!map.diagnostics[0].message.contains("unknown action"));
-        let (mut ws, rx) = tabbed_workspace("split");
-        run(&mut ws, name, Value::Null);
-        assert!(requests(&rx).is_empty());
-        assert!(ws.panel.is_none());
-    }
+    let name = "pane.move_to_new_tab";
+    let overrides = Overrides::parse(&json!([{"keys":"ctrl+alt+q","action":name}]));
+    let map = actions::resolve(&overrides);
+    assert_eq!(map.diagnostics.len(), 1);
+    assert!(
+        map.diagnostics[0]
+            .message
+            .contains("recognized but not supported")
+    );
+    assert!(!map.diagnostics[0].message.contains("unknown action"));
+    let (mut ws, rx) = tabbed_workspace("split");
+    run(&mut ws, name, Value::Null);
+    assert!(requests(&rx).is_empty());
+    assert!(ws.panel.is_none());
 }
 
 fn with_modes(ws: &mut Workspace, exclusive: bool) {
@@ -475,6 +472,66 @@ fn modes_nest_once_pops_only_the_mode_that_supplied_a_binding_and_reload_clears_
 }
 
 #[test]
+fn prompt_actions_and_roadmap_aliases_dispatch_only_viewport_commands() {
+    let (mut ws, rx) = tabbed_workspace("split");
+    let (sender, sent) = flume::unbounded();
+    super::pane_verb_tests::framed_terminal(&mut ws, "block:b", &sender, b"hello");
+    let before = serde_json::to_value(ws.model().window()).unwrap();
+    for (name, older) in [
+        ("client.prompt.previous", true),
+        ("client.prompt.next", false),
+        ("pane.prompt_previous", true),
+        ("pane.prompt_next", false),
+    ] {
+        assert_eq!(compatibility::unsupported(name), None);
+        let overrides = Overrides::parse(&json!([{"keys":"ctrl+alt+q","action":name}]));
+        assert!(actions::resolve(&overrides).diagnostics.is_empty());
+        let reply = KeymapResponse {
+            bindings: vec![Binding::new(["ctrl+up"], name)],
+            ..Default::default()
+        };
+        let mut resolved = Resolved::from_server(&reply, &Overrides::default());
+        actions::diagnose_compatibility(&mut resolved);
+        assert!(resolved.diagnostics.is_empty());
+        assert!(actions::find(name).unwrap().repeats());
+        run(&mut ws, name, Value::Null);
+        assert!(matches!(sent.try_recv(), Ok(HostCommand::Terminal {
+            block, command: Command::PromptStep(direction), ..
+        }) if block == "block:b" && direction == older));
+        assert!(sent.is_empty(), "no PTY keys or ownership request");
+    }
+    assert!(requests(&rx).is_empty());
+    assert_eq!(serde_json::to_value(ws.model().window()).unwrap(), before);
+    for (id, action, hint) in [
+        (
+            "pane.prompt_previous",
+            "client.prompt.previous",
+            "Ctrl Shift Up",
+        ),
+        ("pane.prompt_next", "client.prompt.next", "Ctrl Shift Down"),
+    ] {
+        let row = ws.commands().into_iter().find(|c| c.id == id).unwrap();
+        assert!(row.entry.enabled);
+        assert!(matches!(row.entry.action, Intent::ClientAction(name, _) if name == action));
+        assert_eq!(
+            crate::app::keycaps::spell(&ws.shortcut_chords(action, &Value::Null)),
+            hint
+        );
+    }
+    let (mut empty, _) = tabbed_workspace("split");
+    run(&mut empty, "client.prompt.previous", Value::Null);
+    assert!(
+        !empty
+            .commands()
+            .into_iter()
+            .find(|c| c.id == "pane.prompt_previous")
+            .unwrap()
+            .entry
+            .enabled
+    );
+}
+
+#[test]
 fn scroll_pages_use_viewport_rows_find_aliases_and_host_switch_are_real() {
     let (mut ws, rx) = tabbed_workspace("split");
     let (sender, sent) = flume::unbounded();
@@ -594,7 +651,7 @@ fn copy_config_path_uses_the_active_hosts_reported_path_and_alias_hints_follow_r
 #[test]
 fn server_bindings_get_the_same_unsupported_diagnostic_exactly_once() {
     let reply = KeymapResponse {
-        bindings: vec![Binding::new(["ctrl+up"], "client.prompt.previous")],
+        bindings: vec![Binding::new(["ctrl+up"], "pane.move_to_new_tab")],
         ..Default::default()
     };
     let mut map = Resolved::from_server(&reply, &Overrides::default());

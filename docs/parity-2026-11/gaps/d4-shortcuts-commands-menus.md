@@ -118,7 +118,7 @@ Columns: Beta (screenshot no.) | Linux (screenshot no., file:line) | Status | Ki
 | D21 | Select All in Pane (Cmd A) | Unbound action; Edit > Select All Cmd A (048, 073) | None | missing | feature | none | M | medium |
 | D22 | Send Key mappings (Cmd Delete, Cmd Left/Right, Opt Left/Right) | Defaults map to ctrl+u, ctrl+a, ctrl+e, alt+b, alt+f (048) | pane.send_key registered with no defaults; macOS line-edit idioms not needed on Linux (Home/End/Ctrl+arrows already work) | not-applicable | feature | none | S | low |
 | D23 | Send Key to Server | Unbound (048) | client.key.forward path exists for server actions | partial | feature | none | S | low |
-| D24 | Jump to Previous / Next Prompt (Cmd Up / Down) | Bound (048) | None; depends on OSC 133 marks reaching the client terminal model (vendored ghostty-vt exposes Row::semantic_prompt, screen.rs:314, but no decoded-frame use was found) | missing | feature | unknown | M | medium |
+| D24 | Jump to Previous / Next Prompt (Cmd Up / Down) | Bound (048) | M3.7: Ctrl Shift Up/Down and Commands; `client.prompt.previous/next`, local-only ([evidence](../prompt-navigation.md)) | implemented | feature | none | M | medium |
 | D25 | Scroll Page Up / Down | Unbound (048) | Shift PageUp/PageDown scroll 20 lines bound by default (keymap.rs:410) | linux-ahead | feature | none | S | low |
 | D26 | Quick Look (Cmd Y) | Bound (048) | None; macOS Quick Look | not-applicable | feature | macos-only | S | low |
 | D27 | Clear Terminal / Reset Terminal | Unbound actions; terminal menu 'Reset Terminal' (049, 094) | None; API com.superlogical.terminal.clear / reset exist | missing | feature | none | S | medium |

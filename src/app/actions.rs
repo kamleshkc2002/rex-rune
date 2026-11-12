@@ -152,6 +152,8 @@ specs! {
     "client.config.copy_path" => Compatibility,
     "client.prompt.previous" => Compatibility,
     "client.prompt.next" => Compatibility,
+    "pane.prompt_previous" => Compatibility,
+    "pane.prompt_next" => Compatibility,
     "pane.resize" => Compatibility,
     "pane.balance" => Compatibility,
     "pane.rename" => Compatibility,
@@ -297,6 +299,10 @@ impl Spec {
             "pane.resize"
                 | "client.scroll.page_up"
                 | "client.scroll.page_down"
+                | "client.prompt.previous"
+                | "client.prompt.next"
+                | "pane.prompt_previous"
+                | "pane.prompt_next"
                 | "client.find.next"
                 | "client.find.previous"
                 | "pane.focus.left"
