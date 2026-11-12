@@ -1,6 +1,7 @@
 pub mod interface;
 pub mod recorded;
 pub mod shortcuts;
+pub mod terminal;
 
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -207,6 +208,7 @@ pub struct Settings {
     pub pane_header: PaneHeader,
     pub pane_padding: f32,
     pub font_size: f32,
+    pub terminal: terminal::TerminalConfig,
     pub font_family: String,
     pub font_fallbacks: Vec<String>,
     pub ui_scale: f32,
@@ -262,6 +264,7 @@ impl Default for Settings {
             pane_header: PaneHeader::default(),
             pane_padding: 8.,
             font_size: 15.,
+            terminal: Default::default(),
             font_family: "JetBrainsMono Nerd Font".into(),
             font_fallbacks: Vec::new(),
             ui_scale: 1.,

@@ -116,6 +116,26 @@ pub fn mono_footnote(words: impl Into<String>) -> El {
         .px(INSET)
 }
 
+/// A steady terminal sample inset inside a card. Wide samples clip at the well's edge;
+/// the height follows the terminal font, without changing its metrics.
+pub fn preview_well(key: &str, label: &str, ground: u32, height: f32, content: El) -> El {
+    row().w_full().padding(6.).child(
+        row()
+            .key(key.to_owned())
+            .role("img")
+            .label(label.to_owned())
+            .w_full()
+            .h(height + 12.)
+            .px(10.)
+            .center_y()
+            .radius(8.)
+            .clip_rounded(8.)
+            .fill(rgb(ground))
+            .border(1., white(0.09))
+            .child(content),
+    )
+}
+
 /// The frame every card row shares: full width, the card's inset, content centred on the
 /// row. `helper` says whether the row carries a second line.
 pub fn row_frame(helper: bool) -> El {

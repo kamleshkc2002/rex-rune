@@ -125,6 +125,8 @@ pub enum Command {
     SearchStep(bool),
     /// Move this client viewport to the previous (true) or next OSC 133 prompt.
     PromptStep(bool),
+    /// Local cursor default; never sent to the server or used to claim ownership.
+    CursorStyle(crate::terminal::CursorShape),
     TakeControl,
     Reconnect,
     /// `terminal.reset`: the terminal back to its starting state, screen and scrollback
@@ -680,6 +682,7 @@ impl PaneShared {
 }
 
 enum DataCommand {
+    CursorStyle(crate::terminal::CursorShape),
     Selection(crate::terminal::selection::Input),
     Visible(bool),
     Scroll(isize),
@@ -1661,13 +1664,15 @@ fn reject_navigation(shared: &Shared, id: u64) {
 }
 
 /// Search and prompt navigation run on the pane's own terminal, so they need no server.
-/// They reach the pane's worker even while the host reconnects.
+/// Cursor defaults are local drawing policy too. All reach the pane's worker even while
+/// the host reconnects.
 /// False for any other command.
 fn forward_search(workers: &HashMap<String, PaneWorker>, block: &str, command: &Command) -> bool {
     let command = match command {
         Command::Search(needle) => DataCommand::Search(needle.clone()),
         Command::SearchStep(older) => DataCommand::SearchStep(*older),
         Command::PromptStep(older) => DataCommand::PromptStep(*older),
+        Command::CursorStyle(shape) => DataCommand::CursorStyle(*shape),
         _ => return false,
     };
     if let Some(worker) = workers.get(block) {
@@ -1939,6 +1944,9 @@ async fn handle_command(
                 Command::SearchStep(older) => {
                     let _ = worker.commands.send(DataCommand::SearchStep(older));
                 }
+                Command::CursorStyle(shape) => {
+                    let _ = worker.commands.send(DataCommand::CursorStyle(shape));
+                }
                 Command::PromptStep(older) => {
                     let _ = worker.commands.send(DataCommand::PromptStep(older));
                 }
@@ -2110,6 +2118,7 @@ async fn run_data(
     let mut search = crate::terminal::search::Controller::default();
     let mut prompt_anchor = false;
     let mut visible = true;
+    let mut cursor_style = crate::terminal::CursorShape::Block;
     let mut renderer = match Renderer::new() {
         Ok(r) => r,
         Err(e) => {
@@ -2133,7 +2142,9 @@ async fn run_data(
                 selection = Some(crate::terminal::selection::Controller::new()?);
                 search.forget_terminal();
                 prompt_anchor = false;
-                stream = Some(TerminalStream::new(fresh.nonce)); welcome = Some(fresh);
+                let mut restored = TerminalStream::new(fresh.nonce);
+                restored.set_cursor_style(cursor_style)?;
+                stream = Some(restored); welcome = Some(fresh);
                 shared.update(|m|m.restore_generation+=1);
                 renderer = Renderer::new()?; socket = Some(next);
                 shared.status("Restoring terminal…", false);
@@ -2154,6 +2165,7 @@ async fn run_data(
                         Ok(DataCommand::Selection(input)) => if input.generation == shared.model.lock().expect("terminal model").restore_generation && let Some(terminal) = &stream.terminal { selection.apply(terminal, input)?; dirty = true; },
                         Ok(DataCommand::Visible(value)) => { if value && !visible { dirty = true; } else if !value && let Some(terminal) = &stream.terminal { selection.stop(terminal)?; } visible = value; }
                         Ok(DataCommand::Scroll(delta)) => if let Some(terminal) = &mut stream.terminal { prompt_anchor = false; terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::Delta(delta)); selection.after_scroll(terminal)?; dirty = true; },
+                        Ok(DataCommand::CursorStyle(shape)) => { cursor_style = shape; stream.set_cursor_style(shape)?; dirty = true; },
                         Ok(DataCommand::PromptStep(older)) => if let Some(terminal) = &mut stream.terminal {
                             let before = terminal.scrollbar()?.offset;
                             terminal.scroll_viewport(ghostty_vt::terminal::ScrollViewport::DeltaPrompt(if older { -1 } else { 1 }));

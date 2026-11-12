@@ -488,11 +488,12 @@ impl Workspace {
                     .spawn(move || {
                         while receiver.recv().is_ok() {
                             let key = wake_key.clone();
-                            handle.update(move |s, _| s.refresh_terminal(&key));
+                            handle.update(move |s, tx| s.terminal_woke(&key, tx));
                         }
                     })
                     .expect("terminal wake thread");
                 let mut term = Term::new(connection.clone());
+                term.set_cursor_style(self.settings.terminal.cursor_style.shape());
                 term.cache_images(self.images.as_ref());
                 self.terminals.insert(key, term);
             }
@@ -1083,6 +1084,7 @@ impl Workspace {
             self.term_theme.as_ref(),
             palette_of(self.settings.chrome_theme),
         )
+        .with_selection(super::term::SelectionLook::of(&self.settings.terminal))
     }
 
     /// Declare the theme the user chose, `choice`, from now on, on every host, and remember

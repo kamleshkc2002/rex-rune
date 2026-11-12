@@ -664,7 +664,10 @@ impl Camera {
     }
 
     pub(super) fn snap(&mut self, rt: &mut Runtime<Workspace>, name: &str) {
-        let (w, h) = (2048, 1400);
+        let (w, h) = (
+            (rt.viewport.0 * rt.env.scale).round() as u32,
+            (rt.viewport.1 * rt.env.scale).round() as u32,
+        );
         let (device, queue) = (&self.gpu.device, &self.gpu.queue);
         self.painter.upload_images(device, queue, &mut rt.images);
         self.painter

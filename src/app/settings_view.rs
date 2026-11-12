@@ -5,9 +5,8 @@ use super::{
     dialogs::modal_layer,
     panel::{Intent, SettingsSection},
     settings_kit::{
-        NAV_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, Segment, button, card, disclosure, footnote,
-        mono_footnote, page, row_frame, section, segmented, select_row, setting, stepper,
-        unavailable, value, value_popup,
+        NAV_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, Segment, button, card, disclosure, footnote, page,
+        row_frame, section, segmented, select_row, setting, stepper, unavailable, value_popup,
     },
     theme::*,
     widgets::{Pill, glyph},
@@ -306,119 +305,7 @@ fn notifications(s: &Workspace) -> El {
 }
 
 fn terminal(s: &Workspace) -> El {
-    let saved = &s.settings.font_family;
-    let active = s.terminal_family.unwrap_or("IBM Plex Mono (bundled)");
-    // The row's helper is one sentence. What terminals are drawn in now goes under the card,
-    // and only while that isn't the family the row names.
-    let drawn = if *saved != s.launch_saved_font {
-        Some(format!(
-            "{saved} is saved and applies when you reopen the client. Until then terminals use {active}."
-        ))
-    } else if s.terminal_family.is_none() {
-        Some(format!(
-            "{} isn't installed, so terminals use {active}.",
-            s.launch_font
-        ))
-    } else {
-        None
-    };
-    let fallbacks = if s.settings.font_fallbacks.is_empty() {
-        "Automatic".to_owned()
-    } else {
-        s.settings.font_fallbacks.join(", ")
-    };
-    let shells = s.settings.hosts.iter().enumerate().map(|(i, host)| {
-        disclosure(
-            &format!("host-shell:{i}"),
-            &host.label,
-            "",
-            host.shell.as_deref().unwrap_or("Server default"),
-            move |s, tx| s.perform(Intent::HostShell(i), tx),
-        )
-    });
-    page([
-        section(
-            "Typography",
-            std::iter::once(card([
-                disclosure(
-                    "font-change",
-                    "Font family",
-                    "Applies when you reopen the client.",
-                    saved,
-                    |s, tx| s.perform(Intent::Fonts, tx),
-                ),
-                setting(
-                    "Font size",
-                    "From 8 to 48 pt, for every terminal.",
-                    stepper(
-                        "font",
-                        format!("{} pt", s.settings.font_size),
-                        |s, _| s.change_font(-1.),
-                        |s, _| s.change_font(1.),
-                    ),
-                ),
-                setting(
-                    "Fallback fonts",
-                    "For glyphs the font lacks, before the system's own fallbacks.",
-                    value(fallbacks).truncate().max_w(260.),
-                ),
-            ]))
-            .chain(drawn.map(|words| footnote(words).key("font-drawn"))),
-        ),
-        section(
-            "Layout",
-            [card([setting(
-                "Pane padding",
-                "Space around each terminal's content, from 0 to 32 pt.",
-                stepper(
-                    "pane-padding",
-                    format!("{} pt", s.settings.pane_padding),
-                    |s, _| {
-                        s.settings.pane_padding = (s.settings.pane_padding - 1.).max(0.);
-                        s.save();
-                    },
-                    |s, _| {
-                        s.settings.pane_padding = (s.settings.pane_padding + 1.).min(32.);
-                        s.save();
-                    },
-                ),
-            )])],
-        ),
-        section(
-            "Colours",
-            [
-                card([setting(
-                    "Theme",
-                    "",
-                    value_popup(
-                        "terminal-theme",
-                        Workspace::theme_label(&s.settings.terminal_theme),
-                        Intent::ChooseTheme,
-                    ),
-                )]),
-                footnote(
-                    "Declared to Rex for panes this client owns or nobody owns. Follow server declares nothing until this client has declared a theme once; from then on it resets those panes to Rex's colours, once each per connection.",
-                ),
-            ],
-        ),
-        section(
-            "Default shell",
-            [
-                card(shells),
-                footnote(
-                    "What new sessions, tabs and splits start on each host. Running terminals keep theirs.",
-                ),
-            ],
-        ),
-        super::titles::titles(s),
-        section(
-            "",
-            [
-                footnote("These settings are saved in"),
-                mono_footnote(s.settings_path.display().to_string()).mt(-6.),
-            ],
-        ),
-    ])
+    super::terminal_page::terminal(s)
 }
 
 fn host_card(s: &Workspace, i: usize, last: bool) -> El {

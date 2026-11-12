@@ -369,6 +369,9 @@ fn download_chip(s: &Workspace) -> El {
 
 /// A pending key sequence remains visible even without the toolbar row.
 pub fn sequence_chip(s: &Workspace) -> Option<El> {
+    if !s.settings.terminal.key_sequence_hints {
+        return None;
+    }
     let label = s.bindings.pending_label(s.effective_keymap())?;
     Some(chip(
         el().key("pending-sequence")

@@ -378,6 +378,9 @@ fn disclosure_rows_and_segments_work_from_the_keyboard() {
         "{:?}",
         element_text(&rt, "host-shell:0")
     );
+    // Terminal now includes cursor and selection cards; bring the shell row into view.
+    rt.update(|_, tx| tx.scroll_center("host-shell:1"));
+    settle(&mut rt);
     click(&mut rt, "host-shell:1");
     assert!(matches!(
         kind(&rt),

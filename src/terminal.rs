@@ -80,6 +80,8 @@ pub struct TerminalStream {
     graphics_ready: bool,
     /// When the running program began its current synchronized update.
     held_since: Option<Instant>,
+    /// The cursor this client draws until the program asks for a shape of its own.
+    cursor_style: CursorShape,
 }
 impl TerminalStream {
     pub fn new(nonce: u64) -> Self {
@@ -92,7 +94,18 @@ impl TerminalStream {
             exit_code: None,
             graphics_ready: false,
             held_since: None,
+            cursor_style: CursorShape::Block,
         }
+    }
+
+    /// The cursor to draw while the program has not asked for a shape (see
+    /// [`set_default_cursor`]), on this terminal and on the one a later snapshot restores.
+    pub fn set_cursor_style(&mut self, shape: CursorShape) -> Result<()> {
+        self.cursor_style = shape;
+        if let Some(terminal) = self.terminal.as_mut() {
+            set_default_cursor(terminal, shape)?;
+        }
+        Ok(())
     }
 
     /// The program is in the middle of a synchronized update (mode 2026), so drawing now
@@ -126,6 +139,10 @@ impl TerminalStream {
                 return Ok(());
             };
             graphics::configure(&mut terminal)?;
+            // A restored terminal has the server's default cursor, a block.
+            if self.cursor_style != CursorShape::Block {
+                set_default_cursor(&mut terminal, self.cursor_style)?;
+            }
             self.terminal = Some(terminal);
             self.snapshot_count += 1;
             tail = rest;
@@ -209,6 +226,22 @@ fn parse_color(value: Option<&str>) -> Option<RgbColor> {
 }
 pub fn rgb(color: RgbColor) -> u32 {
     (color.r as u32) << 16 | (color.g as u32) << 8 | color.b as u32
+}
+
+/// Make `shape` the cursor of this client's copy of a terminal for as long as its program
+/// has not chosen one: Ghostty shows it at once unless a DECSCUSR shape is in effect, and
+/// goes back to it when the program resets its own (`CSI 0 SP q`) or the terminal. A local
+/// drawing choice: the server's terminal, and what it answers a program that asks for the
+/// cursor style, are unchanged.
+pub fn set_default_cursor(terminal: &mut Terminal, shape: CursorShape) -> Result<()> {
+    use ghostty_vt::terminal::CursorStyle;
+    terminal.set_default_cursor_style(Some(match shape {
+        CursorShape::Block => CursorStyle::Block,
+        CursorShape::Bar => CursorStyle::Bar,
+        CursorShape::Underline => CursorStyle::Underline,
+        CursorShape::Hollow => CursorStyle::BlockHollow,
+    }))?;
+    Ok(())
 }
 
 /// The cursor shape a program asked for with DECSCUSR (or Ghostty's hollow block).
@@ -579,6 +612,72 @@ mod tests {
             terminal.vt_write(sequence);
             assert_eq!(renderer.frame(&terminal).unwrap().cursor_shape, shape);
         }
+    }
+    #[test]
+    fn the_default_cursor_shows_until_a_program_chooses_and_again_when_it_resets() {
+        let mut terminal = Terminal::new(ghostty_vt::TerminalOptions {
+            cols: 12,
+            rows: 2,
+            ..Default::default()
+        })
+        .unwrap();
+        let mut renderer = Renderer::new().unwrap();
+        let mut shape = |terminal: &Terminal| renderer.frame(terminal).unwrap().cursor_shape;
+        set_default_cursor(&mut terminal, CursorShape::Bar).unwrap();
+        assert_eq!(shape(&terminal), CursorShape::Bar, "nothing was asked for");
+        terminal.vt_write(b"\x1b[2 q");
+        assert_eq!(shape(&terminal), CursorShape::Block, "the program's choice");
+        // A new default waits for the program to let go of its own.
+        set_default_cursor(&mut terminal, CursorShape::Underline).unwrap();
+        assert_eq!(shape(&terminal), CursorShape::Block);
+        terminal.vt_write(b"\x1b[0 q");
+        assert_eq!(shape(&terminal), CursorShape::Underline);
+        set_default_cursor(&mut terminal, CursorShape::Block).unwrap();
+        assert_eq!(shape(&terminal), CursorShape::Block);
+    }
+    #[test]
+    fn a_restored_terminal_takes_the_clients_cursor_unless_its_program_chose_one() {
+        let options = || ghostty_vt::TerminalOptions {
+            cols: 12,
+            rows: 2,
+            ..Default::default()
+        };
+        let mut renderer = Renderer::new().unwrap();
+        let mut shape = |stream: &TerminalStream| {
+            renderer
+                .frame(stream.terminal.as_ref().unwrap())
+                .unwrap()
+                .cursor_shape
+        };
+
+        // A server terminal whose program asked for nothing: the snapshot says so.
+        let untouched = Terminal::new(options()).unwrap();
+        let mut stream = TerminalStream::new(42);
+        stream.set_cursor_style(CursorShape::Bar).unwrap();
+        stream
+            .feed(&ghostty_vt::snapshot::encode(&untouched).unwrap())
+            .unwrap();
+        assert_eq!(shape(&stream), CursorShape::Bar);
+        // Live output: the program takes a block, then gives it up.
+        stream.feed(b"\x1b[2 q").unwrap();
+        assert_eq!(shape(&stream), CursorShape::Block);
+        stream.feed(b"\x1b[0 q").unwrap();
+        assert_eq!(shape(&stream), CursorShape::Bar);
+        // A new choice shows at once, with no output.
+        stream.set_cursor_style(CursorShape::Underline).unwrap();
+        assert_eq!(shape(&stream), CursorShape::Underline);
+
+        // A server terminal whose program chose a block before this client attached.
+        let mut chosen = Terminal::new(options()).unwrap();
+        chosen.vt_write(b"\x1b[2 q");
+        let mut stream = TerminalStream::new(42);
+        stream.set_cursor_style(CursorShape::Bar).unwrap();
+        stream
+            .feed(&ghostty_vt::snapshot::encode(&chosen).unwrap())
+            .unwrap();
+        assert_eq!(shape(&stream), CursorShape::Block, "the program's own");
+        stream.feed(b"\x1b[0 q").unwrap();
+        assert_eq!(shape(&stream), CursorShape::Bar);
     }
     #[test]
     fn copy_preserves_graphemes_without_wide_cell_padding() {

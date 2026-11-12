@@ -305,6 +305,11 @@ fn pane_card(
             let colors = s.term_colors();
             let look = GridLook {
                 cursor: Some(cursor),
+                cursor_force: s
+                    .settings
+                    .terminal
+                    .cursor_force
+                    .then(|| s.settings.terminal.cursor_style.shape()),
                 ime: keyboard,
                 colors,
             };
@@ -334,8 +339,8 @@ fn pane_card(
                 } else {
                     Cursor::Text
                 });
-            // The middle button only presses the grid while a program wants it.
-            if t.tracking() {
+            // Middle presses go to mouse-reporting programs, or opt-in PRIMARY paste.
+            if t.tracking() || s.settings.terminal.primary_selection {
                 grid = grid.pointer_buttons([PointerButton::Middle]);
             }
             let grid = grid
@@ -354,6 +359,8 @@ fn pane_card(
                 .on_drag(move |s: &mut Workspace, d, tx| {
                     let cell = term::metrics(s.settings.font_size).cell;
                     let focused = s.focused_block().as_deref() == Some(k2.1.as_str());
+                    let copies = s.settings.terminal.copy_on_selection
+                        || s.settings.terminal.primary_selection;
                     let Some(t) = s.terminals.get_mut(&k2) else {
                         return;
                     };
@@ -365,6 +372,8 @@ fn pane_card(
                     let mods = tx.mods();
                     let at = t.cell_at(d.x, d.y, cell);
                     if d.phase == Phase::Down {
+                        t.primary_press =
+                            (button == "middle" && !t.tracking()).then_some((d.x, d.y));
                         if !focused {
                             let _ = t.connection.commands.focus();
                         }
@@ -421,6 +430,21 @@ fn pane_card(
                         return;
                     }
                     if button != "left" {
+                        if let Some((x, y)) = t.primary_press
+                            && (d.x - x).hypot(d.y - y) > 3.
+                        {
+                            t.primary_press = None;
+                        }
+                        if d.phase == Phase::Up {
+                            let paste = t.primary_press.take().is_some() && !t.tracking();
+                            if paste {
+                                s.paste_primary(&k2.1);
+                            }
+                        }
+                        return;
+                    }
+                    // Focus loss cancels the gesture, including later motion and release.
+                    if d.phase != Phase::Down && !t.selecting {
                         return;
                     }
                     let i = t.index(d.x, d.y, cell);
@@ -436,6 +460,9 @@ fn pane_card(
                         Phase::Up => SelectionPhase::Up,
                     };
                     t.selection_event(phase, d.x, d.y, cell);
+                    if copies && d.phase == Phase::Up {
+                        t.want_selected_text();
+                    }
                 })
                 // Pointer motion with no button held: Ctrl shows the link under it, and programs
                 // that track every move (1003) hear it (the server drops it for the others).

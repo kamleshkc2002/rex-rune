@@ -36,6 +36,8 @@ mod settings_tests;
 mod shortcuts_page_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
+#[path = "terminal_settings_tests.rs"]
+mod terminal_settings_tests;
 #[path = "titles_tests.rs"]
 mod titles_tests;
 #[path = "toolbar_reveal_tests.rs"]

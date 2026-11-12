@@ -406,6 +406,13 @@ pub fn section(s: &Workspace) -> El {
         header(s),
         build,
         settings_kit::section("Project", [card(links)]),
+        settings_kit::section(
+            "Settings file",
+            [
+                settings_kit::mono_footnote(s.settings_path.display().to_string())
+                    .key("about-settings-path"),
+            ],
+        ),
     ])
 }
 
