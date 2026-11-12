@@ -114,6 +114,8 @@ pub struct Workspace {
     pub switcher_fx: ScrollFx,
     /// The Settings page's scroll thumb.
     pub settings_fx: ScrollFx,
+    /// What is typed in Settings → Shortcuts' read-only filter.
+    pub shortcut_filter: TextEdit,
     pub sidebar_drag_start: Option<f32>,
     scratch: TextEdit,
     next_host: u64,
@@ -255,6 +257,7 @@ impl Workspace {
             sidebar_fx: ScrollFx::default(),
             switcher_fx: ScrollFx::default(),
             settings_fx: ScrollFx::default(),
+            shortcut_filter: TextEdit::new(""),
             sidebar_drag_start: None,
             scratch: TextEdit::new(""),
             next_host: 0,
@@ -1383,6 +1386,7 @@ impl Workspace {
             Intent::Settings => {
                 self.bindings.sequence.clear();
                 self.reload_shortcuts();
+                self.shortcut_filter = TextEdit::new("");
                 let back = self.panel.take();
                 self.panel = Some(Panel::new(PanelKind::Settings, "Settings", &[]));
                 self.panel.as_mut().unwrap().target = back.and_then(|p| p.target);

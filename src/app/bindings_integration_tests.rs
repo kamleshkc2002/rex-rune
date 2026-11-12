@@ -307,7 +307,7 @@ fn settings_shows_effective_sequences_sources_and_pending_chip_cancels() {
     assert!(words.iter().any(|s| s == "then"));
     assert!(words.iter().any(|s| s == "shortcuts.json"));
     assert!(words.iter().any(|s| s == "Switch session"));
-    assert!(words.iter().any(|s| s == "Unbound"));
+    assert!(words.iter().any(|s| s == "Not set"));
     assert!(
         rt.state
             .shortcut_chords("session.switch", &Value::Null)
@@ -433,14 +433,8 @@ fn server_config_path_marks_only_missing_files() {
             .iter()
             .find(|e| e.key.as_deref() == Some("server-shortcuts-path"))
             .unwrap();
-        assert_eq!(
-            path.text.as_deref(),
-            Some(if exists {
-                "Server: /server/init.lua"
-            } else {
-                "Server: /server/init.lua (not created)"
-            })
-        );
+        assert_eq!(path.text.as_deref(), Some("/server/init.lua"));
+        assert_eq!(has(&rt, "server-shortcuts-missing"), !exists);
     }
 }
 

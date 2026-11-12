@@ -28,6 +28,8 @@ mod remote_session_tests;
 mod remote_tests;
 #[path = "settings_tests.rs"]
 mod settings_tests;
+#[path = "shortcuts_page_tests.rs"]
+mod shortcuts_page_tests;
 #[path = "tab_tests.rs"]
 mod tab_tests;
 #[path = "wiring_tests.rs"]
